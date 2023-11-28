@@ -1,23 +1,27 @@
 ---
-title: "Untitled"
+title: "Cooperative Learning"
 author: "Khaled Fouda"
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
 
-```{r setup, include=FALSE}
+```{r setup, include=TRUE}
+path_to_code <- "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+knitr::opts_knit$set(root.dir=path_to_code)
 ```
 
 
 ```{r , include=TRUE, eval=TRUE, message=FALSE,warning=FALSE}
+path_to_code = "./code_files/"
 library(knitr)
 library(kableExtra)
 library(tidyverse)
 library(magrittr)
 require(foreach)
 require(doParallel)
+source(paste0(path_to_code,"Mao_import_lib.R"))
 ```
 
 
@@ -118,6 +122,93 @@ The simulation and implementation code can be found at
 https://github.com/dingdaisy/cooperative-learning
 
 and the R package Multiview at https://cran.r-project.org/web/packages/multiview/. The package includes functions to apply cooperative learning on two or more views using linear, poisson, and logistic regression. The package uses glmnet. The code for the functions can also be found in the github.
+
+----------------------------
+---------------------------
+
+# Mao-Coop Model
+
+
+The following model is introduced by Youssef in page 4 of his notes.
+
+\begin{equation}
+    A = (XA + \Theta_X) + (ZB + \Theta_Z)^T,\\
+    Y = (A+E) * W
+\end{equation}
+
+
+with the following loss function
+
+$$
+\begin{align}
+    \text{Loss-3} =& \left\|  Y - (XA + \Theta_X) - (ZB + \Theta_Z)^T \right\|_F^2 +\\& \rho \left\| (XA + \Theta_X) - (ZB + \Theta_Z)^T \right\|_F^2 +\\
+    & \lambda_1 \left\| A \right\|_F^2 + \lambda_2 \left( (1 - \alpha_1) \left\| \Theta_X \right\|_F^2 + \alpha_1 \left\| \Theta_X \right\|_* \right)+\\
+    & \lambda_3 \left\| B \right\|_F^2 + \lambda_4 \left( (1 - \alpha_2) \left\| \Theta_Z \right\|_F^2 + \alpha_2 \left\| \Theta_Z \right\|_* \right).&&(Y0)
+\end{align}
+$$
+
+
+with $\Theta_X$ and $\Theta_Z$ low rank matrices that we hope it will capture the part of $Y$ that is not linearly explained by either $X$ or $Z$. Furthermore, assume that the column spaces of $X$ and $\Theta_X$ are orthogonal, and that the column spaces of $Z$ and $\Theta_Z$ are orthogonal. 
+
+To get the quantities of interest, a possible approach is to solve in an iterative way the following
+
+$$
+\begin{aligned}
+\hat{A}, \hat{\Theta}_X =& \arg \min_{A,\Theta_X} \left\| \frac{1}{1 + \rho}  Y - \frac{1 - \rho}{1 + \rho} (ZB + \Theta_Z)^T - (XA + \Theta_X) \right\|_F^2 + \\
+ &\lambda_1 \left\| A \right\|_F^2 + \lambda_2 \left((1 - \alpha_1) \left\| \Theta_X \right\|_F^2 + \alpha_1 \left\| \Theta_X \right\|_* \right), && (Y1) \\
+\hat{Z}, \hat{\Theta}_Z =& \arg \min_{B,\Theta_Z} \left\| \frac{1}{1 + \rho} Y^T - \frac{1 - \rho}{1 + \rho} (XA + \Theta_X)^T - (ZB + \Theta_Z) \right\|_F^2 +\\
+ &\lambda_3 \left\| B \right\|_F^2 + \lambda_4 \left((1 - \alpha_2) \left\| \Theta_Z \right\|_F^2 + \alpha_2 \left\| \Theta_Z \right\|_* \right). && (Y2)
+\end{aligned}
+$$
+
+### Interpretation of the solution
+
+The the first two terms in the loss in (Y0) has the same form as in Mao's formula and hence if we replace these terms with following two terms
+
+$$
+\| f_x(X) - \frac{y}{1+\rho} - \frac{1-\rho}{1+\rho}f_z(Z)\|^2 \\
+\| f_z(Z) - \frac{y}{1+\rho} - \frac{1-\rho}{1+\rho}f_x(x)\|^2
+$$
+where in our case $f_x(X)=XA+\Theta_X$ and $f_z(Z)=(ZB+\Theta_Z)^T$. 
+
+### Connection to Mao
+
+In order to iteratively solve (Y1) and (Y2) using an a method similar to the one-at-a-time algorithm, we will apply Mao method to minimize each formula. First, we need to have them in the form of equations (4) and (5) from Mao's paper (check the other html file).
+
+The regularization terms match exactly the form and hence we don't need to adjust them. 
+For the first term in (Y1), let 
+$$Y^* = \frac{\ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_z}(Z) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T$$
+where $\hat {f_z}(Z) = Z\hat{B}+\hat{\Theta}_Z$ are the estimates from fitting (Y2) in the previous iteration.  
+
+Similarly, for the first term in (Y2), let
+
+$$Y^* = \frac{\hat Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)$$
+where $\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X$ are the estimates from fitting (Y1) in the previous iteration.
+
+
+### Implementation 
+
+#### Note:
+
+In Youssef's implementation, a $\rho=1$ was assumed. That means  that we are fitting two different models and taking the average of the estimation of each. In that case, there's no benefit from applying the Mao-Coop model and it would be equivalent to fit two different Mao models and take the final average. 
+
+
+
+```{r code=readLines(paste0(path_to_code, "/Mao_Coop_fit.R")),eval=TRUE}
+
+```
+
+
+```{r eval=TRUE}
+
+gen.dat <- generate_simulation_data_ysf(1,200,200,5,5, missing_prob =0.9 ,coll=TRUE)
+
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,5,1e-3,1,alpha_grid = c(1))
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,5,1e-3,0.5,alpha_grid = c(1))
+
+```
+
+
 
 $$
 \begin{aligned}

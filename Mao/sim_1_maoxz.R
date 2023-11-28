@@ -1,19 +1,19 @@
 
-
+setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/Mao")
 rm(list = ls())
 library(softImpute)
 library(purrr)
 source("SMC_functions6.R")
 
-set.seed(123)
-n_rows <- 300
-n_cols <- 300
+set.seed(2023)
+n_rows <- 200
+n_cols <- 200
 
 
 X_cols <- 5
-Z_cols <- 10
+Z_cols <- 5
 
-missing_prob <- 0.7
+missing_prob <- 0.9
 W_data <- matrix( rbinom(n_rows*n_cols, 1, (1 - missing_prob) ) , nrow = n_rows)
 
 ### sim1 data

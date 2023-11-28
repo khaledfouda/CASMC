@@ -13,7 +13,7 @@
 
 <meta name="date" content="2023-11-28" />
 
-<title>Untitled</title>
+<title>Cooperative Learning</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,19 +350,24 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Untitled</h1>
+<h1 class="title toc-ignore">Cooperative Learning</h1>
 <h4 class="author">Khaled Fouda</h4>
 <h4 class="date">2023-11-28</h4>
 
 </div>
 
 
-<pre class="r"><code>library(knitr)
+<pre class="r"><code>path_to_code &lt;- &quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/&quot;
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+knitr::opts_knit$set(root.dir=path_to_code)</code></pre>
+<pre class="r"><code>path_to_code = &quot;./code_files/&quot;
+library(knitr)
 library(kableExtra)
 library(tidyverse)
 library(magrittr)
 require(foreach)
-require(doParallel)</code></pre>
+require(doParallel)
+source(paste0(path_to_code,&quot;Mao_import_lib.R&quot;))</code></pre>
 <div id="model-definition-and-notations" class="section level3">
 <h3>Model definition and Notations</h3>
 <p>Let the response vector <span class="math inline">\(Y \in
@@ -474,10 +479,205 @@ y_z^*=\frac{y}{1+p}-\frac{(1-p)X\theta_x}{1+p}.
 package includes functions to apply cooperative learning on two or more
 views using linear, poisson, and logistic regression. The package uses
 glmnet. The code for the functions can also be found in the github.</p>
+</div>
+<div id="section" class="section level2">
+<h2>—————————-</h2>
+</div>
+<div id="mao-coop-model" class="section level1">
+<h1>Mao-Coop Model</h1>
+<p>The following model is introduced by Youssef in page 4 of his
+notes.</p>
+<p><span class="math display">\[\begin{equation}
+    A = (XA + \Theta_X) + (ZB + \Theta_Z)^T,\\
+    Y = (A+E) * W
+\end{equation}\]</span></p>
+<p>with the following loss function</p>
+<p><span class="math display">\[
+\begin{align}
+    \text{Loss-3} =&amp; \left\|  Y - (XA + \Theta_X) - (ZB +
+\Theta_Z)^T \right\|_F^2 +\\&amp; \rho \left\| (XA + \Theta_X) - (ZB +
+\Theta_Z)^T \right\|_F^2 +\\
+    &amp; \lambda_1 \left\| A \right\|_F^2 + \lambda_2 \left( (1 -
+\alpha_1) \left\| \Theta_X \right\|_F^2 + \alpha_1 \left\| \Theta_X
+\right\|_* \right)+\\
+    &amp; \lambda_3 \left\| B \right\|_F^2 + \lambda_4 \left( (1 -
+\alpha_2) \left\| \Theta_Z \right\|_F^2 + \alpha_2 \left\| \Theta_Z
+\right\|_* \right).&amp;&amp;(Y0)
+\end{align}
+\]</span></p>
+<p>with <span class="math inline">\(\Theta_X\)</span> and <span class="math inline">\(\Theta_Z\)</span> low rank matrices that we hope
+it will capture the part of <span class="math inline">\(Y\)</span> that
+is not linearly explained by either <span class="math inline">\(X\)</span> or <span class="math inline">\(Z\)</span>. Furthermore, assume that the column
+spaces of <span class="math inline">\(X\)</span> and <span class="math inline">\(\Theta_X\)</span> are orthogonal, and that the
+column spaces of <span class="math inline">\(Z\)</span> and <span class="math inline">\(\Theta_Z\)</span> are orthogonal.</p>
+<p>To get the quantities of interest, a possible approach is to solve in
+an iterative way the following</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{A}, \hat{\Theta}_X =&amp; \arg \min_{A,\Theta_X} \left\| \frac{1}{1
++ \rho}  Y - \frac{1 - \rho}{1 + \rho} (ZB + \Theta_Z)^T - (XA +
+\Theta_X) \right\|_F^2 + \\
+&amp;\lambda_1 \left\| A \right\|_F^2 + \lambda_2 \left((1 - \alpha_1)
+\left\| \Theta_X \right\|_F^2 + \alpha_1 \left\| \Theta_X \right\|_*
+\right), &amp;&amp; (Y1) \\
+\hat{Z}, \hat{\Theta}_Z =&amp; \arg \min_{B,\Theta_Z} \left\| \frac{1}{1
++ \rho} Y^T - \frac{1 - \rho}{1 + \rho} (XA + \Theta_X)^T - (ZB +
+\Theta_Z) \right\|_F^2 +\\
+&amp;\lambda_3 \left\| B \right\|_F^2 + \lambda_4 \left((1 - \alpha_2)
+\left\| \Theta_Z \right\|_F^2 + \alpha_2 \left\| \Theta_Z \right\|_*
+\right). &amp;&amp; (Y2)
+\end{aligned}
+\]</span></p>
+<div id="interpretation-of-the-solution" class="section level3">
+<h3>Interpretation of the solution</h3>
+<p>The the first two terms in the loss in (Y0) has the same form as in
+Mao’s formula and hence if we replace these terms with following two
+terms</p>
+<p><span class="math display">\[
+\| f_x(X) - \frac{y}{1+\rho} - \frac{1-\rho}{1+\rho}f_z(Z)\|^2 \\
+\| f_z(Z) - \frac{y}{1+\rho} - \frac{1-\rho}{1+\rho}f_x(x)\|^2
+\]</span> where in our case <span class="math inline">\(f_x(X)=XA+\Theta_X\)</span> and <span class="math inline">\(f_z(Z)=(ZB+\Theta_Z)^T\)</span>.</p>
+</div>
+<div id="connection-to-mao" class="section level3">
+<h3>Connection to Mao</h3>
+<p>In order to iteratively solve (Y1) and (Y2) using an a method similar
+to the one-at-a-time algorithm, we will apply Mao method to minimize
+each formula. First, we need to have them in the form of equations (4)
+and (5) from Mao’s paper (check the other html file).</p>
+<p>The regularization terms match exactly the form and hence we don’t
+need to adjust them. For the first term in (Y1), let <span class="math display">\[Y^* = \frac{\ Y}{1+\rho} -
+\frac{1-\rho}{1+\rho}\hat {f_z}(Z) = \frac{Y}{1+\rho} -
+\frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T\]</span> where <span class="math inline">\(\hat {f_z}(Z) = Z\hat{B}+\hat{\Theta}_Z\)</span>
+are the estimates from fitting (Y2) in the previous iteration.</p>
+<p>Similarly, for the first term in (Y2), let</p>
+<p><span class="math display">\[Y^* = \frac{\hat Y}{1+\rho} -
+\frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} -
+\frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)\]</span> where <span class="math inline">\(\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X\)</span>
+are the estimates from fitting (Y1) in the previous iteration.</p>
+</div>
+<div id="implementation" class="section level3">
+<h3>Implementation</h3>
+<div id="note" class="section level4">
+<h4>Note:</h4>
+<p>In Youssef’s implementation, a <span class="math inline">\(\rho=1\)</span> was assumed. That means that we
+are fitting two different models and taking the average of the
+estimation of each. In that case, there’s no benefit from applying the
+Mao-Coop model and it would be equivalent to fit two different Mao
+models and take the final average.</p>
+<pre class="r"><code># Make sure to run Mao_import_lib.R before running this file.
+
+Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
+                         rho = 1, # the agreement penalty
+                         n_folds=5,
+                         lambda.1_grid = seq(0,2,length=10),
+                         lambda.2_grid = seq(.9, 0, length=10),
+                         alpha_grid = seq(0.992, 1, length=5),
+                         numCores = 4,
+                         n1n2_optimized = TRUE,
+                         theta_estimator = theta_default,
+                         seed = 2023){
+   #&#39; Input:
+   #&#39;       A: The response matrix of dimension n1 by n2. We assume that Y = A * W
+   #&#39;       X: The row covariates of dimension n1 by m1
+   #&#39;       Z: The column covariates of dimension n2 by m2
+   #&#39;       W: Is the mask matrix with the same dimension as Y
+   #&#39;       niter:
+   #&#39; 
+   #&#39; Output:
+   #&#39;       A.hat
+   #&#39; ----------------------------------------------------------------
+   Y = A * W
+   Y_tr = t(Y)
+   A_tr = t(A)
+   W_tr = t(W)
+   # to obtain initial estimates, we run the MAO function on each covariate matrix individually
+   best_param = Mao.cv(A, X, Y, W, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
+                         numCores, n1n2_optimized, theta_estimator)$best_parameters
+   A.hat_x = Mao.fit(Y, X, W, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
+                     n1n2_optimized, theta_estimator )$A_hat
+   
+   
+   best_param = Mao.cv(A_tr, Z, Y_tr, W_tr, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
+                         numCores, n1n2_optimized, theta_estimator)$best_parameters
+   A.hat_z = t(Mao.fit(Y_tr, Z, W_tr, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
+                       n1n2_optimized, theta_estimator )$A_hat)
+   
+   # reporting test errors
+   test_error_x = test_error(A.hat_x[W==0], A[W==0])
+   test_error_z = test_error(A.hat_z[W==0], A[W==0])
+   #print(test_error_z)
+   test_error_avg = test_error(((A.hat_x+A.hat_z)/2)[W==0], A[W==0])
+   print(paste(&quot;Test error using only X is:&quot;,
+         round(test_error_x,5),
+         &quot;, and using only Z:&quot;,
+         round(test_error_z,5),
+         &quot;, and using their average:&quot;,
+         round(test_error_avg,5)
+   ))
+   
+   
+   # We assume to row covariates are minimized first for now.
+   iter = 0
+   n1 = dim(Y)[1]
+   n2 = dim(Y)[2]
+   A.hat = A.hat_x + A.hat_z
+   rho.1 = 1/(1+rho)
+   rho.2 = (1-rho)
+   diff = Inf
+   
+   while(iter &lt; maxiter &amp; diff &gt; epsilon){
+      
+      # 1. row covariates, (Y1)   
+      y.star = rho.1 * (Y - rho.2 * A.hat_z)
+      best_param = Mao.cv(A, X, y.star, W, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
+                            numCores, n1n2_optimized, theta_estimator)$best_parameters
+      A.hat_x = Mao.fit(y.star, X, W, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
+                        n1n2_optimized, theta_estimator )$A_hat
+      # 2. Column covariates (Y2)
+      y.star = rho.1 * (Y_tr - rho.2 * t(A.hat_x))
+      best_param = Mao.cv(A_tr, Z, y.star, W_tr, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
+                            numCores, n1n2_optimized, theta_estimator)$best_parameters
+      A.hat_z = t(Mao.fit(y.star, Z, W_tr, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
+                          n1n2_optimized, theta_estimator )$A_hat)
+      # update stopping criteria
+      diff = sqrt(mean((A.hat - A.hat_x - A.hat_z)**2))
+      A.hat = A.hat_x + A.hat_z
+      iter = iter + 1
+      test_error_Coop = test_error(A.hat[W==0], A[W==0])
+      print(paste(&quot;Iteration&quot;,iter, &quot;- test MSE =&quot;,test_error_Coop, &quot;- diff =&quot;,diff))
+   }
+   if(iter &gt;= maxiter){
+      print(&quot;Reached Max iterations before converging.&quot;)
+   }else
+      print(&quot;Converged.&quot;)
+   
+   test_error_Coop = test_error(A.hat[W==0], A[W==0])
+   print(paste(&quot;Test error resulted from applying the Coop Model is&quot;,test_error_Coop))
+   return(A.hat)
+} </code></pre>
+<pre class="r"><code>gen.dat &lt;- generate_simulation_data_ysf(1,200,200,5,5, missing_prob =0.9 ,coll=TRUE)
+
+A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,5,1e-3,1,alpha_grid = c(1))</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.417301654134852 - diff = 2.16700377298556&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.417301654134852 - diff = 1.20742307162471e-16&quot;
+## [1] &quot;Converged.&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.417301654134852&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,5,1e-3,0.5,alpha_grid = c(1))</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
+## [1] &quot;Iteration 1 - test MSE = 1.33115502338261 - diff = 4.69777717591752&quot;
+## [1] &quot;Iteration 2 - test MSE = 1.62093347632141 - diff = 9.82799401715246&quot;
+## [1] &quot;Iteration 3 - test MSE = 28.6129062959577 - diff = 46.3677299719748&quot;
+## [1] &quot;Iteration 4 - test MSE = 649.468097664787 - diff = 171.681438627433&quot;
+## [1] &quot;Iteration 5 - test MSE = 7112.88588879756 - diff = 378.810610072841&quot;
+## [1] &quot;Reached Max iterations before converging.&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 7112.88588879756&quot;</code></pre>
 <p><span class="math display">\[
 \begin{aligned}
 \end{aligned}
 \]</span></p>
+</div>
+</div>
 </div>
 
 

@@ -1,4 +1,4 @@
-setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef")
+setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
 
 source("./code_files/Mao_import_lib.R")
 data_dir = "./Mao/saved_data/"
