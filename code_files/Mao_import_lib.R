@@ -1,0 +1,17 @@
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+library(magrittr)
+require(foreach)
+require(doParallel)
+library(ggplot2)
+library(hexbin)
+library(patchwork)
+
+
+setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef")
+source("./code_files/Mao_fit.R")
+source("./code_files/Mao_cv.R")
+source("./code_files/Mao_sim.R")
+source("./code_files/Ysf_sim.R")
+source("./code_files/graph_estim.R")

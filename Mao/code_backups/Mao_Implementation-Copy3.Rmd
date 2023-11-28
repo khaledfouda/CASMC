@@ -1,0 +1,610 @@
+---
+title: "Mao's Method Implementation"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-11-14"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+library(magrittr)
+```
+
+
+
+We consider a matrix of interest $A \in \Re^{n_1\times n_2}$ with row covariates $X  \in \Re ^{n_1 \times m}$ and the model
+
+$$
+A = X \beta + B
+$$
+
+where $B$ is a low rank matrix and orthogonal to $X$. 
+We assume that we don't fully observe $A_0$ and that we have a partially observed (corrupted) version of it called $Y$.
+This follows the model 
+
+$$
+Y_{ij} = A_{ij} + \epsilon_{ij}
+$$
+
+where $\epsilon_{ij}$ are i.i.d normal with 0 mean and finite variance.
+
+We consider the sampling indicator $w_{ij}=1$ if $Y_{ij}$ is observed and 0 otherwise. $w_{ij}$ is independent from $\epsilon_{ij}$.
+
+In Mao's paper, the the sampling (missingness) probabilities may depend on the variate and are modeled as 
+$$ w_{ij} \sim Bernoulli(\theta_{ij}(x_i))$$
+In the code below, and based on the loss function defined in (5) and (4), we estimate $\beta$, $B$ using formulas (8) and (11) as written below:
+
+$$
+\begin{aligned}
+\hat{\beta} &= (X^TX + n_1n_2\lambda_1 I_{m})^{-1} X^T (W * \hat\theta^* *Y)\text{        }&&(8)\\
+\hat{B} &= \frac{1}{1+2(1-\alpha) n_1n_2\lambda_2} T_{\alpha n_1 n_2 \lambda_2}(P_{\overline X}(W * \hat\theta^* *Y))\text{        }&&(11)
+\end{aligned}
+$$
+Where $\lambda_1,\lambda_2, \alpha$ are the regularization hyperparameters for $\beta$ and $B$, and
+$$
+\begin{aligned}
+ &\hat\theta^* = {\hat\theta_{ij}^{-1}(x_i) = {(expit((1,x_i^T)\gamma_{ij}))}^{-1}}\text{        }&&(a)\\
+&T_c(D) = U \times Diag\{(\sigma_i-c)_+\}\times V^T\text{        }&&(b)\\
+&P_{\overline X} = 1 - P_{X}\text{        }&&(c)\\
+&P_{X} = X(X^TX)^{-1}X^T\text{        }&&(d)
+\end{aligned}
+$$
+
+----------------------
+
+## 1) Implementation with fixed $\lambda_1, \lambda_2,  \alpha$ 
+
+The following function estimates $\hat\beta$ and $\hat B$ as above with fixed (given) hyperparameters. I will try to use the same notations as above to avoid confusion.
+
+```{r}
+
+Mao.fit <- function(Y, X, lambda.1, lambda.2, alpha, n1n2_optimized=TRUE){
+  #
+  #' ----------------------------------------------
+  #' Input: Y: partially observed A,
+  #'         X: covariate matrix
+  #'         lambda.1, lambda.2, alpha: hyperparameters
+  #' ----------------------------------------------
+  #' output: list of  A, Beta_hat, B_hat
+  #' ----------------------------------------------
+  n1 = dim(Y)[1]
+  n2 = dim(Y)[2]
+  m  = dim(X)[2]
+  
+  W = matrix(as.numeric(Y!=0), n1, n2)
+  # The following two lines are as shown in (c) and (d)
+  P_X = X %*% solve(t(X) %*% X) %*% t(X)
+  P_bar_X = diag(1,n1) - P_X 
+  
+  if(n1n2_optimized == TRUE){
+    # we define the factor that will be used later:
+    n1n2 = svd(t(X) %*% X)$d[1] # n1 * n2
+  }else{
+    n1n2 = n1 * n2
+  }
+  
+  # The following part estimates theta (missingness probabilities)
+  # using logistic regression as indicated in (a)
+  theta_hat = matrix(NA, n1, n2)
+  for(j in 1:n2){
+    model_data = data.frame(cbind(W[,j], X))
+    model_fit = glm(X1~., family=binomial(), data=model_data)
+    theta_hat[, j] = 1 / predict(model_fit, type="response")
+  }
+  # the following is the product of W * theta_hat * Y
+  W_theta_Y = Y * theta_hat # * W 
+
+  
+  # beta hat as (8)
+  beta_hat = solve(t(X) %*% X + n1n2 * lambda.1 * diag(1, m)) %*% t(X) %*% W_theta_Y
+  # SVD decomposition to be used in (b)
+  svdd = svd(P_bar_X %*% W_theta_Y)
+  if(n1n2_optimized == TRUE){
+    # evaluation of  (b)
+    n1n2 = svdd$d[1]
+  }else{
+    n1n2 = n1 * n2
+  }
+  T_c_D = svdd$u %*% (pmax(svdd$d - alpha*n1n2*lambda.2, 0) * t(svdd$v))
+  # B hat as in (11)
+  B_hat = (1 + 2 * (1-alpha) * n1n2 * lambda.2 )^(-1) * T_c_D
+  # computing the rank of B
+  rank = sum(pmax(svdd$d - n1n2 * lambda.2 * alpha, 0) > 0) + m
+  
+  # Estimate the matrix as given in the model at the top
+   A_hat = X %*% beta_hat + B_hat
+  
+  return(list(A_hat = A_hat, B_hat = B_hat, beta_hat = beta_hat, rank = rank))
+}
+
+```
+
+## 2) Hyperparameter Optimization
+
+
+```{r}
+prepare_fold_data <- function(Y, X, W, A, n1n2_optimized) {
+  n1 = dim(Y)[1]
+  n2 = dim(Y)[2]
+  m  = dim(X)[2]
+  
+  # The following two lines are as shown in (c) and (d)
+  P_X = X %*% solve(t(X) %*% X) %*% t(X)
+  P_bar_X = diag(1,n1) - P_X 
+
+  theta_hat = matrix(NA, n1, n2)
+  for(j in 1:n2){
+    model_data = data.frame(cbind(W[,j], X))
+    model_fit = glm(X1 ~ ., family = binomial(), data = model_data)
+    theta_hat[, j] = 1 / predict(model_fit, type = "response")
+  }
+  
+  #---------
+  # The following are partial parts of equations 8 and 11 that don't involve the hyperparameters.
+  # this is useful to avoid unneccessary matrix multiplications.
+  #----------
+  X.X = t(X) %*% X
+  if(n1n2_optimized == TRUE){
+    # this one is for equation 8, the product n1n2 is replace with the Eigen value
+    n1n2Im = svd(t(X) %*% X)$d[1]  * diag(1, m)  
+  }else{
+    n1n2Im = n1 * n2  * diag(1, m)
+  }
+  # the following is the product of W * theta_hat * Y
+  W_theta_Y = Y * theta_hat
+  X.W.theta.Y = t(X) %*% W_theta_Y
+  svdd = svd(P_bar_X %*% W_theta_Y)
+  if(n1n2_optimized == TRUE){
+    # this one is for equation 11, the product is also replace with the Eigen value of the SVD
+    n1n2 = svdd$d[1]
+  }else{
+    n1n2 = n1 * n2
+  }
+    
+  return(list(A.test=A[W==0], W=W, X=X, X.X=X.X, n1n2Im=n1n2Im, n1n2=n1n2,
+              X.W.theta.Y = X.W.theta.Y, svdd=svdd))
+}
+
+Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha){
+  beta_hat = solve( data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
+
+  T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha*data$n1n2*lambda.2, 0) * t(data$svdd$v))
+  # B hat as in (11)
+  B_hat = (1 + 2 * (1-alpha) * data$n1n2 * lambda.2 )^(-1) * T_c_D
+  # Estimate the matrix as given in the model at the top
+   A_hat = data$X %*% beta_hat + B_hat
+  
+  return(A_hat[data$W == 0])
+}
+
+```
+
+```{r}
+
+require(foreach)
+require(doParallel)
+
+```
+
+```{r}
+Mao.cv <- function(A, X, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
+                   lambda.2_grid = seq(0.9, 0.1, length=30),
+                   alpha_grid = seq(0.992, 1, length=20), seed=2023,numCores=16,n1n2_optimized=TRUE){
+  
+  #' -------------------------------------------------------------------
+  #' Input :
+  #' A : Complete (True) A matrix as in the model above of size n1 by n2
+  #' X :  Covariate matrix of size  n1 by m
+  #' W : Binary matrix representing the mask. wij=1 if yij is observed. size similar to A
+  #' The rest are cross validation parameters
+  #' --------------------------------------------------------------------
+  #' Output:
+  #' list of best parameters and best score (minimum average MSE across folds)
+  #' --------------------------------------------------------------------
+
+  Y = A * W
+  
+  set.seed(seed = seed)
+  indices = sample(cut(seq(1, nrow(A)), breaks=n_folds, labels=FALSE))
+  best_score = Inf
+  best_params = list(alpha = NA, lambda.1 = NA, lambda.2 = NA)
+  
+  fold_data = lapply(1:n_folds, function(i) {
+    train_indices = which(indices != i, arr.ind = TRUE)
+    Y_train = Y[train_indices,]
+    X_train = X[train_indices,]
+    W_train = W[train_indices,]
+    A_train = A[train_indices,]
+    prepare_fold_data(Y_train, X_train, W_train, A_train, n1n2_optimized = n1n2_optimized)
+  })
+  
+  # Original for loop to be executed on one node 
+  # *******************************************
+  # for(alpha in alpha_grid){
+  #   for(lambda.1 in lambda.1_grid){
+  #     for(lambda.2 in lambda.2_grid){
+  #       
+  #       scores = numeric(n_folds)
+  #       for(i in 1:n_folds){
+  #         data = fold_data[[i]]
+  #         #train_indices = which(indices != i, arr.ind=TRUE)
+  #         
+  #         # compute the estimates with a modified fit function
+  #         A_hat = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+  #         #print(dim(A[test_indices,]))
+  #         #print(dim(A_hat))
+  #         #print(dim(data$X))
+  #         # Evaluate model performance using MSE
+  #         # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
+  #         # that is, the test fold isn't used at all.
+  #         scores[i] = mean((data$A - A_hat)^2)
+  #       }
+  #       avg_score = mean(scores)
+  #       
+  #       if(avg_score < best_score){
+  #         best_score = avg_score
+  #         best_params = list(alpha=alpha, lambda.1=lambda.1, lambda.2=lambda.2)
+  #       }
+  #     }
+  #   }
+  # }
+  # ************************************************************
+  # prepare the cluster
+  cl <- makeCluster(numCores) 
+  registerDoParallel(cl)
+  #clusterEvalQ(cl, {library(library1)})
+  lambda.1 = 0
+  # Export the Mao.fit_optimized function and any other necessary objects to each worker
+  clusterExport(cl, varlist = c("Mao.fit_optimized"))
+    results <- foreach(alpha = alpha_grid, .combine = rbind) %:%
+    #foreach(lambda.1 = lambda.1_grid, .combine = rbind) %:%
+    foreach(lambda.2 = lambda.2_grid, .combine = rbind) %dopar% {
+      scores = numeric(n_folds)
+      for (i in 1:n_folds) {
+        data = fold_data[[i]]
+        A_hat = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+        scores[i] = mean((data$A - A_hat)^2)
+      }
+      avg_score = mean(scores)
+      c(alpha, lambda.1, lambda.2, avg_score)
+    }
+  # Process results to find the best parameters
+  best_result <- results[which.min(results[, 4]), ]
+  best_params <- list(alpha = best_result[1], lambda.1 = best_result[2], lambda.2 = best_result[3])
+  best_score <- best_result[4]
+  # close the cluster
+  stopCluster(cl)
+  #--------------------------------------------
+  lambda.2 = best_params$lambda.2
+  alpha = best_params$alpha
+  for(lambda.1 in lambda.1_grid){
+    scores = numeric(n_folds)
+    for(i in 1:n_folds){
+      data = fold_data[[i]]
+      # compute the estimates with a modified fit function
+      A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+      # Evaluate model performance using MSE
+      # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
+      # that is, the test fold isn't used at all.
+      scores[i] = mean((data$A.test - A_hat_test)^2)
+    }
+    avg_score = mean(scores)
+
+    if(avg_score < best_score){
+      best_score = avg_score
+      best_params$alpha = alpha
+    }
+  }
+  
+  
+  #---------------------------------------------------
+  return(list(best_parameters = best_params, best_score = best_score))
+  
+}
+
+```
+## Simulation Test
+
+Below is a simulation test for the method above. I will use the same settings used in Mao's paper.
+
+```{r}
+generate_simulation_data_mao <- function(n1 =400,  n2 = 400, m = 20, r = 10, missing_prob = 0.2, seed=2023){
+  set.seed(seed=seed)
+  X <- matrix(rnorm(n1*m), ncol = m)
+  beta <- matrix(rnorm(m*n2), ncol=n2)
+  U <- matrix(rnorm(n1*r),ncol=r)
+  V <- matrix(rnorm(n2*r),ncol=r)
+  P_X = X %*% solve(t(X) %*% X) %*% t(X)
+  P_bar_X = diag(1,n1) - P_X 
+  B = P_bar_X %*% U %*% t(V)
+  A <- X %*% beta + B
+  rank <- qr(A)$rank
+  #----------------------------------------------------------
+  # Does fully observed Y = A (ie,  without noise?)? In that case ignore the code below.
+  #----------------------------------------------------------------------
+  # Computing epsilon as iid zero mean Gaussian with variance chosen such that the signal-to-noise ratio (SNR) is 1
+  signal_A <- sum((A - mean(A))^2) / (n1 * n2 - 1)
+  sigma_epsilon <- sqrt(signal_A)  # Since SNR = 1
+  epsilon <- matrix(rnorm(n1 * n2, mean = 0, sd = sigma_epsilon), n1, n2)
+  Y <- A + epsilon
+  #-----------------------------------------------------------------------------
+  W <- matrix( rbinom(n1*n2, 1, (1 - missing_prob) ) , nrow = n1)
+  #---------------------------------------------------------------------
+  return(list(A=A, W=W, X=X, beta=beta, B=B, rank=rank))
+}
+
+generate_simulation_data_ysf <- function(model=1, n1 =300,  n2 = 300, m1 = 5, m2 = 10, missing_prob = 0.7, seed=2023){
+  set.seed(seed=seed)
+  X <- matrix(rnorm(n1*m1), ncol = m1)
+  Z <- matrix(rnorm(n2*m2), ncol = m2)
+  E <- matrix(rnorm(n1*n2), ncol = n2)
+  
+  beta.x <- matrix(runif(m1*n2), ncol=n2)
+  beta.z <- matrix(runif(m2*n1), ncol=n1)
+  B.x <- matrix(runif(n1*m2), ncol=m2)
+  B.z <- matrix(runif(m2*n2), ncol=n2)
+  B <- B.x %*% B.z
+  
+  P_X = X %*% solve(t(X) %*% X) %*% t(X)
+  P_bar_X = diag(1,n1) - P_X
+  P_Z = Z %*% solve(t(Z) %*% Z) %*% t(Z)
+  P_bar_Z = diag(1,n2) - P_Z
+  
+  W <- matrix( rbinom(n1*n2, 1, (1 - missing_prob) ) , nrow = n1)
+  
+  if(model == 1){
+    A <- (X %*% beta.x) + t(Z %*% beta.z) + P_bar_X %*% B %*% P_bar_Z + E
+    rank <- qr(A)$rank
+    return(list(A=A, W=W, X=X, Z=Z, beta.x=beta.x, beta.z=beta.z, B=B, rank=rank))
+  }else if (model == 2){
+    A <- (X %*% beta.x) + P_bar_X %*% B + E
+    rank <- qr(A)$rank
+    return(list(A=A, W=W, X=X, beta.x=beta.x, B=B, rank=rank))
+  }
+  else{
+    stop("Error: Unrecognized model.")
+  }
+  #-----------------------------------------------------------------------------
+  #---------------------------------------------------------------------
+  
+}
+```
+
+
+```{r}
+gen.dat1 <- generate_simulation_data_mao()
+gen.dat <- generate_simulation_data_ysf(2,300,300,10,10,missing_prob = 0.7)
+
+cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$W,
+                 n_folds=5, 
+                 #lambda.1_grid = c(0),
+                 lambda.1_grid = seq(0,2,length=20),
+                 
+                 lambda.2_grid = seq(.9, 0.1, length=20),
+                 #lambda.2_grid = c(0.1842),
+                 
+                 alpha_grid = seq(0.992, 1, length=10),
+                 #alpha_grid = c(0),
+                 
+                 numCores = 8,n1n2_optimized = TRUE);cv.out
+
+mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, cv.out$best_parameters$lambda.1, 
+                   cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha)
+
+RMSE.A = sqrt(mean((gen.dat$A - mao.out$A_hat)^2)) 
+Rank.diff = mao.out$rank - gen.dat$rank
+RMSE.A
+Rank.diff
+
+
+```
+
+Plot $\beta$ estimates
+```{r}
+library(ggplot2)
+library(hexbin)
+
+plot_actual.vs.estimated <- function(Actual, Predicted, xlab, ylab,title1="Comparison of Actual and Predicted Values"){
+    
+  data <- data.frame(
+    Actual = as.vector(Actual),
+    Predicted = as.vector(Predicted)
+  )
+  lm_fit <- lm(Predicted ~ Actual, data = data)
+  coefficients <- coef(lm_fit)
+  
+  # Create the equation text
+  equation_text <- sprintf("y = %.2fx + %.3f", coefficients[2], coefficients[1])
+  
+  ggplot(data, aes(x = Actual, y = Predicted)) + 
+    geom_hex(color = "grey80",bins=200) +  
+    geom_smooth(method = "lm", aes(color = "LM Fit"), se = TRUE) +
+    #geom_line(data = data.frame(x = range(data$Actual), y = range(data$Predicted)),
+    #          aes(x = x, y = y, linetype = "Perfect Fit"), alpha=0, color = "white") +  
+    annotate("text", x = Inf, y = Inf, label = equation_text, hjust = 3.1, size=5, vjust = 8.5, color = "red", size = 2.5) + 
+    scale_color_manual("", values = c("LM Fit" = "red")) + 
+      geom_abline(intercept = 0, slope = 1, linetype = 1, linewidth=1, color = "black") + 
+    #scale_linetype_manual("", values = c("Perfect Fit" = 1)) +
+    theme_minimal() + 
+     theme(
+       legend.position = "top", 
+          legend.title = element_blank(),
+       panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          panel.border = element_blank()) + 
+    labs(title = title1,
+         x = xlab,
+         y = ylab) +
+    guides(fill = FALSE) 
+}
+
+```
+
+Plot $B$ estimates
+```{r}
+plot_actual.vs.estimated(gen.dat$beta, mao.out$beta_hat, expression(beta), expression(hat(beta)))
+plot_actual.vs.estimated(gen.dat$B, mao.out$B_hat, "B", expression(hat("B")))
+plot_actual.vs.estimated(gen.dat$A, mao.out$A_hat, "A", expression(hat("A")))
+```
+
+
+graph 1: scatter plots of different values of n1 and n2
+```{r}
+
+mat_dim <- c(300, 500, 700)
+title = paste("Results on Model 2 (Yousef) with m=5, and probability of missingness is 0.5")
+results = data.frame(lambda_1=c(0,0,0), lambda_2=c(0.1842,0.142,0.142), alpha=c(1,1,1), dim=mat_dim, row.names = mat_dim)
+
+for(i in 1:length(mat_dim)){
+  gen.dat <- generate_simulation_data_ysf(2, results$dim[i],results$dim[i],5,5,0.5)
+  mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, results$lambda_1[i], 
+                     results$lambda_2[i], results$alpha[i])
+  results$RMSE.A[i] = sqrt(mean((gen.dat$A - mao.out$A_hat)^2)) %>% round(4)
+  results$RMSE.beta[i] = sqrt(mean((gen.dat$beta.x - mao.out$beta_hat)^2)) %>% round(4)
+  results$RMSE.B[i] = sqrt(mean((gen.dat$B - mao.out$B_hat)^2)) %>% round(4)
+  results$Rank[i] = gen.dat$rank
+  results$Rank_estim[i] = mao.out$rank
+}
+results
+
+results %>% dplyr::select(-dim) %>% 
+   kable("html", caption = "Descriptive caption for your table") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+```{r}
+library(patchwork)
+graphs_A = list()
+graphs_beta = list()
+graphs_B = list()
+
+for(i in 1:length(mat_dim)){
+  gen.dat <- generate_simulation_data_ysf(2, results$dim[i],results$dim[i],5,5,0.5)
+  mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, 0.2,#results$lambda_1[i], 
+                     results$lambda_2[i], results$alpha[i],n1n2_optimized = T)
+  graphs_beta[[i]] = plot_actual.vs.estimated(gen.dat$beta.x,
+                                              mao.out$beta_hat, "Beta", expression(hat("Beta")),title="")
+  graphs_B[[i]] = plot_actual.vs.estimated(gen.dat$B[gen.dat$W==0], mao.out$B_hat[gen.dat$W==0], "B", expression(hat("B")),title="")
+  graphs_A[[i]] = plot_actual.vs.estimated(gen.dat$A[gen.dat$W==0], mao.out$A_hat[gen.dat$W==0], "A", expression(hat("A")),title="")
+}
+
+combined_plot <- (graphs_A[[1]] | graphs_beta[[1]] | graphs_B[[1]]) / 
+                 (graphs_A[[2]] | graphs_beta[[2]] | graphs_B[[2]]) / 
+                 (graphs_A[[3]] | graphs_beta[[3]] | graphs_B[[3]]) +
+                 plot_layout(guides = "collect") +
+                 plot_annotation(title = "Comparing original and estimated values (Only data with W=0 is included)",
+                                 subtitle = "with n1 = n2 = 300, 500, and 700; m=5, and probability of missingness is 0.5")
+
+combined_plot & theme(plot.margin = unit(c(1, 1, 1, 1), "lines"))
+```
+
+reproducing Yousef's graph
+plot A
+```{r}
+missingness = seq(.3,.9,.1)
+RMSE_vals = rep(NA,length(missingness))
+cv.out_list = list()
+
+for(i in 1:length(missingness)){
+  gen.dat <- generate_simulation_data_ysf(2,1000,1000,5,10,missing_prob = missingness[i])
+  cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$W,
+                   n_folds=5, 
+                   lambda.1_grid = seq(0,2,length=20),
+                   lambda.2_grid = seq(.9, 0.1, length=20),
+                   alpha_grid = seq(0.992, 1, length=10),
+                   numCores = 8,n1n2_optimized = TRUE)
+  
+  mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, cv.out$best_parameters$lambda.1, 
+                     cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha)
+  cv.out_list[[i]] = cv.out
+  RMSE_vals[i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+  print(i)
+}
+#[1] 1.137395 1.147916 1.194186 1.225637 1.306871 1.487800 1.904782
+data.frame(missingness=missingness, RMSE_vals=RMSE_vals) %>% 
+  ggplot(aes(x = missingness, y = RMSE_vals)) +
+  geom_line(color="red") + 
+  geom_point(size = 3, shape=17) +  
+  theme_minimal() +  
+  labs(x = "missing %", y = "RMSE", title = "Model 2; n1=n2=300; m=5;", subtitle = "RMSE on the missing data.") +
+  theme(legend.position = "bottom")
+```
+plot B
+```{r}
+alpha <- lambda.1 <- lambda.2 <- rep(0,length(missingness))
+#0.1421053 0.1421053 0.1842105 0.1842105 0.2263158 0.3105263 0.4368421
+for(i in 1:length(missingness)){
+  alpha[i] = cv.out_list[[i]]$best_parameters$alpha
+  lambda.1[i] = cv.out_list[[i]]$best_parameters$lambda.1
+  lambda.2[i] = cv.out_list[[i]]$best_parameters$lambda.2
+}
+
+
+data.frame(missingness = rep(missingness,3), values=c(alpha,lambda.1,lambda.2), 
+           labels=c(rep("Alpha",7),rep('Lambda 1',7), rep('Lambda 2',7))) %>%
+  ggplot(aes(x = missingness, y = values, group = labels, color = labels, shape = labels)) +
+  geom_line() +  # Add lines
+  geom_point(size = 3) +  # Add points with a specified size
+  scale_color_manual(values = c("Alpha" = "red", "Lambda 1" = "green", "Lambda 2" = "blue")) +
+  scale_shape_manual(values = c("Alpha" = 17, "Lambda 1" = 15, "Lambda 2" = 18)) +
+  theme_minimal() +  # Use a minimal theme
+  labs(x = "missing %", y = "Hyperparameter value", title = "Hyperparameters vs missing percentage", 
+       subtitle = "Settings are the same as the previous plot") +
+  theme(legend.position = "bottom") 
+```
+
+plot C
+
+```{r}
+
+gen.dat <- generate_simulation_data_ysf(2,700,700,5,10,missing_prob = 0.6)
+cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$W,
+                   n_folds=5, 
+                   lambda.1_grid = seq(0,2,length=20),
+                   lambda.2_grid = seq(.9, 0.1, length=20),
+                   alpha_grid = seq(0.992, 1, length=10),
+                   numCores = 8,n1n2_optimized = TRUE)
+optim_values = list(alpha=1, lambda.1=0, lambda.2=0.1421053)
+#optim_values = list(alpha=1, lambda.1=0, lambda.2=0.1421053)
+
+
+RMSE_vals = rep(NA, 30)
+lambda.1 = seq(0,2,length=10)
+lambda.2 = seq(.9, 0.1, length=10)
+alpha = seq(0.992, 1, length=10)
+for (i in 1:10){
+  mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, lambda.1[i], 
+                     optim_values$lambda.2, optim_values$alpha)
+  RMSE_vals[i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+
+    mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, optim_values$lambda.1, 
+                     lambda.2[i], optim_values$alpha)
+  RMSE_vals[10+i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+
+  mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, optim_values$lambda.1, 
+                       optim_values$lambda.2, alpha[i])
+  RMSE_vals[20+i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+}
+
+
+data.frame(RMSE=RMSE_vals, labels=rep(c("Lambda 1", "Lambda 2", "Alpha"),each=10),
+           values=c(lambda.1, lambda.2, alpha)) %>%
+  ggplot(aes(x = values, y = RMSE, group = labels, color = labels, shape = labels)) +
+  geom_line() +  # Add lines
+  geom_point(size = 3) +  # Add points with a specified size
+  scale_color_manual(values = c("Alpha" = "red", "Lambda 1" = "green", "Lambda 2" = "blue")) +
+  scale_shape_manual(values = c("Alpha" = 17, "Lambda 1" = 15, "Lambda 2" = 18)) +
+  theme_minimal() +  # Use a minimal theme
+  labs(x = "Hyperparameter value", y = "RMSE", title = "Hyperparameters change vs RMSE", 
+       subtitle = "Model 2; n1=n2=700; m=5; RMSE on the missing data.") +
+  theme(legend.position = "bottom")  
+```
+

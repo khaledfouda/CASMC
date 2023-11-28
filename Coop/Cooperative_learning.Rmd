@@ -1,0 +1,125 @@
+---
+title: "Untitled"
+author: "Khaled Fouda"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+```
+
+
+```{r , include=TRUE, eval=TRUE, message=FALSE,warning=FALSE}
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+library(magrittr)
+require(foreach)
+require(doParallel)
+```
+
+
+### Model definition and Notations
+
+Let the response vector $Y \in \Re^n$ and the covariate matrices $X \in \Re^{n\times p_x}$ and $Z \in \Re^{n \times p_z}$. The following quanitity is proposed for minimization
+
+$$
+\begin{aligned}
+min E[\frac{1}{2}(y - f_x(X)-f_z(Z))^2+\frac{\rho}{2}(f_x(X)-f_z(Z))^2]&&(1)
+\end{aligned}
+$$
+where the second term is the agreement penalty, encouraging the predictions from different views to agree. Equation 1 has fixed points:
+
+$$
+\begin{aligned}
+f_x(X) &= E[\frac{1}{1+\rho} (y+(1-\rho)f_z(Z))|X] &&\\
+f_z(Z) &= E[\frac{1}{1+\rho} (y+(1-\rho)f_x(X))|Z] && (2)
+\end{aligned}
+$$
+Where the objective can be optimized by repeatedly updating the fir for each covariate matrix in turn, holding the other matrix fixed.
+
+#### Case: Regularized Linear Regression
+
+Here, we assume that the columns of $X$ and $Z$ are standardized and y has mean zero. Hence, we can omit the intercept. The resulting objective function is:
+
+
+$$
+\begin{aligned}
+J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 + \frac{\rho}{2} ||X\theta_x-Z\theta_z||^2+\lambda_xP^x(\theta_x)+\lambda_zP^z(\theta_z) && (3)
+\end{aligned}
+$$
+
+Where $P^x(\theta_x)$ can be any regularization term. Let's assume $L_1$ regularization in $\theta_x$ and $\theta_z$. Moreover, the author showed that generally, there is no advantage to allowing $\lambda_x$ and $\lambda_z$ be different. The only case where it was appropriate to make them different is when one of the covariate matrices doen't contribute at all to the model. We will assume them equal for now, as did the author.
+
+$$
+\begin{aligned}
+J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 + \frac{\rho}{2} ||X\theta_x-Z\theta_z||^2+\lambda (||\theta_x||+||\theta_z||) && (5)
+\end{aligned}
+$$
+
+We could rewrite equation 5 as:
+
+$$
+\begin{aligned}
+J(\theta_x,\theta_z) = \frac{1}{2} || \tilde y - \tilde{X}\tilde\beta ||^2 +\lambda (||\theta_x||+||\theta_z||) && (7)
+\end{aligned}
+$$
+where
+
+
+$$
+\begin{aligned}
+\tilde X = \matrix{X&Z\\-\sqrt \rho X&\sqrt \rho X} && \tilde y = \matrix{y\\0} && \tilde \beta = \matrix{\theta_x\\\theta_z}&& (6)
+\end{aligned}
+$$
+Equation 5 is a form of lasso which then we could use the glmnet package to git the model. 
+Let the $Lasso(X,y,\lambda)$ denote the generic problem:
+
+$$
+\begin{aligned}
+min_\beta \frac{1}{2} || y - X\beta||^2 + \lambda || \beta|| && (8)
+\end{aligned}
+$$
+We could also incorporate $L_2$ penalties to the objective in 5. This option is included in their software implementation.
+
+
+$$
+\begin{aligned}
+\lambda[ (1-\alpha)(||\theta_x||+||\theta_z||)+\alpha(||\theta_x||^2_2/2+||\theta_z||^2_2/2) ] && (9)
+\end{aligned}
+$$
+
+### Solution
+
+The author provided two alogrithms to solve equation 5.
+
+#### Algorithm 1: Direct Calculation
+
+
+for each $\rho$ in the grid, we solve  $Lasso(\tilde X,\tilde y,\lambda)$ over a decreasing grid of $\lambda$.
+
+#### Algorithm 2: one-at-a-time for regularized linear regression
+
+the updates are (for each $\lambda_x$, $\lambda_z$, and $\rho$ in the grid):
+
+$$
+\begin{aligned}
+\hat\theta_x &= Lasso(X,y_x^*,\lambda_x) && where && y_x^*=\frac{y}{1+p}-\frac{(1-p)Z\theta_z}{1+p},\\ 
+\hat\theta_z &= Lasso(X,y_z^*,\lambda_z) && where && y_z^*=\frac{y}{1+p}-\frac{(1-p)X\theta_x}{1+p}.
+\end{aligned} 
+$$
+
+## Code and R package
+
+The simulation and implementation code can be found at
+
+https://github.com/dingdaisy/cooperative-learning
+
+and the R package Multiview at https://cran.r-project.org/web/packages/multiview/. The package includes functions to apply cooperative learning on two or more views using linear, poisson, and logistic regression. The package uses glmnet. The code for the functions can also be found in the github.
+
+$$
+\begin{aligned}
+\end{aligned}
+$$
