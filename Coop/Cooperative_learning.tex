@@ -1,0 +1,468 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Cooperative Learning},
+  pdfauthor={Khaled Fouda},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Cooperative Learning}
+\author{Khaled Fouda}
+\date{2023-11-29}
+
+\begin{document}
+\maketitle
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{path\_to\_code }\OtherTok{\textless{}{-}} \StringTok{"/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC\_MAO\_COOP/"}
+\NormalTok{knitr}\SpecialCharTok{::}\NormalTok{opts\_chunk}\SpecialCharTok{$}\FunctionTok{set}\NormalTok{(}\AttributeTok{echo =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{eval =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{knitr}\SpecialCharTok{::}\NormalTok{opts\_knit}\SpecialCharTok{$}\FunctionTok{set}\NormalTok{(}\AttributeTok{root.dir=}\NormalTok{path\_to\_code)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{path\_to\_code }\OtherTok{=} \StringTok{"./code\_files/"}
+\FunctionTok{library}\NormalTok{(knitr)}
+\FunctionTok{library}\NormalTok{(kableExtra)}
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\FunctionTok{library}\NormalTok{(magrittr)}
+\FunctionTok{require}\NormalTok{(foreach)}
+\FunctionTok{require}\NormalTok{(doParallel)}
+\FunctionTok{source}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(path\_to\_code,}\StringTok{"Mao\_import\_lib.R"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{model-definition-and-notations}{%
+\subsubsection{Model definition and
+Notations}\label{model-definition-and-notations}}
+
+Let the response vector \(Y \in \Re^n\) and the covariate matrices
+\(X \in \Re^{n\times p_x}\) and \(Z \in \Re^{n \times p_z}\). The
+following quanitity is proposed for minimization
+
+\[
+\begin{aligned}
+min E[\frac{1}{2}(y - f_x(X)-f_z(Z))^2+\frac{\rho}{2}(f_x(X)-f_z(Z))^2]&&(1)
+\end{aligned}
+\] where the second term is the agreement penalty, encouraging the
+predictions from different views to agree. Equation 1 has fixed points:
+
+\[
+\begin{aligned}
+f_x(X) &= E[\frac{1}{1+\rho} (y+(1-\rho)f_z(Z))|X] &&\\
+f_z(Z) &= E[\frac{1}{1+\rho} (y+(1-\rho)f_x(X))|Z] && (2)
+\end{aligned}
+\] Where the objective can be optimized by repeatedly updating the fir
+for each covariate matrix in turn, holding the other matrix fixed.
+
+\hypertarget{case-regularized-linear-regression}{%
+\paragraph{Case: Regularized Linear
+Regression}\label{case-regularized-linear-regression}}
+
+Here, we assume that the columns of \(X\) and \(Z\) are standardized and
+y has mean zero. Hence, we can omit the intercept. The resulting
+objective function is:
+
+\[
+\begin{aligned}
+J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 + \frac{\rho}{2} ||X\theta_x-Z\theta_z||^2+\lambda_xP^x(\theta_x)+\lambda_zP^z(\theta_z) && (3)
+\end{aligned}
+\]
+
+Where \(P^x(\theta_x)\) can be any regularization term. Let's assume
+\(L_1\) regularization in \(\theta_x\) and \(\theta_z\). Moreover, the
+author showed that generally, there is no advantage to allowing
+\(\lambda_x\) and \(\lambda_z\) be different. The only case where it was
+appropriate to make them different is when one of the covariate matrices
+doen't contribute at all to the model. We will assume them equal for
+now, as did the author.
+
+\[
+\begin{aligned}
+J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 + \frac{\rho}{2} ||X\theta_x-Z\theta_z||^2+\lambda (||\theta_x||+||\theta_z||) && (5)
+\end{aligned}
+\]
+
+We could rewrite equation 5 as:
+
+\[
+\begin{aligned}
+J(\theta_x,\theta_z) = \frac{1}{2} || \tilde y - \tilde{X}\tilde\beta ||^2 +\lambda (||\theta_x||+||\theta_z||) && (7)
+\end{aligned}
+\] where
+
+\[
+\begin{aligned}
+\tilde X = \matrix{X&Z\\-\sqrt \rho X&\sqrt \rho X} && \tilde y = \matrix{y\\0} && \tilde \beta = \matrix{\theta_x\\\theta_z}&& (6)
+\end{aligned}
+\] Equation 5 is a form of lasso which then we could use the glmnet
+package to git the model. Let the \(Lasso(X,y,\lambda)\) denote the
+generic problem:
+
+\[
+\begin{aligned}
+min_\beta \frac{1}{2} || y - X\beta||^2 + \lambda || \beta|| && (8)
+\end{aligned}
+\] We could also incorporate \(L_2\) penalties to the objective in 5.
+This option is included in their software implementation.
+
+\[
+\begin{aligned}
+\lambda[ (1-\alpha)(||\theta_x||+||\theta_z||)+\alpha(||\theta_x||^2_2/2+||\theta_z||^2_2/2) ] && (9)
+\end{aligned}
+\]
+
+\hypertarget{solution}{%
+\subsubsection{Solution}\label{solution}}
+
+The author provided two alogrithms to solve equation 5.
+
+\hypertarget{algorithm-1-direct-calculation}{%
+\paragraph{Algorithm 1: Direct
+Calculation}\label{algorithm-1-direct-calculation}}
+
+for each \(\rho\) in the grid, we solve
+\(Lasso(\tilde X,\tilde y,\lambda)\) over a decreasing grid of
+\(\lambda\).
+
+\hypertarget{algorithm-2-one-at-a-time-for-regularized-linear-regression}{%
+\paragraph{Algorithm 2: one-at-a-time for regularized linear
+regression}\label{algorithm-2-one-at-a-time-for-regularized-linear-regression}}
+
+the updates are (for each \(\lambda_x\), \(\lambda_z\), and \(\rho\) in
+the grid):
+
+\[
+\begin{aligned}
+\hat\theta_x &= Lasso(X,y_x^*,\lambda_x) && where && y_x^*=\frac{y}{1+p}-\frac{(1-p)Z\theta_z}{1+p},\\ 
+\hat\theta_z &= Lasso(X,y_z^*,\lambda_z) && where && y_z^*=\frac{y}{1+p}-\frac{(1-p)X\theta_x}{1+p}.
+\end{aligned} 
+\]
+
+\hypertarget{code-and-r-package}{%
+\subsection{Code and R package}\label{code-and-r-package}}
+
+The simulation and implementation code can be found at
+
+\url{https://github.com/dingdaisy/cooperative-learning}
+
+and the R package Multiview at
+\url{https://cran.r-project.org/web/packages/multiview/}. The package
+includes functions to apply cooperative learning on two or more views
+using linear, poisson, and logistic regression. The package uses glmnet.
+The code for the functions can also be found in the github.
+
+\hypertarget{section}{%
+\subsection{----------------------------}\label{section}}
+
+\hypertarget{mao-coop-model}{%
+\section{Mao-Coop Model}\label{mao-coop-model}}
+
+The following model is introduced by Youssef in page 4 of his notes.
+
+\begin{equation}
+    A = (XA + \Theta_X) + (ZB + \Theta_Z)^T,\\
+    Y = (A+E) * W
+\end{equation}
+
+with the following loss function
+
+\[
+\begin{align}
+    \text{Loss-3} =& \left\|  Y - (XA + \Theta_X) - (ZB + \Theta_Z)^T \right\|_F^2 +\\& \rho \left\| (XA + \Theta_X) - (ZB + \Theta_Z)^T \right\|_F^2 +\\
+    & \lambda_1 \left\| A \right\|_F^2 + \lambda_2 \left( (1 - \alpha_1) \left\| \Theta_X \right\|_F^2 + \alpha_1 \left\| \Theta_X \right\|_* \right)+\\
+    & \lambda_3 \left\| B \right\|_F^2 + \lambda_4 \left( (1 - \alpha_2) \left\| \Theta_Z \right\|_F^2 + \alpha_2 \left\| \Theta_Z \right\|_* \right).&&(Y0)
+\end{align}
+\]
+
+with \(\Theta_X\) and \(\Theta_Z\) low rank matrices that we hope it
+will capture the part of \(Y\) that is not linearly explained by either
+\(X\) or \(Z\). Furthermore, assume that the column spaces of \(X\) and
+\(\Theta_X\) are orthogonal, and that the column spaces of \(Z\) and
+\(\Theta_Z\) are orthogonal.
+
+To get the quantities of interest, a possible approach is to solve in an
+iterative way the following
+
+\[
+\begin{aligned}
+\hat{A}, \hat{\Theta}_X =& \arg \min_{A,\Theta_X} \left\| \frac{1}{1 + \rho}  Y - \frac{1 - \rho}{1 + \rho} (ZB + \Theta_Z)^T - (XA + \Theta_X) \right\|_F^2 + \\
+ &\lambda_1 \left\| A \right\|_F^2 + \lambda_2 \left((1 - \alpha_1) \left\| \Theta_X \right\|_F^2 + \alpha_1 \left\| \Theta_X \right\|_* \right), && (Y1) \\
+\hat{Z}, \hat{\Theta}_Z =& \arg \min_{B,\Theta_Z} \left\| \frac{1}{1 + \rho} Y^T - \frac{1 - \rho}{1 + \rho} (XA + \Theta_X)^T - (ZB + \Theta_Z) \right\|_F^2 +\\
+ &\lambda_3 \left\| B \right\|_F^2 + \lambda_4 \left((1 - \alpha_2) \left\| \Theta_Z \right\|_F^2 + \alpha_2 \left\| \Theta_Z \right\|_* \right). && (Y2)
+\end{aligned}
+\]
+
+\hypertarget{interpretation-of-the-solution}{%
+\subsubsection{Interpretation of the
+solution}\label{interpretation-of-the-solution}}
+
+The the first two terms in the loss in (Y0) has the same form as in
+Mao's formula and hence if we replace these terms with following two
+terms
+
+\[
+\| f_x(X) - \frac{y}{1+\rho} - \frac{1-\rho}{1+\rho}f_z(Z)\|^2 \\
+\| f_z(Z) - \frac{y}{1+\rho} - \frac{1-\rho}{1+\rho}f_x(x)\|^2
+\] where in our case \(f_x(X)=XA+\Theta_X\) and
+\(f_z(Z)=(ZB+\Theta_Z)^T\).
+
+\hypertarget{connection-to-mao}{%
+\subsubsection{Connection to Mao}\label{connection-to-mao}}
+
+In order to iteratively solve (Y1) and (Y2) using an a method similar to
+the one-at-a-time algorithm, we will apply Mao method to minimize each
+formula. First, we need to have them in the form of equations (4) and
+(5) from Mao's paper (check the other html file).
+
+The regularization terms match exactly the form and hence we don't need
+to adjust them. For the first term in (Y1), let
+\[Y^* = \frac{\ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_z}(Z) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T\]
+where \(\hat {f_z}(Z) = Z\hat{B}+\hat{\Theta}_Z\) are the estimates from
+fitting (Y2) in the previous iteration.
+
+Similarly, for the first term in (Y2), let
+
+\[Y^* = \frac{\hat Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)\]
+where \(\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X\) are the estimates from
+fitting (Y1) in the previous iteration.
+
+\hypertarget{implementation}{%
+\subsubsection{Implementation}\label{implementation}}
+
+\hypertarget{note}{%
+\paragraph{Note:}\label{note}}
+
+In Youssef's implementation, a \(\rho=1\) was assumed. That means that
+we are fitting two different models and taking the average of the
+estimation of each. In that case, there's no benefit from applying the
+Mao-Coop model and it would be equivalent to fit two different Mao
+models and take the final average.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Make sure to run Mao\_import\_lib.R before running this file.}
+
+\NormalTok{Mao\_Coop\_fit }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(A, X, Z, W, }\AttributeTok{maxiter=}\DecValTok{100}\NormalTok{, }\AttributeTok{epsilon=}\FloatTok{1e{-}6}\NormalTok{,}
+                         \AttributeTok{rho =} \DecValTok{1}\NormalTok{, }\CommentTok{\# the agreement penalty}
+                         \AttributeTok{n\_folds=}\DecValTok{5}\NormalTok{,}
+                         \AttributeTok{lambda.1\_grid =} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{2}\NormalTok{,}\AttributeTok{length=}\DecValTok{10}\NormalTok{),}
+                         \AttributeTok{lambda.2\_grid =} \FunctionTok{seq}\NormalTok{(.}\DecValTok{9}\NormalTok{, }\DecValTok{0}\NormalTok{, }\AttributeTok{length=}\DecValTok{10}\NormalTok{),}
+                         \AttributeTok{alpha\_grid =} \FunctionTok{seq}\NormalTok{(}\FloatTok{0.992}\NormalTok{, }\DecValTok{1}\NormalTok{, }\AttributeTok{length=}\DecValTok{5}\NormalTok{),}
+                         \AttributeTok{numCores =} \DecValTok{4}\NormalTok{,}
+                         \AttributeTok{n1n2\_optimized =} \ConstantTok{TRUE}\NormalTok{,}
+                         \AttributeTok{theta\_estimator =}\NormalTok{ theta\_default,}
+                         \AttributeTok{seed =} \DecValTok{2023}\NormalTok{)\{}
+   \CommentTok{\#\textquotesingle{} Input:}
+   \CommentTok{\#\textquotesingle{}       A: The response matrix of dimension n1 by n2. We assume that Y = A * W}
+   \CommentTok{\#\textquotesingle{}       X: The row covariates of dimension n1 by m1}
+   \CommentTok{\#\textquotesingle{}       Z: The column covariates of dimension n2 by m2}
+   \CommentTok{\#\textquotesingle{}       W: Is the mask matrix with the same dimension as Y}
+   \CommentTok{\#\textquotesingle{}       niter:}
+   \CommentTok{\#\textquotesingle{} }
+   \CommentTok{\#\textquotesingle{} Output:}
+   \CommentTok{\#\textquotesingle{}       A.hat}
+   \CommentTok{\#\textquotesingle{} {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\NormalTok{   Y }\OtherTok{=}\NormalTok{ A }\SpecialCharTok{*}\NormalTok{ W}
+\NormalTok{   Y\_tr }\OtherTok{=} \FunctionTok{t}\NormalTok{(Y)}
+\NormalTok{   A\_tr }\OtherTok{=} \FunctionTok{t}\NormalTok{(A)}
+\NormalTok{   W\_tr }\OtherTok{=} \FunctionTok{t}\NormalTok{(W)}
+   \CommentTok{\# to obtain initial estimates, we run the MAO function on each covariate matrix individually}
+\NormalTok{   best\_param }\OtherTok{=} \FunctionTok{Mao.cv}\NormalTok{(A, X, Y, W, n\_folds, lambda}\FloatTok{.1}\NormalTok{\_grid, lambda}\FloatTok{.2}\NormalTok{\_grid, alpha\_grid, seed,}
+\NormalTok{                         numCores, n1n2\_optimized, theta\_estimator)}\SpecialCharTok{$}\NormalTok{best\_parameters}
+\NormalTok{   A.hat\_x }\OtherTok{=} \FunctionTok{Mao.fit}\NormalTok{(Y, X, W, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.1}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.2}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{alpha, }
+\NormalTok{                     n1n2\_optimized, theta\_estimator )}\SpecialCharTok{$}\NormalTok{A\_hat}
+   
+   
+\NormalTok{   best\_param }\OtherTok{=} \FunctionTok{Mao.cv}\NormalTok{(A\_tr, Z, Y\_tr, W\_tr, n\_folds, lambda}\FloatTok{.1}\NormalTok{\_grid, lambda}\FloatTok{.2}\NormalTok{\_grid, alpha\_grid, seed,}
+\NormalTok{                         numCores, n1n2\_optimized, theta\_estimator)}\SpecialCharTok{$}\NormalTok{best\_parameters}
+\NormalTok{   A.hat\_z }\OtherTok{=} \FunctionTok{t}\NormalTok{(}\FunctionTok{Mao.fit}\NormalTok{(Y\_tr, Z, W\_tr, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.1}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.2}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{alpha, }
+\NormalTok{                       n1n2\_optimized, theta\_estimator )}\SpecialCharTok{$}\NormalTok{A\_hat)}
+   
+   \CommentTok{\# reporting test errors}
+\NormalTok{   test\_error\_x }\OtherTok{=} \FunctionTok{test\_error}\NormalTok{(A.hat\_x[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{], A[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{])}
+\NormalTok{   test\_error\_z }\OtherTok{=} \FunctionTok{test\_error}\NormalTok{(A.hat\_z[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{], A[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{])}
+   \CommentTok{\#print(test\_error\_z)}
+\NormalTok{   test\_error\_avg }\OtherTok{=} \FunctionTok{test\_error}\NormalTok{(((A.hat\_x}\SpecialCharTok{+}\NormalTok{A.hat\_z)}\SpecialCharTok{/}\DecValTok{2}\NormalTok{)[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{], A[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{])}
+   \FunctionTok{print}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"Test error using only X is:"}\NormalTok{,}
+         \FunctionTok{round}\NormalTok{(test\_error\_x,}\DecValTok{5}\NormalTok{),}
+         \StringTok{", and using only Z:"}\NormalTok{,}
+         \FunctionTok{round}\NormalTok{(test\_error\_z,}\DecValTok{5}\NormalTok{),}
+         \StringTok{", and using their average:"}\NormalTok{,}
+         \FunctionTok{round}\NormalTok{(test\_error\_avg,}\DecValTok{5}\NormalTok{)}
+\NormalTok{   ))}
+   
+   
+   \CommentTok{\# We assume to row covariates are minimized first for now.}
+\NormalTok{   iter }\OtherTok{=} \DecValTok{0}
+\NormalTok{   n1 }\OtherTok{=} \FunctionTok{dim}\NormalTok{(Y)[}\DecValTok{1}\NormalTok{]}
+\NormalTok{   n2 }\OtherTok{=} \FunctionTok{dim}\NormalTok{(Y)[}\DecValTok{2}\NormalTok{]}
+\NormalTok{   A.hat }\OtherTok{=}\NormalTok{ A.hat\_x }\SpecialCharTok{+}\NormalTok{ A.hat\_z}
+\NormalTok{   rho}\FloatTok{.1} \OtherTok{=} \DecValTok{1}\SpecialCharTok{/}\NormalTok{(}\DecValTok{1}\SpecialCharTok{+}\NormalTok{rho)}
+\NormalTok{   rho}\FloatTok{.2} \OtherTok{=}\NormalTok{ (}\DecValTok{1}\SpecialCharTok{{-}}\NormalTok{rho)}
+\NormalTok{   diff }\OtherTok{=} \ConstantTok{Inf}
+   
+   \ControlFlowTok{while}\NormalTok{(iter }\SpecialCharTok{\textless{}}\NormalTok{ maxiter }\SpecialCharTok{\&}\NormalTok{ diff }\SpecialCharTok{\textgreater{}}\NormalTok{ epsilon)\{}
+      
+      \CommentTok{\# 1. row covariates, (Y1)   }
+\NormalTok{      y.star }\OtherTok{=}\NormalTok{ rho}\FloatTok{.1} \SpecialCharTok{*}\NormalTok{ (Y }\SpecialCharTok{{-}}\NormalTok{ rho}\FloatTok{.2} \SpecialCharTok{*}\NormalTok{ A.hat\_z)}
+\NormalTok{      best\_param }\OtherTok{=} \FunctionTok{Mao.cv}\NormalTok{(A, X, y.star, W, n\_folds, lambda}\FloatTok{.1}\NormalTok{\_grid, lambda}\FloatTok{.2}\NormalTok{\_grid, alpha\_grid, seed,}
+\NormalTok{                            numCores, n1n2\_optimized, theta\_estimator)}\SpecialCharTok{$}\NormalTok{best\_parameters}
+\NormalTok{      A.hat\_x }\OtherTok{=} \FunctionTok{Mao.fit}\NormalTok{(y.star, X, W, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.1}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.2}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{alpha, }
+\NormalTok{                        n1n2\_optimized, theta\_estimator )}\SpecialCharTok{$}\NormalTok{A\_hat}
+      \CommentTok{\# 2. Column covariates (Y2)}
+\NormalTok{      y.star }\OtherTok{=}\NormalTok{ rho}\FloatTok{.1} \SpecialCharTok{*}\NormalTok{ (Y\_tr }\SpecialCharTok{{-}}\NormalTok{ rho}\FloatTok{.2} \SpecialCharTok{*} \FunctionTok{t}\NormalTok{(A.hat\_x))}
+\NormalTok{      best\_param }\OtherTok{=} \FunctionTok{Mao.cv}\NormalTok{(A\_tr, Z, y.star, W\_tr, n\_folds, lambda}\FloatTok{.1}\NormalTok{\_grid, lambda}\FloatTok{.2}\NormalTok{\_grid, alpha\_grid, seed,}
+\NormalTok{                            numCores, n1n2\_optimized, theta\_estimator)}\SpecialCharTok{$}\NormalTok{best\_parameters}
+\NormalTok{      A.hat\_z }\OtherTok{=} \FunctionTok{t}\NormalTok{(}\FunctionTok{Mao.fit}\NormalTok{(y.star, Z, W\_tr, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.1}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{lambda}\FloatTok{.2}\NormalTok{, best\_param}\SpecialCharTok{$}\NormalTok{alpha, }
+\NormalTok{                          n1n2\_optimized, theta\_estimator )}\SpecialCharTok{$}\NormalTok{A\_hat)}
+      \CommentTok{\# update stopping criteria}
+\NormalTok{      diff }\OtherTok{=} \FunctionTok{sqrt}\NormalTok{(}\FunctionTok{mean}\NormalTok{((A.hat }\SpecialCharTok{{-}}\NormalTok{ A.hat\_x }\SpecialCharTok{{-}}\NormalTok{ A.hat\_z)}\SpecialCharTok{**}\DecValTok{2}\NormalTok{))}
+\NormalTok{      A.hat }\OtherTok{=}\NormalTok{ A.hat\_x }\SpecialCharTok{+}\NormalTok{ A.hat\_z}
+\NormalTok{      iter }\OtherTok{=}\NormalTok{ iter }\SpecialCharTok{+} \DecValTok{1}
+\NormalTok{      test\_error\_Coop }\OtherTok{=} \FunctionTok{test\_error}\NormalTok{(A.hat[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{], A[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{])}
+      \FunctionTok{print}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"Iteration"}\NormalTok{,iter, }\StringTok{"{-} test MSE ="}\NormalTok{,test\_error\_Coop, }\StringTok{"{-} diff ="}\NormalTok{,diff))}
+\NormalTok{   \}}
+   \ControlFlowTok{if}\NormalTok{(iter }\SpecialCharTok{\textgreater{}=}\NormalTok{ maxiter)\{}
+      \FunctionTok{print}\NormalTok{(}\StringTok{"Reached Max iterations before converging."}\NormalTok{)}
+\NormalTok{   \}}\ControlFlowTok{else}
+      \FunctionTok{print}\NormalTok{(}\StringTok{"Converged."}\NormalTok{)}
+   
+\NormalTok{   test\_error\_Coop }\OtherTok{=} \FunctionTok{test\_error}\NormalTok{(A.hat[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{], A[W}\SpecialCharTok{==}\DecValTok{0}\NormalTok{])}
+   \FunctionTok{print}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"Test error resulted from applying the Coop Model is"}\NormalTok{,test\_error\_Coop))}
+   \FunctionTok{return}\NormalTok{(A.hat)}
+\NormalTok{\} }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{gen.dat }\OtherTok{\textless{}{-}} \FunctionTok{generate\_simulation\_data\_ysf}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{200}\NormalTok{,}\DecValTok{200}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{, }\AttributeTok{missing\_prob =}\FloatTok{0.9}\NormalTok{ ,}\AttributeTok{coll=}\ConstantTok{TRUE}\NormalTok{)}
+
+\NormalTok{A.hat }\OtherTok{\textless{}{-}} \FunctionTok{Mao\_Coop\_fit}\NormalTok{(gen.dat}\SpecialCharTok{$}\NormalTok{A, gen.dat}\SpecialCharTok{$}\NormalTok{X, gen.dat}\SpecialCharTok{$}\NormalTok{Z, gen.dat}\SpecialCharTok{$}\NormalTok{W,}\DecValTok{10}\NormalTok{,}\FloatTok{1e{-}3}\NormalTok{,}\DecValTok{1}\NormalTok{,}\AttributeTok{alpha\_grid =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{))}
+\NormalTok{A.hat }\OtherTok{\textless{}{-}} \FunctionTok{Mao\_Coop\_fit}\NormalTok{(gen.dat}\SpecialCharTok{$}\NormalTok{A, gen.dat}\SpecialCharTok{$}\NormalTok{X, gen.dat}\SpecialCharTok{$}\NormalTok{Z, gen.dat}\SpecialCharTok{$}\NormalTok{W,}\DecValTok{20}\NormalTok{,}\FloatTok{1e{-}3}\NormalTok{,}\FloatTok{0.9}\NormalTok{,}\AttributeTok{alpha\_grid =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{))}
+\NormalTok{A.hat }\OtherTok{\textless{}{-}} \FunctionTok{Mao\_Coop\_fit}\NormalTok{(gen.dat}\SpecialCharTok{$}\NormalTok{A, gen.dat}\SpecialCharTok{$}\NormalTok{X, gen.dat}\SpecialCharTok{$}\NormalTok{Z, gen.dat}\SpecialCharTok{$}\NormalTok{W,}\DecValTok{10}\NormalTok{,}\FloatTok{1e{-}3}\NormalTok{,}\FloatTok{0.5}\NormalTok{,}\AttributeTok{alpha\_grid =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{))}
+\NormalTok{A.hat }\OtherTok{\textless{}{-}} \FunctionTok{Mao\_Coop\_fit}\NormalTok{(gen.dat}\SpecialCharTok{$}\NormalTok{A, gen.dat}\SpecialCharTok{$}\NormalTok{X, gen.dat}\SpecialCharTok{$}\NormalTok{Z, gen.dat}\SpecialCharTok{$}\NormalTok{W,}\DecValTok{4}\NormalTok{,}\FloatTok{1e{-}3}\NormalTok{,}\FloatTok{0.3}\NormalTok{,}\AttributeTok{alpha\_grid =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{))}
+\NormalTok{A.hat }\OtherTok{\textless{}{-}} \FunctionTok{Mao\_Coop\_fit}\NormalTok{(gen.dat}\SpecialCharTok{$}\NormalTok{A, gen.dat}\SpecialCharTok{$}\NormalTok{X, gen.dat}\SpecialCharTok{$}\NormalTok{Z, gen.dat}\SpecialCharTok{$}\NormalTok{W,}\DecValTok{4}\NormalTok{,}\FloatTok{1e{-}3}\NormalTok{,}\FloatTok{0.01}\NormalTok{,}\AttributeTok{alpha\_grid =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\[
+\begin{aligned}
+\end{aligned}
+\]
+
+\end{document}

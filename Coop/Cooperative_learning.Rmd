@@ -2,13 +2,15 @@
 title: "Cooperative Learning"
 author: "Khaled Fouda"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 
 ```{r setup, include=TRUE}
 path_to_code <- "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
-knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE,  cache = TRUE)
 knitr::opts_knit$set(root.dir=path_to_code)
 ```
 
@@ -203,11 +205,80 @@ In Youssef's implementation, a $\rho=1$ was assumed. That means  that we are fit
 
 gen.dat <- generate_simulation_data_ysf(1,200,200,5,5, missing_prob =0.9 ,coll=TRUE)
 
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,5,1e-3,1,alpha_grid = c(1))
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,5,1e-3,0.5,alpha_grid = c(1))
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,1,alpha_grid = c(1))
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.7,alpha_grid = c(1))
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.9,alpha_grid = c(1))
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.5,alpha_grid = c(1))
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,4,1e-3,0.3,alpha_grid = c(1))
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,4,1e-3,0.01,alpha_grid = c(1))
 
 ```
 
+
+I slightly modified Youssef's implementation so that the simulation parameters, error function, and the seed are equivalent. I ran his Mao_coop.R file and copied the output below.
+```
+
+[1] "-----------------------------------------------------------------"
+[1] 1
+[1] "Agreement Penalty = 1"
+[1] "MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831"
+[1] "iter=1, diff=0.173776702075844, error=0.796066844957261"
+[1] "iter=2, diff=0.356368431975322, error=0.782690155609017"
+[1] "iter=3, diff=0.28812858324541, error=0.797803826529267"
+[1] "iter=4, diff=0.155496291739101, error=0.784199848873508"
+[1] "iter=5, diff=0.161892463998242, error=0.793393444968743"
+[1] "iter=6, diff=0.317057152329823, error=0.801405577581984"
+[1] "iter=7, diff=0.30676328528986, error=0.786143081889125"
+[1] "iter=8, diff=0.253978797736027, error=0.791680055210597"
+[1] "iter=9, diff=0.232163178179326, error=0.787114557949007"
+[1] "iter=10, diff=0.195383853747667, error=0.777777308274588"
+[1] "Run time is 7.306 minutes."
+[1] "Average Run time per iteration is 0.7306 minutes."
+[1] "Agreement Penalty = 0.9"
+[1] "MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831"
+[1] "iter=1, diff=0.169268570227897, error=0.803307247628354"
+[1] "iter=2, diff=0.469387820969411, error=0.773461387834371"
+[1] "iter=3, diff=0.304893512098015, error=0.792090767992488"
+[1] "iter=4, diff=0.159194959780592, error=0.778001412320058"
+[1] "iter=5, diff=0.162989493266899, error=0.787199603208735"
+[1] "iter=6, diff=0.330084977654404, error=0.795134019694121"
+[1] "iter=7, diff=0.319300139244977, error=0.778424221211666"
+[1] "iter=8, diff=0.305190031566121, error=0.785899328679497"
+[1] "iter=9, diff=0.256189653312628, error=0.781221339556741"
+[1] "iter=10, diff=0.216635183327255, error=0.774563252949486"
+[1] "Run time is 7.113 minutes."
+[1] "Average Run time per iteration is 0.7113 minutes."
+[1] "Agreement Penalty = 0.5"
+[1] "MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831"
+[1] "iter=1, diff=0.437579418283936, error=0.771149085297839"
+[1] "iter=2, diff=0.388586744717726, error=0.758194105488018"
+[1] "iter=3, diff=0.364672338096423, error=0.770082761328291"
+[1] "iter=4, diff=0.705630200404503, error=0.792106327352782"
+[1] "iter=5, diff=3.69816718360667, error=1.74572414293533"
+[1] "iter=6, diff=17.1979821784853, error=40.6609818807247"
+[1] "iter=7, diff=74.7561662437278, error=851.364738190654"
+[1] "iter=8, diff=1019.60118720525, error=121248.288585989"
+[1] "iter=9, diff=10001.0894671484, error=18772692.368711"
+[1] "iter=10, diff=15864.3035230347, error=78614411.1213746"
+[1] "Run time is 4.903 minutes."
+[1] "Average Run time per iteration is 0.4903 minutes."
+[1] "Agreement Penalty = 0.01"
+[1] "MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831"
+[1] "iter=1, diff=26.5885395767465, error=0.833846795289895"
+[1] "iter=2, diff=4782.22036581764, error=5963.34286409363"
+[1] "iter=3, diff=1434669.8962026, error=275865896.459691"
+[1] "iter=4, diff=317693232.190757, error=17168861336918"
+[1] "iter=5, diff=71429002792.437, error=867801519648958976"
+[1] "iter=6, diff=16058833633188.7, error=4.38630909079698e+22"
+[1] "iter=7, diff=3610384120048023, error=2.21706310529362e+27"
+[1] "iter=8, diff=811694908362535168, error=1.12061615133616e+32"
+[1] "iter=9, diff=1.82487126675294e+20, error=5.66416244819358e+36"
+[1] "iter=10, diff=4.78221397385797e+22, error=2.80225794726522e+41"
+[1] "Run time is 4.977 minutes."
+[1] "Average Run time per iteration is 0.4977 minutes."
+[1] "end ----------------"
+
+```
 
 
 $$

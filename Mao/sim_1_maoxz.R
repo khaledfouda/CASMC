@@ -22,8 +22,8 @@ W_data <- matrix( rbinom(n_rows*n_cols, 1, (1 - missing_prob) ) , nrow = n_rows)
 sink("sim1_07maoxz.txt", append = TRUE)
 print(c("mao_error_coop", "mao_error_x", "mao_error_z", "soft_error"))
 sink()
-
-for(iter_i in 1:50){
+print("-----------------------------------------------------------------")
+for(iter_i in 1:1){
   
   print(iter_i)
   
@@ -52,14 +52,22 @@ for(iter_i in 1:50){
   mask <- W_data
   
   
-  source("soft_mc.R")
-  source("mao_original_x.R")
-  source("mao_original_z.R")
+  #source("soft_mc.R")
+  #source("mao_original_x.R")
+  #source("mao_original_z.R")
+  max_iter <- 10
+  alpha <- 1  # the agreement penalty parameter
   source("mao_coop.R")
+  alpha <- 0.9  # the agreement penalty parameter
+  source("mao_coop.R")
+  alpha <- 0.5  # the agreement penalty parameter
+  source("mao_coop.R")
+  alpha <- 0.01  # the agreement penalty parameter
+  source("mao_coop.R")
+  print("end ----------------")
   
   sink("sim1_07maoxz.txt", append = TRUE)
-  print(c(round(mao_error_coop,4), round(mao_error_x,4), round(mao_error_z,4), round(soft_error,4)))
-  
+  #print(c(round(mao_error_coop,4), round(mao_error_x,4), round(mao_error_z,4), round(soft_error,4)))
   sink()
   
 }
