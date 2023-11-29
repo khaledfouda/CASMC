@@ -117,6 +117,58 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
    #   }
    # }
    # ************************************************************
+   if(numCores == 1){
+      
+      # fixing optimal values of lambda 1 and alpha and optimizing for alpha separately
+      lambda.1 = 0
+      alpha = 1
+      best_score = Inf
+      for(lambda.2 in lambda.2_grid){
+         score = 0
+         for(i in 1:n_folds){
+            data = fold_data[[i]]
+            # compute the estimates with a modified fit function
+            A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+            # Evaluate model performance using MSE
+            # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
+            # that is, the test fold isn't used at all.
+            #scores[i] = mean((data$A.test - A_hat_test)^2)
+            # -- EDIT: Using Mao's formula in page 205 to compute the test error
+            score = score + test_error(A_hat_test, data$A.test)
+         }
+         score = score / n_folds
+         
+         if(score < best_score){
+            best_score = score
+            best_params$lambda.2 = lambda.2
+         }
+      }
+      # fixing optimal values of lambda 2 and lambda 1 and optimizing for alpha separately
+      lambda.2 = best_params$lambda.2
+      lambda.1 = 0
+      best_score = Inf
+      for(alpha in alpha_grid){
+         score = 0
+         for(i in 1:n_folds){
+            data = fold_data[[i]]
+            # compute the estimates with a modified fit function
+            A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+            # Evaluate model performance using MSE
+            # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
+            # that is, the test fold isn't used at all.
+            #scores[i] = mean((data$A.test - A_hat_test)^2)
+            # -- EDIT: Using Mao's formula in page 205 to compute the test error
+            score = score + test_error(A_hat_test, data$A.test)
+         }
+         score = score / n_folds
+         
+         if(score < best_score){
+            best_score = score
+            best_params$alpha = alpha
+         }
+      }
+   
+   }else{
    # prepare the cluster
    cl <- makeCluster(numCores) 
    registerDoParallel(cl)
@@ -143,10 +195,12 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
    best_score <- best_result[3] / n_folds
    # close the cluster
    stopCluster(cl)
+   }
    #--------------------------------------------
    # fixing optimal values of lambda 2 and alpha and optimizing for lambda 1 separately
    lambda.2 = best_params$lambda.2
    alpha = best_params$alpha
+   best_score = Inf
    for(lambda.1 in lambda.1_grid){
       score = 0
       for(i in 1:n_folds){
@@ -167,6 +221,7 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
          best_params$lambda.1 = lambda.1
       }
    }
+   
    #---------------------------------------------------
    return(list(best_parameters = best_params, best_score = best_score))
    

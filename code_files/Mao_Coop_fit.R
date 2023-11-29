@@ -1,16 +1,17 @@
 
 # Make sure to run Mao_import_lib.R before running this file.
 
-Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
+Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6, 
                          rho = 1, # the agreement penalty
                          n_folds=5,
                          lambda.1_grid = seq(0,2,length=10),
                          lambda.2_grid = seq(.9, 0, length=10),
-                         alpha_grid = seq(0.992, 1, length=5),
+                         alpha_grid = seq(0.992, 1, length=10),
                          numCores = 4,
                          n1n2_optimized = TRUE,
                          theta_estimator = theta_default,
-                         seed = 2023){
+                         seed = 2023,
+                         tol=3){
    #' Input:
    #'       A: The response matrix of dimension n1 by n2. We assume that Y = A * W
    #'       X: The row covariates of dimension n1 by m1
@@ -62,7 +63,8 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
    rho.1 = 1/(1+rho)
    rho.2 = (1-rho)/(1+rho)
    diff = Inf
-   
+   tol_counter = 0
+   old_diff = Inf
    # If X is better fit then we start with it, if Z is better then we start with Z
    # The two while loops are identical except for the order of the two models.
    
@@ -89,6 +91,11 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
          iter = iter + 1
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
          print(paste("Iteration",iter, "- test MSE =",test_error_Coop, "- diff =",diff))
+         
+         # STOP if the difference has been increasing for 3 continuous iterations
+         if(diff >= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}
+         if(tol_counter >= tol) break
+         old_diff = diff
       }
    }else { # case 2: Z is better
       print("Z is better, Entering loop 2")
@@ -112,13 +119,21 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
          iter = iter + 1
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
          print(paste("Iteration",iter, "- test MSE =",test_error_Coop, "- diff =",diff))
+         
+         # STOP if the difference has been increasing for 3 continuous iterations
+         if(diff >= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}
+         if(tol_counter >= tol) break
+         old_diff = diff
+         
       }
    }
    
+   if(tol_counter>=tol) 
+      print(paste0("Diff did not decrease for ", tol, " iterations. Quitting before reaching Max iterations."))
    
    if(iter >= maxiter){
       print("Reached Max iterations before converging.")
-   }else
+   }else if(tol_counter < tol)
       print("Converged.")
    
    test_error_Coop = test_error(A.hat[W==0], A[W==0])
@@ -127,6 +142,6 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
    time_taken <- round(as.numeric(difftime(Sys.time(), start_time, units='mins')),3)   
    
    print(paste0("Run time is ",time_taken, " minutes."))
-   print(paste0("Average Run time per iteration is ",time_taken/iter, " minutes."))
+   print(paste0("Average Run time per iteration is ",round(time_taken/iter,3), " minutes."))
    return(A.hat)
 } 

@@ -6,14 +6,14 @@ library(purrr)
 source("SMC_functions6.R")
 
 set.seed(2023)
-n_rows <- 200
-n_cols <- 200
+n_rows <- 300
+n_cols <- 300
 
 
 X_cols <- 5
 Z_cols <- 5
 
-missing_prob <- 0.9
+missing_prob <- 0.8
 W_data <- matrix( rbinom(n_rows*n_cols, 1, (1 - missing_prob) ) , nrow = n_rows)
 
 ### sim1 data
@@ -60,9 +60,11 @@ for(iter_i in 1:1){
   source("mao_coop.R")
   alpha <- 0.9  # the agreement penalty parameter
   source("mao_coop.R")
+  alpha <- 0.7  # the agreement penalty parameter
+  source("mao_coop.R")
   alpha <- 0.5  # the agreement penalty parameter
   source("mao_coop.R")
-  alpha <- 0.01  # the agreement penalty parameter
+  alpha <- 0.3  # the agreement penalty parameter
   source("mao_coop.R")
   print("end ----------------")
   

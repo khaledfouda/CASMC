@@ -566,16 +566,17 @@ Mao-Coop model and it would be equivalent to fit two different Mao
 models and take the final average.</p>
 <pre class="r"><code># Make sure to run Mao_import_lib.R before running this file.
 
-Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
+Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6, 
                          rho = 1, # the agreement penalty
                          n_folds=5,
                          lambda.1_grid = seq(0,2,length=10),
                          lambda.2_grid = seq(.9, 0, length=10),
-                         alpha_grid = seq(0.992, 1, length=5),
+                         alpha_grid = seq(0.992, 1, length=10),
                          numCores = 4,
                          n1n2_optimized = TRUE,
                          theta_estimator = theta_default,
-                         seed = 2023){
+                         seed = 2023,
+                         tol=3){
    #&#39; Input:
    #&#39;       A: The response matrix of dimension n1 by n2. We assume that Y = A * W
    #&#39;       X: The row covariates of dimension n1 by m1
@@ -627,7 +628,8 @@ Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
    rho.1 = 1/(1+rho)
    rho.2 = (1-rho)/(1+rho)
    diff = Inf
-   
+   tol_counter = 0
+   old_diff = Inf
    # If X is better fit then we start with it, if Z is better then we start with Z
    # The two while loops are identical except for the order of the two models.
    
@@ -654,6 +656,11 @@ Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
          iter = iter + 1
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
          print(paste(&quot;Iteration&quot;,iter, &quot;- test MSE =&quot;,test_error_Coop, &quot;- diff =&quot;,diff))
+         
+         # STOP if the difference has been increasing for 3 continuous iterations
+         if(diff &gt;= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}
+         if(tol_counter &gt;= tol) break
+         old_diff = diff
       }
    }else { # case 2: Z is better
       print(&quot;Z is better, Entering loop 2&quot;)
@@ -677,13 +684,21 @@ Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
          iter = iter + 1
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
          print(paste(&quot;Iteration&quot;,iter, &quot;- test MSE =&quot;,test_error_Coop, &quot;- diff =&quot;,diff))
+         
+         # STOP if the difference has been increasing for 3 continuous iterations
+         if(diff &gt;= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}
+         if(tol_counter &gt;= tol) break
+         old_diff = diff
+         
       }
    }
    
+   if(tol_counter&gt;=tol) 
+      print(paste0(&quot;Diff did not decrease for &quot;, tol, &quot; iterations. Quitting before reaching Max iterations.&quot;))
    
    if(iter &gt;= maxiter){
       print(&quot;Reached Max iterations before converging.&quot;)
-   }else
+   }else if(tol_counter &lt; tol)
       print(&quot;Converged.&quot;)
    
    test_error_Coop = test_error(A.hat[W==0], A[W==0])
@@ -692,165 +707,215 @@ Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
    time_taken &lt;- round(as.numeric(difftime(Sys.time(), start_time, units=&#39;mins&#39;)),3)   
    
    print(paste0(&quot;Run time is &quot;,time_taken, &quot; minutes.&quot;))
-   print(paste0(&quot;Average Run time per iteration is &quot;,time_taken/iter, &quot; minutes.&quot;))
+   print(paste0(&quot;Average Run time per iteration is &quot;,round(time_taken/iter,3), &quot; minutes.&quot;))
    return(A.hat)
 } </code></pre>
-<pre class="r"><code>gen.dat &lt;- generate_simulation_data_ysf(1,200,200,5,5, missing_prob =0.9 ,coll=TRUE)
+<pre class="r"><code>gen.dat &lt;- generate_simulation_data_ysf(1,300,300,5,5, missing_prob =0.8 ,coll=TRUE)
 
-A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,1,alpha_grid = c(1))</code></pre>
-<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
-## [1] &quot;X is better, Entering loop 1&quot;
-## [1] &quot;Iteration 1 - test MSE = 0.417301654134852 - diff = 2.16700377298556&quot;
-## [1] &quot;Iteration 2 - test MSE = 0.417301654134852 - diff = 1.20742307162471e-16&quot;
+A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,1,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.2341 , and using only Z: 0.23317 , and using their average: 0.18031&quot;
+## [1] &quot;Z is better, Entering loop 2&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.158831199368738 - diff = 1.5636258096423&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.158831199368738 - diff = 9.63493294726007e-17&quot;
 ## [1] &quot;Converged.&quot;
-## [1] &quot;Test error resulted from applying the Coop Model is 0.417301654134852&quot;
-## [1] &quot;Run time is 0.446 minutes.&quot;
-## [1] &quot;Average Run time per iteration is 0.223 minutes.&quot;</code></pre>
-<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.7,alpha_grid = c(1))</code></pre>
-<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
-## [1] &quot;X is better, Entering loop 1&quot;
-## [1] &quot;Iteration 1 - test MSE = 0.971574734416882 - diff = 4.47232465821476&quot;
-## [1] &quot;Iteration 2 - test MSE = 0.751573140526138 - diff = 0.649843467626103&quot;
-## [1] &quot;Iteration 3 - test MSE = 0.770294444163049 - diff = 0.130437095695969&quot;
-## [1] &quot;Iteration 4 - test MSE = 0.771101795074133 - diff = 0.0525995463060885&quot;
-## [1] &quot;Iteration 5 - test MSE = 0.773494475808562 - diff = 0.0677953869164821&quot;
-## [1] &quot;Iteration 6 - test MSE = 0.814504128520591 - diff = 0.307960449247125&quot;
-## [1] &quot;Iteration 7 - test MSE = 2.07354096118534 - diff = 2.38926113538103&quot;
-## [1] &quot;Iteration 8 - test MSE = 105.855052692832 - diff = 21.9258008905176&quot;
-## [1] &quot;Iteration 9 - test MSE = 8880.8716810592 - diff = 201.689016073353&quot;
-## [1] &quot;Iteration 10 - test MSE = 751637.850360638 - diff = 1855.66899900721&quot;
-## [1] &quot;Iteration 11 - test MSE = 63628372.4895604 - diff = 17073.5529534263&quot;
-## [1] &quot;Iteration 12 - test MSE = 5386352121.89563 - diff = 157089.00985268&quot;
-## [1] &quot;Iteration 13 - test MSE = 455970702653.026 - diff = 1445329.16249967&quot;
-## [1] &quot;Iteration 14 - test MSE = 38599198299088.9 - diff = 13298032.1765713&quot;
-## [1] &quot;Iteration 15 - test MSE = 3267528073363408 - diff = 122351100.732832&quot;
-## [1] &quot;Iteration 16 - test MSE = 276605158463334624 - diff = 1125714728.62565&quot;
-## [1] &quot;Iteration 17 - test MSE = 23415379133929562112 - diff = 10357353664.4685&quot;
-## [1] &quot;Iteration 18 - test MSE = 1.98217550471273e+21 - diff = 95294812718.4552&quot;
-## [1] &quot;Iteration 19 - test MSE = 1.67796544648902e+23 - diff = 876778143216.408&quot;
-## [1] &quot;Iteration 20 - test MSE = 1.4204433606701e+25 - diff = 8066964928131.88&quot;
-## [1] &quot;Reached Max iterations before converging.&quot;
-## [1] &quot;Test error resulted from applying the Coop Model is 1.4204433606701e+25&quot;
-## [1] &quot;Run time is 5.792 minutes.&quot;
-## [1] &quot;Average Run time per iteration is 0.2896 minutes.&quot;</code></pre>
-<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.9,alpha_grid = c(1))</code></pre>
-<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
-## [1] &quot;X is better, Entering loop 1&quot;
-## [1] &quot;Iteration 1 - test MSE = 0.622226727946506 - diff = 3.23324435098125&quot;
-## [1] &quot;Iteration 2 - test MSE = 0.620846469362732 - diff = 0.974549504670923&quot;
-## [1] &quot;Iteration 3 - test MSE = 0.613856419245272 - diff = 0.420882012385279&quot;
-## [1] &quot;Iteration 4 - test MSE = 0.576176046792127 - diff = 0.371965900104941&quot;
-## [1] &quot;Iteration 5 - test MSE = 0.572330575158229 - diff = 0.0255795927268535&quot;
-## [1] &quot;Iteration 6 - test MSE = 0.5718270665524 - diff = 0.00515966106614206&quot;
-## [1] &quot;Iteration 7 - test MSE = 0.571739882434659 - diff = 0.00149357506023512&quot;
-## [1] &quot;Iteration 8 - test MSE = 0.571721409805719 - diff = 0.000536061300889109&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.158831199368738&quot;
+## [1] &quot;Run time is 0.531 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.266 minutes.&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.9,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.2341 , and using only Z: 0.23317 , and using their average: 0.18031&quot;
+## [1] &quot;Z is better, Entering loop 2&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.292691949963342 - diff = 1.97055089275583&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.237137967948044 - diff = 0.187343411698752&quot;
+## [1] &quot;Iteration 3 - test MSE = 0.234340804077737 - diff = 0.0160768480576573&quot;
+## [1] &quot;Iteration 4 - test MSE = 0.234172512451866 - diff = 0.00139562771248209&quot;
+## [1] &quot;Iteration 5 - test MSE = 0.234160961335861 - diff = 0.000123440877465837&quot;
 ## [1] &quot;Converged.&quot;
-## [1] &quot;Test error resulted from applying the Coop Model is 0.571721409805719&quot;
-## [1] &quot;Run time is 2.639 minutes.&quot;
-## [1] &quot;Average Run time per iteration is 0.329875 minutes.&quot;</code></pre>
-<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.5,alpha_grid = c(1))</code></pre>
-<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
-## [1] &quot;X is better, Entering loop 1&quot;
-## [1] &quot;Iteration 1 - test MSE = 1.33115502338261 - diff = 4.69777717591752&quot;
-## [1] &quot;Iteration 2 - test MSE = 1.62093347632141 - diff = 9.82799401715248&quot;
-## [1] &quot;Iteration 3 - test MSE = 28.6129062959577 - diff = 46.3677299719748&quot;
-## [1] &quot;Iteration 4 - test MSE = 649.468097664788 - diff = 171.681438627434&quot;
-## [1] &quot;Iteration 5 - test MSE = 7112.88588879757 - diff = 378.810610072841&quot;
-## [1] &quot;Iteration 6 - test MSE = 87134.7194094498 - diff = 646.510731231521&quot;
-## [1] &quot;Iteration 7 - test MSE = 512569.837161754 - diff = 1133.56168549224&quot;
-## [1] &quot;Iteration 8 - test MSE = 3103537.69333268 - diff = 2719.69916021118&quot;
-## [1] &quot;Iteration 9 - test MSE = 19525549.1881206 - diff = 6798.23307634922&quot;
-## [1] &quot;Iteration 10 - test MSE = 128002691.830077 - diff = 17492.9039030244&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.234160961335861&quot;
+## [1] &quot;Run time is 1.058 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.212 minutes.&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.7,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.2341 , and using only Z: 0.23317 , and using their average: 0.18031&quot;
+## [1] &quot;Z is better, Entering loop 2&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.397122041275328 - diff = 2.24571331816951&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.376614295741113 - diff = 0.462558543241603&quot;
+## [1] &quot;Iteration 3 - test MSE = 0.369012231456167 - diff = 0.205442756311299&quot;
+## [1] &quot;Iteration 4 - test MSE = 0.359953110021162 - diff = 0.142714353238243&quot;
+## [1] &quot;Iteration 5 - test MSE = 0.363262423249258 - diff = 0.170758058703261&quot;
+## [1] &quot;Iteration 6 - test MSE = 0.355788322072134 - diff = 0.101665931517551&quot;
+## [1] &quot;Iteration 7 - test MSE = 0.349745413965685 - diff = 0.0508282644939809&quot;
+## [1] &quot;Iteration 8 - test MSE = 0.348495517214361 - diff = 0.0136021064782257&quot;
+## [1] &quot;Iteration 9 - test MSE = 0.34825673148365 - diff = 0.00728194387021524&quot;
+## [1] &quot;Iteration 10 - test MSE = 0.348265455297475 - diff = 0.00641233899101208&quot;
+## [1] &quot;Iteration 11 - test MSE = 0.348352199555562 - diff = 0.00615093751050874&quot;
+## [1] &quot;Iteration 12 - test MSE = 0.348468030514232 - diff = 0.00598905103187355&quot;
+## [1] &quot;Iteration 13 - test MSE = 0.348597561524798 - diff = 0.00585589869551464&quot;
+## [1] &quot;Iteration 14 - test MSE = 0.348735512386758 - diff = 0.00573864235414477&quot;
+## [1] &quot;Iteration 15 - test MSE = 0.348879917244121 - diff = 0.00563407020254186&quot;
+## [1] &quot;Iteration 16 - test MSE = 0.349029978231277 - diff = 0.00554070067462742&quot;
+## [1] &quot;Iteration 17 - test MSE = 0.360404390726496 - diff = 0.265124652134638&quot;
+## [1] &quot;Iteration 18 - test MSE = 0.353122889333798 - diff = 0.240500843984812&quot;
+## [1] &quot;Iteration 19 - test MSE = 0.349862615344078 - diff = 0.0287997394107973&quot;
+## [1] &quot;Iteration 20 - test MSE = 0.348957703709522 - diff = 0.0117667519481447&quot;
 ## [1] &quot;Reached Max iterations before converging.&quot;
-## [1] &quot;Test error resulted from applying the Coop Model is 128002691.830077&quot;
-## [1] &quot;Run time is 3.026 minutes.&quot;
-## [1] &quot;Average Run time per iteration is 0.3026 minutes.&quot;</code></pre>
-<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,4,1e-3,0.3,alpha_grid = c(1))</code></pre>
-<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
-## [1] &quot;X is better, Entering loop 1&quot;
-## [1] &quot;Iteration 1 - test MSE = 2.39147629952704 - diff = 5.73618497415112&quot;
-## [1] &quot;Iteration 2 - test MSE = 45.4861907095357 - diff = 68.6280380890539&quot;
-## [1] &quot;Iteration 3 - test MSE = 10578.8671313348 - diff = 937.491659682562&quot;
-## [1] &quot;Iteration 4 - test MSE = 877277.178393559 - diff = 6030.15948930924&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.348957703709522&quot;
+## [1] &quot;Run time is 4.91 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.246 minutes.&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.5,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.2341 , and using only Z: 0.23317 , and using their average: 0.18031&quot;
+## [1] &quot;Z is better, Entering loop 2&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.286901647389222 - diff = 1.91123931577587&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.287243238702845 - diff = 0.0594811451234302&quot;
+## [1] &quot;Iteration 3 - test MSE = 0.286731523991894 - diff = 0.058779050654634&quot;
+## [1] &quot;Iteration 4 - test MSE = 0.287507803695907 - diff = 0.0655666966332957&quot;
+## [1] &quot;Iteration 5 - test MSE = 0.290881235010496 - diff = 0.0764796771536316&quot;
+## [1] &quot;Iteration 6 - test MSE = 0.327496081022205 - diff = 0.394883223558881&quot;
+## [1] &quot;Diff did not decrease for 3 iterations. Quitting before reaching Max iterations.&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.327496081022205&quot;
+## [1] &quot;Run time is 1.617 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.27 minutes.&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.3,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.2341 , and using only Z: 0.23317 , and using their average: 0.18031&quot;
+## [1] &quot;Z is better, Entering loop 2&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.21961062732664 - diff = 1.80314877284822&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.591493138075253 - diff = 1.10729020033273&quot;
+## [1] &quot;Iteration 3 - test MSE = 0.457548523618805 - diff = 0.429312692744246&quot;
+## [1] &quot;Iteration 4 - test MSE = 0.887501200718559 - diff = 0.932104163759668&quot;
+## [1] &quot;Iteration 5 - test MSE = 0.683446459671551 - diff = 0.552801608176744&quot;
+## [1] &quot;Iteration 6 - test MSE = 1.08683683428681 - diff = 0.897834031696679&quot;
+## [1] &quot;Iteration 7 - test MSE = 0.780706709646463 - diff = 0.715460891425139&quot;
+## [1] &quot;Iteration 8 - test MSE = 0.875854330452032 - diff = 0.371566639594784&quot;
+## [1] &quot;Iteration 9 - test MSE = 0.811581287358062 - diff = 0.219769035707388&quot;
+## [1] &quot;Iteration 10 - test MSE = 0.784875900861471 - diff = 0.133152392471163&quot;
 ## [1] &quot;Reached Max iterations before converging.&quot;
-## [1] &quot;Test error resulted from applying the Coop Model is 877277.178393559&quot;
-## [1] &quot;Run time is 1.443 minutes.&quot;
-## [1] &quot;Average Run time per iteration is 0.36075 minutes.&quot;</code></pre>
-<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,4,1e-3,0.01,alpha_grid = c(1))</code></pre>
-<pre><code>## [1] &quot;Test error using only X is: 0.48999 , and using only Z: 0.59831 , and using their average: 0.45104&quot;
-## [1] &quot;X is better, Entering loop 1&quot;
-## [1] &quot;Iteration 1 - test MSE = 13.1384465932373 - diff = 14.4723169993579&quot;
-## [1] &quot;Iteration 2 - test MSE = 4396.19682645456 - diff = 627.347628325486&quot;
-## [1] &quot;Iteration 3 - test MSE = 6758911.4075606 - diff = 22062.5308840245&quot;
-## [1] &quot;Iteration 4 - test MSE = 7622462312.75621 - diff = 537239.276518916&quot;
-## [1] &quot;Reached Max iterations before converging.&quot;
-## [1] &quot;Test error resulted from applying the Coop Model is 7622462312.75621&quot;
-## [1] &quot;Run time is 1.485 minutes.&quot;
-## [1] &quot;Average Run time per iteration is 0.37125 minutes.&quot;</code></pre>
+## [1] &quot;Test error resulted from applying the Coop Model is 0.784875900861471&quot;
+## [1] &quot;Run time is 2.536 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.254 minutes.&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.01,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.2341 , and using only Z: 0.23317 , and using their average: 0.18031&quot;
+## [1] &quot;Z is better, Entering loop 2&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.600275431346968 - diff = 2.66122577017905&quot;
+## [1] &quot;Iteration 2 - test MSE = 1.11786578357595 - diff = 0.997985223668028&quot;
+## [1] &quot;Iteration 3 - test MSE = 1.10738197157959 - diff = 0.501584676544327&quot;
+## [1] &quot;Iteration 4 - test MSE = 1.6442874680463 - diff = 1.24165997962943&quot;
+## [1] &quot;Iteration 5 - test MSE = 6.72757788889043 - diff = 3.9312838041974&quot;
+## [1] &quot;Iteration 6 - test MSE = 60.6386455414734 - diff = 12.9428544121746&quot;
+## [1] &quot;Diff did not decrease for 3 iterations. Quitting before reaching Max iterations.&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 60.6386455414734&quot;
+## [1] &quot;Run time is 1.409 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.235 minutes.&quot;</code></pre>
 <p>I slightly modified Youssef’s implementation so that the simulation
 parameters, error function, and the seed are equivalent. I ran his
 Mao_coop.R file and copied the output below.</p>
-<pre><code>
-[1] &quot;-----------------------------------------------------------------&quot;
+<pre class="r"><code>[1] &quot;-----------------------------------------------------------------&quot;
 [1] 1
 [1] &quot;Agreement Penalty = 1&quot;
-[1] &quot;MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831&quot;
-[1] &quot;iter=1, diff=0.173776702075844, error=0.796066844957261&quot;
-[1] &quot;iter=2, diff=0.356368431975322, error=0.782690155609017&quot;
-[1] &quot;iter=3, diff=0.28812858324541, error=0.797803826529267&quot;
-[1] &quot;iter=4, diff=0.155496291739101, error=0.784199848873508&quot;
-[1] &quot;iter=5, diff=0.161892463998242, error=0.793393444968743&quot;
-[1] &quot;iter=6, diff=0.317057152329823, error=0.801405577581984&quot;
-[1] &quot;iter=7, diff=0.30676328528986, error=0.786143081889125&quot;
-[1] &quot;iter=8, diff=0.253978797736027, error=0.791680055210597&quot;
-[1] &quot;iter=9, diff=0.232163178179326, error=0.787114557949007&quot;
-[1] &quot;iter=10, diff=0.195383853747667, error=0.777777308274588&quot;
-[1] &quot;Run time is 7.306 minutes.&quot;
-[1] &quot;Average Run time per iteration is 0.7306 minutes.&quot;
+[1] &quot;MSE X=0.643100317084265, MSE Z=0.626938636667888, MSE Avg=0.626938636667888&quot;
+[1] &quot;iter=1, diff=0, error=0.580258490825068&quot;
+[1] &quot;Run time is 0.777 minutes.&quot;
+[1] &quot;Average Run time per iteration is 0.777 minutes.&quot;
+[1] &quot;****************************************&quot;
 [1] &quot;Agreement Penalty = 0.9&quot;
-[1] &quot;MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831&quot;
-[1] &quot;iter=1, diff=0.169268570227897, error=0.803307247628354&quot;
-[1] &quot;iter=2, diff=0.469387820969411, error=0.773461387834371&quot;
-[1] &quot;iter=3, diff=0.304893512098015, error=0.792090767992488&quot;
-[1] &quot;iter=4, diff=0.159194959780592, error=0.778001412320058&quot;
-[1] &quot;iter=5, diff=0.162989493266899, error=0.787199603208735&quot;
-[1] &quot;iter=6, diff=0.330084977654404, error=0.795134019694121&quot;
-[1] &quot;iter=7, diff=0.319300139244977, error=0.778424221211666&quot;
-[1] &quot;iter=8, diff=0.305190031566121, error=0.785899328679497&quot;
-[1] &quot;iter=9, diff=0.256189653312628, error=0.781221339556741&quot;
-[1] &quot;iter=10, diff=0.216635183327255, error=0.774563252949486&quot;
-[1] &quot;Run time is 7.113 minutes.&quot;
-[1] &quot;Average Run time per iteration is 0.7113 minutes.&quot;
+[1] &quot;MSE X=0.643100317084265, MSE Z=0.626938636667888, MSE Avg=0.626938636667888&quot;
+[1] &quot;iter=1, diff=0.0330687327270199, error=0.574361506941903&quot;
+[1] &quot;iter=2, diff=0.00024030539773382, error=0.574370551558993&quot;
+[1] &quot;iter=3, diff=3.07835932561833e-06, error=0.574370644379033&quot;
+[1] &quot;Run time is 1.296 minutes.&quot;
+[1] &quot;Average Run time per iteration is 0.432 minutes.&quot;
+[1] &quot;****************************************&quot;
+[1] &quot;Agreement Penalty = 0.7&quot;
+[1] &quot;MSE X=0.643100317084265, MSE Z=0.626938636667888, MSE Avg=0.626938636667888&quot;
+[1] &quot;iter=1, diff=0.152965615552814, error=0.566312543638422&quot;
+[1] &quot;iter=2, diff=0.0113302723241774, error=0.566237650784065&quot;
+[1] &quot;iter=3, diff=0.00104482600487108, error=0.56626449580311&quot;
+[1] &quot;iter=4, diff=9.62895744438995e-05, error=0.566266790290354&quot;
+[1] &quot;iter=5, diff=9.20749451646249e-06, error=0.566266950974042&quot;
+[1] &quot;Run time is 1.765 minutes.&quot;
+[1] &quot;Average Run time per iteration is 0.353 minutes.&quot;
+[1] &quot;****************************************&quot;
 [1] &quot;Agreement Penalty = 0.5&quot;
-[1] &quot;MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831&quot;
-[1] &quot;iter=1, diff=0.437579418283936, error=0.771149085297839&quot;
-[1] &quot;iter=2, diff=0.388586744717726, error=0.758194105488018&quot;
-[1] &quot;iter=3, diff=0.364672338096423, error=0.770082761328291&quot;
-[1] &quot;iter=4, diff=0.705630200404503, error=0.792106327352782&quot;
-[1] &quot;iter=5, diff=3.69816718360667, error=1.74572414293533&quot;
-[1] &quot;iter=6, diff=17.1979821784853, error=40.6609818807247&quot;
-[1] &quot;iter=7, diff=74.7561662437278, error=851.364738190654&quot;
-[1] &quot;iter=8, diff=1019.60118720525, error=121248.288585989&quot;
-[1] &quot;iter=9, diff=10001.0894671484, error=18772692.368711&quot;
-[1] &quot;iter=10, diff=15864.3035230347, error=78614411.1213746&quot;
-[1] &quot;Run time is 4.903 minutes.&quot;
-[1] &quot;Average Run time per iteration is 0.4903 minutes.&quot;
-[1] &quot;Agreement Penalty = 0.01&quot;
-[1] &quot;MSE X=0.856599876541136, MSE Z=0.858272657508831, MSE Avg=0.858272657508831&quot;
-[1] &quot;iter=1, diff=26.5885395767465, error=0.833846795289895&quot;
-[1] &quot;iter=2, diff=4782.22036581764, error=5963.34286409363&quot;
-[1] &quot;iter=3, diff=1434669.8962026, error=275865896.459691&quot;
-[1] &quot;iter=4, diff=317693232.190757, error=17168861336918&quot;
-[1] &quot;iter=5, diff=71429002792.437, error=867801519648958976&quot;
-[1] &quot;iter=6, diff=16058833633188.7, error=4.38630909079698e+22&quot;
-[1] &quot;iter=7, diff=3610384120048023, error=2.21706310529362e+27&quot;
-[1] &quot;iter=8, diff=811694908362535168, error=1.12061615133616e+32&quot;
-[1] &quot;iter=9, diff=1.82487126675294e+20, error=5.66416244819358e+36&quot;
-[1] &quot;iter=10, diff=4.78221397385797e+22, error=2.80225794726522e+41&quot;
-[1] &quot;Run time is 4.977 minutes.&quot;
-[1] &quot;Average Run time per iteration is 0.4977 minutes.&quot;
-[1] &quot;end ----------------&quot;
-</code></pre>
+[1] &quot;MSE X=0.643100317084265, MSE Z=0.626938636667888, MSE Avg=0.626938636667888&quot;
+[1] &quot;iter=1, diff=0.158263494589618, error=0.554753373387987&quot;
+[1] &quot;iter=2, diff=0.102002960906862, error=0.55420641829822&quot;
+[1] &quot;iter=3, diff=0.0214598499673676, error=0.554101356036565&quot;
+[1] &quot;iter=4, diff=0.126695599985284, error=0.557857909002652&quot;
+[1] &quot;iter=5, diff=0.12053945901341, error=0.554460577192186&quot;
+[1] &quot;iter=6, diff=0.0118893532526826, error=0.554214220248535&quot;
+[1] &quot;iter=7, diff=0.00331769791179469, error=0.554285946914545&quot;
+[1] &quot;iter=8, diff=0.00100469803956741, error=0.554310951267942&quot;
+[1] &quot;iter=9, diff=0.000315305773739536, error=0.55431688412931&quot;
+[1] &quot;iter=10, diff=0.120514259347425, error=0.557996361032962&quot;
+[1] &quot;Run time is 2.999 minutes.&quot;
+[1] &quot;Average Run time per iteration is 0.3 minutes.&quot;
+[1] &quot;****************************************&quot;
+[1] &quot;Agreement Penalty = 0.3&quot;
+[1] &quot;MSE X=0.643100317084265, MSE Z=0.626938636667888, MSE Avg=0.626938636667888&quot;
+[1] &quot;iter=1, diff=0.211848356319107, error=0.540937727887878&quot;
+[1] &quot;iter=2, diff=0.0955511227759481, error=0.534924969954924&quot;
+[1] &quot;iter=3, diff=0.0732945483749482, error=0.536420815479295&quot;
+[1] &quot;iter=4, diff=0.00646161294397346, error=0.536251090998903&quot;
+[1] &quot;iter=5, diff=0.0466984020970407, error=0.535803104502812&quot;
+[1] &quot;iter=6, diff=0.0422608952074261, error=0.535833114506364&quot;
+[1] &quot;iter=7, diff=0.0426129600460486, error=0.53575202681667&quot;
+[1] &quot;iter=8, diff=0.0425032823861667, error=0.535780459186663&quot;
+[1] &quot;iter=9, diff=0.170309475022204, error=0.53215940175288&quot;
+[1] &quot;iter=10, diff=0.19113285364964, error=0.540120091262625&quot;
+[1] &quot;Run time is 3.037 minutes.&quot;
+[1] &quot;Average Run time per iteration is 0.304 minutes.&quot;
+[1] &quot;****************************************&quot;
+[1] &quot;end ----------------&quot;</code></pre>
+<p>Testing the algorithm with larger matrix size.</p>
+<pre class="r"><code>gen.dat &lt;- generate_simulation_data_ysf(1,400,400,5,10, missing_prob =0.8 ,coll=TRUE)
+
+A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-6,1,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.18179 , and using only Z: 0.18339 , and using their average: 0.14764&quot;
+## [1] &quot;X is better, Entering loop 1&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.128383448391302 - diff = 2.36611380361709&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.128383448391302 - diff = 1.45991609896586e-16&quot;
+## [1] &quot;Converged.&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.128383448391302&quot;
+## [1] &quot;Run time is 0.778 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.389 minutes.&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-6,0.9,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.18179 , and using only Z: 0.18339 , and using their average: 0.14764&quot;
+## [1] &quot;X is better, Entering loop 1&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.269465117878744 - diff = 3.08146454891018&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.20945256155597 - diff = 0.327148078479738&quot;
+## [1] &quot;Iteration 3 - test MSE = 0.205591691901452 - diff = 0.0256031910841152&quot;
+## [1] &quot;Iteration 4 - test MSE = 0.20537623141768 - diff = 0.0017967966479029&quot;
+## [1] &quot;Iteration 5 - test MSE = 0.205362724571343 - diff = 0.000137360276283287&quot;
+## [1] &quot;Iteration 6 - test MSE = 0.205361819807739 - diff = 1.05345295267366e-05&quot;
+## [1] &quot;Iteration 7 - test MSE = 0.205361756078393 - diff = 8.12017598574638e-07&quot;
+## [1] &quot;Converged.&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.205361756078393&quot;
+## [1] &quot;Run time is 2.056 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.294 minutes.&quot;</code></pre>
+<pre class="r"><code>A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-6,0.7,alpha_grid = c(1),numCores=1)</code></pre>
+<pre><code>## [1] &quot;Test error using only X is: 0.18179 , and using only Z: 0.18339 , and using their average: 0.14764&quot;
+## [1] &quot;X is better, Entering loop 1&quot;
+## [1] &quot;Iteration 1 - test MSE = 0.356523911841266 - diff = 3.42159180498834&quot;
+## [1] &quot;Iteration 2 - test MSE = 0.349876513364438 - diff = 0.307845370023013&quot;
+## [1] &quot;Iteration 3 - test MSE = 0.366130388385077 - diff = 0.387624797222602&quot;
+## [1] &quot;Iteration 4 - test MSE = 0.353068432746076 - diff = 0.176430810835498&quot;
+## [1] &quot;Iteration 5 - test MSE = 0.347322700876273 - diff = 0.0997609798524181&quot;
+## [1] &quot;Iteration 6 - test MSE = 0.350437632495148 - diff = 0.174066275684553&quot;
+## [1] &quot;Iteration 7 - test MSE = 0.359187933935845 - diff = 0.271054949360926&quot;
+## [1] &quot;Iteration 8 - test MSE = 0.349572661638221 - diff = 0.100851989274077&quot;
+## [1] &quot;Iteration 9 - test MSE = 0.3473978131458 - diff = 0.0333092892757469&quot;
+## [1] &quot;Iteration 10 - test MSE = 0.346919307294151 - diff = 0.0139167518863075&quot;
+## [1] &quot;Iteration 11 - test MSE = 0.346830532880324 - diff = 0.00788020575032855&quot;
+## [1] &quot;Iteration 12 - test MSE = 0.346880505389409 - diff = 0.00617012989636342&quot;
+## [1] &quot;Iteration 13 - test MSE = 0.346971429954847 - diff = 0.00586237142895743&quot;
+## [1] &quot;Iteration 14 - test MSE = 0.347078773029895 - diff = 0.00573382834822886&quot;
+## [1] &quot;Iteration 15 - test MSE = 0.34719412000737 - diff = 0.00564639934975702&quot;
+## [1] &quot;Iteration 16 - test MSE = 0.347314418080908 - diff = 0.00557542308442152&quot;
+## [1] &quot;Iteration 17 - test MSE = 0.347438414357879 - diff = 0.00551350505168045&quot;
+## [1] &quot;Iteration 18 - test MSE = 0.347565517753188 - diff = 0.00545772592595085&quot;
+## [1] &quot;Iteration 19 - test MSE = 0.347695410347832 - diff = 0.00540681524060017&quot;
+## [1] &quot;Iteration 20 - test MSE = 0.34980214278167 - diff = 0.245405523321234&quot;
+## [1] &quot;Reached Max iterations before converging.&quot;
+## [1] &quot;Test error resulted from applying the Coop Model is 0.34980214278167&quot;
+## [1] &quot;Run time is 5.389 minutes.&quot;
+## [1] &quot;Average Run time per iteration is 0.269 minutes.&quot;</code></pre>
 <p><span class="math display">\[
 \begin{aligned}
 \end{aligned}
