@@ -53,7 +53,7 @@ Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha){
 
 # Computing the test error as given by Mao in page 205
 test_error <- function(A.hat.test, A.test){
-   return(sum( (A.hat.test-A.test)^2 )/ sum((A.test)^2))
+   return(sum( (A.hat.test-A.test)^2 )/ sum((A.test-mean(A.test))^2))
 }
 
 Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),

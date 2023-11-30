@@ -90,7 +90,7 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
          A.hat = A.hat_x + A.hat_z
          iter = iter + 1
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
-         print(paste("Iteration",iter, "- test MSE =",test_error_Coop, "- diff =",diff))
+         print(paste("Iteration",iter, "- test Error =",test_error_Coop, "- diff =",diff))
          
          # STOP if the difference has been increasing for 3 continuous iterations
          if(diff >= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}
@@ -118,7 +118,7 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
          A.hat = A.hat_x + A.hat_z
          iter = iter + 1
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
-         print(paste("Iteration",iter, "- test MSE =",test_error_Coop, "- diff =",diff))
+         print(paste("Iteration",iter, "- test Error =",test_error_Coop, "- diff =",diff))
          
          # STOP if the difference has been increasing for 3 continuous iterations
          if(diff >= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}

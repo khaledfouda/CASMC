@@ -84,7 +84,7 @@ for(iter_i in 1:1){
   
   
   #source("soft_mc.R")
-  #source("mao_original_x.R")
+  #source("mao_original_x.R") 
   #source("mao_original_z.R")
   max_iter <- 10
   alpha <- 1  # the agreement penalty parameter

@@ -17,7 +17,7 @@ start_time = Sys.time()
 #--- The proposed method alternates between the application of Mao's method on the row covariates and on the column covariates. 
 #--- Hence, first we try to decide whether to start with row covairates or column covariates.
 error_function <- function(preds, orig){
-  return(sum( (preds-orig)^2 )/ sum((orig)^2))
+  return(sum( (preds-orig)^2 )/ sum((orig-mean(orig))^2))
 }
 alpha_grid = c(1)#seq(0.992,1, length = 10)
 
@@ -47,7 +47,7 @@ error_z <- error_function(Y_pred_z[test_indices],Y_data[test_indices])
 Y_combined = (Y_pred_x + Y_pred_z)/2
 error_combined <- error_function(Y_combined[test_indices],Y_data[test_indices])
   #sqrt(mean((Y_data - Y_combined)[test_indices]**2))
-print(paste0("MSE X=",error_x,", MSE Z=",error_z, ", MSE Avg=",error_z))
+print(paste0("Error X=",error_x,", Error Z=",error_z, ", Error Avg=",error_z))
 
 ##---  If using first the row covariates (x) minimizes the cv-error then we start with the row covariates 
 if(cv_ratio_SMC_x$cv_min < cv_ratio_SMC_z$cv_min){

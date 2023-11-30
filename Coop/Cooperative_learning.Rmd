@@ -209,7 +209,7 @@ Finally, we attempted (as been done by Youssef) to use the original $Y^*$ for th
 - The error function used for both my simulations and Yousef's is the same as one used in Mao:
 
 $$
-Error = \frac{\sum_{i,j \in test}{(\hat{A}_{ij}-A_{ij})^2}}{\sum_{i,j \in test} A_{ij}^2}
+Error = \frac{\sum_{i,j \in test}{(\hat{A}_{ij}-A_{ij})^2}}{\sum_{i,j \in test} (A_{ij}-\bar{A})^2}
 $$
 
 
@@ -223,6 +223,8 @@ $$
 gen.dat <- generate_simulation_data_ysf(1,300,300,5,5, missing_prob =0.8 ,coll=TRUE)
 
 A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,1,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.99,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.98,alpha_grid = c(1),numCores=1)
 A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.9,alpha_grid = c(1),numCores=1)
 A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.7,alpha_grid = c(1),numCores=1)
 A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-12,0.5,alpha_grid = c(1),numCores=1)
