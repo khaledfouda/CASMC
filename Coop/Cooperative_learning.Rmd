@@ -88,7 +88,7 @@ $$
 min_\beta \frac{1}{2} || y - X\beta||^2 + \lambda || \beta|| && (8)
 \end{aligned}
 $$
-We could also incorporate $L_2$ penalties to the objective in 5. This option is included in their software implementation.
+We could also incorporate $L_2$ penalties (elastic net regularization) to the objective in 5. This option is included in their software implementation.
 
 
 $$
@@ -99,7 +99,7 @@ $$
 
 ### Solution
 
-The author provided two alogrithms to solve equation 5.
+The author provided two algorithms to solve equation 5.
 
 #### Algorithm 1: Direct Calculation
 
