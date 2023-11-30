@@ -241,14 +241,14 @@ One solution comes to mind is to solve for $Y$ in (Y3) and (Y4) equations above.
 
 $$
 \begin{aligned}
-\hat{Y} = (1-p) \hat{A}_X - (1+p) \hat{A}_Z
+\hat{Y} = (1-p) \hat{A}_X + (1+p) \hat{A}_Z 
 \end{aligned}
 $$
 Where $\hat{A}_Z$ is the output of fitting the Mao model to $Z$ in the previous step and $\hat{A}_X$ is the output of fitting the Mao model to $X$ in the current step. Similarly for the second equation (Y4):
 
 $$
 \begin{aligned}
-\hat{Y} = (1-p) \hat{A}_Z - (1+p) \hat{A}_X
+\hat{Y} = (1-p) \hat{A}_Z + (1+p) \hat{A}_X
 \end{aligned}
 $$
 
