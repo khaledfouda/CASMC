@@ -40,3 +40,4 @@ inc/
 *.rdb
 *.rdx
 *.RProj
+__packages
