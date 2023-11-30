@@ -192,7 +192,10 @@ where $\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X$ are the estimates from fitting (
 
 #### Note:
 
-In Youssef's implementation, a $\rho=1$ was assumed. That means  that we are fitting two different models and taking the average of the estimation of each. In that case, there's no benefit from applying the Mao-Coop model and it would be equivalent to fit two different Mao models and take the final average. 
+- When $\rho=1$ The adjusted amount is $Y^*=\frac{1}{2}Y$ and hence the solution is the average of the marginal fit of both models. However, as we see below, the solution is always better than the average of the marginal fit.
+
+- The formula above with $Y= (A+E)*W$ means that all entities in $Y^*$ will be non-zero including the missing positions, due to the adjustment term $-\frac{1-\rho}{1+\rho}\hat f$. The solution using this method didn't converge in many of the simulation. Instead, we attempted to use  $Y^*= Y^* *W$ where we set all the missing values with 0 again. After testing the method, we found that the results were better than before but there were few cases where the method didn't converge as well.
+Finally, we attempted (as been done by Youssef) to use the original $Y^*$ for the Mao cross-validation function and $Y^**W$ for the Mao fit function to make the prediction. This method achieved the best results and all our simulations converged. 
 
 
 
@@ -205,12 +208,12 @@ In Youssef's implementation, a $\rho=1$ was assumed. That means  that we are fit
 
 gen.dat <- generate_simulation_data_ysf(1,300,300,5,5, missing_prob =0.8 ,coll=TRUE)
 
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,1,alpha_grid = c(1),numCores=1)
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.9,alpha_grid = c(1),numCores=1)
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-3,0.7,alpha_grid = c(1),numCores=1)
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.5,alpha_grid = c(1),numCores=1)
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.3,alpha_grid = c(1),numCores=1)
-A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,10,1e-3,0.01,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,1,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.9,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.7,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-12,0.5,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.3,alpha_grid = c(1),numCores=1)
+A.hat <- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,30,1e-6,0.01,alpha_grid = c(1),numCores=1)
 
 ```
 

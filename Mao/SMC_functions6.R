@@ -59,7 +59,7 @@ SMCfit = function(Aobs, X, tau_beta_ratio, tau_svd_ratio, alpha_ratio) {
   #---------------------------------
   # estimating Theta (named gammahat)
   #------------------------------------
-  Xtheta = X[, 1:3]# ???
+  Xtheta = X#[, 1:3]# ???
   
   Xadj = X
   PX = Xadj %*% solve(t(Xadj) %*% Xadj) %*% t(Xadj)
@@ -135,7 +135,7 @@ SMCfit_cv = function(Y, X.cov, mask, nfolds = 5,
   n2 = dim(Aobs)[2]
   m = dim(x.sample)[2]
   
-  Xtheta = x.sample[, 1:3]
+  Xtheta = x.sample#[, 1:3]
   
   Xadj = x.sample
   PX = Xadj %*% solve(t(Xadj) %*% Xadj) %*% t(Xadj)

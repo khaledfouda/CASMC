@@ -28,6 +28,7 @@ require(doParallel)
 library(ggplot2)
 library(hexbin)
 library(patchwork)
+source(paste0(path_to_code,"Mao_import_lib.R"))
 ```
 
 ## References:
@@ -107,96 +108,6 @@ The following function, $Mao.fit()$, estimates $\hat\beta$ and $\hat B$ as above
 
 ```
 
-```{r eval=TRUE}
-# EDIT: These functions return the 1 / (probability of inclusion) NOT missingness.
-theta_default <- function(X, W, ...){
-  # using logistic regression as indicated in (a1)
-  n1 = dim(W)[1]
-  n2 = dim(W)[2]
-  theta_hat = matrix(NA, n1, n2)
-  for(j in 1:n2){
-    model_data = data.frame(cbind(W[,j], X))
-    model_fit = glm(X1~., family=binomial(), data=model_data)
-    theta_hat[, j] = 1 / predict(model_fit, type="response")
-  }
-  return(theta_hat)
-}
-theta_random <- function(W, ...){
-  # A theta estimation function that selects the proportion of missing data within the same column
-  # using formula (a2)
-  n1 = dim(W)[1]
-  n2 = dim(W)[2]
-  theta_hat = matrix(NA, n1, n2)
-  for(j in 1:n2){
-    theta_hat[,j] = n1 / sum(W[,j]==1) 
-  }
-  return(theta_hat)
-}
-theta_simple <- function(W, ...){
-  # A theta estimation function that selects the proportion of missing data in the matrix
-  # using formula (a3)
-  n1 = dim(W)[1]
-  n2 = dim(W)[2]
-  theta_hat = matrix( (n1*n2) / sum(W==1), n1, n2)
-  return(theta_hat)
-}
-
-
-Mao.fit <- function(Y, X, W, lambda.1, lambda.2, alpha, n1n2_optimized=TRUE, theta_estimator=theta_default){
-  #
-  #' ----------------------------------------------
-  #' Input: Y: corrupted, partially observed A, (Y is assumed to be the product of Y*W)
-  #'        W: Wij=1 if Aij is observed (ie, Yij !=0), and 0 otherwise
-  #'         X: covariate matrix
-  #'         lambda.1, lambda.2, alpha: hyperparameters
-  #' ----------------------------------------------
-  #' output: list of  A, Beta_hat, B_hat
-  #' ----------------------------------------------
-  n1 = dim(Y)[1]
-  n2 = dim(Y)[2]
-  m  = dim(X)[2]
-  # The following two lines are as shown in (c) and (d)
-  X.X = t(X) %*% X
-  P_X = X %*% solve(X.X) %*% t(X)
-  P_bar_X = diag(1,n1) - P_X 
-  
-  if(n1n2_optimized == TRUE){
-    # we define the factor that will be used later:
-    n1n2 = svd(X.X)$d[1] 
-  }else{
-    n1n2 = n1 * n2
-  }
-  
-  # The following part estimates theta (missingness probabilities)
-  theta_hat = theta_estimator(W=W, X=X)
-  # the following is the product of W * theta_hat * Y
-  W_theta_Y = Y * theta_hat # * W 
-
-  # beta hat as (8)
-  beta_hat = solve(X.X + n1n2 * lambda.1 * diag(1, m)) %*% t(X) %*% W_theta_Y
-  # SVD decomposition to be used in (b)
-  svdd = svd(P_bar_X %*% W_theta_Y)
-  if(n1n2_optimized == TRUE){
-    # evaluation of  (b)
-    n1n2 = svdd$d[1]
-  }else{
-    n1n2 = n1 * n2
-  }
-  T_c_D = svdd$u %*% (pmax(svdd$d - alpha*n1n2*lambda.2, 0) * t(svdd$v))
-  # B hat as in (11)
-  B_hat = (1 + 2 * (1-alpha) * n1n2 * lambda.2 )^(-1) * T_c_D
-  # computing the rank of B [Copied from Mao's code; Don't understand how it works.]
-  # EQUIVALENT to  qr(B_hat)$rank + m   or   qr(A_hat)$rank
-  # B is a low rank matrix
-  rank = sum(pmax(svdd$d - n1n2 * lambda.2 * alpha, 0) > 0) + m
-  
-  # Estimate the matrix as given in the model at the top
-   A_hat = X %*% beta_hat + B_hat
-  
-  return(list(A_hat = A_hat, B_hat = B_hat, beta_hat = beta_hat, rank = rank))
-}
-
-```
 
 
 -----------------------------------------------------------
@@ -206,182 +117,7 @@ Mao.fit <- function(Y, X, W, lambda.1, lambda.2, alpha, n1n2_optimized=TRUE, the
 
 Hyperparameter optimization for $\lambda_1,\lambda_2,\alpha$ is done using k-fold (k=5 by default) and grid search. Mao's paper optimizes for each parameter separately while fixing the other two. The explored/recommended the range of (0-2) for $\lambda_1$, (0.1,0.9) for $\lambda_2$, and (0.992,1) for $\alpha$.
 
-
-
-```{r eval=TRUE}
-prepare_fold_data <- function(Y, X, W, A, n1n2_optimized, theta_estimator) {
-  n1 = dim(Y)[1]
-  n2 = dim(Y)[2]
-  m  = dim(X)[2]
-  
-  # The following two lines are as shown in (c) and (d)
-  X.X = t(X) %*% X
-  P_X = X %*% solve(X.X) %*% t(X)
-  P_bar_X = diag(1,n1) - P_X 
-
-  theta_hat = theta_estimator(W=W, X=X)
-  
-  #---------
-  # The following are partial parts of equations 8 and 11 that don't involve the hyperparameters.
-  # this is useful to avoid unneccessary matrix multiplications.
-  #----------
-  if(n1n2_optimized == TRUE){
-    # this one is for equation 8, the product n1n2 is replace with the Eigen value
-    n1n2Im = svd(X.X)$d[1]  * diag(1, m)  
-  }else{
-    n1n2Im = n1 * n2  * diag(1, m)
-  }
-  # the following is the product of W * theta_hat * Y
-  W_theta_Y = Y * theta_hat
-  X.W.theta.Y = t(X) %*% W_theta_Y
-  svdd = svd(P_bar_X %*% W_theta_Y)
-  if(n1n2_optimized == TRUE){
-    # this one is for equation 11, the product is also replace with the Eigen value of the SVD
-    n1n2 = svdd$d[1]
-  }else{
-    n1n2 = n1 * n2
-  }
-    
-  return(list(A.test=A[W==0], W=W, X=X, X.X=X.X, n1n2Im=n1n2Im, n1n2=n1n2,
-              X.W.theta.Y = X.W.theta.Y, svdd=svdd))
-}
-
-Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha){
-  
-  beta_hat = solve( data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
-  T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha*data$n1n2*lambda.2, 0) * t(data$svdd$v))
-  # B hat as in (11)
-  B_hat = (1 + 2 * (1-alpha) * data$n1n2 * lambda.2 )^(-1) * T_c_D
-  # Estimate the matrix as given in the model at the top
-  A_hat = data$X %*% beta_hat + B_hat
-  
-  return(A_hat[data$W == 0])
-}
-
-# Computing the test error as given by Mao in page 205
-test_error <- function(A.hat.test, A.test){
-  return(sum( (A.hat.test-A.test)^2 )/ sum((A.test)^2))
-}
-
-```
-
-
-```{r eval=TRUE}
-Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
-                   lambda.2_grid = seq(0.9, 0.1, length=30),
-                   alpha_grid = seq(0.992, 1, length=20), seed=2023, numCores=16, n1n2_optimized=TRUE,
-                   theta_estimator=theta_default){
-  
-  #' -------------------------------------------------------------------
-  #' Input :
-  #' A : Complete (True) A matrix as in the model above of size n1 by n2
-  #' X :  Covariate matrix of size  n1 by m
-  #' W : Binary matrix representing the mask. wij=1 if yij is observed. size similar to A
-  #' The rest are cross validation parameters
-  #' --------------------------------------------------------------------
-  #' Output:
-  #' list of best parameters and best score (minimum average MSE across folds)
-  #' --------------------------------------------------------------------
-
-  set.seed(seed = seed)
-  indices = sample(cut(seq(1, nrow(A)), breaks=n_folds, labels=FALSE))
-  best_score = Inf
-  best_params = list(alpha = NA, lambda.1 = NA, lambda.2 = NA)
-  
-  fold_data = lapply(1:n_folds, function(i) {
-    train_indices = which(indices != i, arr.ind = TRUE)
-    Y_train = Y[train_indices,]
-    X_train = X[train_indices,]
-    W_train = W[train_indices,]
-    A_train = A[train_indices,]
-    prepare_fold_data(Y_train, X_train, W_train, A_train, n1n2_optimized, theta_estimator)
-  })
-  
-  # Original for loop to be executed on one node 
-  # *******************************************
-  # for(alpha in alpha_grid){
-  #   for(lambda.1 in lambda.1_grid){
-  #     for(lambda.2 in lambda.2_grid){
-  #       
-  #       scores = numeric(n_folds)
-  #       for(i in 1:n_folds){
-  #         data = fold_data[[i]]
-  #         #train_indices = which(indices != i, arr.ind=TRUE)
-  #         
-  #         # compute the estimates with a modified fit function
-  #         A_hat = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
-  #         #print(dim(A[test_indices,]))
-  #         #print(dim(A_hat))
-  #         #print(dim(data$X))
-  #         # Evaluate model performance using MSE
-  #         # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
-  #         # that is, the test fold isn't used at all.
-  #         scores[i] = mean((data$A - A_hat)^2)
-  #       }
-  #       avg_score = mean(scores)
-  #       
-  #       if(avg_score < best_score){
-  #         best_score = avg_score
-  #         best_params = list(alpha=alpha, lambda.1=lambda.1, lambda.2=lambda.2)
-  #       }
-  #     }
-  #   }
-  # }
-  # ************************************************************
-  # prepare the cluster
-  cl <- makeCluster(numCores) 
-  registerDoParallel(cl)
-  # fixing lambda 1 at 0 and optimizing for lambda 2 and alpha using a grid
-  # Export the Mao.fit_optimized function and any other necessary objects to each worker
-  clusterExport(cl, varlist = c("Mao.fit_optimized","test_error"))
-  results <- foreach(alpha = alpha_grid, .combine = rbind) %:%
-    foreach(lambda.2 = lambda.2_grid, .combine = rbind) %dopar% {
-      lambda.1 = 0
-      score = 0
-      for (i in 1:n_folds) {
-        data = fold_data[[i]]
-        A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
-        # scores[i] = mean((data$A.test - A_hat_test)^2)
-        # -- EDIT: Using Mao's formula in page 205 to compute the test error
-        score = score + test_error(A_hat_test, data$A.test)
-      }
-      #score = score / n_folds
-      c(alpha, lambda.2, score)
-    }
-  # Process results to find the best parameters
-  best_result <- results[which.min(results[, 3]), ]
-  best_params <- list(alpha = best_result[1], lambda.1 = 0, lambda.2 = best_result[2])
-  best_score <- best_result[3] / n_folds
-  # close the cluster
-  stopCluster(cl)
-  #--------------------------------------------
-  # fixing optimal values of lambda 2 and alpha and optimizing for lambda 1 separately
-  lambda.2 = best_params$lambda.2
-  alpha = best_params$alpha
-  for(lambda.1 in lambda.1_grid){
-    score = 0
-    for(i in 1:n_folds){
-      data = fold_data[[i]]
-      # compute the estimates with a modified fit function
-      A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
-      # Evaluate model performance using MSE
-      # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
-      # that is, the test fold isn't used at all.
-      #scores[i] = mean((data$A.test - A_hat_test)^2)
-      # -- EDIT: Using Mao's formula in page 205 to compute the test error
-      score = score + test_error(A_hat_test, data$A.test)
-    }
-    score = score / n_folds
-
-    if(score < best_score){
-      best_score = score
-      best_params$lambda.1 = lambda.1
-    }
-  }
-  #---------------------------------------------------
-  return(list(best_parameters = best_params, best_score = best_score))
-  
-}
+```{r code=readLines(paste0(path_to_code, "/Mao_cv.R")),eval=TRUE}
 
 ```
 
@@ -461,157 +197,26 @@ $X, Z, \epsilon \sim Gaussian(0,1)$ while $\beta_x, \beta_z, B_x, B_z \sim U(0,1
  
 For the rest of this document, I will be using Youssef's second model (S2). 
  
- 
-```{r eval=TRUE}
-normalize_matrix <- function(X) { # NOT USED FOR NOW
-  # Normalize rows
-  X_row_normalized <- t(apply(X, 1, function(row) {
-    (row - mean(row)) / sd(row)
-  }))
-  
-  # Normalize columns
-  X_col_normalized <- apply(X_row_normalized, 2, function(col) {
-    (col - mean(col)) / sd(col)
-  })
-  
-  return(X_col_normalized)
-}
+```{r code=readLines(paste0(path_to_code, "/Mao_sim.R")),eval=TRUE}
 
+```
 
-# This function generates Mao's simulation as defined in (M0) above. Dimensions, missing probability are given as parameters. 
-generate_simulation_data_mao <- function(n1 =400,  n2 = 400, m = 20, r = 10, MAR=TRUE, seed=2023){
-  #' Input: 
-  #'      n1, n2: are the dimensions of the A, Y, and B matrices
-  #'      m: number of covariates
-  #'      r: Second dimension of U and V where  B = P_bar_X U V^T
-  #'      MAR: If True, missing at random method is employed to compute the missing probability and W
-  #'      seed: random seed  
-  set.seed(seed=seed)
-  X <- matrix(rnorm(n1*m), ncol = m) #%>% normalize_matrix()
-  beta <- matrix(rnorm(m*n2), ncol=n2)
-  U <- matrix(rnorm(n1*r),ncol=r)
-  V <- matrix(rnorm(n2*r),ncol=r)
-  P_X = X %*% solve(t(X) %*% X) %*% t(X)
-  P_bar_X = diag(1,n1) - P_X 
-  B = P_bar_X %*% U %*% t(V)
-  A <- X %*% beta + B
-  rank <- qr(A)$rank # = m + r
-  #-----------------------------------------------------------------------------
-  # Simulation Theta using missing-at-random MAR method
-  gamma <- rbind( matrix(rnorm(1, -1.5, 0.1),1), matrix(rnorm(3, 0.3, 0.1),3))
-  # only the first 3 columns of X are used
-  # theta is the inverse of the probability of missingness following a logistic model 
-  inclusion_prob = 1 / (1 + exp( -(cbind(1,X[,1:3]) %*% gamma)) ) #  all values should be close to 0.2
-  theta = 1 / inclusion_prob
-  # Wij=1 if A is observed following the probabilities of missingness defined above.
-  W <- matrix( rbinom(n1*n2, 1, inclusion_prob ) , nrow = n1)
-  # sum(W==0)/(n1*n2) should be equal to 0.2
-  #----------------------------------------------------------
-  # Does fully observed Y = A (ie,  without noise?)? In that case ignore the code below.
-  #----------------------------------------------------------------------
-  # Computing epsilon as iid zero mean Gaussian with variance chosen such that the signal-to-noise ratio (SNR) is 1
-  signal_A <- sum((A - mean(A))^2) / (n1 * n2 - 1)
-  sigma_epsilon <- sqrt(signal_A)  # Since SNR = 1
-  epsilon <- matrix(rnorm(n1 * n2, mean = 0, sd = sigma_epsilon), n1, n2)
-  #--------------------------------------------------------------------------------------------
-  # Y is a corrupted, partially-observed version of A. Yij=0 for missing data [maybe consider making it NA]
-  Y <- (A + epsilon) * W
-  #---------------------------------------------------------------------
-  return(list(A=A, W=W, X=X, Y=Y, beta=beta, B=B, theta=theta, gamma=gamma, inclusion_prob=inclusion_prob, rank=rank))
-}
-# This functions generates either model M1 or M2 from Yousef's simulation. Set model=1 for M1 or model=2 for M2.
-generate_simulation_data_ysf <- function(model=1, n1 =300,  n2 = 300, m1 = 5, m2 = 10, missing_prob = 0.7,coll=FALSE,
-                                         seed=2023){
-  set.seed(seed=seed)
-  X <- matrix(rnorm(n1*m1), ncol = m1)
-  Z <- matrix(rnorm(n2*m2), ncol = m2)
-  E <- matrix(rnorm(n1*n2), ncol = n2)
-  # normalize X
-  #X <- normalize_matrix(X)
-  beta.x <- matrix(runif(m1*n2), ncol=n2)
-  beta.z <- matrix(runif(m2*n1), ncol=n1)
-  B.x <- matrix(runif(n1*m2), ncol=m2)
-  B.z <- matrix(runif(m2*n2), ncol=n2)
-  B <- B.x %*% B.z
-  
-  # if collinearity is needed, make the correlation between the first two columns in X and Z between (.99,1)
-  # the actual correlation value is very close to 95%
-  if(coll == TRUE){
-    X[,2]  <- X[,1] + rnorm(n1, mean = 0, sd = 0.001)
-    Z[,2]  <- Z[,1] + rnorm(n2, mean = 0, sd = 0.001)
-  }
-  
-  
-  P_X = X %*% solve(t(X) %*% X) %*% t(X)
-  P_bar_X = diag(1,n1) - P_X
-  P_Z = Z %*% solve(t(Z) %*% Z) %*% t(Z)
-  P_bar_Z = diag(1,n2) - P_Z
-  
-  W <- matrix( rbinom(n1*n2, 1, (1 - missing_prob) ) , nrow = n1)
-  
-  if(model == 1){
-    A <- (X %*% beta.x) + t(Z %*% beta.z) + P_bar_X %*% B %*% P_bar_Z 
-    Y <- (A+E) * W
-    rank <- qr(A)$rank
-    return(list(A=A, W=W, X=X, Z=Z, beta.x=beta.x, beta.z=beta.z, B=B, rank=rank))
-  }else if (model == 2){
-    A <- (X %*% beta.x) + P_bar_X %*% B 
-    Y <- (A + E) * W
-    rank <- qr(A)$rank
-    X <- matrix(rnorm(n1*m1), ncol = m1)
-  Z <- matrix(rnorm(n2*m2), ncol = m2)
-    return(list(A=A, W=W, X=X, Y=Y, beta.x=beta.x, B=B, rank=rank))
-  }
-  else{
-    stop("Error: Unrecognized model.")
-  }
-  #-----------------------------------------------------------------------------
-  #---------------------------------------------------------------------
-  
-}
+```{r code=readLines(paste0(path_to_code, "/Ysf_sim.R")),eval=TRUE}
+
 ```
 
 ## 3) Results:
 
-The following function helps in comparing Actual vs Estimated values with a perfect-fit line and a linear-fit line. 
-
 ```{r eval=TRUE}
-plot_actual.vs.estimated <- function(Actual, Predicted, xlab, ylab,title1="Comparison of Actual and Predicted Values"){
-    
-  data <- data.frame(
-    Actual = as.vector(Actual),
-    Predicted = as.vector(Predicted)
-  )
-  lm_fit <- lm(Predicted ~ Actual, data = data)
-  coefficients <- coef(lm_fit)
-  
-  # Create the equation text
-  equation_text <- sprintf("y = %.2fx + %.3f", coefficients[2], coefficients[1])
-  
-  ggplot(data, aes(x = Actual, y = Predicted)) + 
-    geom_hex(color = "grey80",bins=200) +  
-    geom_smooth(method = "lm", aes(color = "LM Fit"), se = TRUE) +
-    #geom_line(data = data.frame(x = range(data$Actual), y = range(data$Predicted)),
-    #          aes(x = x, y = y, linetype = "Perfect Fit"), alpha=0, color = "white") +  
-    annotate("text", x = Inf, y = Inf, label = equation_text, hjust = 2.1, size=5, vjust = 3.5, color = "red", size = 2.5) + 
-    scale_color_manual("", values = c("LM Fit" = "red")) + 
-      geom_abline(intercept = 0, slope = 1, linetype = 1, linewidth=1, color = "black") + 
-    #scale_linetype_manual("", values = c("Perfect Fit" = 1)) +
-    theme_minimal() + 
-     theme(
-       legend.position = "top", 
-          legend.title = element_blank(),
-       panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          axis.line = element_blank(),
-          panel.border = element_blank()) + 
-    labs(title = title1,
-         x = xlab,
-         y = ylab) +
-    guides(fill = FALSE) 
-}
+saved_data = "./Mao/saved_data/"
 ```
 
+
+The following function helps in comparing Actual vs Estimated values with a perfect-fit line and a linear-fit line. 
+
+```{r code=readLines(paste0(path_to_code, "/graph_estim.R")),eval=TRUE}
+
+```
 #### Generating Mao's simulations from table 1 page 206
 
 ```{r}
@@ -656,13 +261,13 @@ results <- data.frame(dimension=dimensions, RMSE_A=RMSE_A, RMSE_beta=RMSE_beta, 
            alpha=unlist(sapply(best_params_list, function(x) x$alpha)), 
            lambda_1=unlist(sapply(best_params_list, function(x) x$lambda.1)),
            lambda_2=unlist(sapply(best_params_list, function(x) x$lambda.2)))
-write.csv(results, file = "sim_results_MAO_table1_B30_2.csv", row.names = FALSE)
+write.csv(results, file = paste0(saved_data, "sim_results_MAO_table1_B30_2.csv"), row.names = FALSE)
 
 ```
 
 ```{r eval=TRUE}
 
-results <- read.csv("sim_results_MAO_table1_B30_1.csv")
+results <- read.csv(paste0(saved_data,"sim_results_MAO_table1_B30_1.csv"))
 #results
 kable(results,format = "pipe")
 ```
@@ -708,7 +313,7 @@ for(t in 2:3){
                lambda.1 = unlist(sapply(cv.out_list, function(x) x$best_parameters$lambda.1)),
                alpha = unlist(sapply(cv.out_list, function(x) x$best_parameters$alpha)))
   
-  write.csv(output, paste0("a_",names[t],"_1_.csv"), row.names = F)
+  write.csv(output, paste0(saved_data,paste0("a_",names[t],"_1_.csv")), row.names = F)
 }
 ```
 
@@ -719,9 +324,9 @@ names = c("theta_default", "theta_simple", "theta_random")
 
 
 
-results <- rbind( read.csv(paste0("a_",names[1],"_.csv")) %>% mutate(label="Logistic model"),
-                  read.csv(paste0("a_",names[2],"_.csv")) %>% mutate(label="Proportion within column"),
-                  read.csv(paste0("a_",names[3],"_.csv")) %>% mutate(label="Proportion overall")) 
+results <- rbind( read.csv(paste0(saved_data,paste0("a_",names[1],"_.csv"))) %>% mutate(label="Logistic model"),
+                  read.csv(paste0(saved_data,paste0("a_",names[2],"_.csv"))) %>% mutate(label="Proportion within column"),
+                  read.csv(paste0(saved_data,paste0("a_",names[3],"_.csv"))) %>% mutate(label="Proportion overall")) 
                   
 
 results %>%
@@ -746,7 +351,7 @@ Mao's logistic model surprisingly performed better than using the proportion of 
 graphs_A = list()
 graphs_beta = list()
 graphs_B = list()
-part_b_data <- read.csv("sim_results_MAO_table1_B30_1.csv")[c(1,3,4),]
+part_b_data <- read.csv(paste0(saved_data,"sim_results_MAO_table1_B30_1.csv"))[c(1,3,4),]
 
 
 
@@ -776,9 +381,9 @@ combined_plot & theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "lines"),legend.
 
 ```{r eval=TRUE, fig.height=6, fig.width=8}
 names = c("theta_default", "theta_simple", "theta_random")
-results <- rbind( read.csv(paste0("a_",names[1],"_.csv")) %>% mutate(label="Logistic model"),
-                  read.csv(paste0("a_",names[2],"_.csv")) %>% mutate(label="Proportion within column"),
-                  read.csv(paste0("a_",names[3],"_.csv")) %>% mutate(label="Proportion overall")) 
+results <- rbind( read.csv(paste0(saved_data,paste0("a_",names[1],"_.csv"))) %>% mutate(label="Logistic model"),
+                  read.csv(paste0(saved_data,paste0("a_",names[2],"_.csv"))) %>% mutate(label="Proportion within column"),
+                  read.csv(paste0(saved_data,paste0("a_",names[3],"_.csv"))) %>% mutate(label="Proportion overall")) 
                   
 
 results %>%
@@ -860,7 +465,7 @@ saveRDS(RMSE_vals, "part_d_data.rds")
 
 
 ```{r eval=TRUE, fig.height=6, fig.width=8}
-RMSE_vals = readRDS("part_d_data.rds")
+RMSE_vals = readRDS(paste0(saved_data,"part_d_data.rds"))
 lambda.1 = seq(0,2,length=10)
 lambda.2 = seq(.9, 0.1, length=10)
 alpha = seq(0.992, 1, length=10)

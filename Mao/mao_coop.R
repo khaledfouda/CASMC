@@ -40,6 +40,7 @@ Y_pred_z <- t(fit_mao_z$Ahat)
 
 test_indices <- which(W_data==0, arr.ind = TRUE)
 error_x <- error_function(Y_pred_x[test_indices],Y_data[test_indices])
+error_x <- error_function(Y_pred_x[W_data==0],Y_data[W_data==0])
 #sqrt(mean((Y_data - Y_pred_x)[test_indices]**2))
 error_z <- error_function(Y_pred_z[test_indices],Y_data[test_indices])
   #sqrt(mean((Y_data - Y_pred_z)[test_indices]**2))
