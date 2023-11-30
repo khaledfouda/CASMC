@@ -402,7 +402,7 @@ Y_{ij} = A_{ij} + \epsilon_{ij}
 <p>where <span class="math inline">\(\epsilon_{ij}\)</span> are i.i.d
 normal with 0 mean and finite variance.</p>
 <p>We consider the sampling indicator <span class="math inline">\(w_{ij}=1\)</span> if <span class="math inline">\(Y_{ij}\)</span> is observed and 0 otherwise. <span class="math inline">\(w_{ij}\)</span> is independent from <span class="math inline">\(\epsilon_{ij}\)</span>.</p>
-<p>In Mao’s paper, the the sampling (<del>missingness</del>inclusion)
+<p>In Mao’s paper, the sampling (<del>missingness</del>inclusion)
 probabilities (<span class="math inline">\(\theta_{ij}\)</span>) may
 depend on a subset of the covariates, and are modeled as <span class="math display">\[ w_{ij} \sim Bernoulli(\theta_{ij}(x_i))\]</span>
 The loss function in (5) consists of the the minimizer <span class="math inline">\(\hat{R}^*\)</span>, <span class="math inline">\(L_2\)</span> regularization on <span class="math inline">\(\beta\)</span> and <span class="math inline">\(B\)</span>, and a <span class="math inline">\(L_1\)</span> regularization on <span class="math inline">\(B\)</span>.</p>
@@ -617,7 +617,7 @@ Mao.fit_optimized &lt;- function(data, lambda.1, lambda.2, alpha){
 
 # Computing the test error as given by Mao in page 205
 test_error &lt;- function(A.hat.test, A.test){
-   return(sum( (A.hat.test-A.test)^2 )/ sum((A.test)^2))
+   return(sum( (A.hat.test-A.test)^2 )/ sum((A.test-mean(A.test))^2))
 }
 
 Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
