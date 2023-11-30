@@ -58,7 +58,7 @@ where $\epsilon_{ij}$ are i.i.d normal with 0 mean and finite variance.
 
 We consider the sampling indicator $w_{ij}=1$ if $Y_{ij}$ is observed and 0 otherwise. $w_{ij}$ is independent from $\epsilon_{ij}$.
 
-In Mao's paper, the the sampling (~~missingness~~inclusion) probabilities ($\theta_{ij}$) may depend on a subset of the covariates, and are modeled as 
+In Mao's paper, the sampling (~~missingness~~inclusion) probabilities ($\theta_{ij}$) may depend on a subset of the covariates, and are modeled as 
 $$ w_{ij} \sim Bernoulli(\theta_{ij}(x_i))$$
 The loss function in (5) consists of the the minimizer $\hat{R}^*$, $L_2$ regularization on $\beta$ and $B$, and a $L_1$ regularization on $B$. 
 

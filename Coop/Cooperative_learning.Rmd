@@ -44,7 +44,16 @@ f_x(X) &= E[\frac{1}{1+\rho} (y+(1-\rho)f_z(Z))|X] &&\\
 f_z(Z) &= E[\frac{1}{1+\rho} (y+(1-\rho)f_x(X))|Z] && (2)
 \end{aligned}
 $$
-Where the objective can be optimized by repeatedly updating the fir for each covariate matrix in turn, holding the other matrix fixed.
+Where the objective can be optimized by repeatedly updating the fit for each covariate matrix in turn, holding the other matrix fixed.
+
+That is, we could use an alternative objective function to (1) that separates both covariate matrices as follows:
+
+$$
+\begin{aligned}
+ &\| \frac{1}{1+\rho} (y+(1-\rho)f_z(Z)) - f_x(X)\|^2 + \|\frac{1}{1+\rho} (y+(1-\rho)f_x(X))-f_z(Z)\|^2& && (C1)
+\end{aligned}
+$$
+
 
 #### Case: Regularized Linear Regression
 
@@ -53,7 +62,7 @@ Here, we assume that the columns of $X$ and $Z$ are standardized and y has mean 
 
 $$
 \begin{aligned}
-J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 + \frac{\rho}{2} ||X\theta_x-Z\theta_z||^2+\lambda_xP^x(\theta_x)+\lambda_zP^z(\theta_z) && (3)
+J(\theta_x,\theta_z) = \frac{1}{2} \| y - X \theta_x - Z \theta_z \|^2 + \frac{\rho}{2} \|X\theta_x-Z\theta_z\|^2+\lambda_xP^x(\theta_x)+\lambda_zP^z(\theta_z) && (3)
 \end{aligned}
 $$
 
@@ -61,7 +70,7 @@ Where $P^x(\theta_x)$ can be any regularization term. Let's assume $L_1$ regular
 
 $$
 \begin{aligned}
-J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 + \frac{\rho}{2} ||X\theta_x-Z\theta_z||^2+\lambda (||\theta_x||+||\theta_z||) && (5)
+J(\theta_x,\theta_z) = \frac{1}{2} \| y - X \theta_x - Z \theta_z \|^2 + \frac{\rho}{2} \|X\theta_x-Z\theta_z\|^2+\lambda (\|\theta_x\|+\|\theta_z\|) && (5)
 \end{aligned}
 $$
 
@@ -69,7 +78,7 @@ We could rewrite equation 5 as:
 
 $$
 \begin{aligned}
-J(\theta_x,\theta_z) = \frac{1}{2} || \tilde y - \tilde{X}\tilde\beta ||^2 +\lambda (||\theta_x||+||\theta_z||) && (7)
+J(\theta_x,\theta_z) = \frac{1}{2} \| \tilde y - \tilde{X}\tilde\beta \|^2 +\lambda (\|\theta_x\|+\|\theta_z\|) && (7)
 \end{aligned}
 $$
 where
@@ -85,7 +94,7 @@ Let the $Lasso(X,y,\lambda)$ denote the generic problem:
 
 $$
 \begin{aligned}
-min_\beta \frac{1}{2} || y - X\beta||^2 + \lambda || \beta|| && (8)
+min_\beta \frac{1}{2} \| y - X\beta\|^2 + \lambda \| \beta\| && (8)
 \end{aligned}
 $$
 We could also incorporate $L_2$ penalties (elastic net regularization) to the objective in 5. This option is included in their software implementation.
@@ -93,7 +102,7 @@ We could also incorporate $L_2$ penalties (elastic net regularization) to the ob
 
 $$
 \begin{aligned}
-\lambda[ (1-\alpha)(||\theta_x||+||\theta_z||)+\alpha(||\theta_x||^2_2/2+||\theta_z||^2_2/2) ] && (9)
+\lambda[ (1-\alpha)(\|\theta_x\|+\|\theta_z\|)+\alpha(\|\theta_x\|^2_2/2+\|\theta_z\|^2_2/2) ] && (9)
 \end{aligned}
 $$
 
@@ -184,7 +193,7 @@ where $\hat {f_z}(Z) = Z\hat{B}+\hat{\Theta}_Z$ are the estimates from fitting (
 
 Similarly, for the first term in (Y2), let
 
-$$Y^* = \frac{\hat Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)$$
+$$Y^* = \frac{ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)$$
 where $\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X$ are the estimates from fitting (Y1) in the previous iteration.
 
 

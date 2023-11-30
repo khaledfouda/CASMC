@@ -389,8 +389,16 @@ f_x(X) &amp;= E[\frac{1}{1+\rho} (y+(1-\rho)f_z(Z))|X] &amp;&amp;\\
 f_z(Z) &amp;= E[\frac{1}{1+\rho} (y+(1-\rho)f_x(X))|Z] &amp;&amp; (2)
 \end{aligned}
 \]</span> Where the objective can be optimized by repeatedly updating
-the fir for each covariate matrix in turn, holding the other matrix
+the fit for each covariate matrix in turn, holding the other matrix
 fixed.</p>
+<p>That is, we could use an alternative objective function to (1) that
+separates both covariate matrices as follows:</p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;\| \frac{1}{1+\rho} (y+(1-\rho)f_z(Z)) - f_x(X)\|^2 +
+\|\frac{1}{1+\rho} (y+(1-\rho)f_x(X))-f_z(Z)\|^2&amp; &amp;&amp; (C1)
+\end{aligned}
+\]</span></p>
 <div id="case-regularized-linear-regression" class="section level4">
 <h4>Case: Regularized Linear Regression</h4>
 <p>Here, we assume that the columns of <span class="math inline">\(X\)</span> and <span class="math inline">\(Z\)</span> are standardized and y has mean zero.
@@ -398,9 +406,9 @@ Hence, we can omit the intercept. The resulting objective function
 is:</p>
 <p><span class="math display">\[
 \begin{aligned}
-J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 +
+J(\theta_x,\theta_z) = \frac{1}{2} \| y - X \theta_x - Z \theta_z \|^2 +
 \frac{\rho}{2}
-||X\theta_x-Z\theta_z||^2+\lambda_xP^x(\theta_x)+\lambda_zP^z(\theta_z)
+\|X\theta_x-Z\theta_z\|^2+\lambda_xP^x(\theta_x)+\lambda_zP^z(\theta_z)
 &amp;&amp; (3)
 \end{aligned}
 \]</span></p>
@@ -412,16 +420,16 @@ covariate matrices doen’t contribute at all to the model. We will assume
 them equal for now, as did the author.</p>
 <p><span class="math display">\[
 \begin{aligned}
-J(\theta_x,\theta_z) = \frac{1}{2} || y - X \theta_x - Z \theta_z ||^2 +
-\frac{\rho}{2} ||X\theta_x-Z\theta_z||^2+\lambda
-(||\theta_x||+||\theta_z||) &amp;&amp; (5)
+J(\theta_x,\theta_z) = \frac{1}{2} \| y - X \theta_x - Z \theta_z \|^2 +
+\frac{\rho}{2} \|X\theta_x-Z\theta_z\|^2+\lambda
+(\|\theta_x\|+\|\theta_z\|) &amp;&amp; (5)
 \end{aligned}
 \]</span></p>
 <p>We could rewrite equation 5 as:</p>
 <p><span class="math display">\[
 \begin{aligned}
-J(\theta_x,\theta_z) = \frac{1}{2} || \tilde y - \tilde{X}\tilde\beta
-||^2 +\lambda (||\theta_x||+||\theta_z||) &amp;&amp; (7)
+J(\theta_x,\theta_z) = \frac{1}{2} \| \tilde y - \tilde{X}\tilde\beta
+\|^2 +\lambda (\|\theta_x\|+\|\theta_z\|) &amp;&amp; (7)
 \end{aligned}
 \]</span> where</p>
 <p><span class="math display">\[
@@ -435,7 +443,7 @@ glmnet package to git the model. Let the <span class="math inline">\(Lasso(X,y,\
 problem:</p>
 <p><span class="math display">\[
 \begin{aligned}
-min_\beta \frac{1}{2} || y - X\beta||^2 + \lambda || \beta|| &amp;&amp;
+min_\beta \frac{1}{2} \| y - X\beta\|^2 + \lambda \| \beta\| &amp;&amp;
 (8)
 \end{aligned}
 \]</span> We could also incorporate <span class="math inline">\(L_2\)</span> penalties (elastic net
@@ -444,7 +452,7 @@ software implementation.</p>
 <p><span class="math display">\[
 \begin{aligned}
 \lambda[
-(1-\alpha)(||\theta_x||+||\theta_z||)+\alpha(||\theta_x||^2_2/2+||\theta_z||^2_2/2)
+(1-\alpha)(\|\theta_x\|+\|\theta_z\|)+\alpha(\|\theta_x\|^2_2/2+\|\theta_z\|^2_2/2)
 ] &amp;&amp; (9)
 \end{aligned}
 \]</span></p>
@@ -551,7 +559,7 @@ need to adjust them. For the first term in (Y1), let <span class="math display">
 \frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T\]</span> where <span class="math inline">\(\hat {f_z}(Z) = Z\hat{B}+\hat{\Theta}_Z\)</span>
 are the estimates from fitting (Y2) in the previous iteration.</p>
 <p>Similarly, for the first term in (Y2), let</p>
-<p><span class="math display">\[Y^* = \frac{\hat Y}{1+\rho} -
+<p><span class="math display">\[Y^* = \frac{ Y}{1+\rho} -
 \frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} -
 \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)\]</span> where <span class="math inline">\(\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X\)</span>
 are the estimates from fitting (Y1) in the previous iteration.</p>
