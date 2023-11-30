@@ -188,13 +188,22 @@ In order to iteratively solve (Y1) and (Y2) using an a method similar to the one
 
 The regularization terms match exactly the form and hence we don't need to adjust them. 
 For the first term in (Y1), let 
-$$Y^* = \frac{\ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_z}(Z) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T$$
+$$
+\begin{aligned}
+Y^* = \frac{\ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_z}(Z) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T && (Y3)
+\end{aligned}
+$$
 where $\hat {f_z}(Z) = Z\hat{B}+\hat{\Theta}_Z$ are the estimates from fitting (Y2) in the previous iteration.  
 
 Similarly, for the first term in (Y2), let
 
-$$Y^* = \frac{ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)$$
+$$
+\begin{aligned}
+Y^* = \frac{ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X) && (Y4)
+\end{aligned}
+$$
 where $\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X$ are the estimates from fitting (Y1) in the previous iteration.
+
 
 
 ### Implementation 
@@ -211,6 +220,43 @@ Finally, we attempted (as been done by Youssef) to use the original $Y^*$ for th
 $$
 Error = \frac{\sum_{i,j \in test}{(\hat{A}_{ij}-A_{ij})^2}}{\sum_{i,j \in test} (A_{ij}-\bar{A})^2}
 $$
+
+
+---------
+
+
+### Estimation (Added after the meeting) (Is it supposed to be always like this?)
+
+The estimated matrix $\hat{A}$ is the sum of estimated matrices from both $X$ and $Z$, that is
+
+$$
+\begin{aligned}
+\hat{A} = \hat{A_Z}+\hat{A_X} = X\hat{A}+\hat{\Theta}_X + (Z\hat{B}+\hat{\Theta}_Z)^T && (Y5)
+\end{aligned}
+$$
+For each iteration, we fit 2 Mao models with $Y^*$ instead $Y$ as the response. Therefore, the estimated matrices $\hat{A}_Z$ and $\hat{A}_Z$ apporximate the $Y^*$ corresponding to them. Therefore, the forumla for estimation above might not represent the true weights of each of the two estimated matrices. 
+For example, for $\rho=1$, $Y^*=\frac{1}{2}Y$ will always be the case and hence $\hat{A} = \hat{A_Z}+\hat{A_X}$ is true. But when $\rho$ is not 1, then it gets more complicated. 
+
+One solution comes to mind is to solve for $Y$ in (Y3) and (Y4) equations above. Let the estimation of $Y^*$ in (Y3) be $\hat{A}_X$ and the estimation $Y^*$ in (Y4) be $\hat{A}_Z$, the solution to the first equation is:
+
+$$
+\begin{aligned}
+\hat{Y} = (1-p) \hat{A}_X - (1+p) \hat{A}_Z
+\end{aligned}
+$$
+Where $\hat{A}_Z$ is the output of fitting the Mao model to $Z$ in the previous step and $\hat{A}_X$ is the output of fitting the Mao model to $X$ in the current step. Similarly for the second equation (Y4):
+
+$$
+\begin{aligned}
+\hat{Y} = (1-p) \hat{A}_Z - (1+p) \hat{A}_X
+\end{aligned}
+$$
+
+Where $\hat{A}_X$ is the output of fitting the Mao model to $X$ in the previous step and $\hat{A}_Z$ is the output of fitting the Mao model to $Z$ in the current step.
+
+My suggestion is to take the average from both solutions to get the final estimate. I will implement this method as a next step and compare the results. For the results below, I used the sum in (Y5) to compute the results.
+
+-----------
 
 
 ```{r code=readLines(paste0(path_to_code, "/Mao_Coop_fit.R")),eval=TRUE}

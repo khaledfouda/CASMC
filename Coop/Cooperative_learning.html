@@ -554,15 +554,25 @@ to the one-at-a-time algorithm, we will apply Mao method to minimize
 each formula. First, we need to have them in the form of equations (4)
 and (5) from Mao’s paper (check the other html file).</p>
 <p>The regularization terms match exactly the form and hence we don’t
-need to adjust them. For the first term in (Y1), let <span class="math display">\[Y^* = \frac{\ Y}{1+\rho} -
-\frac{1-\rho}{1+\rho}\hat {f_z}(Z) = \frac{Y}{1+\rho} -
-\frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T\]</span> where <span class="math inline">\(\hat {f_z}(Z) = Z\hat{B}+\hat{\Theta}_Z\)</span>
-are the estimates from fitting (Y2) in the previous iteration.</p>
+need to adjust them. For the first term in (Y1), let <span class="math display">\[
+\begin{aligned}
+Y^* = \frac{\ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_z}(Z) =
+\frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(Z\hat{B}+\hat{\Theta}_Z)^T
+&amp;&amp; (Y3)
+\end{aligned}
+\]</span> where <span class="math inline">\(\hat {f_z}(Z) =
+Z\hat{B}+\hat{\Theta}_Z\)</span> are the estimates from fitting (Y2) in
+the previous iteration.</p>
 <p>Similarly, for the first term in (Y2), let</p>
-<p><span class="math display">\[Y^* = \frac{ Y}{1+\rho} -
-\frac{1-\rho}{1+\rho}\hat {f_x}(x) = \frac{Y}{1+\rho} -
-\frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)\]</span> where <span class="math inline">\(\hat {f_x}(X) = X\hat{A}+\hat{\Theta}_X\)</span>
-are the estimates from fitting (Y1) in the previous iteration.</p>
+<p><span class="math display">\[
+\begin{aligned}
+Y^* = \frac{ Y}{1+\rho} - \frac{1-\rho}{1+\rho}\hat {f_x}(x) =
+\frac{Y}{1+\rho} - \frac{1-\rho}{1+\rho}(X\hat{A}+\hat{\Theta}_X)
+&amp;&amp; (Y4)
+\end{aligned}
+\]</span> where <span class="math inline">\(\hat {f_x}(X) =
+X\hat{A}+\hat{\Theta}_X\)</span> are the estimates from fitting (Y1) in
+the previous iteration.</p>
 </div>
 <div id="implementation" class="section level3">
 <h3>Implementation</h3>
@@ -594,6 +604,53 @@ the same as one used in Mao:</p></li>
 Error = \frac{\sum_{i,j \in test}{(\hat{A}_{ij}-A_{ij})^2}}{\sum_{i,j
 \in test} (A_{ij}-\bar{A})^2}
 \]</span></p>
+<hr />
+</div>
+</div>
+<div id="estimation-added-after-the-meeting-is-it-supposed-to-be-always-like-this" class="section level3">
+<h3>Estimation (Added after the meeting) (Is it supposed to be always
+like this?)</h3>
+<p>The estimated matrix <span class="math inline">\(\hat{A}\)</span> is
+the sum of estimated matrices from both <span class="math inline">\(X\)</span> and <span class="math inline">\(Z\)</span>, that is</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{A} = \hat{A_Z}+\hat{A_X} = X\hat{A}+\hat{\Theta}_X +
+(Z\hat{B}+\hat{\Theta}_Z)^T &amp;&amp; (Y5)
+\end{aligned}
+\]</span> For each iteration, we fit 2 Mao models with <span class="math inline">\(Y^*\)</span> instead <span class="math inline">\(Y\)</span> as the response. Therefore, the
+estimated matrices <span class="math inline">\(\hat{A}_Z\)</span> and
+<span class="math inline">\(\hat{A}_Z\)</span> apporximate the <span class="math inline">\(Y^*\)</span> corresponding to them. Therefore, the
+forumla for estimation above might not represent the true weights of
+each of the two estimated matrices. For example, for <span class="math inline">\(\rho=1\)</span>, <span class="math inline">\(Y^*=\frac{1}{2}Y\)</span> will always be the case
+and hence <span class="math inline">\(\hat{A} =
+\hat{A_Z}+\hat{A_X}\)</span> is true. But when <span class="math inline">\(\rho\)</span> is not 1, then it gets more
+complicated.</p>
+<p>One solution comes to mind is to solve for <span class="math inline">\(Y\)</span> in (Y3) and (Y4) equations above. Let
+the estimation of <span class="math inline">\(Y^*\)</span> in (Y3) be
+<span class="math inline">\(\hat{A}_X\)</span> and the estimation <span class="math inline">\(Y^*\)</span> in (Y4) be <span class="math inline">\(\hat{A}_Z\)</span>, the solution to the first
+equation is:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{Y} = (1-p) \hat{A}_X - (1+p) \hat{A}_Z
+\end{aligned}
+\]</span> Where <span class="math inline">\(\hat{A}_Z\)</span> is the
+output of fitting the Mao model to <span class="math inline">\(Z\)</span> in the previous step and <span class="math inline">\(\hat{A}_X\)</span> is the output of fitting the
+Mao model to <span class="math inline">\(X\)</span> in the current step.
+Similarly for the second equation (Y4):</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{Y} = (1-p) \hat{A}_Z - (1+p) \hat{A}_X
+\end{aligned}
+\]</span></p>
+<p>Where <span class="math inline">\(\hat{A}_X\)</span> is the output of
+fitting the Mao model to <span class="math inline">\(X\)</span> in the
+previous step and <span class="math inline">\(\hat{A}_Z\)</span> is the
+output of fitting the Mao model to <span class="math inline">\(Z\)</span> in the current step.</p>
+<p>My suggestion is to take the average from both solutions to get the
+final estimate. I will implement this method as a next step and compare
+the results. For the results below, I used the sum in (Y5) to compute
+the results.</p>
+<hr />
 <pre class="r"><code># Make sure to run Mao_import_lib.R before running this file.
 
 Mao_Coop_fit &lt;- function(A, X, Z, W, maxiter=100, epsilon=1e-6, 
@@ -1003,7 +1060,6 @@ A.hat &lt;- Mao_Coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W,20,1e-6,1,2,
 \begin{aligned}
 \end{aligned}
 \]</span></p>
-</div>
 </div>
 </div>
 
