@@ -1,0 +1,85 @@
+---
+title: "Comparing Mao Implementations"
+author: "Khaled Fouda"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+#source("./Mao/SMC_functions6.R")
+#source("./code_files/Mao_import_lib.R")
+data_dir = "./Mao/saved_data/"
+
+```
+
+### Read the results
+
+
+```{r}
+
+results_MaoSim <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_MaoSim.csv"))
+results_YsfSim80 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim.csv"))
+results_YsfSim90 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_90.csv"))
+```
+
+
+
+```{r}
+
+print_table <- function(results, missing=FALSE, prob=NA){
+   
+   results %<>%
+      mutate(across(.cols = contains("Ysf"), ~ round(., 4))) %>% 
+      mutate(across(.cols = contains("new"), ~ round(., 4))) %>%
+      mutate(missing_prob = prob, new.Method = "New", Ysf.Method="Old")
+      
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("new")) -> new_results
+   
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("Ysf")) -> ysf_results
+   
+   
+   
+   names(new_results) <- gsub("new\\.", "", names(new_results))
+   names(ysf_results) <- gsub("Ysf\\.", "", names(ysf_results))
+   
+   new_results$Method <- 'New'
+   ysf_results$Method <- 'Old'
+   combined_results <- rbind(new_results, ysf_results) %>% 
+      arrange(Dim) %>% 
+      select(-Dim)
+   
+   if(missing==FALSE){
+      combined_results %<>% select(-missing_prob)
+      nfixed=2
+   }else
+      nfixed=3
+   
+   kable(combined_results, "html", align = 'c') %>%
+     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Performance" = 5)) %>%
+     pack_rows("200x200", 1, 2) %>%
+     pack_rows("400x400", 3, 4) %>% 
+     pack_rows("600x600", 5, 6) %>% 
+     pack_rows("800x800", 7, 8)
+  
+}
+
+
+```
+
+```{r}
+print_table(results_MaoSim)
+print_table(results_YsfSim80,TRUE, 0.8)
+print_table(results_YsfSim90, TRUE, 0.9)
+
+
+results <- results_MaoSim
+```
+

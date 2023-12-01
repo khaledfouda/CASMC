@@ -100,9 +100,9 @@ SMCfit = function(Aobs, X, tau_beta_ratio, tau_svd_ratio, alpha_ratio) {
 }
 
 
-SMCfit_cv = function(Y, X.cov, mask, nfolds = 5, 
-                     tau1_grid = seq(0, 1, length = 30), tau2_grid = seq(0.9, 0.1, length = 30), alpha_grid = seq(0.992, 
-                                                                                                                  1, length = 20)) {
+SMCfit_cv = function(Y, X.cov, mask, Aobs, nfolds = 5, 
+                     tau1_grid = seq(0, 1, length = 30), 
+                     tau2_grid = seq(0.9, 0.1, length = 30), alpha_grid = seq(0.992, 1, length = 20),seed=2023) {
   
   #' This function performs the matrix completion part in the proposed method with the tuning parameter chosen by cross-validation.
   #'
@@ -119,7 +119,7 @@ SMCfit_cv = function(Y, X.cov, mask, nfolds = 5,
   #' Outputs: 
   #'    A list is returned, with values: Estimated Ahat, Bhat, betahat and rank.
   
-  
+  set.seed(seed)
   N.popu = nrow(Y)
   
   
@@ -130,7 +130,7 @@ SMCfit_cv = function(Y, X.cov, mask, nfolds = 5,
   omega = mask
   
   
-  Aobs = Y * omega
+  #Aobs = Y * omega
   n1 = dim(Aobs)[1]
   n2 = dim(Aobs)[2]
   m = dim(x.sample)[2]

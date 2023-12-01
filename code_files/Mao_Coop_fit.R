@@ -79,18 +79,25 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
                                numCores, n1n2_optimized, theta_estimator)$best_parameters
          A.hat_x = Mao.fit(y.star* W , X, W, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
                            n1n2_optimized, theta_estimator )$A_hat
+         # the following estimates A using X according to the method in section "Estimation"
+         A_estim_x = (1-rho) * A.hat_x + (1+rho) * A.hat_z
          # 2. Column covariates (Y2)
          y.star = (rho.1 * Y_tr - rho.2 * t(A.hat_x)) 
          best_param = Mao.cv(A_tr, Z, y.star, W_tr, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
                                numCores, n1n2_optimized, theta_estimator)$best_parameters
          A.hat_z = t(Mao.fit(y.star* W_tr , Z, W_tr, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
                              n1n2_optimized, theta_estimator )$A_hat)
+         # the following estimates A using Z according to the method in section "Estimation"
+         A_estim_z = (1-rho) * A.hat_z + (1+rho) * A.hat_x
          # update stopping criteria
          diff = sqrt(mean((A.hat - A.hat_x - A.hat_z)**2))
          A.hat = A.hat_x + A.hat_z
+         A.hat_alt = (A_estim_x + A_estim_z) / 2
+         test_error_alt = test_error(A.hat_alt[W==0], A[W==0])
          iter = iter + 1
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
-         print(paste("Iteration",iter, "- test Error =",test_error_Coop, "- diff =",diff))
+         print(paste("Iteration",iter, "- test Error =",test_error_Coop,
+                     "Error Alt =",test_error_alt, "- diff =",diff))
          
          # STOP if the difference has been increasing for 3 continuous iterations
          if(diff >= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}
@@ -107,18 +114,25 @@ Mao_Coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-6,
                              numCores, n1n2_optimized, theta_estimator)$best_parameters
          A.hat_z = t(Mao.fit(y.star* W_tr, Z, W_tr, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
                              n1n2_optimized, theta_estimator )$A_hat)
+         # the following estimates A using Z according to the method in section "Estimation"
+         A_estim_z = (1-rho) * A.hat_z + (1+rho) * A.hat_x
          # 2. row covariates, (Y1)   
          y.star = (rho.1 * Y - rho.2 * A.hat_z) 
          best_param = Mao.cv(A, X, y.star, W, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
                              numCores, n1n2_optimized, theta_estimator)$best_parameters
          A.hat_x = Mao.fit(y.star* W, X, W, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
                            n1n2_optimized, theta_estimator )$A_hat
+         # the following estimates A using X according to the method in section "Estimation"
+         A_estim_x = (1-rho) * A.hat_x + (1+rho) * A.hat_z
          # update stopping criteria
          diff = sqrt(mean((A.hat - A.hat_x - A.hat_z)**2))
          A.hat = A.hat_x + A.hat_z
          iter = iter + 1
+         A.hat_alt = (A_estim_x + A_estim_z) / 2
+         test_error_alt = test_error(A.hat_alt[W==0], A[W==0])
          test_error_Coop = test_error(A.hat[W==0], A[W==0])
-         print(paste("Iteration",iter, "- test Error =",test_error_Coop, "- diff =",diff))
+         print(paste("Iteration",iter, "- test Error =",test_error_Coop,
+                     "Error Alt =",test_error_alt, "- diff =",diff))
          
          # STOP if the difference has been increasing for 3 continuous iterations
          if(diff >= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}

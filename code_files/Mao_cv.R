@@ -190,7 +190,18 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
          c(alpha, lambda.2, score)
       }
    # Process results to find the best parameters
-   best_result <- results[which.min(results[, 3]), ]
+   # Edited on Dec 1st to pick the minimum score with highest lambda.2 value.
+   min_score <- min(results[, 3])
+   # Subset to only include results with the minimum score
+   min_results <- results[results[, 3] == min_score, , drop = FALSE] # drop to keep it as df
+   # In case of multiple results with the same score, find the one with the highest lambda.2
+   if (nrow(min_results) > 1) {
+      best_result <- min_results[which.max(min_results[, 2]), ]
+   } else {
+      best_result <- min_results  # If only one row, it's already the best result
+   }
+   #best_result <- results[which.min(results[, 3]), ] # old line
+   # Extract the best parameters
    best_params <- list(alpha = best_result[1], lambda.1 = 0, lambda.2 = best_result[2])
    best_score <- best_result[3] / n_folds
    # close the cluster
