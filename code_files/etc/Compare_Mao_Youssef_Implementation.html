@@ -605,13 +605,29 @@ data_dir = &quot;./Mao/saved_data/&quot;</code></pre>
 <div id="read-the-results" class="section level3">
 <h3>Read the results</h3>
 <pre class="r"><code>results_MaoSim &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implementation_MaoSim.csv&quot;))
-results_YsfSim80 &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implementation_YsfSim.csv&quot;))
-results_YsfSim90 &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implementation_YsfSim_90.csv&quot;))</code></pre>
-<pre class="r"><code>print_table &lt;- function(results, missing=FALSE, prob=NA){
+results_YsfSim80 &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implementation_YsfSim_80_coll_FALSE.csv&quot;))
+results_YsfSim90 &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implementation_YsfSim_90_coll_FALSE.csv&quot;))
+results_YsfSim80.coll &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implementation_YsfSim_80_coll_TRUE.csv&quot;))
+results_YsfSim90.coll &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implementation_YsfSim_90_coll_TRUE.csv&quot;))</code></pre>
+<pre class="r"><code># Function to color minimum values in green
+color_min_values &lt;- function(data, columns) {
+  data &lt;- as.data.frame(data)
+  for (col_name in columns) {
+    col_min &lt;- min(data[[col_name]], na.rm = TRUE)
+    colrounded &lt;- round(as.numeric(data[[col_name]]),4)
+    data[[col_name]] &lt;- cell_spec(colrounded, &quot;html&quot;, 
+                                  background = ifelse(data[[col_name]] == col_min, &quot;lightgreen&quot;, &quot;grey98&quot;))
+  }
+    col_min &lt;- min(abs(data[[&quot;rank_diff&quot;]]), na.rm = TRUE)
+    data[[&quot;rank&quot;]] &lt;- cell_spec(data[[&quot;rank&quot;]], &quot;html&quot;, 
+                                  background = ifelse(abs(data[[&quot;rank_diff&quot;]]) == col_min, &quot;lightgreen&quot;, &quot;grey98&quot;))
+  return(data)
+}
+print_table &lt;- function(results, missing=FALSE, prob=NA, caption=&quot;&quot;){
    
    results %&lt;&gt;%
-      mutate(across(.cols = contains(&quot;Ysf&quot;), ~ round(., 4))) %&gt;% 
-      mutate(across(.cols = contains(&quot;new&quot;), ~ round(., 4))) %&gt;%
+      #mutate(across(.cols = contains(&quot;Ysf&quot;), ~ round(., 4))) %&gt;% 
+      #mutate(across(.cols = contains(&quot;new&quot;), ~ round(., 4))) %&gt;%
       mutate(missing_prob = prob, new.Method = &quot;New&quot;, Ysf.Method=&quot;Old&quot;)
       
    results %&gt;%
@@ -624,12 +640,15 @@ results_YsfSim90 &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implem
    
    names(new_results) &lt;- gsub(&quot;new\\.&quot;, &quot;&quot;, names(new_results))
    names(ysf_results) &lt;- gsub(&quot;Ysf\\.&quot;, &quot;&quot;, names(ysf_results))
+   names(new_results) &lt;- gsub(&quot;error\\.&quot;, &quot;&quot;, names(new_results))
+   names(ysf_results) &lt;- gsub(&quot;error\\.&quot;, &quot;&quot;, names(ysf_results))
    
    new_results$Method &lt;- &#39;New&#39;
    ysf_results$Method &lt;- &#39;Old&#39;
    combined_results &lt;- rbind(new_results, ysf_results) %&gt;% 
       arrange(Dim) %&gt;% 
-      select(-Dim)
+      select(-Dim) %&gt;%
+      rename(A=all, A_test=test)
    
    if(missing==FALSE){
       combined_results %&lt;&gt;% select(-missing_prob)
@@ -637,17 +656,33 @@ results_YsfSim90 &lt;-read.csv(paste0(data_dir, &quot;compare_Mao_Youssef_Implem
    }else
       nfixed=3
    
-   kable(combined_results, &quot;html&quot;, align = &#39;c&#39;) %&gt;%
+   combined_results %&lt;&gt;% relocate(Method, .before=true_rank) %&gt;%
+      mutate(alpha = round(alpha,4),
+             lambda.1 = round(lambda.1,4),
+             lambda.2 = round(lambda.2,4))
+   
+   
+# Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
+   error_columns &lt;- c(&quot;A_test&quot;, &quot;B&quot;, &quot;beta&quot;, &quot;A&quot;)
+   combined_results$rank_diff = combined_results$rank - combined_results$true_rank
+   for(i in seq(1,7,2))
+      combined_results[i:(i+1), ] &lt;- color_min_values(combined_results[i:(i+1), ], error_columns)
+   
+   kable(combined_results, &quot;html&quot;, escape=FALSE, align = &#39;c&#39;, caption=caption) %&gt;%
      kable_styling(bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;), full_width = F, position = &quot;center&quot;) %&gt;%
-     add_header_above(c(&quot;Fixed&quot; = nfixed, &quot;Hyperparameters&quot; = 3, &quot;Performance&quot; = 5)) %&gt;%
+     add_header_above(c(&quot;Fixed&quot; = nfixed, &quot;Hyperparameters&quot; = 3, &quot;Error on&quot; = 4,&quot;Rank&quot;=2)) %&gt;%
      pack_rows(&quot;200x200&quot;, 1, 2) %&gt;%
      pack_rows(&quot;400x400&quot;, 3, 4) %&gt;% 
      pack_rows(&quot;600x600&quot;, 5, 6) %&gt;% 
      pack_rows(&quot;800x800&quot;, 7, 8)
   
 }</code></pre>
-<pre class="r"><code>print_table(results_MaoSim)</code></pre>
+<pre class="r"><code>#results &lt;- results_MaoSim
+print_table(results_MaoSim,caption = &quot;Data was simulated using Mao with m=5 and r=10&quot;)</code></pre>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Data was simulated using Mao with m=5 and r=10
+</caption>
 <thead>
 <tr>
 <th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
@@ -660,13 +695,21 @@ Fixed
 Hyperparameters
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="5">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Performance
+Error on
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Rank
 </div>
 </th>
 </tr>
 <tr>
+<th style="text-align:center;">
+Method
+</th>
 <th style="text-align:center;">
 true_rank
 </th>
@@ -680,306 +723,334 @@ lambda.1
 lambda.2
 </th>
 <th style="text-align:center;">
-error.test
+A_test
 </th>
 <th style="text-align:center;">
-error.all
+A
 </th>
 <th style="text-align:center;">
-error.B
+B
 </th>
 <th style="text-align:center;">
-error.beta
+beta
 </th>
 <th style="text-align:center;">
 rank
 </th>
 <th style="text-align:center;">
-Method
+rank_diff
 </th>
 </tr>
 </thead>
 <tbody>
 <tr grouplength="2">
-<td colspan="10" style="border-bottom: 1px solid;">
+<td colspan="11" style="border-bottom: 1px solid;">
 <strong>200x200</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.0000
-</td>
-<td style="text-align:center;">
-0.0474
-</td>
-<td style="text-align:center;">
-0.9481
-</td>
-<td style="text-align:center;">
-9.1047
-</td>
-<td style="text-align:center;">
-13.3493
-</td>
-<td style="text-align:center;">
-0.8241
-</td>
-<td style="text-align:center;">
-186
-</td>
-<td style="text-align:center;">
 New
 </td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-1.1538
-</td>
-<td style="text-align:center;">
-0.7579
-</td>
-<td style="text-align:center;">
-0.8453
-</td>
-<td style="text-align:center;">
-0.8349
-</td>
-<td style="text-align:center;">
-0.9806
-</td>
-<td style="text-align:center;">
-0.5590
-</td>
 <td style="text-align:center;">
 15
 </td>
 <td style="text-align:center;">
-Old
-</td>
-</tr>
-<tr grouplength="2">
-<td colspan="10" style="border-bottom: 1px solid;">
-<strong>400x400</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+1.0000
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.3846
-</td>
-<td style="text-align:center;">
-0.3316
-</td>
-<td style="text-align:center;">
-0.8046
-</td>
-<td style="text-align:center;">
-1.7309
-</td>
-<td style="text-align:center;">
-2.3898
-</td>
-<td style="text-align:center;">
-0.4160
-</td>
-<td style="text-align:center;">
-58
-</td>
-<td style="text-align:center;">
-New
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.7692
-</td>
-<td style="text-align:center;">
-0.9000
-</td>
-<td style="text-align:center;">
-0.8100
-</td>
-<td style="text-align:center;">
-0.8098
-</td>
-<td style="text-align:center;">
-1.0131
-</td>
-<td style="text-align:center;">
-0.4081
-</td>
-<td style="text-align:center;">
-7
-</td>
-<td style="text-align:center;">
-Old
-</td>
-</tr>
-<tr grouplength="2">
-<td colspan="10" style="border-bottom: 1px solid;">
-<strong>600x600</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.2564
+0.1579
 </td>
 <td style="text-align:center;">
 0.5211
 </td>
 <td style="text-align:center;">
-0.6021
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5273</span>
 </td>
 <td style="text-align:center;">
-0.6793
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.6039</span>
 </td>
 <td style="text-align:center;">
-0.8740
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7961</span>
 </td>
 <td style="text-align:center;">
-0.2591
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2003</span>
 </td>
 <td style="text-align:center;">
-64
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">73</span>
 </td>
 <td style="text-align:center;">
-New
+58
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
 15
 </td>
 <td style="text-align:center;">
-1
+1.0000
 </td>
 <td style="text-align:center;">
-0.3846
+0.1579
 </td>
 <td style="text-align:center;">
-0.5684
+0.5211
 </td>
 <td style="text-align:center;">
-0.6110
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5273</span>
 </td>
 <td style="text-align:center;">
-0.6482
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.6039</span>
 </td>
 <td style="text-align:center;">
-0.8281
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7961</span>
 </td>
 <td style="text-align:center;">
-0.2595
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2003</span>
 </td>
 <td style="text-align:center;">
-46
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">73</span>
 </td>
 <td style="text-align:center;">
-Old
+58
 </td>
 </tr>
 <tr grouplength="2">
-<td colspan="10" style="border-bottom: 1px solid;">
-<strong>800x800</strong>
+<td colspan="11" style="border-bottom: 1px solid;">
+<strong>400x400</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.2564
-</td>
-<td style="text-align:center;">
-0.4263
-</td>
-<td style="text-align:center;">
-0.5994
-</td>
-<td style="text-align:center;">
-0.8043
-</td>
-<td style="text-align:center;">
-1.0784
-</td>
-<td style="text-align:center;">
-0.2290
-</td>
-<td style="text-align:center;">
-95
-</td>
-<td style="text-align:center;">
 New
 </td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+<td style="text-align:center;">
 15
 </td>
 <td style="text-align:center;">
-1
+1.0000
 </td>
 <td style="text-align:center;">
-0.2564
+0.3158
+</td>
+<td style="text-align:center;">
+0.6158
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.8135</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.0161</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.3098</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.433</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">9</span>
+</td>
+<td style="text-align:center;">
+-6
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+0.9964
 </td>
 <td style="text-align:center;">
 0.4737
 </td>
 <td style="text-align:center;">
-0.5914
+0.2368
 </td>
 <td style="text-align:center;">
-0.7151
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7583</span>
 </td>
 <td style="text-align:center;">
-0.9467
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.8705</span>
 </td>
 <td style="text-align:center;">
-0.2290
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">1.106</span>
 </td>
 <td style="text-align:center;">
-65
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.404</span>
 </td>
 <td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">120</span>
+</td>
+<td style="text-align:center;">
+105
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="11" style="border-bottom: 1px solid;">
+<strong>600x600</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+1.0000
+</td>
+<td style="text-align:center;">
+0.1579
+</td>
+<td style="text-align:center;">
+0.5684
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6103</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6524</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.8281</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2732</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">46</span>
+</td>
+<td style="text-align:center;">
+31
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
 Old
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+1.0000
+</td>
+<td style="text-align:center;">
+0.3158
+</td>
+<td style="text-align:center;">
+0.5684
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.609</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.6474</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.8281</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2573</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">46</span>
+</td>
+<td style="text-align:center;">
+31
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="11" style="border-bottom: 1px solid;">
+<strong>800x800</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+1.0000
+</td>
+<td style="text-align:center;">
+0.1579
+</td>
+<td style="text-align:center;">
+0.5211
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6109</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.692</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.9092</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2365</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">42</span>
+</td>
+<td style="text-align:center;">
+27
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+1.0000
+</td>
+<td style="text-align:center;">
+0.1579
+</td>
+<td style="text-align:center;">
+0.4737
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5908</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7174</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.9467</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2365</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">65</span>
+</td>
+<td style="text-align:center;">
+50
 </td>
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>print_table(results_YsfSim80,TRUE, 0.8)</code></pre>
+<pre class="r"><code>print_table(results_YsfSim80,TRUE, 0.8, &quot;Data was simulated using Youssef&#39;s model with m1=m2=10, 80% missing values, and with collinearity&quot;)</code></pre>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Data was simulated using Youssef’s model with m1=m2=10, 80% missing
+values, and with collinearity
+</caption>
 <thead>
 <tr>
 <th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
@@ -992,13 +1063,21 @@ Fixed
 Hyperparameters
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="5">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Performance
+Error on
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Rank
 </div>
 </th>
 </tr>
 <tr>
+<th style="text-align:center;">
+Method
+</th>
 <th style="text-align:center;">
 true_rank
 </th>
@@ -1015,144 +1094,37 @@ lambda.1
 lambda.2
 </th>
 <th style="text-align:center;">
-error.test
+A_test
 </th>
 <th style="text-align:center;">
-error.all
+A
 </th>
 <th style="text-align:center;">
-error.B
+B
 </th>
 <th style="text-align:center;">
-error.beta
+beta
 </th>
 <th style="text-align:center;">
 rank
 </th>
 <th style="text-align:center;">
-Method
+rank_diff
 </th>
 </tr>
 </thead>
 <tbody>
 <tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>200x200</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-2.3077
-</td>
-<td style="text-align:center;">
-0.3316
-</td>
-<td style="text-align:center;">
-0.7626
-</td>
-<td style="text-align:center;">
-0.7286
-</td>
-<td style="text-align:center;">
-3.9500
-</td>
-<td style="text-align:center;">
-4.5074
-</td>
-<td style="text-align:center;">
-15
-</td>
-<td style="text-align:center;">
 New
 </td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
 <td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-4.7436
-</td>
-<td style="text-align:center;">
-0.3789
-</td>
-<td style="text-align:center;">
-0.8039
-</td>
-<td style="text-align:center;">
-0.7804
-</td>
-<td style="text-align:center;">
-3.9068
-</td>
-<td style="text-align:center;">
-4.2258
-</td>
-<td style="text-align:center;">
-9
-</td>
-<td style="text-align:center;">
-Old
-</td>
-</tr>
-<tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>400x400</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-3.7179
-</td>
-<td style="text-align:center;">
-0.2368
-</td>
-<td style="text-align:center;">
-0.4859
-</td>
-<td style="text-align:center;">
-0.4665
-</td>
-<td style="text-align:center;">
-3.3711
-</td>
-<td style="text-align:center;">
-4.1551
-</td>
-<td style="text-align:center;">
-19
-</td>
-<td style="text-align:center;">
-New
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+20
 </td>
 <td style="text-align:center;">
 0.8
@@ -1164,35 +1136,33 @@ New
 5.0000
 </td>
 <td style="text-align:center;">
-0.2842
+0.1895
 </td>
 <td style="text-align:center;">
-0.5306
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3301</span>
 </td>
 <td style="text-align:center;">
-0.5214
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.327</span>
 </td>
 <td style="text-align:center;">
-3.2943
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.7844</span>
 </td>
 <td style="text-align:center;">
-4.1600
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9694</span>
 </td>
 <td style="text-align:center;">
-6
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">13</span>
 </td>
 <td style="text-align:center;">
-Old
-</td>
-</tr>
-<tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>600x600</strong>
+-7
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+Old
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.8
@@ -1201,33 +1171,831 @@ Old
 1
 </td>
 <td style="text-align:center;">
-1.9231
+5.0000
+</td>
+<td style="text-align:center;">
+0.1895
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3301</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.327</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.7844</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9694</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">13</span>
+</td>
+<td style="text-align:center;">
+-7
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>400x400</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+4.4872
+</td>
+<td style="text-align:center;">
+0.2842
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5327</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5217</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.9121</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.015</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+2.8205
+</td>
+<td style="text-align:center;">
+0.2842
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5295</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5173</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.9121</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">4.0778</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>600x600</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
 </td>
 <td style="text-align:center;">
 0.2368
 </td>
 <td style="text-align:center;">
-0.3798
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3817</span>
 </td>
 <td style="text-align:center;">
-0.3744
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3746</span>
 </td>
 <td style="text-align:center;">
-3.5073
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.486</span>
 </td>
 <td style="text-align:center;">
-4.2230
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9644</span>
 </td>
 <td style="text-align:center;">
-9
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">16</span>
 </td>
 <td style="text-align:center;">
-New
+-4
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+4.4872
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3816</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3744</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.486</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">3.9681</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">16</span>
+</td>
+<td style="text-align:center;">
+-4
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>800x800</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
+</td>
+<td style="text-align:center;">
+0.1895
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3451</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3382</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5.178</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.031</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">25</span>
+</td>
+<td style="text-align:center;">
+5
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3768</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3728</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.9255</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.031</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
+</td>
+<td style="text-align:center;">
+-9
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>print_table(results_YsfSim90, TRUE, 0.9, &quot;Data was simulated using Youssef&#39;s model with m1=m2=10, 90% missing values, and with collinearity&quot;)</code></pre>
+<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Data was simulated using Youssef’s model with m1=m2=10, 90% missing
+values, and with collinearity
+</caption>
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Fixed
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Hyperparameters
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Error on
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Rank
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Method
+</th>
+<th style="text-align:center;">
+true_rank
+</th>
+<th style="text-align:center;">
+missing_prob
+</th>
+<th style="text-align:center;">
+alpha
+</th>
+<th style="text-align:center;">
+lambda.1
+</th>
+<th style="text-align:center;">
+lambda.2
+</th>
+<th style="text-align:center;">
+A_test
+</th>
+<th style="text-align:center;">
+A
+</th>
+<th style="text-align:center;">
+B
+</th>
+<th style="text-align:center;">
+beta
+</th>
+<th style="text-align:center;">
+rank
+</th>
+<th style="text-align:center;">
+rank_diff
+</th>
+</tr>
+</thead>
+<tbody>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>200x200</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.2842
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.444</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4401</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.7762</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9766</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
+</td>
+<td style="text-align:center;">
+-6
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.2842
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.444</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4401</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.7762</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9766</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
+</td>
+<td style="text-align:center;">
+-6
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>400x400</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.3789
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.8256</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.8545</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6.7513</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.034</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">30</span>
+</td>
+<td style="text-align:center;">
+10
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.4737
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.902</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.8922</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">6.0769</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.034</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">13</span>
+</td>
+<td style="text-align:center;">
+-7
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>600x600</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.3316
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5491</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5562</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6.1942</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9784</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">26</span>
+</td>
+<td style="text-align:center;">
+6
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.3789
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5814</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5757</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.7944</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9784</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>800x800</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.2842
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4826</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4854</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5.4435</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.0504</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">27</span>
+</td>
+<td style="text-align:center;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+0.3316
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5146</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5097</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.1092</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.0504</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
+</td>
+<td style="text-align:center;">
+-6
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>print_table(results_YsfSim80.coll,TRUE, 0.8, &quot;Data was simulated using Youssef&#39;s model with m1=m2=10, 80% missing values, and WITHOUT collinearity&quot;)</code></pre>
+<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Data was simulated using Youssef’s model with m1=m2=10, 80% missing
+values, and WITHOUT collinearity
+</caption>
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Fixed
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Hyperparameters
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Error on
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Rank
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Method
+</th>
+<th style="text-align:center;">
+true_rank
+</th>
+<th style="text-align:center;">
+missing_prob
+</th>
+<th style="text-align:center;">
+alpha
+</th>
+<th style="text-align:center;">
+lambda.1
+</th>
+<th style="text-align:center;">
+lambda.2
+</th>
+<th style="text-align:center;">
+A_test
+</th>
+<th style="text-align:center;">
+A
+</th>
+<th style="text-align:center;">
+B
+</th>
+<th style="text-align:center;">
+beta
+</th>
+<th style="text-align:center;">
+rank
+</th>
+<th style="text-align:center;">
+rank_diff
+</th>
+</tr>
+</thead>
+<tbody>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>200x200</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
+</td>
+<td style="text-align:center;">
+0.1895
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2899</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.287</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.8585</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9503</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
+</td>
+<td style="text-align:center;">
+0.1895
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2899</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.287</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.8585</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9503</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>400x400</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.8
@@ -1239,35 +2007,33 @@ New
 2.4359
 </td>
 <td style="text-align:center;">
-0.2368
+0.2842
 </td>
 <td style="text-align:center;">
-0.3801
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5275</span>
 </td>
 <td style="text-align:center;">
-0.3749
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5199</span>
 </td>
 <td style="text-align:center;">
-3.5073
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.2917</span>
 </td>
 <td style="text-align:center;">
-4.2002
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.2258</span>
 </td>
 <td style="text-align:center;">
-9
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
 </td>
 <td style="text-align:center;">
-Old
-</td>
-</tr>
-<tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>800x800</strong>
+-6
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+Old
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.8
@@ -1279,30 +2045,38 @@ Old
 1.5385
 </td>
 <td style="text-align:center;">
-0.1895
+0.2842
 </td>
 <td style="text-align:center;">
-0.3324
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5234</span>
 </td>
 <td style="text-align:center;">
-0.3270
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5141</span>
 </td>
 <td style="text-align:center;">
-3.5011
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.2917</span>
 </td>
 <td style="text-align:center;">
-4.4136
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">4.3941</span>
 </td>
 <td style="text-align:center;">
-11
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
 </td>
 <td style="text-align:center;">
-New
+-6
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>600x600</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+New
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.8
@@ -1311,34 +2085,157 @@ New
 1
 </td>
 <td style="text-align:center;">
-2.0513
+5.0000
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3604</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3535</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.8263</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9528</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">17</span>
+</td>
+<td style="text-align:center;">
+-3
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3604</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3535</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.8263</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9528</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">17</span>
+</td>
+<td style="text-align:center;">
+-3
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>800x800</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
 </td>
 <td style="text-align:center;">
 0.1895
 </td>
 <td style="text-align:center;">
-0.3327
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3156</span>
 </td>
 <td style="text-align:center;">
-0.3275
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3084</span>
 </td>
 <td style="text-align:center;">
-3.5011
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5.9273</span>
 </td>
 <td style="text-align:center;">
-4.3380
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.0695</span>
 </td>
 <td style="text-align:center;">
-11
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">25</span>
 </td>
 <td style="text-align:center;">
+5
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
 Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+4.4872
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3461</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3417</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.6034</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">4.0757</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
+</td>
+<td style="text-align:center;">
+-9
 </td>
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>print_table(results_YsfSim90, TRUE, 0.9)</code></pre>
+<pre class="r"><code>print_table(results_YsfSim90.coll, TRUE, 0.9, &quot;Data was simulated using Youssef&#39;s model with m1=m2=10, 90% missing values, and WITHOUT collinearity&quot;) </code></pre>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Data was simulated using Youssef’s model with m1=m2=10, 90% missing
+values, and WITHOUT collinearity
+</caption>
 <thead>
 <tr>
 <th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
@@ -1351,13 +2248,21 @@ Fixed
 Hyperparameters
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="5">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Performance
+Error on
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Rank
 </div>
 </th>
 </tr>
 <tr>
+<th style="text-align:center;">
+Method
+</th>
 <th style="text-align:center;">
 true_rank
 </th>
@@ -1374,34 +2279,37 @@ lambda.1
 lambda.2
 </th>
 <th style="text-align:center;">
-error.test
+A_test
 </th>
 <th style="text-align:center;">
-error.all
+A
 </th>
 <th style="text-align:center;">
-error.B
+B
 </th>
 <th style="text-align:center;">
-error.beta
+beta
 </th>
 <th style="text-align:center;">
 rank
 </th>
 <th style="text-align:center;">
-Method
+rank_diff
 </th>
 </tr>
 </thead>
 <tbody>
 <tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>200x200</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+New
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.9
@@ -1410,33 +2318,36 @@ Method
 1
 </td>
 <td style="text-align:center;">
-2.0513
+5.0000
 </td>
 <td style="text-align:center;">
-0.4263
+0.2842
 </td>
 <td style="text-align:center;">
-1.5667
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3956</span>
 </td>
 <td style="text-align:center;">
-3.0870
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3917</span>
 </td>
 <td style="text-align:center;">
-15.1177
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.6509</span>
 </td>
 <td style="text-align:center;">
-4.9397
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.963</span>
 </td>
 <td style="text-align:center;">
-25
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">16</span>
 </td>
 <td style="text-align:center;">
-New
+-4
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+Old
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.9
@@ -1445,38 +2356,41 @@ New
 1
 </td>
 <td style="text-align:center;">
-3.0769
+5.0000
 </td>
 <td style="text-align:center;">
-0.4263
+0.2842
 </td>
 <td style="text-align:center;">
-1.5642
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3956</span>
 </td>
 <td style="text-align:center;">
-3.0660
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3917</span>
 </td>
 <td style="text-align:center;">
-15.1177
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.6509</span>
 </td>
 <td style="text-align:center;">
-4.5893
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.963</span>
 </td>
 <td style="text-align:center;">
-25
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">16</span>
 </td>
 <td style="text-align:center;">
-Old
+-4
 </td>
 </tr>
 <tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>400x400</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+New
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.9
@@ -1491,27 +2405,30 @@ Old
 0.3789
 </td>
 <td style="text-align:center;">
-0.8156
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.85</span>
 </td>
 <td style="text-align:center;">
-0.8022
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.0603</span>
 </td>
 <td style="text-align:center;">
-4.0189
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8.9679</span>
 </td>
 <td style="text-align:center;">
-4.1701
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.0978</span>
 </td>
 <td style="text-align:center;">
-15
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">29</span>
 </td>
 <td style="text-align:center;">
-New
+9
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+Old
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.9
@@ -1520,38 +2437,41 @@ New
 1
 </td>
 <td style="text-align:center;">
-5.0000
+3.9744
 </td>
 <td style="text-align:center;">
 0.4263
 </td>
 <td style="text-align:center;">
-0.9134
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.8582</span>
 </td>
 <td style="text-align:center;">
-0.9035
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.9609</span>
 </td>
 <td style="text-align:center;">
-4.2084
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">7.5598</span>
 </td>
 <td style="text-align:center;">
-4.1701
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">4.1516</span>
 </td>
 <td style="text-align:center;">
-6
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">19</span>
 </td>
 <td style="text-align:center;">
-Old
+-1
 </td>
 </tr>
 <tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>600x600</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+New
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.9
@@ -1560,33 +2480,36 @@ Old
 1
 </td>
 <td style="text-align:center;">
-4.1026
+5.0000
 </td>
 <td style="text-align:center;">
 0.3316
 </td>
 <td style="text-align:center;">
-0.5902
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5358</span>
 </td>
 <td style="text-align:center;">
-0.5882
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5617</span>
 </td>
 <td style="text-align:center;">
-4.0033
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6.6362</span>
 </td>
 <td style="text-align:center;">
-4.1866
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9737</span>
 </td>
 <td style="text-align:center;">
-13
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">25</span>
 </td>
 <td style="text-align:center;">
-New
+5
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+Old
+</td>
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.9
@@ -1595,73 +2518,41 @@ New
 1
 </td>
 <td style="text-align:center;">
-4.6154
+5.0000
 </td>
 <td style="text-align:center;">
-0.3316
+0.3789
 </td>
 <td style="text-align:center;">
-0.5902
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5663</span>
 </td>
 <td style="text-align:center;">
-0.5883
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5655</span>
 </td>
 <td style="text-align:center;">
-4.0033
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">6.0232</span>
 </td>
 <td style="text-align:center;">
-4.1783
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3.9737</span>
 </td>
 <td style="text-align:center;">
-13
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">16</span>
 </td>
 <td style="text-align:center;">
-Old
+-4
 </td>
 </tr>
 <tr grouplength="2">
-<td colspan="11" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>800x800</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-3.3333
-</td>
-<td style="text-align:center;">
-0.2842
-</td>
-<td style="text-align:center;">
-0.5061
-</td>
-<td style="text-align:center;">
-0.5006
-</td>
-<td style="text-align:center;">
-3.7611
-</td>
-<td style="text-align:center;">
-4.2392
-</td>
-<td style="text-align:center;">
-13
-</td>
-<td style="text-align:center;">
 New
 </td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-15
+<td style="text-align:center;">
+20
 </td>
 <td style="text-align:center;">
 0.9
@@ -1676,27 +2567,64 @@ New
 0.2842
 </td>
 <td style="text-align:center;">
-0.5066
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4486</span>
 </td>
 <td style="text-align:center;">
-0.5012
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4508</span>
 </td>
 <td style="text-align:center;">
-3.7611
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6.0712</span>
 </td>
 <td style="text-align:center;">
-4.1708
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.0817</span>
 </td>
 <td style="text-align:center;">
-13
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">28</span>
 </td>
 <td style="text-align:center;">
+8
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
 Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+5.0000
+</td>
+<td style="text-align:center;">
+0.3316
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4776</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4731</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5.6469</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4.0817</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">13</span>
+</td>
+<td style="text-align:center;">
+-7
 </td>
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>results &lt;- results_MaoSim</code></pre>
 </div>
 
 

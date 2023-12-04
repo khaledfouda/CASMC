@@ -23,19 +23,34 @@ data_dir = "./Mao/saved_data/"
 ```{r}
 
 results_MaoSim <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_MaoSim.csv"))
-results_YsfSim80 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim.csv"))
-results_YsfSim90 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_90.csv"))
+results_YsfSim80 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_80_coll_FALSE.csv"))
+results_YsfSim90 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_90_coll_FALSE.csv"))
+results_YsfSim80.coll <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_80_coll_TRUE.csv"))
+results_YsfSim90.coll <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_90_coll_TRUE.csv"))
 ```
 
 
 
 ```{r}
-
-print_table <- function(results, missing=FALSE, prob=NA){
+# Function to color minimum values in green
+color_min_values <- function(data, columns) {
+  data <- as.data.frame(data)
+  for (col_name in columns) {
+    col_min <- min(data[[col_name]], na.rm = TRUE)
+    colrounded <- round(as.numeric(data[[col_name]]),4)
+    data[[col_name]] <- cell_spec(colrounded, "html", 
+                                  background = ifelse(data[[col_name]] == col_min, "lightgreen", "grey98"))
+  }
+    col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
+    data[["rank"]] <- cell_spec(data[["rank"]], "html", 
+                                  background = ifelse(abs(data[["rank_diff"]]) == col_min, "lightgreen", "grey98"))
+  return(data)
+}
+print_table <- function(results, missing=FALSE, prob=NA, caption=""){
    
    results %<>%
-      mutate(across(.cols = contains("Ysf"), ~ round(., 4))) %>% 
-      mutate(across(.cols = contains("new"), ~ round(., 4))) %>%
+      #mutate(across(.cols = contains("Ysf.error"), ~ round(., 7))) %>% 
+      #mutate(across(.cols = contains("new.error"), ~ round(., 7))) %>%
       mutate(missing_prob = prob, new.Method = "New", Ysf.Method="Old")
       
    results %>%
@@ -48,12 +63,15 @@ print_table <- function(results, missing=FALSE, prob=NA){
    
    names(new_results) <- gsub("new\\.", "", names(new_results))
    names(ysf_results) <- gsub("Ysf\\.", "", names(ysf_results))
+   names(new_results) <- gsub("error\\.", "", names(new_results))
+   names(ysf_results) <- gsub("error\\.", "", names(ysf_results))
    
    new_results$Method <- 'New'
    ysf_results$Method <- 'Old'
    combined_results <- rbind(new_results, ysf_results) %>% 
       arrange(Dim) %>% 
-      select(-Dim)
+      select(-Dim) %>%
+      rename(A=all, A_test=test)
    
    if(missing==FALSE){
       combined_results %<>% select(-missing_prob)
@@ -61,25 +79,35 @@ print_table <- function(results, missing=FALSE, prob=NA){
    }else
       nfixed=3
    
-   kable(combined_results, "html", align = 'c') %>%
+   combined_results %<>% relocate(Method, .before=true_rank) %>%
+      mutate(alpha = round(alpha,4),
+             lambda.1 = round(lambda.1,4),
+             lambda.2 = round(lambda.2,4))
+   
+   
+# Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
+   error_columns <- c("A_test", "B", "beta", "A")
+   combined_results$rank_diff = combined_results$rank - combined_results$true_rank
+   for(i in seq(1,7,2))
+      combined_results[i:(i+1), ] <- color_min_values(combined_results[i:(i+1), ], error_columns)
+   
+   kable(combined_results, "html", escape=FALSE, align = 'c', caption=caption) %>%
      kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
-     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Performance" = 5)) %>%
-     pack_rows("200x200", 1, 2) %>%
-     pack_rows("400x400", 3, 4) %>% 
-     pack_rows("600x600", 5, 6) %>% 
-     pack_rows("800x800", 7, 8)
+     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Error on" = 4,"Rank"=2)) %>%
+     pack_rows("400x400", 1, 2) %>%
+     pack_rows("600x600", 3, 4) %>% 
+     pack_rows("800x800", 5, 6) %>% 
+     pack_rows("1000x1000", 7, 8)
   
 }
-
-
 ```
 
 ```{r}
-print_table(results_MaoSim)
-print_table(results_YsfSim80,TRUE, 0.8)
-print_table(results_YsfSim90, TRUE, 0.9)
-
-
-results <- results_MaoSim
+#results <- results_MaoSim
+print_table(results_MaoSim,caption = "Data was simulated using Mao with m=5 and r=10")
+print_table(results_YsfSim80,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
+print_table(results_YsfSim90, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")
+print_table(results_YsfSim80.coll,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and WITHOUT collinearity")
+print_table(results_YsfSim90.coll, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and WITHOUT collinearity") 
 ```
 
