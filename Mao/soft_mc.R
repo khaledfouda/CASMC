@@ -4,6 +4,8 @@ S_data <- Y_data
 S_data[W_data==0]=NA 
 
 ###uses regular matrix method for matrices with NAs
+
+
 fit_soft=softImpute(S_data, rank=50, lambda=30)
 
 test_indices <- which(W_data==0, arr.ind = TRUE)

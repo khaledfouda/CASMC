@@ -68,6 +68,12 @@ compare_and_save <- function(missingness,coll=TRUE,
       results$Ysf.error.B[i] = test_error(fit_mao_x$Bhat, gen.dat$B)
       results$Ysf.error.beta[i] = test_error(fit_mao_x$betahat, gen.dat$beta)
       results$Ysf.rank[i] = fit_mao_x$rank
+      #-------------------------------------
+      # soft Impute model
+      
+      
+     
+      
       
       # saving plots to disk
       if(plot==TRUE){
@@ -97,9 +103,9 @@ alpha_grid = c(1)
 ncores = 1
 
 compare_and_save(0.8, TRUE, plot = TRUE, tofile = TRUE,
-                 lambda.1_grid = seq(0,2,length=20),lambda.2_grid = seq(.9, 0, length=20), 
+                 lambda.1_grid = seq(0,2,length=20),lambda.2_grid = seq(.9, 0, length=20),
                  alpha_grid = alpha_grid, ncores=ncores)
-compare_and_save(0.9, TRUE, plot = TRUE, tofile = TRUE, 
+compare_and_save(0.9, TRUE, plot = TRUE, tofile = TRUE,
                  lambda.1_grid = seq(0,2,length=20),lambda.2_grid = seq(.9, 0, length=20),
                  alpha_grid = alpha_grid, ncores=ncores)
 compare_and_save(0.8, FALSE, plot = TRUE, tofile = TRUE,

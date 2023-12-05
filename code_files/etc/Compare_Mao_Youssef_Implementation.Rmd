@@ -115,25 +115,25 @@ plot_A_B_beta.v2(image_files, 0, FALSE)
 
 
 ```{r fig.height=15, fig.width=15}
-print_table(results_YsfSim80,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
+print_table(results_YsfSim80,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and without collinearity")
+plot_A_B_beta.v2(image_files, 0.8, FALSE)
+```
+
+```{r fig.height=15, fig.width=15}
+print_table(results_YsfSim80.coll,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
 plot_A_B_beta.v2(image_files, 0.8, TRUE)
 ```
 
 
 ```{r fig.height=15, fig.width=15}
-print_table(results_YsfSim90, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")
-plot_A_B_beta.v2(image_files, 0.9, TRUE)
-```
-
-
-```{r fig.height=15, fig.width=15}
-print_table(results_YsfSim80.coll,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and WITHOUT collinearity")
-plot_A_B_beta.v2(image_files, 0.8, FALSE)
-```
-
-
-```{r fig.height=15, fig.width=15}
-print_table(results_YsfSim90.coll, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and WITHOUT collinearity") 
+print_table(results_YsfSim90, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and without collinearity")
 plot_A_B_beta.v2(image_files, 0.9, FALSE)
+```
+
+
+
+```{r fig.height=15, fig.width=15}
+print_table(results_YsfSim90.coll, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity") 
+plot_A_B_beta.v2(image_files, 0.9, TRUE)
 ```
 

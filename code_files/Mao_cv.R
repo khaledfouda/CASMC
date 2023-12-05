@@ -7,36 +7,38 @@ k_fold_cells <- function(n_rows, n_cols, n_folds, W, min_per_row=15, max_iter=10
    indices <- expand.grid(row = 1:n_rows, col = 1:n_cols)
    # we only consider non-missing data (ie, with Wij=1)
    indices <- indices[W==1,]
-   # Shuffle indices
+   # Shuffle indices (both rows and columns are shuffled. later, we will reshuffle the columns)
    indices <- indices[sample(1:nrow(indices)), ]
    
    # Assign each observed index to one of k groups, ensuring each row has at least 5 samples
    indices <- indices %>%
       group_by(row) %>%
+      # the following is to shuffle within each row
+      do(sample_n(., size = nrow(.))) %>% 
       mutate(fold = rep(1:n_folds, length.out = n())) %>%
       ungroup()
    
    # Ensure that each row has at least min_per_row samples
-   counter = 0
-   best_occ = -1 
-   while( best_occ < min_per_row) {
-      temp = sample(indices$fold)
-      min_occ = min(table(indices$row, temp))
-      if(min_occ > best_occ) { 
-         best_occ = min_occ
-         indices$fold <- temp
-      }
-      #indices$fold <- sample(indices$fold)
-      counter = counter + 1
-      if(counter>=max_iter)
-      {
-         print(paste0("failed to keep ",min_per_row, " obs per row after ", counter, " iterations. ",
-                      "Minimum number of occurences is: ",min(table(indices$row, indices$fold)),
-                      ". Attempting ", min_per_row-5, " obs per row..."))
-         min_per_row = min_per_row - 5
-         counter = 0
-      } 
-   }
+   # counter = 0
+   # best_occ = -1 
+   # while( best_occ < min_per_row) {
+   #    temp = sample(indices$fold)
+   #    min_occ = min(table(indices$row, temp))
+   #    if(min_occ > best_occ) { 
+   #       best_occ = min_occ
+   #       indices$fold <- temp
+   #    }
+   #    #indices$fold <- sample(indices$fold)
+   #    counter = counter + 1
+   #    if(counter>=max_iter)
+   #    {
+   #       print(paste0("failed to keep ",min_per_row, " obs per row after ", counter, " iterations. ",
+   #                    "Minimum number of occurences is: ",min(table(indices$row, indices$fold)),
+   #                    ". Attempting ", min_per_row-5, " obs per row..."))
+   #       min_per_row = min_per_row - 5
+   #       counter = 0
+   #    } 
+   # }
    
    # Assign each index to one of k groups
    #indices$fold <- rep(1:n_folds, length.out = nrow(indices))
