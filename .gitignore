@@ -41,3 +41,16 @@ inc/
 *.rdx
 *.RProj
 __packages
+*.rda
+*.RDA
+*.Rda
+
+# ignore saved data folder
+Mao/saved_data/
+
+
+# remove csv files
+*.csv
+*.tsv
+
+

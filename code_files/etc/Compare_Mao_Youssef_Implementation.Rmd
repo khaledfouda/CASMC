@@ -12,7 +12,11 @@ library(magrittr)
 library(tidyverse)
 knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
 #source("./Mao/SMC_functions6.R")
-#source("./code_files/Mao_import_lib.R")
+```
+
+
+```{r include=TRUE}
+source("./code_files/Mao_import_lib.R")
 data_dir = "./Mao/saved_data/"
 
 ```
@@ -78,7 +82,7 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
       nfixed=2
    }else
       nfixed=3
-   
+    
    combined_results %<>% relocate(Method, .before=true_rank) %>%
       mutate(alpha = round(alpha,4),
              lambda.1 = round(lambda.1,4),
@@ -86,14 +90,15 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
    
    
 # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
-   error_columns <- c("A_test", "B", "beta", "A")
+   error_columns <- c("A_test", "B", "beta", "A","time")
    combined_results$rank_diff = combined_results$rank - combined_results$true_rank
    for(i in seq(1,7,2))
       combined_results[i:(i+1), ] <- color_min_values(combined_results[i:(i+1), ], error_columns)
    
+   combined_results %<>% mutate(seconds=time) %>% select(-time) 
    kable(combined_results, "html", escape=FALSE, align = 'c', caption=caption) %>%
      kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
-     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Error on" = 4,"Rank"=2)) %>%
+     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
      pack_rows("400x400", 1, 2) %>%
      pack_rows("600x600", 3, 4) %>% 
      pack_rows("800x800", 5, 6) %>% 
@@ -102,12 +107,33 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
 }
 ```
 
-```{r}
+```{r fig.height=15, fig.width=15}
 #results <- results_MaoSim
 print_table(results_MaoSim,caption = "Data was simulated using Mao with m=5 and r=10")
+plot_A_B_beta.v2(image_files, 0, FALSE)
+```
+
+
+```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim80,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
+plot_A_B_beta.v2(image_files, 0.8, TRUE)
+```
+
+
+```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim90, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")
+plot_A_B_beta.v2(image_files, 0.9, TRUE)
+```
+
+
+```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim80.coll,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and WITHOUT collinearity")
+plot_A_B_beta.v2(image_files, 0.8, FALSE)
+```
+
+
+```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim90.coll, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and WITHOUT collinearity") 
+plot_A_B_beta.v2(image_files, 0.9, FALSE)
 ```
 

@@ -2,31 +2,63 @@
 #'  Mao's paper optimizes for each parameter separately while fixing the other two.
 #'   The explored/recommended the range of (0-2) for $\lambda_1$, (0.1,0.9) for $\lambda_2$, and (0.992,1) for $\alpha$.
 
-k_fold_cells <- function(n_rows, n_cols, n_folds) {
+k_fold_cells <- function(n_rows, n_cols, n_folds, W, min_per_row=15, max_iter=100) {
    # Create a data frame of all matrix indices
    indices <- expand.grid(row = 1:n_rows, col = 1:n_cols)
+   # we only consider non-missing data (ie, with Wij=1)
+   indices <- indices[W==1,]
    # Shuffle indices
    indices <- indices[sample(1:nrow(indices)), ]
+   
+   # Assign each observed index to one of k groups, ensuring each row has at least 5 samples
+   indices <- indices %>%
+      group_by(row) %>%
+      mutate(fold = rep(1:n_folds, length.out = n())) %>%
+      ungroup()
+   
+   # Ensure that each row has at least min_per_row samples
+   counter = 0
+   best_occ = -1 
+   while( best_occ < min_per_row) {
+      temp = sample(indices$fold)
+      min_occ = min(table(indices$row, temp))
+      if(min_occ > best_occ) { 
+         best_occ = min_occ
+         indices$fold <- temp
+      }
+      #indices$fold <- sample(indices$fold)
+      counter = counter + 1
+      if(counter>=max_iter)
+      {
+         print(paste0("failed to keep ",min_per_row, " obs per row after ", counter, " iterations. ",
+                      "Minimum number of occurences is: ",min(table(indices$row, indices$fold)),
+                      ". Attempting ", min_per_row-5, " obs per row..."))
+         min_per_row = min_per_row - 5
+         counter = 0
+      } 
+   }
+   
    # Assign each index to one of k groups
-   indices$fold <- rep(1:n_folds, length.out = nrow(indices))
+   #indices$fold <- rep(1:n_folds, length.out = nrow(indices))
    # Create a list to hold each fold
    folds <- vector("list", n_folds)
    for (i in 1:n_folds) {
       # Create a mask for the test cells in this fold
-      # 1 -> train - 0 -> test
-      test_mask <- matrix(1, nrow = n_rows, ncol = n_cols)
+      # 1 -> train | 0 -> valid | 0 -> test (missing)
+      valid_mask <- matrix(1, nrow = n_rows, ncol = n_cols)
       test_indices <- indices[indices$fold == i, ]
-      test_mask[as.matrix(test_indices[, 1:2])] <- 0
+      valid_mask[W==0] <- 0
+      valid_mask[as.matrix(test_indices[, c("row", "col")])] <- 0
       # Store the mask
-      folds[[i]] <- test_mask
+      folds[[i]] <- valid_mask
    }
    return(folds)
 }
 
 
-prepare_fold_data <- function(Y, Y_test, W, X, n1n2_optimized, theta_estimator) {
-  n1 = dim(Y)[1]
-  n2 = dim(Y)[2]
+prepare_fold_data <- function(Y_train, Y_valid, W_fold, W, X, n1n2_optimized, theta_estimator) {
+  n1 = dim(Y_train)[1]
+  n2 = dim(Y_train)[2]
   m  = dim(X)[2]
   
   # The following two lines are as shown in (c) and (d)
@@ -34,7 +66,7 @@ prepare_fold_data <- function(Y, Y_test, W, X, n1n2_optimized, theta_estimator) 
   P_X = X %*% solve(X.X) %*% t(X)
   P_bar_X = diag(1,n1) - P_X 
 
-  theta_hat = theta_estimator(W=W, X=X)
+  theta_hat = theta_estimator(W=W_fold, X=X)
   
   #---------
   # The following are partial parts of equations 8 and 11 that don't involve the hyperparameters.
@@ -47,7 +79,7 @@ prepare_fold_data <- function(Y, Y_test, W, X, n1n2_optimized, theta_estimator) 
       n1n2Im = n1 * n2  * diag(1, m)
    }
    # the following is the product of W * theta_hat * Y
-   W_theta_Y = Y * theta_hat
+   W_theta_Y = Y_train * theta_hat
    X.W.theta.Y = t(X) %*% W_theta_Y
    svdd = svd(P_bar_X %*% W_theta_Y)
    if(n1n2_optimized == TRUE){
@@ -57,7 +89,7 @@ prepare_fold_data <- function(Y, Y_test, W, X, n1n2_optimized, theta_estimator) 
       n1n2 = n1 * n2
    }
    
-   return(list(Y_test=Y_test, W=W, X=X, X.X=X.X, n1n2Im=n1n2Im, n1n2=n1n2,
+   return(list(Y_valid=Y_valid, W_fold=W_fold, W=W, X=X, X.X=X.X, n1n2Im=n1n2Im, n1n2=n1n2,
                X.W.theta.Y = X.W.theta.Y, svdd=svdd))
 }
 
@@ -70,7 +102,7 @@ Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha){
    # Estimate the matrix as given in the model at the top
    A_hat = data$X %*% beta_hat + B_hat
    
-   return(A_hat[data$W == 0])
+   return(A_hat[data$W_fold == 0 & data$W == 1])
 }
 
 # Computing the test error as given by Mao in page 205
@@ -99,14 +131,20 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
    best_score = Inf
    best_params = list(alpha = NA, lambda.1 = NA, lambda.2 = NA)
    
-   folds <- k_fold_cells(nrow(Y), ncol(Y), n_folds)
+   folds <- k_fold_cells(nrow(Y), ncol(Y), n_folds, W)
    
    fold_data = lapply(1:n_folds, function(i) {
-      train_indices = which(indices != i, arr.ind = TRUE)
-      W_train = folds[[i]] #W[train_indices,]
-      Y_train = Y * W_train #[train_indices,]
-      Y_test = Y[W_train==0]
-      prepare_fold_data(Y_train, Y_test, W_train, X, n1n2_optimized, theta_estimator)
+      #train_indices = which(indices != i, arr.ind = TRUE)
+      W_fold = folds[[i]] #W[train_indices,]
+      #---------------------------------------------------------------
+      # EDIT: I implemented this above in k_fold_cells() no longer needed
+      #W_fold[W==0] = 1 # This to avoid having the missing data as test set. 
+      # Note that we don't have their original values so if they're passed to the validation step, 
+      # their original will be equal to 0. We hope we have enough W_fold = 0 while W = 1.
+      #---------------------------------------------------
+      Y_train = Y * W_fold
+      Y_valid = Y[W_fold==0 & W==1]
+      prepare_fold_data(Y_train, Y_valid, W_fold, W, X, n1n2_optimized, theta_estimator)
    })
    
    # ************************************************************
@@ -123,7 +161,7 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
             # compute the estimates with a modified fit function
             A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
             # -- EDIT: Using Mao's formula in page 205 to compute the test error
-            score = score + test_error(A_hat_test, data$Y_test)
+            score = score + test_error(A_hat_test, data$Y_valid)
          }
          score = score / n_folds
          
@@ -143,7 +181,7 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
             # compute the estimates with a modified fit function
             A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
             # -- EDIT: Using Mao's formula in page 205 to compute the test error
-            score = score + test_error(A_hat_test, data$Y_test)
+            score = score + test_error(A_hat_test, data$Y_valid)
          }
          score = score / n_folds
          
@@ -169,7 +207,7 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
             A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
             # scores[i] = mean((data$A.test - A_hat_test)^2)
             # -- EDIT: Using Mao's formula in page 205 to compute the test error
-            score = score + test_error(A_hat_test, data$Y_test)
+            score = score + test_error(A_hat_test, data$Y_valid)
          }
          score = score / n_folds
          c(alpha, lambda.2, score)
@@ -204,7 +242,7 @@ Mao.cv <- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
          # compute the estimates with a modified fit function
          A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
          # -- EDIT: Using Mao's formula in page 205 to compute the test error
-         score = score + test_error(A_hat_test, data$Y_test)
+         score = score + test_error(A_hat_test, data$Y_valid)
       }
       score = score / n_folds
       

@@ -222,8 +222,9 @@ SMCfit_cv = function(Y, X.cov, mask, Aobs, nfolds = 5,
     for (alpha_num in 1:length(alpha_grid)) {
       
       cv[fold_num, , , alpha_num] = cv_validate_sim(diagD, tau2_grid, length(tau1_grid), 
-                                                    svdPXpAobswtrain[[fold_num]], alpha_grid[alpha_num], iomegavalidate[, 
-                                                                                                                        fold_num], Xbetavalidate[[fold_num]], A_validate[[fold_num]])
+                                                    svdPXpAobswtrain[[fold_num]],
+                                                    alpha_grid[alpha_num], iomegavalidate[, fold_num],
+                                                    Xbetavalidate[[fold_num]], A_validate[[fold_num]])
       
     }
   }

@@ -32,13 +32,11 @@ generate_simulation_data_ysf <- function(model=1, n1 =300,  n2 = 300, m1 = 5, m2
       A <- (X %*% beta.x) + t(Z %*% beta.z) + P_bar_X %*% B %*% P_bar_Z 
       Y <- (A+E) * W
       rank <- qr(A)$rank
-      return(list(A=A, W=W, X=X, Z=Z, beta.x=beta.x, beta.z=beta.z, B=B, rank=rank))
+      return(list(A=A, W=W, X=X, Z=Z, Y=Y, beta.x=beta.x, beta.z=beta.z, B=B, rank=rank))
    }else if (model == 2){
       A <- (X %*% beta.x) + P_bar_X %*% B 
       Y <- (A + E) * W
       rank <- qr(A)$rank
-      X <- matrix(rnorm(n1*m1), ncol = m1)
-      Z <- matrix(rnorm(n2*m2), ncol = m2)
       return(list(A=A, W=W, X=X, Y=Y, beta.x=beta.x, B=B, rank=rank))
    }
    else{
