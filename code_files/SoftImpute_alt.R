@@ -28,7 +28,7 @@ test_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 new_Y <- gen.dat$Y #- gen.dat$X %*% mao.out$beta_hat
 new_Y[gen.dat$W==0] = NA
 
-#xs <- as(new_Y, "Incomplete")
+xs <- as(new_Y, "Incomplete")
 lam0 <- lambda0(new_Y)
 lamseq <- exp(seq(from=log(lam0), to=log(1), length=20))
 
@@ -46,7 +46,7 @@ for(i in seq(along=lamseq)) {
    soft_estim <- complete(new_Y, fiti) #+  gen.dat$X %*% mao.out$beta_hat
    
    err = test_error(soft_estim[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
-   warm <- fiti # warm start for next
+   warm <- fiti # warm start for next 
    fits[[i]] <- fiti
    cat(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
                i, lamseq[i], rank.max, ranks[i], err))
