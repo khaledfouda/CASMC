@@ -1,8 +1,8 @@
 
 source("./code_files/Mao_import_lib.R")
 library(softImpute)
-dim = c(800)
-missingness = 0.8
+dim = c(600)
+missingness = 0.9
 i=1
 coll=TRUE
 
@@ -11,21 +11,37 @@ if(missingness == 0){
 }else
    gen.dat <- generate_simulation_data_ysf(2,dim[i],dim[i],10,10, missing_prob = missingness,coll=coll)
 
+
+W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
+sout <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
+test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(sout$beta_hat, gen.dat$beta)
+test_error(sout$B_hat, gen.dat$B)
+
+sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
+test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(sout$beta_hat, gen.dat$beta)
+test_error(sout$B_hat, gen.dat$B)
+
+
+
 lambda.1_grid = seq(0,3,length=20)
 lambda.2_grid = seq(.9, 0, length=20)
-alpha_grid = seq(0.992, 1, length=10)
+alpha_grid = c(1)#seq(0.992, 1, length=10)
 
-cv.out <- Mao.cv(A, X, Y, W,
+cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$Y, gen.dat$W,
                  n_folds=5, 
                  lambda.1_grid = lambda.1_grid,
                  lambda.2_grid = lambda.2_grid,
                  alpha_grid = alpha_grid,
                  numCores = 1,n1n2_optimized = TRUE,theta_estimator = theta_default)
-mao.out <- Mao.fit(Y, X, W, cv.out$best_parameters$lambda.1, 
+mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, cv.out$best_parameters$lambda.1, 
                    cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha, 
                    theta_estimator = theta_default)
 
-test_error(mao.out$A_hat[W==0], A[W==0])
+test_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(mao.out$beta_hat, gen.dat$beta)
+test_error(mao.out$B_hat, gen.dat$B)
 #-----------------------------------------------------------
 # 1. Soft Impute with/without X
 with_X = FALSE
@@ -120,6 +136,7 @@ for(i in seq(along=lamseq)) {
    #-------------------------
    # register best fir
    if(err < best_fit$error){
+      
       best_fit$error = err
       best_fit$rank_B = ranks[i]
       best_fit$rank_A = qr(soft_estim)$rank
@@ -128,4 +145,6 @@ for(i in seq(along=lamseq)) {
    } 
 }
 print(best_fit)
+
+#-------------------------------
 

@@ -22,11 +22,9 @@ clean.warm.start=function(a){
 }
 
 simpute.svd.cov <-
-   function (Y, X, J = 2, theta_estimator=theta_default,
-             thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=NULL) 
-   {
+   function (Y, X, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=NULL){
       
-      # are you scalling???
+      # are you scaling???
       
       n1 <- dim(Y)[1]
       n2 <- dim(Y)[2]
@@ -96,7 +94,7 @@ simpute.svd.cov <-
       if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
       #attributes(svd.yfill)=c(attributes(svd.yfill),list(lambda=lambda,call=this.call),biats)
       svd.yfill
-   }
+}
 
 lambda0.cov <- function(Y, X){
    
@@ -120,12 +118,12 @@ lambda0.cov <- function(Y, X){
    return(svd(yplus)$d[1])
 }
 
-softImpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+simpute.svd.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, rank.init=10, rank.limit=50){
    # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
    Y[Y==0] = NA
    #xs <- as(Y, "Incomplete")
-   lam0 <- ifelse(isna(lambda.init), lambda0.cov(Y, X, W) * lambda.factor, lambda.init) 
+   lam0 <- ifelse(is.na(lambda.init), lambda0.cov(Y, X) * lambda.factor, lambda.init) 
    #lam0 <- 40 
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
    
@@ -135,15 +133,16 @@ softImpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.l
    
    rank.max <- rank.init
    warm <- NULL
+   best_estimates = NA
    best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
    counter <- 1
    
    for(i in seq(along=lamseq)) {
-      fiti <- simpute.svd.cov(Y, X, W, thresh=thresh, lambda = lamseq[i], J=rank.max, warm.start = warm)
+      fiti <- simpute.svd.cov(Y, X, thresh=thresh, lambda = lamseq[i], J=rank.max, warm.start = warm)
       
       # compute rank.max for next iteration
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
-      rank.max <- min(rank+2, 50)
+      rank.max <- min(rank+2, rank.limit)
       
       # get test estimates and test error
       v=as.matrix(fiti$v)
@@ -163,7 +162,9 @@ softImpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.l
          best_fit$rank_B = rank
          best_fit$lambda = lamseq[i]
          best_fit$rank.max = rank.max
-         best_fit$estimates = soft_estim
+         best_estimates = soft_estim
+         best_beta = fiti$beta.estim
+         best_B = fiti$u %*% t(vd)
          counter=1
       }else counter = counter + 1
       if(counter >= tol){
@@ -172,5 +173,74 @@ softImpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.l
       }
    }
    if(print.best==TRUE) print(best_fit)
+   best_fit$A_hat = best_estimates
+   best_fit$B_hat = best_B
+   best_fit$beta_hat = best_beta
    return(best_fit)
 }
+#--------------------------------------------------------------------
+# softimpute with validation and no covariates using original method.
+
+simpute.orig <- function(Y, W, A, n.lambda=20,
+                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, rank.init=10, rank.limit=50){
+   # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
+   Y[Y==0] = NA
+   #xs <- as(Y, "Incomplete")
+   lam0 <- lambda0(Y)
+   #lam0 <- 40 
+   lamseq <- seq(from=lam0, to=0, length=n.lambda)
+   
+   fits <- as.list(lamseq)
+   ranks <- as.integer(lamseq)
+   
+   
+   rank.max <- rank.init
+   warm <- NULL
+   best_estimates = NA
+   best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
+   counter <- 1
+   
+   for(i in seq(along=lamseq)) {
+      
+      fiti <- softImpute(Y, lambda=lamseq[i], rank.max=rank.max, warm=warm, thresh=thresh)
+      
+      # compute rank.max for next iteration
+      rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
+      rank.max <- min(rank+2, rank.limit)
+      
+      # get test estimates and test error
+      soft_estim = complete(Y, fiti)
+      err = test_error(soft_estim[W==0], A[W==0])
+      #----------------------------
+      warm <- fiti # warm start for next 
+      if(trace==TRUE)
+         cat(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
+                     i, lamseq[i], rank.max, rank, err))
+      #-------------------------
+      # register best fir
+      if(err < best_fit$error){
+         best_fit$error = err
+         best_fit$rank_A = qr(soft_estim)$rank
+         best_fit$rank_B = rank
+         best_fit$lambda = lamseq[i]
+         best_fit$rank.max = rank.max
+         best_estimates = soft_estim
+         counter=1
+      }else counter = counter + 1
+      if(counter >= tol){
+         cat(sprintf("Performance didn't improve for the last %d iterations.", counter))
+         break
+      }
+   }
+   if(print.best==TRUE) print(best_fit)
+   best_fit$A_hat = best_estimates
+   best_fit$B_hat = NA
+   best_fit$beta_hat = NA
+   return(best_fit)
+}
+
+
+
+
+
+
