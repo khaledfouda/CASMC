@@ -50,29 +50,46 @@ color_min_values <- function(data, columns) {
                                   background = ifelse(abs(data[["rank_diff"]]) == col_min, "lightgreen", "grey98"))
   return(data)
 }
+# results <- results_MaoSim
 print_table <- function(results, missing=FALSE, prob=NA, caption=""){
    
    results %<>%
       #mutate(across(.cols = contains("Ysf.error"), ~ round(., 7))) %>% 
       #mutate(across(.cols = contains("new.error"), ~ round(., 7))) %>%
-      mutate(missing_prob = prob, new.Method = "New", Ysf.Method="Old")
+      mutate(missing_prob = prob, new.Method = "New", Ysf.Method="Old", simpute.Method="Simpute", simputeCov.Method="Simpute_Cov")
       
    results %>%
       select(Dim, true_rank, missing_prob, contains("new")) -> new_results
    
    results %>%
       select(Dim, true_rank, missing_prob, contains("Ysf")) -> ysf_results
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("simpute.")) -> sim_results
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("simputeCov")) -> simcov_results
    
    
+   sim_results$simpute.lambda.2 = -1
+   sim_results$simpute.alpha = -1
+   simcov_results$simputeCov.lambda.2 = -1
+   simcov_results$simputeCov.alpha = -1
    
    names(new_results) <- gsub("new\\.", "", names(new_results))
    names(ysf_results) <- gsub("Ysf\\.", "", names(ysf_results))
+   names(sim_results) <- gsub("simpute\\.", "", names(sim_results))
+   names(simcov_results) <- gsub("simputeCov\\.", "", names(simcov_results))
+  
    names(new_results) <- gsub("error\\.", "", names(new_results))
    names(ysf_results) <- gsub("error\\.", "", names(ysf_results))
+   names(sim_results) <- gsub("error\\.", "", names(sim_results))
+   names(simcov_results) <- gsub("error\\.", "", names(simcov_results))
    
    new_results$Method <- 'New'
    ysf_results$Method <- 'Old'
-   combined_results <- rbind(new_results, ysf_results) %>% 
+   sim_results$Method <- 'SImpute'
+   simcov_results$Method <- 'SImpute_Cov'
+   
+   combined_results <- rbind(new_results, ysf_results, sim_results, simcov_results) %>% 
       arrange(Dim) %>% 
       select(-Dim) %>%
       rename(A=all, A_test=test)
@@ -86,23 +103,25 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
    combined_results %<>% relocate(Method, .before=true_rank) %>%
       mutate(alpha = round(alpha,4),
              lambda.1 = round(lambda.1,4),
-             lambda.2 = round(lambda.2,4))
+             lambda.2 = round(lambda.2,4)) %>%
+      mutate(beta = ifelse(is.na(beta), 100, beta),B = ifelse(is.na(B), 100, B))
+   
    
    
 # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
    error_columns <- c("A_test", "B", "beta", "A","time")
    combined_results$rank_diff = combined_results$rank - combined_results$true_rank
-   for(i in seq(1,7,2))
-      combined_results[i:(i+1), ] <- color_min_values(combined_results[i:(i+1), ], error_columns)
+   for(i in seq(1,16,4))
+      combined_results[i:(i+3), ] <- color_min_values(combined_results[i:(i+3), ], error_columns)
    
    combined_results %<>% mutate(seconds=time) %>% select(-time) 
    kable(combined_results, "html", escape=FALSE, align = 'c', caption=caption) %>%
      kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
      add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
-     pack_rows("400x400", 1, 2) %>%
-     pack_rows("600x600", 3, 4) %>% 
-     pack_rows("800x800", 5, 6) %>% 
-     pack_rows("1000x1000", 7, 8)
+     pack_rows("400x400", 1, 4) %>%
+     pack_rows("600x600", 5, 8) %>% 
+     pack_rows("800x800", 9, 12) %>% 
+     pack_rows("1000x1000", 13, 16)
   
 }
 ```
