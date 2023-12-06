@@ -1,0 +1,95 @@
+---
+title: "Soft Impute With Covariates"
+author: "Khaled Fouda"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+#source("./Mao/SMC_functions6.R")
+```
+
+
+```{r include=TRUE, warning=FALSE, message=FALSE}
+source("./code_files/Mao_import_lib.R")
+data_dir = "./Mao/saved_data/"
+```
+
+
+References: 
+   - Spectral Regularization Algorithms for Learning Large Incomplete Matrices. Mazumder & Hastie 2010
+   
+
+Soft Impute attempts to recover a partially observed matrix without covariates while minimizing the rank. There are 3 variates of the method depending on the type of the regularization term. The first one, called SOFT-IMPUTE, uses the Nuclear Norm Regularization. Assuming the same notations as always, A is the full matrix we want to recover. Y is the noisy version of A and we partially observe Y. W is the mask where $W_{ij}=1$ if $Y_{ij}$ is observed. Consider $\Omega$ the set of observed indices in $Y$.  We also consider the complementary projection $P_{\over{\Omega}}(Y) = Y - P_{\Omega}(Y)$. Finally, the objective function is as follows:
+
+$$
+\begin{aligned}
+{minimize}_{B} && \frac{1}{2} \|Y-B\|^2_F + \lambda\|B\|_* && (8)
+\end{aligned}
+$$
+which has the following solution
+
+$$
+\begin{aligned}
+\hat{B} = S_\lambda(Y) = UD_\lambda V' && with&& D_\lambda = diag[(d_1-\lambda)_+(d_2-\lambda)_+\cdots(d_r-\lambda)_+] && (9)
+\end{aligned}
+$$
+Using the SVD of $Y=UD V'$. The rank of $Y$ is assumed to be $r$. The notation $S_\lambda(Y)$ refers to soft-thresholding. 
+
+Equation (8) is equivalent to 
+
+
+$$
+\begin{aligned}
+&&{minimize}_{B} && \frac{1}{2} \|P_{{\Omega}}(Y)-P_{{\Omega}}(B)\|^2_F + \lambda\|B\|_* && (10)\\
+= &&{minimize}_{B} && \frac{1}{2} \|P_{{\Omega}}(Y)+P_{\over{\Omega}}(B)-B\|^2_F + \lambda\|B\|_* && 
+\end{aligned}
+$$
+
+***********
+**Algorithm 1** SOFT-IMPUTE
+
+1. **Initialize** $B^{old} = 0$.
+2. **Do for** $\lambda_1 > \lambda_2 > \ldots > \lambda_k$:
+
+    a. **Repeat**:
+    
+        i. **Compute** $B^{new} \leftarrow S_{\lambda_k}(P_{\Omega}(Y) + P^{\perp}_{\Omega}(B^{old}))$.
+        
+        ii. **If** $\frac{\|B^{new} - B^{old}\|_F}{\|B^{old}\|_F} < \epsilon$ **exit**.
+        
+        iii. **Assign** $B^{old} \leftarrow B^{new}$.
+    
+    b. **Assign** $B_{\lambda_k} \leftarrow B^{new}$.
+
+3. **Output** the sequence of solutions $\hat{B}_{\lambda_1}, \ldots, \hat{B}_{\lambda_k}$.
+
+************************
+
+In terms of computations, the update inside the loop is as follows:
+
+
+1. Initialization $Y^* = Y,\cdots$.
+2. **Do for** $\lambda_1 > \lambda_2 > \ldots > \lambda_k$:
+
+    a. **Repeat**:
+         
+        i. svd.old = svd
+        
+        ii. $\hat{Y} = S_{\lambda_k}(P_{\Omega}(Y) + P^{\perp}_{\Omega}(B^{old})) = U[,:J](D[,:J]-\lambda)V[,:J]'$
+        
+        iii. $Y^*[\overline{\Omega}] = \hat{Y}[\overline{\Omega}]$
+        
+        iv. svd = svd($Y^*$)
+        
+    
+    b. **Assign** $B_{\lambda_k} \leftarrow Y^*$.
+
+3. **Output** the sequence of solutions $\hat{B}_{\lambda_1}, \ldots, \hat{B}_{\lambda_k}$.
+
+***********************************
