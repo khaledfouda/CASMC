@@ -13,10 +13,10 @@ if(missingness == 0){
 
 
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
-sout <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
-test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
-test_error(sout$beta_hat, gen.dat$beta)
-test_error(sout$B_hat, gen.dat$B)
+sout1 <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30)
+test_error(sout1$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(sout1$beta_hat, gen.dat$beta)
+test_error(sout1$B_hat, gen.dat$B)
 
 sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
 test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])

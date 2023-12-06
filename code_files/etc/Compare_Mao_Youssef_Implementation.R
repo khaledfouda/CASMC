@@ -17,7 +17,21 @@ compare_and_save <- function(missingness,coll=TRUE,
                          new.alpha=NA, new.lambda.1=NA, new.lambda.2=NA, new.error.test=NA,
                          new.error.all=NA, new.error.B=NA, new.error.beta=NA, new.rank=NA, new.time=NA,
                          Ysf.alpha=NA, Ysf.lambda.1=NA, Ysf.lambda.2=NA, Ysf.error.test=NA,
-                         Ysf.error.all=NA, Ysf.error.B=NA, Ysf.error.beta=NA, Ysf.rank=NA, Ysf.time=NA)
+                         Ysf.error.all=NA, Ysf.error.B=NA, Ysf.error.beta=NA, Ysf.rank=NA, Ysf.time=NA,
+                         simputeCov.time = NA,
+                         simputeCov.lambda.1 = NA,
+                         simputeCov.error.test = NA,
+                         simputeCov.error.all = NA,
+                         simputeCov.error.beta = NA,
+                         simputeCov.error.B = NA,
+                         simputeCov.rank = NA,
+                         simpute.time = NA,
+                         simpute.lambda.1 = NA,
+                         simpute.error.test = NA,
+                         simpute.error.all = NA,
+                         simpute.error.beta = NA,
+                         simpute.error.B = NA,
+                         simpute.rank = NA)
    
    for(i in 1:length(dim)){
       
@@ -68,13 +82,32 @@ compare_and_save <- function(missingness,coll=TRUE,
       results$Ysf.error.B[i] = test_error(fit_mao_x$Bhat, gen.dat$B)
       results$Ysf.error.beta[i] = test_error(fit_mao_x$betahat, gen.dat$beta)
       results$Ysf.rank[i] = fit_mao_x$rank
-      #-------------------------------------
-      # soft Impute model
-      
-      
-     
-      
-      
+      #----------------------------------------------------------
+      # soft Impute model without covariates
+      set.seed(2023)
+      # validation set to be used for the next two models
+      W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
+      start_time = Sys.time()
+      sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30,print.best=FALSE)
+      results$simpute.time[i] =round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
+      results$simpute.lambda.1[i] = sout$lambda
+      results$simpute.error.test[i] = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+      results$simpute.error.all[i] = test_error(sout$A_hat, gen.dat$A)
+      results$simpute.rank[i] = sout$rank_A 
+      print("--")
+      #----------------------------------------------------------------------------
+      # soft Impute model with covariates
+      start_time = Sys.time()
+      sout <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30, print.best=FALSE)
+      results$simputeCov.time[i] =round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
+      results$simputeCov.lambda.1[i] = sout$lambda
+      results$simputeCov.error.test[i] = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+      results$simputeCov.error.all[i] = test_error(sout$A_hat, gen.dat$A)
+      results$simputeCov.error.beta[i] = test_error(sout$beta_hat, gen.dat$beta)
+      results$simputeCov.error.B[i] = test_error(sout$B_hat, gen.dat$B)
+      results$simputeCov.rank[i] = sout$rank_A 
+      print("---")
+      #--------------------------------------------------------------------------------
       # saving plots to disk
       if(plot==TRUE){
          filename = paste0(graph_label,"_theta" ,missingness, c("_A","_beta", "_B"), "_dim",dim[i],"_coll",coll)
