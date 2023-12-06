@@ -7,6 +7,19 @@ Frob=function(Uold,Dsqold,Vold,U,Dsq,V){
    num/max(denom,1e-9)
 }
 
+clean.warm.start=function(a){
+   if(is.null(a))return(NULL)
+   d=a$d
+   if(is.null(d))return(NULL)
+   if(any(d>0)){
+      if(length(d)==1){
+         a$u=matrix(a$u,ncol=1)
+         a$v=matrix(a$v,ncol=1)
+      }
+      a
+   }
+   else NULL
+}
 
 simpute.svd.cov <-
    function (Y, X, W, J = 2, theta_estimator=theta_default,
@@ -30,10 +43,14 @@ simpute.svd.cov <-
       
       yfill <- Y
       yfill[ynas] <- 0
+      beta.estim <- beta_partial %*% yfill
+      Xbeta <- X %*% beta.estim
+      yplus <- yfill - Xbeta 
       
       if(!is.null(warm.start)){ # skip for now
          ###must have u,d and v components
-         if(!all(match(c("u","d","v"),names(warm.start),0)>0))stop("warm.start does not have components u, d and v")
+         warm.start = clean.warm.start(warm.start)
+         if(!all(match(c("u","d","v", "beta.estim"),names(warm.start),0)>0))stop("warm.start does not have components u, d and v")
          D=warm.start$d
          nzD=sum(D>0)
          JD=min(nzD,J)
@@ -41,10 +58,14 @@ simpute.svd.cov <-
          V=warm.start$v[,seq(JD),drop=FALSE]
          D=D[seq(JD)]
          yhat=U%*%(D*t(V))
-         yfill[ynas] <- yhat[ynas]
+         Xbeta <- X %*% warm.start$beta.estim
+         yfill[ynas] <- yhat[ynas] + Xbeta[ynas]
+         beta.estim <- beta_partial %*% yfill
+         Xbeta <- X %*% beta.estim
+         yplus <- yfill - Xbeta 
       }
       
-      svd.yfill=svd(yfill)
+      svd.yfill=svd(yplus)
       ratio <- 1
       iter <- 0
       while ((ratio > thresh)&(iter<maxit)) {
@@ -54,9 +75,12 @@ simpute.svd.cov <-
          d=pmax(d-lambda,0)
          # update
          yhat <- svd.yfill$u[, seq(J)] %*% (d[seq(J)] * t(svd.yfill$v[,seq(J)]))
-         yfill[ynas] <- yhat[ynas]
+         yfill[ynas] <- yhat[ynas] + Xbeta[ynas]
          # new svd
-         svd.yfill=svd(yfill)
+         beta.estim <- beta_partial %*% yfill
+         Xbeta <- X %*% beta.estim
+         yplus <- yfill - Xbeta 
+         svd.yfill=svd(yplus)
          
          #-- performance check
          ratio=Frob(svd.old$u[, seq(J)],d[seq(J)],svd.old$v[, seq(J)],
@@ -68,8 +92,30 @@ simpute.svd.cov <-
       }
       d=pmax(svd.yfill$d[seq(J)]-lambda,0)
       J=min(sum(d>0)+1,J)
-      svd.yfill=list(u=svd.yfill$u[, seq(J)], d=d[seq(J)], v=svd.yfill$v[,seq(J)])
+      svd.yfill=list(u=svd.yfill$u[, seq(J)], d=d[seq(J)], v=svd.yfill$v[,seq(J)], lambda=lambda, beta.estim=beta.estim)
       if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
-      attributes(svd.yfill)=c(attributes(svd.yfill),list(lambda=lambda,call=this.call),biats)
+      #attributes(svd.yfill)=c(attributes(svd.yfill),list(lambda=lambda,call=this.call),biats)
       svd.yfill
    }
+
+lambda0.cov <- function(Y, X, W){
+   
+   n1 <- dim(Y)[1]
+   n2 <- dim(Y)[2]
+   m1 <- dim(X)[2]
+   ynas <- is.na(Y)
+   
+   # The following two lines are as shown in (c) and (d)
+   X.X = t(X) %*% X
+   P_X = X %*% solve(X.X) %*% t(X)
+   P_bar_X = diag(1,n1) - P_X
+   #theta_hat = theta_estimator(W=W, X=X)
+   beta_partial = solve(X.X) %*% t(X)
+   
+   yfill <- Y
+   yfill[ynas] <- 0
+   beta.estim <- beta_partial %*% yfill
+   Xbeta <- X %*% beta.estim
+   yplus <- yfill - Xbeta 
+   return(svd(yplus)$d[1])
+}

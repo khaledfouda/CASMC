@@ -1,6 +1,8 @@
+
+source("./code_files/Mao_import_lib.R")
 library(softImpute)
-dim = c(400)
-missingness = 0.9
+dim = c(800)
+missingness = 0
 i=1
 coll=TRUE
 
@@ -24,11 +26,14 @@ mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, cv.out$best_parameters$lambd
                    theta_estimator = theta_default)
 
 test_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+#-----------------------------------------------------------
+# 1. Soft Impute with/without X
+with_X = FALSE
 
-new_Y <- gen.dat$Y #- gen.dat$X %*% mao.out$beta_hat
+if (with_X==TRUE){new_Y = gen.dat$Y - gen.dat$X %*% mao.out$beta_hat}else new_Y = gen.dat$Y
 new_Y[gen.dat$W==0] = NA
 
-xs <- as(new_Y, "Incomplete")
+#xs <- as(new_Y, "Incomplete")
 lam0 <- lambda0(new_Y)
 lamseq <- exp(seq(from=log(lam0), to=log(1), length=20))
 
@@ -38,12 +43,11 @@ rank.max <- 10
 warm <- NULL
 
 
-
 for(i in seq(along=lamseq)) {
    fiti <- softImpute(new_Y, lambda=lamseq[i], rank=rank.max, warm=warm)
    ranks[i] <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
    rank.max <- min(ranks[i]+2, 50)
-   soft_estim <- complete(new_Y, fiti) #+  gen.dat$X %*% mao.out$beta_hat
+   if (with_X==TRUE){ soft_estim  = complete(new_Y, fiti) +  gen.dat$X %*% mao.out$beta_hat}else soft_estim  =  complete(new_Y, fiti)
    
    err = test_error(soft_estim[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    warm <- fiti # warm start for next 
@@ -51,8 +55,62 @@ for(i in seq(along=lamseq)) {
    cat(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
                i, lamseq[i], rank.max, ranks[i], err))
 }
+#---------------------------------------------
+fitslo <- simpute.svd.cov(new_Y, gen.dat$X, gen.dat$W,lambda = 7, trace.it=FALSE, warm.start = fitslo)
 
-fits <- softImpute(new_Y, trace=FALSE, lambda=lam0+0.2)
+v=as.matrix(fitslo$v)
+vd=v*outer(rep(1,nrow(v)),fitslo$d)
+soft_estim = fitslo$u %*% t(vd)  + gen.dat$X %*% fitslo$beta.estim
+test_error(soft_estim[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+
+fitslo$d
+#-----------------------------------------------------------------------------------
+# with covariates - loop
+new_Y = gen.dat$Y
+new_Y[gen.dat$W==0] = NA
+
+#xs <- as(new_Y, "Incomplete")
+lam0 <- lambda0(new_Y)
+lam0 <- lambda0.cov(new_Y, gen.dat$X, gen.dat$W)
+lam0 <- 40
+lamseq <- seq(from=10, to=0, length=20)
+
+fits <- as.list(lamseq)
+ranks <- as.integer(lamseq)
+rank.max <- 10
+warm <- NULL
+best_fit <- list(error=Inf, rank=NA, lambda=NA, rank.max=NA)
+
+for(i in seq(along=lamseq)) {
+   fiti <- simpute.svd.cov(new_Y, gen.dat$X, gen.dat$W,lambda = lamseq[i], rank=rank.max, warm.start = warm)
+   ranks[i] <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
+   rank.max <- min(ranks[i]+2, 50)
+   # get estimates
+   v=as.matrix(fiti$v)
+   vd=v*outer(rep(1,nrow(v)),fiti$d)
+   soft_estim = fiti$u %*% t(vd)  + gen.dat$X %*% fiti$beta.estim
+   #----------------------------
+   err = test_error(soft_estim[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   warm <- fiti # warm start for next 
+   fits[[i]] <- fiti
+   cat(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
+               i, lamseq[i], rank.max, ranks[i], err))
+   #-------------------------
+   # register best fir
+   if(err < best_fit$error){
+      best_fit$error = err
+      best_fit$rank_B = ranks[i]
+      best_fit$rank_A = qr(soft_estim)$rank
+      best_fit$lambda = lamseq[i]
+      best_fit$rank.max = rank.max
+   } 
+}
+print(best_fit)
+#-------------------------------
+
+
+
+fits <- softImpute(new_Y, trace=FALSE)
 full.Y <- complete(new_Y, fits)
 soft_estim <- full.Y + gen.dat$X %*% mao.out$beta_hat
 test_error(soft_estim[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
