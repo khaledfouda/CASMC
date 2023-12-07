@@ -562,13 +562,78 @@ Mao.fit &lt;- function(Y, X, W, lambda.1, lambda.2, alpha, n1n2_optimized=TRUE, 
 k-fold (k=5 by default) and grid search. Mao’s paper optimizes for each
 parameter separately while fixing the other two. The
 explored/recommended the range of (0-2) for <span class="math inline">\(\lambda_1\)</span>, (0.1,0.9) for <span class="math inline">\(\lambda_2\)</span>, and (0.992,1) for <span class="math inline">\(\alpha\)</span>.</p>
+<div id="k-fold-algorithm" class="section level5">
+<h5>K-fold algorithm</h5>
+<p>The function <span class="math inline">\(k\_fold\_cells()\)</span>
+takes in the original mask (train/test) and number of folds, and returns
+a list of k masks with a value of 0 for validation and 1 if not in
+validation (ie, either train or test). Cells are randomly shuffled and
+an equal number of cells is assigned to each fold per row. This is to
+insure that there’s enough validation data in each row to validate the
+<span class="math inline">\(\beta\)</span> estimates.</p>
 <pre class="r"><code>#&#39; Hyperparameter optimization for $\lambda_1,\lambda_2,\alpha$ is done using k-fold (k=5 by default) and grid search.
 #&#39;  Mao&#39;s paper optimizes for each parameter separately while fixing the other two.
 #&#39;   The explored/recommended the range of (0-2) for $\lambda_1$, (0.1,0.9) for $\lambda_2$, and (0.992,1) for $\alpha$.
 
-prepare_fold_data &lt;- function(Y, X, W, A, n1n2_optimized, theta_estimator) {
-  n1 = dim(Y)[1]
-  n2 = dim(Y)[2]
+k_fold_cells &lt;- function(n_rows, n_cols, n_folds, W, min_per_row=15, max_iter=100) {
+   # Create a data frame of all matrix indices
+   indices &lt;- expand.grid(row = 1:n_rows, col = 1:n_cols)
+   # we only consider non-missing data (ie, with Wij=1)
+   indices &lt;- indices[W==1,]
+   # Shuffle indices (both rows and columns are shuffled. later, we will reshuffle the columns)
+   indices &lt;- indices[sample(1:nrow(indices)), ]
+   
+   # Assign each observed index to one of k groups, ensuring each row has at least 5 samples
+   indices &lt;- indices %&gt;%
+      group_by(row) %&gt;%
+      # the following is to shuffle within each row
+      do(sample_n(., size = nrow(.))) %&gt;% 
+      mutate(fold = rep(1:n_folds, length.out = n())) %&gt;%
+      ungroup()
+   
+   # Ensure that each row has at least min_per_row samples
+   # counter = 0
+   # best_occ = -1 
+   # while( best_occ &lt; min_per_row) {
+   #    temp = sample(indices$fold)
+   #    min_occ = min(table(indices$row, temp))
+   #    if(min_occ &gt; best_occ) { 
+   #       best_occ = min_occ
+   #       indices$fold &lt;- temp
+   #    }
+   #    #indices$fold &lt;- sample(indices$fold)
+   #    counter = counter + 1
+   #    if(counter&gt;=max_iter)
+   #    {
+   #       print(paste0(&quot;failed to keep &quot;,min_per_row, &quot; obs per row after &quot;, counter, &quot; iterations. &quot;,
+   #                    &quot;Minimum number of occurences is: &quot;,min(table(indices$row, indices$fold)),
+   #                    &quot;. Attempting &quot;, min_per_row-5, &quot; obs per row...&quot;))
+   #       min_per_row = min_per_row - 5
+   #       counter = 0
+   #    } 
+   # }
+   
+   # Assign each index to one of k groups
+   #indices$fold &lt;- rep(1:n_folds, length.out = nrow(indices))
+   # Create a list to hold each fold
+   folds &lt;- vector(&quot;list&quot;, n_folds)
+   for (i in 1:n_folds) {
+      # Create a mask for the test cells in this fold
+      # 1 -&gt; train | 0 -&gt; valid | 0 -&gt; test (missing)
+      valid_mask &lt;- matrix(1, nrow = n_rows, ncol = n_cols)
+      test_indices &lt;- indices[indices$fold == i, ]
+      valid_mask[W==0] &lt;- 0
+      valid_mask[as.matrix(test_indices[, c(&quot;row&quot;, &quot;col&quot;)])] &lt;- 0
+      # Store the mask
+      folds[[i]] &lt;- valid_mask
+   }
+   return(folds)
+}
+
+
+prepare_fold_data &lt;- function(Y_train, Y_valid, W_fold, W, X, n1n2_optimized, theta_estimator) {
+  n1 = dim(Y_train)[1]
+  n2 = dim(Y_train)[2]
   m  = dim(X)[2]
   
   # The following two lines are as shown in (c) and (d)
@@ -576,7 +641,7 @@ prepare_fold_data &lt;- function(Y, X, W, A, n1n2_optimized, theta_estimator) {
   P_X = X %*% solve(X.X) %*% t(X)
   P_bar_X = diag(1,n1) - P_X 
 
-  theta_hat = theta_estimator(W=W, X=X)
+  theta_hat = theta_estimator(W=W_fold, X=X)
   
   #---------
   # The following are partial parts of equations 8 and 11 that don&#39;t involve the hyperparameters.
@@ -589,7 +654,7 @@ prepare_fold_data &lt;- function(Y, X, W, A, n1n2_optimized, theta_estimator) {
       n1n2Im = n1 * n2  * diag(1, m)
    }
    # the following is the product of W * theta_hat * Y
-   W_theta_Y = Y * theta_hat
+   W_theta_Y = Y_train * theta_hat
    X.W.theta.Y = t(X) %*% W_theta_Y
    svdd = svd(P_bar_X %*% W_theta_Y)
    if(n1n2_optimized == TRUE){
@@ -599,7 +664,7 @@ prepare_fold_data &lt;- function(Y, X, W, A, n1n2_optimized, theta_estimator) {
       n1n2 = n1 * n2
    }
    
-   return(list(A.test=A[W==0], W=W, X=X, X.X=X.X, n1n2Im=n1n2Im, n1n2=n1n2,
+   return(list(Y_valid=Y_valid, W_fold=W_fold, W=W, X=X, X.X=X.X, n1n2Im=n1n2Im, n1n2=n1n2,
                X.W.theta.Y = X.W.theta.Y, svdd=svdd))
 }
 
@@ -612,7 +677,7 @@ Mao.fit_optimized &lt;- function(data, lambda.1, lambda.2, alpha){
    # Estimate the matrix as given in the model at the top
    A_hat = data$X %*% beta_hat + B_hat
    
-   return(A_hat[data$W == 0])
+   return(A_hat[data$W_fold == 0 &amp; data$W == 1])
 }
 
 # Computing the test error as given by Mao in page 205
@@ -637,49 +702,26 @@ Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
    #&#39; --------------------------------------------------------------------
    
    set.seed(seed = seed)
-   indices = sample(cut(seq(1, nrow(A)), breaks=n_folds, labels=FALSE))
+   #indices = sample(cut(seq(1, nrow(A)), breaks=n_folds, labels=FALSE))
    best_score = Inf
    best_params = list(alpha = NA, lambda.1 = NA, lambda.2 = NA)
    
+   folds &lt;- k_fold_cells(nrow(Y), ncol(Y), n_folds, W)
+   
    fold_data = lapply(1:n_folds, function(i) {
-      train_indices = which(indices != i, arr.ind = TRUE)
-      Y_train = Y[train_indices,]
-      X_train = X[train_indices,]
-      W_train = W[train_indices,]
-      A_train = A[train_indices,]
-      prepare_fold_data(Y_train, X_train, W_train, A_train, n1n2_optimized, theta_estimator)
+      #train_indices = which(indices != i, arr.ind = TRUE)
+      W_fold = folds[[i]] #W[train_indices,]
+      #---------------------------------------------------------------
+      # EDIT: I implemented this above in k_fold_cells() no longer needed
+      #W_fold[W==0] = 1 # This to avoid having the missing data as test set. 
+      # Note that we don&#39;t have their original values so if they&#39;re passed to the validation step, 
+      # their original will be equal to 0. We hope we have enough W_fold = 0 while W = 1.
+      #---------------------------------------------------
+      Y_train = Y * W_fold
+      Y_valid = Y[W_fold==0 &amp; W==1]
+      prepare_fold_data(Y_train, Y_valid, W_fold, W, X, n1n2_optimized, theta_estimator)
    })
    
-   # Original for loop to be executed on one node 
-   # *******************************************
-   # for(alpha in alpha_grid){
-   #   for(lambda.1 in lambda.1_grid){
-   #     for(lambda.2 in lambda.2_grid){
-   #       
-   #       scores = numeric(n_folds)
-   #       for(i in 1:n_folds){
-   #         data = fold_data[[i]]
-   #         #train_indices = which(indices != i, arr.ind=TRUE)
-   #         
-   #         # compute the estimates with a modified fit function
-   #         A_hat = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
-   #         #print(dim(A[test_indices,]))
-   #         #print(dim(A_hat))
-   #         #print(dim(data$X))
-   #         # Evaluate model performance using MSE
-   #         # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
-   #         # that is, the test fold isn&#39;t used at all.
-   #         scores[i] = mean((data$A - A_hat)^2)
-   #       }
-   #       avg_score = mean(scores)
-   #       
-   #       if(avg_score &lt; best_score){
-   #         best_score = avg_score
-   #         best_params = list(alpha=alpha, lambda.1=lambda.1, lambda.2=lambda.2)
-   #       }
-   #     }
-   #   }
-   # }
    # ************************************************************
    if(numCores == 1){
       
@@ -693,12 +735,8 @@ Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
             data = fold_data[[i]]
             # compute the estimates with a modified fit function
             A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
-            # Evaluate model performance using MSE
-            # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
-            # that is, the test fold isn&#39;t used at all.
-            #scores[i] = mean((data$A.test - A_hat_test)^2)
             # -- EDIT: Using Mao&#39;s formula in page 205 to compute the test error
-            score = score + test_error(A_hat_test, data$A.test)
+            score = score + test_error(A_hat_test, data$Y_valid)
          }
          score = score / n_folds
          
@@ -717,12 +755,8 @@ Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
             data = fold_data[[i]]
             # compute the estimates with a modified fit function
             A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
-            # Evaluate model performance using MSE
-            # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
-            # that is, the test fold isn&#39;t used at all.
-            #scores[i] = mean((data$A.test - A_hat_test)^2)
             # -- EDIT: Using Mao&#39;s formula in page 205 to compute the test error
-            score = score + test_error(A_hat_test, data$A.test)
+            score = score + test_error(A_hat_test, data$Y_valid)
          }
          score = score / n_folds
          
@@ -732,7 +766,7 @@ Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
          }
       }
    
-   }else{
+   }else{ # Run on multiple cores
    # prepare the cluster
    cl &lt;- makeCluster(numCores) 
    registerDoParallel(cl)
@@ -748,17 +782,28 @@ Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
             A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
             # scores[i] = mean((data$A.test - A_hat_test)^2)
             # -- EDIT: Using Mao&#39;s formula in page 205 to compute the test error
-            score = score + test_error(A_hat_test, data$A.test)
+            score = score + test_error(A_hat_test, data$Y_valid)
          }
-         #score = score / n_folds
+         score = score / n_folds
          c(alpha, lambda.2, score)
       }
-   # Process results to find the best parameters
-   best_result &lt;- results[which.min(results[, 3]), ]
-   best_params &lt;- list(alpha = best_result[1], lambda.1 = 0, lambda.2 = best_result[2])
-   best_score &lt;- best_result[3] / n_folds
-   # close the cluster
-   stopCluster(cl)
+      # Process results to find the best parameters
+      # Edited on Dec 1st to pick the minimum score with highest lambda.2 value.
+      min_score &lt;- min(results[, 3])
+      # Subset to only include results with the minimum score
+      min_results &lt;- results[results[, 3] == min_score, , drop = FALSE] # drop to keep it as df
+      # In case of multiple results with the same score, find the one with the highest lambda.2
+      if (nrow(min_results) &gt; 1) {
+         best_result &lt;- min_results[which.max(min_results[, 2]), ]
+      } else {
+         best_result &lt;- min_results  # If only one row, it&#39;s already the best result
+      }
+      #best_result &lt;- results[which.min(results[, 3]), ] # old line
+      # Extract the best parameters
+      best_params &lt;- list(alpha = best_result[1], lambda.1 = 0, lambda.2 = best_result[2])
+      best_score &lt;- best_result[3]
+      # close the cluster
+      stopCluster(cl)
    }
    #--------------------------------------------
    # fixing optimal values of lambda 2 and alpha and optimizing for lambda 1 separately
@@ -771,12 +816,8 @@ Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
          data = fold_data[[i]]
          # compute the estimates with a modified fit function
          A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
-         # Evaluate model performance using MSE
-         # IMPORTANT: As this is not a predictive model, the MSE is calculated on the training data
-         # that is, the test fold isn&#39;t used at all.
-         #scores[i] = mean((data$A.test - A_hat_test)^2)
          # -- EDIT: Using Mao&#39;s formula in page 205 to compute the test error
-         score = score + test_error(A_hat_test, data$A.test)
+         score = score + test_error(A_hat_test, data$Y_valid)
       }
       score = score / n_folds
       
@@ -790,6 +831,7 @@ Mao.cv &lt;- function(A, X, Y, W, n_folds=5, lambda.1_grid = seq(0,1,length=30),
    return(list(best_parameters = best_params, best_score = best_score))
    
 }</code></pre>
+</div>
 <div id="notes-regarding-parts-1-and-2" class="section level3">
 <h3>Notes regarding parts 1 and 2:</h3>
 <div id="n_1n_2-alternative" class="section level4">
@@ -1015,13 +1057,11 @@ generate_simulation_data_ysf &lt;- function(model=1, n1 =300,  n2 = 300, m1 = 5,
       A &lt;- (X %*% beta.x) + t(Z %*% beta.z) + P_bar_X %*% B %*% P_bar_Z 
       Y &lt;- (A+E) * W
       rank &lt;- qr(A)$rank
-      return(list(A=A, W=W, X=X, Z=Z, beta.x=beta.x, beta.z=beta.z, B=B, rank=rank))
+      return(list(A=A, W=W, X=X, Z=Z, Y=Y, beta.x=beta.x, beta.z=beta.z, B=B, rank=rank))
    }else if (model == 2){
       A &lt;- (X %*% beta.x) + P_bar_X %*% B 
       Y &lt;- (A + E) * W
       rank &lt;- qr(A)$rank
-      X &lt;- matrix(rnorm(n1*m1), ncol = m1)
-      Z &lt;- matrix(rnorm(n2*m2), ncol = m2)
       return(list(A=A, W=W, X=X, Y=Y, beta.x=beta.x, B=B, rank=rank))
    }
    else{

@@ -117,6 +117,10 @@ The following function, $Mao.fit()$, estimates $\hat\beta$ and $\hat B$ as above
 
 Hyperparameter optimization for $\lambda_1,\lambda_2,\alpha$ is done using k-fold (k=5 by default) and grid search. Mao's paper optimizes for each parameter separately while fixing the other two. The explored/recommended the range of (0-2) for $\lambda_1$, (0.1,0.9) for $\lambda_2$, and (0.992,1) for $\alpha$.
 
+##### K-fold algorithm
+
+The function  $k\_fold\_cells()$ takes in the original mask (train/test) and number of folds, and returns a list of k masks with a value of 0 for validation and 1 if not in validation (ie, either train or test). Cells are randomly shuffled and an equal number of cells is assigned to each fold per row. This is to insure that there's enough validation data in each row to validate the $\beta$ estimates. 
+
 ```{r code=readLines(paste0(path_to_code, "/Mao_cv.R")),eval=TRUE}
 
 ```
