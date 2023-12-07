@@ -59,7 +59,7 @@ simpute.svd.cov <-
          Xbeta <- X %*% warm.start$beta.estim
          yfill[ynas] <- yhat[ynas] + Xbeta[ynas]
          beta.estim <- beta_partial %*% yfill
-         Xbeta <- X %*% beta.estim
+         Xbeta <- X %*% beta.estim 
          yplus <- yfill - Xbeta 
       }
       

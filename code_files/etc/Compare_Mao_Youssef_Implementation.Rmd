@@ -40,10 +40,11 @@ results_YsfSim90.coll <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implement
 color_min_values <- function(data, columns) {
   data <- as.data.frame(data)
   for (col_name in columns) {
-    col_min <- min(data[[col_name]], na.rm = TRUE)
+    col_min <- min(as.numeric(data[[col_name]]), na.rm = TRUE)
     colrounded <- round(as.numeric(data[[col_name]]),4)
-    data[[col_name]] <- cell_spec(ifelse(data[[col_name]]== 9999,'',colrounded), "html", color = ifelse(data[[col_name]]== 9999, "grey98", "black"),
-                                  background = ifelse(data[[col_name]] == col_min, "lightgreen", "grey98"))
+    data[[col_name]] <- cell_spec(ifelse(as.numeric(data[[col_name]])== 9999,'',colrounded),
+                                  "html", color = ifelse(as.numeric(data[[col_name]])== 9999, "grey98", "black"),
+                                  background = ifelse(as.numeric(data[[col_name]]) == col_min, "lightgreen", "grey98"))
   }
     col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
     data[["rank"]] <- cell_spec(data[["rank"]], "html", 
