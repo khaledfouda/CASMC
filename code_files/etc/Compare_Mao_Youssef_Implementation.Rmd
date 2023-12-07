@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=TRUE}
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(kableExtra)
 library(magrittr)
@@ -15,7 +15,7 @@ knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef
 ```
 
 
-```{r include=TRUE}
+```{r include=TRUE, message=FALSE, warning=FALSE}
 source("./code_files/Mao_import_lib.R")
 data_dir = "./Mao/saved_data/"
 
@@ -42,7 +42,7 @@ color_min_values <- function(data, columns) {
   for (col_name in columns) {
     col_min <- min(data[[col_name]], na.rm = TRUE)
     colrounded <- round(as.numeric(data[[col_name]]),4)
-    data[[col_name]] <- cell_spec(colrounded, "html", 
+    data[[col_name]] <- cell_spec(ifelse(data[[col_name]]== 9999,'',colrounded), "html", color = ifelse(data[[col_name]]== 9999, "grey98", "black"),
                                   background = ifelse(data[[col_name]] == col_min, "lightgreen", "grey98"))
   }
     col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
@@ -69,10 +69,10 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
       select(Dim, true_rank, missing_prob, contains("simputeCov")) -> simcov_results
    
    
-   sim_results$simpute.lambda.2 = -1
-   sim_results$simpute.alpha = -1
-   simcov_results$simputeCov.lambda.2 = -1
-   simcov_results$simputeCov.alpha = -1
+   sim_results$simpute.lambda.2 = 9999
+   sim_results$simpute.alpha = 9999
+   simcov_results$simputeCov.lambda.2 = 9999
+   simcov_results$simputeCov.alpha = 9999
    
    names(new_results) <- gsub("new\\.", "", names(new_results))
    names(ysf_results) <- gsub("Ysf\\.", "", names(ysf_results))
@@ -101,10 +101,10 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
       nfixed=3
     
    combined_results %<>% relocate(Method, .before=true_rank) %>%
-      mutate(alpha = round(alpha,4),
-             lambda.1 = round(lambda.1,4),
-             lambda.2 = round(lambda.2,4)) %>%
-      mutate(beta = ifelse(is.na(beta), 100, beta),B = ifelse(is.na(B), 100, B))
+      mutate(alpha = ifelse(alpha==9999, '',round(alpha,4)),
+             lambda.1 = ifelse(lambda.1==9999, '', round(lambda.1,4)),
+             lambda.2 = ifelse(lambda.2==9999, '', round(lambda.2,4))) %>%
+      mutate(beta = ifelse(is.na(beta), 9999, beta),B = ifelse(is.na(B), 9999, B))
    
    
    
@@ -129,30 +129,30 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
 ```{r fig.height=15, fig.width=15}
 #results <- results_MaoSim
 print_table(results_MaoSim,caption = "Data was simulated using Mao with m=5 and r=10")
-plot_A_B_beta.v2(image_files, 0, FALSE)
+#plot_A_B_beta.v2(image_files, 0, FALSE)
 ```
 
 
 ```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim80,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and without collinearity")
-plot_A_B_beta.v2(image_files, 0.8, FALSE)
+#plot_A_B_beta.v2(image_files, 0.8, FALSE)
 ```
 
 ```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim80.coll,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
-plot_A_B_beta.v2(image_files, 0.8, TRUE)
+#plot_A_B_beta.v2(image_files, 0.8, TRUE)
 ```
 
 
 ```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim90, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and without collinearity")
-plot_A_B_beta.v2(image_files, 0.9, FALSE)
+#plot_A_B_beta.v2(image_files, 0.9, FALSE)
 ```
 
 
 
 ```{r fig.height=15, fig.width=15}
 print_table(results_YsfSim90.coll, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity") 
-plot_A_B_beta.v2(image_files, 0.9, TRUE)
+#plot_A_B_beta.v2(image_files, 0.9, TRUE)
 ```
 

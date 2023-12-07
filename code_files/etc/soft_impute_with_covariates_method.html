@@ -11,7 +11,7 @@
 
 <meta name="author" content="Khaled Fouda" />
 
-<meta name="date" content="2023-12-06" />
+<meta name="date" content="2023-12-07" />
 
 <title>Soft Impute With Covariates</title>
 
@@ -352,12 +352,12 @@ display: none;
 
 <h1 class="title toc-ignore">Soft Impute With Covariates</h1>
 <h4 class="author">Khaled Fouda</h4>
-<h4 class="date">2023-12-06</h4>
+<h4 class="date">2023-12-07</h4>
 
 </div>
 
 
-<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE)
 library(kableExtra)
 library(magrittr)
 library(tidyverse)
@@ -453,6 +453,62 @@ U[,:J](D[,:J]-\lambda)V[,:J]&#39;\)</span></p></li>
 <li><p><strong>Output</strong> the sequence of solutions <span class="math inline">\(\hat{B}_{\lambda_1}, \ldots,
 \hat{B}_{\lambda_k}\)</span>.</p></li>
 </ol>
+<hr />
+<pre class="r"><code>gen.dat &lt;- generate_simulation_data_ysf(2,600,600,10,10, missing_prob = 0.9,coll=FALSE)
+gen.dat$Y[gen.dat$W==0] = NA
+sout &lt;- softImpute(gen.dat$Y, lambda=30, rank.max=10, trace.it = TRUE, thresh=1e-3)
+
+
+sout &lt;- simpute.svd.cov(gen.dat$Y, gen.dat$X, thresh=1e-3, lambda = 30, J=10, trace.it = TRUE)
+
+
+W_valid &lt;- matrix.split.train.test(gen.dat$W, testp=0.2)
+
+sout1 &lt;- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
+test_error(sout1$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(sout1$beta_hat, gen.dat$beta)
+test_error(sout1$B_hat, gen.dat$B)
+
+sout &lt;- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
+test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+
+
+sout$d
+
+sout1$rank_A
+sout1$rank.max
+qr(co)$rank
+
+co &lt;- complete(gen.dat$Y, sout, FALSE)
+
+v=as.matrix(sout$v)
+   vd=v*outer(rep(1,nrow(v)),sout$d)
+   soft_estim = sout$u %*% t(vd)
+qr(soft_estim)$rank
+
+object &lt;- sout
+i &lt;- dim(object$v)
+
+
+v=as.matrix(object$v)
+ vd=v*outer(rep(1,nrow(v)),object$d)
+ out= suv(as.matrix(object$u),vd,i,j)</code></pre>
+<pre class="cpp"><code>subroutine suv (nrow,ncol,nrank,u,v,irow,jcol,nomega,r)
+      integer nrow, ncol, nrank,nomega, irow(nomega),jcol(nomega)
+      double precision u(nrow,nrank),v(ncol,nrank),r(nomega)
+c      double precision rtemp
+c      computes uv&#39;[i,j]=&lt;u[i,],v[j,]&gt;
+      integer ii,jj
+!HPF$ INDEPENDENT
+      do 10 i=1,nomega
+         ii=irow(i)
+         jj=jcol(i)
+      r(i) = DOT_PRODUCT(u(ii,:), v(jj,:))
+c          r(i)=rtemp
+10    continue
+      return
+      end
+</code></pre>
 
 
 
