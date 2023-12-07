@@ -18,7 +18,7 @@ knitr::opts_knit$set(root.dir=path_to_code)
 ```{r , include=TRUE, eval=TRUE, message=FALSE,warning=FALSE}
 path_to_code = "./code_files/"
 library(knitr)
-library(kableExtra)
+library(kableExtra) 
 library(tidyverse)
 library(magrittr)
 require(foreach)

@@ -16,3 +16,5 @@ iterators
 doParallel
 hexbin
 patchwork
+Matrix
+softImpute

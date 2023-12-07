@@ -46,6 +46,7 @@ __packages
 *.Rda
 
 # ignore saved data folder
+*/saved_data/
 Mao/saved_data/
 
 
