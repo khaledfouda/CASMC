@@ -56,7 +56,8 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
    results %<>%
       #mutate(across(.cols = contains("Ysf.error"), ~ round(., 7))) %>% 
       #mutate(across(.cols = contains("new.error"), ~ round(., 7))) %>%
-      mutate(missing_prob = prob, new.Method = "New", Ysf.Method="Old", simpute.Method="Simpute", simputeCov.Method="Simpute_Cov")
+      mutate(missing_prob = prob, new.Method = "New", Ysf.Method="Old", simpute.Method="Simpute", simputeCov.Method="Simpute_Cov") %>%
+      arrange(simpute.rank) ### this is a temporary fix; will fix it later.
       
    results %>%
       select(Dim, true_rank, missing_prob, contains("new")) -> new_results
@@ -90,8 +91,9 @@ print_table <- function(results, missing=FALSE, prob=NA, caption=""){
    simcov_results$Method <- 'SImpute_Cov'
    
    combined_results <- rbind(new_results, ysf_results, sim_results, simcov_results) %>% 
-      arrange(Dim) %>% 
-      select(-Dim) %>%
+      mutate(tmp_rank = rep(1:4,4)) %>% # temporary fix, change!!
+      arrange(tmp_rank) %>% # temporary fix, change!!
+      select(-Dim, -tmp_rank) %>%
       rename(A=all, A_test=test)
    
    if(missing==FALSE){

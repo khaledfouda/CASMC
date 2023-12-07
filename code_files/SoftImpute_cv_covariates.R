@@ -22,7 +22,7 @@ lambda0.cov <- function(Y, X){
 }
 
 simpute.svd.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
-                              trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, rank.init=10, rank.limit=50){
+                              trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, rank.init=10, rank.limit=50, rank.step=2){
    # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
    Y[Y==0] = NA
    #xs <- as(Y, "Incomplete")
@@ -45,7 +45,7 @@ simpute.svd.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.
       
       # compute rank.max for next iteration
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
-      rank.max <- min(rank+2, rank.limit)
+      rank.max <- min(rank+rank.step, rank.limit)
       
       # get test estimates and test error
       v=as.matrix(fiti$v)
@@ -85,7 +85,7 @@ simpute.svd.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.
 # softimpute with validation and no covariates using original method.
 
 simpute.orig <- function(Y, W, A, n.lambda=20,
-                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, rank.init=10, rank.limit=50){
+                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, rank.init=10, rank.limit=50, rank.step=2){
    # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
    Y[Y==0] = NA
    #xs <- as(Y, "Incomplete")
@@ -109,7 +109,7 @@ simpute.orig <- function(Y, W, A, n.lambda=20,
       
       # compute rank.max for next iteration
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
-      rank.max <- min(rank+2, rank.limit)
+      rank.max <- min(rank+rank.step, rank.limit)
       
       # get test estimates and test error
       soft_estim = complete(Y, fiti)

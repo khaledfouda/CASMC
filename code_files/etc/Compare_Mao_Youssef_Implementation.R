@@ -88,7 +88,7 @@ compare_and_save <- function(missingness,coll=TRUE,
       # validation set to be used for the next two models
       W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
       start_time = Sys.time()
-      sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30,print.best=FALSE)
+      sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30,print.best=FALSE, rank.step = 4)
       results$simpute.time[i] =round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
       results$simpute.lambda.1[i] = sout$lambda
       results$simpute.error.test[i] = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
@@ -98,7 +98,7 @@ compare_and_save <- function(missingness,coll=TRUE,
       #----------------------------------------------------------------------------
       # soft Impute model with covariates
       start_time = Sys.time()
-      sout <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30, print.best=FALSE)
+      sout <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30, print.best=FALSE, rank.step=4)
       results$simputeCov.time[i] =round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
       results$simputeCov.lambda.1[i] = sout$lambda
       results$simputeCov.error.test[i] = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])

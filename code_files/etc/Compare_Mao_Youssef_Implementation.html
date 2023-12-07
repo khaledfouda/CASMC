@@ -616,7 +616,8 @@ print_table &lt;- function(results, missing=FALSE, prob=NA, caption=&quot;&quot;
    results %&lt;&gt;%
       #mutate(across(.cols = contains(&quot;Ysf.error&quot;), ~ round(., 7))) %&gt;% 
       #mutate(across(.cols = contains(&quot;new.error&quot;), ~ round(., 7))) %&gt;%
-      mutate(missing_prob = prob, new.Method = &quot;New&quot;, Ysf.Method=&quot;Old&quot;, simpute.Method=&quot;Simpute&quot;, simputeCov.Method=&quot;Simpute_Cov&quot;)
+      mutate(missing_prob = prob, new.Method = &quot;New&quot;, Ysf.Method=&quot;Old&quot;, simpute.Method=&quot;Simpute&quot;, simputeCov.Method=&quot;Simpute_Cov&quot;) %&gt;%
+      arrange(simpute.rank) ### this is a temporary fix; will fix it later.
       
    results %&gt;%
       select(Dim, true_rank, missing_prob, contains(&quot;new&quot;)) -&gt; new_results
@@ -650,8 +651,9 @@ print_table &lt;- function(results, missing=FALSE, prob=NA, caption=&quot;&quot;
    simcov_results$Method &lt;- &#39;SImpute_Cov&#39;
    
    combined_results &lt;- rbind(new_results, ysf_results, sim_results, simcov_results) %&gt;% 
-      arrange(Dim) %&gt;% 
-      select(-Dim) %&gt;%
+      mutate(tmp_rank = rep(1:4,4)) %&gt;% # temporary fix, change!!
+      arrange(tmp_rank) %&gt;% # temporary fix, change!!
+      select(-Dim, -tmp_rank) %&gt;%
       rename(A=all, A_test=test)
    
    if(missing==FALSE){
@@ -761,159 +763,6 @@ seconds
 <tr grouplength="4">
 <td colspan="12" style="border-bottom: 1px solid;">
 <strong>400x400</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-New
-</td>
-<td style="text-align:center;">
-15
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.2105
-</td>
-<td style="text-align:center;">
-0.5211
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5279</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6032</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7961</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1981</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">73</span>
-</td>
-<td style="text-align:center;">
-58
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">35</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Old
-</td>
-<td style="text-align:center;">
-15
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.2105
-</td>
-<td style="text-align:center;">
-0.5211
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5279</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6032</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7961</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1981</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">73</span>
-</td>
-<td style="text-align:center;">
-58
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">52</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute
-</td>
-<td style="text-align:center;">
-15
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-52.2773
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3882</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4734</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
-</td>
-<td style="text-align:center;">
-985
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">55</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute_Cov
-</td>
-<td style="text-align:center;">
-15
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-53.1964
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2672</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2541</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3156</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.1252</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
-</td>
-<td style="text-align:center;">
-0
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">77</span>
-</td>
-</tr>
-<tr grouplength="4">
-<td colspan="12" style="border-bottom: 1px solid;">
-<strong>600x600</strong>
 </td>
 </tr>
 <tr>
@@ -1066,7 +915,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="12" style="border-bottom: 1px solid;">
-<strong>800x800</strong>
+<strong>600x600</strong>
 </td>
 </tr>
 <tr>
@@ -1219,7 +1068,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="12" style="border-bottom: 1px solid;">
-<strong>1000x1000</strong>
+<strong>800x800</strong>
 </td>
 </tr>
 <tr>
@@ -1370,6 +1219,159 @@ SImpute_Cov
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">45</span>
 </td>
 </tr>
+<tr grouplength="4">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>1000x1000</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.2105
+</td>
+<td style="text-align:center;">
+0.5211
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5279</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6032</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7961</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1981</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">73</span>
+</td>
+<td style="text-align:center;">
+58
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">35</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.2105
+</td>
+<td style="text-align:center;">
+0.5211
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5279</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6032</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7961</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1981</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">73</span>
+</td>
+<td style="text-align:center;">
+58
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">52</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+52.2773
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3882</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4734</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
+</td>
+<td style="text-align:center;">
+985
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">55</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute_Cov
+</td>
+<td style="text-align:center;">
+15
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+53.1964
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2672</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2541</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3156</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.1252</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
+</td>
+<td style="text-align:center;">
+0
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">77</span>
+</td>
+</tr>
 </tbody>
 </table>
 <pre class="r"><code>#plot_A_B_beta.v2(image_files, 0, FALSE)</code></pre>
@@ -1469,171 +1471,6 @@ New
 1
 </td>
 <td style="text-align:center;">
-0.1053
-</td>
-<td style="text-align:center;">
-0.2368
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1708</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1681</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1344</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2897</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
-</td>
-<td style="text-align:center;">
--9
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">76</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Old
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.1053
-</td>
-<td style="text-align:center;">
-0.2368
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1708</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1681</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1344</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2897</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
-</td>
-<td style="text-align:center;">
--9
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">90</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-0.0000
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1302</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1484</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
-</td>
-<td style="text-align:center;">
-980
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">27</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute_Cov
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-16.2397
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0406</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0398</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3876</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0853</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
-</td>
-<td style="text-align:center;">
--5
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">106</span>
-</td>
-</tr>
-<tr grouplength="4">
-<td colspan="13" style="border-bottom: 1px solid;">
-<strong>600x600</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-New
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.2105
 </td>
 <td style="text-align:center;">
@@ -1658,7 +1495,7 @@ New
 -6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">10</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr>
@@ -1738,7 +1575,7 @@ SImpute
 380
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -1782,7 +1619,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>800x800</strong>
+<strong>600x600</strong>
 </td>
 </tr>
 <tr>
@@ -1947,7 +1784,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>1000x1000</strong>
+<strong>800x800</strong>
 </td>
 </tr>
 <tr>
@@ -2110,6 +1947,171 @@ SImpute_Cov
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">71</span>
 </td>
 </tr>
+<tr grouplength="4">
+<td colspan="13" style="border-bottom: 1px solid;">
+<strong>1000x1000</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.1053
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1708</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1681</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1344</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2897</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
+</td>
+<td style="text-align:center;">
+-9
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">76</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.1053
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1708</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1681</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1344</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2897</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
+</td>
+<td style="text-align:center;">
+-9
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">90</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+0.0000
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1302</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1484</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
+</td>
+<td style="text-align:center;">
+980
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">27</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute_Cov
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+16.2397
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0406</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0398</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3876</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0853</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">106</span>
+</td>
+</tr>
 </tbody>
 </table>
 <pre class="r"><code>#plot_A_B_beta.v2(image_files, 0.8, FALSE)</code></pre>
@@ -2212,212 +2214,6 @@ New
 0.1053
 </td>
 <td style="text-align:center;">
-0.2368
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.156</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1528</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1539</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4109</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
-</td>
-<td style="text-align:center;">
--7
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">92</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Old
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.1053
-</td>
-<td style="text-align:center;">
-0.2368
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.156</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1528</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1539</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4109</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
-</td>
-<td style="text-align:center;">
--7
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">93</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-0.0000
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.09</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1088</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
-</td>
-<td style="text-align:center;">
-980
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">26</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute_Cov
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-16.2256
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0354</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0347</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3909</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">18990.8052</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">15</span>
-</td>
-<td style="text-align:center;">
--5
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">107</span>
-</td>
-</tr>
-<tr grouplength="4">
-<td colspan="13" style="border-bottom: 1px solid;">
-<strong>600x600</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-New
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.1053
-</td>
-<td style="text-align:center;">
-0.3316
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3647</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3586</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">2.2027</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7257</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
-</td>
-<td style="text-align:center;">
--7
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">10</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Old
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.8
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.1053
-</td>
-<td style="text-align:center;">
 0.3316
 </td>
 <td style="text-align:center;">
@@ -2444,6 +2240,47 @@ Old
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.1053
+</td>
+<td style="text-align:center;">
+0.3316
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3647</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3586</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">2.2027</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7257</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
+</td>
+<td style="text-align:center;">
+-7
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">14</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
 SImpute
 </td>
 <td style="text-align:center;">
@@ -2460,10 +2297,10 @@ SImpute
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1785</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1459</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1896</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.162</span>
 </td>
 <td style="text-align:center;">
 <span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
@@ -2478,7 +2315,7 @@ SImpute
 380
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">6</span>
 </td>
 </tr>
 <tr>
@@ -2494,35 +2331,35 @@ SImpute_Cov
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-9.0890
+11.3613
 </td>
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0995</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.1017</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0949</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0968</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.6574</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.664</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">59534.3098</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">59801.6807</span>
 </td>
 <td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">18</span>
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">20</span>
 </td>
 <td style="text-align:center;">
--2
+0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">22</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">19</span>
 </td>
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>800x800</strong>
+<strong>600x600</strong>
 </td>
 </tr>
 <tr>
@@ -2563,7 +2400,7 @@ New
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">19</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">20</span>
 </td>
 </tr>
 <tr>
@@ -2604,7 +2441,7 @@ Old
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">23</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">26</span>
 </td>
 </tr>
 <tr>
@@ -2620,15 +2457,15 @@ SImpute
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-0.0000
+15.7314
 </td>
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1259</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.111</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1416</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1291</span>
 </td>
 <td style="text-align:center;">
 <span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
@@ -2643,7 +2480,7 @@ SImpute
 580
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">11</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
 </td>
 </tr>
 <tr>
@@ -2664,30 +2501,30 @@ SImpute_Cov
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.06</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0612</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.058</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.059</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.609</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.6189</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">31919.2029</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">31873.6676</span>
 </td>
 <td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">17</span>
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">22</span>
 </td>
 <td style="text-align:center;">
--3
+2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">42</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">55</span>
 </td>
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>1000x1000</strong>
+<strong>800x800</strong>
 </td>
 </tr>
 <tr>
@@ -2728,7 +2565,7 @@ New
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">30</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">31</span>
 </td>
 </tr>
 <tr>
@@ -2769,7 +2606,7 @@ Old
 -9
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">42</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">41</span>
 </td>
 </tr>
 <tr>
@@ -2790,10 +2627,10 @@ SImpute
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0991</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0839</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1169</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1042</span>
 </td>
 <td style="text-align:center;">
 <span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
@@ -2808,7 +2645,7 @@ SImpute
 780
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">22</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">16</span>
 </td>
 </tr>
 <tr>
@@ -2824,30 +2661,195 @@ SImpute_Cov
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-13.2921
+17.7229
 </td>
 <td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0452</span>
 </td>
 <td style="text-align:center;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.044</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0428</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3831</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3753</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">23384.7502</span>
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">22982.0272</span>
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">19</span>
 </td>
 <td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">17</span>
+-1
 </td>
 <td style="text-align:center;">
--3
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">73</span>
+</td>
+</tr>
+<tr grouplength="4">
+<td colspan="13" style="border-bottom: 1px solid;">
+<strong>1000x1000</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">82</span>
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.1053
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.156</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1528</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1539</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4109</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
+</td>
+<td style="text-align:center;">
+-7
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">69</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.1053
+</td>
+<td style="text-align:center;">
+0.2368
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.156</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1528</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.1539</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.4109</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
+</td>
+<td style="text-align:center;">
+-7
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">80</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+0.0000
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0609</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0843</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
+</td>
+<td style="text-align:center;">
+980
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">24</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute_Cov
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.8
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+16.2256
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0363</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0354</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3988</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">18959.942</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">19</span>
+</td>
+<td style="text-align:center;">
+-1
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">115</span>
 </td>
 </tr>
 </tbody>
@@ -2949,171 +2951,6 @@ New
 1
 </td>
 <td style="text-align:center;">
-0.2105
-</td>
-<td style="text-align:center;">
-0.3316
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3401</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3378</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.9607</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6535</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
-</td>
-<td style="text-align:center;">
--5
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">85</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Old
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.2105
-</td>
-<td style="text-align:center;">
-0.3316
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3401</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3378</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.9607</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6535</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
-</td>
-<td style="text-align:center;">
--5
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">98</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-12.8085
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2033</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2065</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
-</td>
-<td style="text-align:center;">
-980
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">36</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute_Cov
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-10.8642
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0829</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0811</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5273</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2104</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">17</span>
-</td>
-<td style="text-align:center;">
--3
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">148</span>
-</td>
-</tr>
-<tr grouplength="4">
-<td colspan="13" style="border-bottom: 1px solid;">
-<strong>600x600</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-New
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.5263
 </td>
 <td style="text-align:center;">
@@ -3138,7 +2975,7 @@ New
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">11</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
 </td>
 </tr>
 <tr>
@@ -3218,7 +3055,7 @@ SImpute
 380
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -3262,7 +3099,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>800x800</strong>
+<strong>600x600</strong>
 </td>
 </tr>
 <tr>
@@ -3427,7 +3264,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>1000x1000</strong>
+<strong>800x800</strong>
 </td>
 </tr>
 <tr>
@@ -3590,6 +3427,171 @@ SImpute_Cov
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">104</span>
 </td>
 </tr>
+<tr grouplength="4">
+<td colspan="13" style="border-bottom: 1px solid;">
+<strong>1000x1000</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.2105
+</td>
+<td style="text-align:center;">
+0.3316
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3401</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3378</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.9607</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6535</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">85</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.2105
+</td>
+<td style="text-align:center;">
+0.3316
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3401</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3378</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.9607</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6535</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
+</td>
+<td style="text-align:center;">
+-5
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">98</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+12.8085
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2033</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2065</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
+</td>
+<td style="text-align:center;">
+980
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">36</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute_Cov
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+10.8642
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0829</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0811</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5273</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2104</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">17</span>
+</td>
+<td style="text-align:center;">
+-3
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">148</span>
+</td>
+</tr>
 </tbody>
 </table>
 <pre class="r"><code>#plot_A_B_beta.v2(image_files, 0.9, FALSE)</code></pre>
@@ -3689,171 +3691,6 @@ New
 1
 </td>
 <td style="text-align:center;">
-0.1053
-</td>
-<td style="text-align:center;">
-0.3316
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2952</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.293</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">2.0052</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7064</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">20</span>
-</td>
-<td style="text-align:center;">
-0
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">78</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Old
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
-0.1053
-</td>
-<td style="text-align:center;">
-0.3789
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3319</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.329</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">2.3641</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7064</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
-</td>
-<td style="text-align:center;">
--9
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">94</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-0.0000
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1571</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1612</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
-</td>
-<td style="text-align:center;">
-980
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">30</span>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SImpute_Cov
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-10.9243
-</td>
-<td style="text-align:center;">
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0716</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0701</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5318</span>
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">39972.7757</span>
-</td>
-<td style="text-align:center;">
-<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">17</span>
-</td>
-<td style="text-align:center;">
--3
-</td>
-<td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">147</span>
-</td>
-</tr>
-<tr grouplength="4">
-<td colspan="13" style="border-bottom: 1px solid;">
-<strong>600x600</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-New
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.9
-</td>
-<td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.3158
 </td>
 <td style="text-align:center;">
@@ -3878,7 +3715,7 @@ New
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">11</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
 </td>
 </tr>
 <tr>
@@ -3958,7 +3795,7 @@ SImpute
 380
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -4002,7 +3839,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>800x800</strong>
+<strong>600x600</strong>
 </td>
 </tr>
 <tr>
@@ -4167,7 +4004,7 @@ SImpute_Cov
 </tr>
 <tr grouplength="4">
 <td colspan="13" style="border-bottom: 1px solid;">
-<strong>1000x1000</strong>
+<strong>800x800</strong>
 </td>
 </tr>
 <tr>
@@ -4328,6 +4165,171 @@ SImpute_Cov
 </td>
 <td style="text-align:center;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">99</span>
+</td>
+</tr>
+<tr grouplength="4">
+<td colspan="13" style="border-bottom: 1px solid;">
+<strong>1000x1000</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+New
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.1053
+</td>
+<td style="text-align:center;">
+0.3316
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2952</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.293</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">2.0052</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7064</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">20</span>
+</td>
+<td style="text-align:center;">
+0
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">78</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Old
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+0.1053
+</td>
+<td style="text-align:center;">
+0.3789
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3319</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.329</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">2.3641</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.7064</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
+</td>
+<td style="text-align:center;">
+-9
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">94</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+0.0000
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1571</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1612</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     color: grey98 !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;"></span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1000</span>
+</td>
+<td style="text-align:center;">
+980
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">30</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+SImpute_Cov
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+10.9243
+</td>
+<td style="text-align:center;">
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0716</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0701</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5318</span>
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">39972.7757</span>
+</td>
+<td style="text-align:center;">
+<span style="     border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">17</span>
+</td>
+<td style="text-align:center;">
+-3
+</td>
+<td style="text-align:center;">
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">147</span>
 </td>
 </tr>
 </tbody>
