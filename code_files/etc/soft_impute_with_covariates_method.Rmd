@@ -255,7 +255,7 @@ sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=TRUE, rank.lim
 test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 
 
-# rank of A
+# rank of A 
 qr(sout$A_hat)$rank
 
 # fitting Algorithm 1.A

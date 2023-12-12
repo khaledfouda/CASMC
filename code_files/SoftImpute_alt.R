@@ -11,6 +11,14 @@ if(missingness == 0){
 }else
    gen.dat <- generate_simulation_data_ysf(2,dim[i],dim[i],10,10, missing_prob = missingness,coll=coll)
 
+Y_train = (gen.dat$Y * W_valid) 
+Y_train[Y_train==0] = NA
+
+sout1 <- simpute.als.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = TRUE)
+
+
+sout2 <- simpute.svd.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = TRUE)
+
 
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 sout1 <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30)
