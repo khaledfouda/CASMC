@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=TRUE, message=FALSE, warning=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+knitr::opts_chunk$set(echo = F, cache = TRUE)
 library(kableExtra)
 library(magrittr)
 library(tidyverse)
@@ -136,7 +136,7 @@ print_table(results_MaoSim,caption = "Data was simulated using Mao with m=5 and 
 
 
 ```{r fig.height=15, fig.width=15}
-plot_A_B_beta.v2(image_files, 0, FALSE)
+#plot_A_B_beta.v2(image_files, 0, FALSE)
 ```
 
 
@@ -146,7 +146,7 @@ print_table(results_YsfSim80,TRUE, 0.8, "Data was simulated using Youssef's mode
 
 
 ```{r fig.height=15, fig.width=15}
-plot_A_B_beta.v2(image_files, 0.8, FALSE)
+#plot_A_B_beta.v2(image_files, 0.8, FALSE)
 ```
 
 ```{r fig.height=15, fig.width=15}
@@ -155,7 +155,7 @@ print_table(results_YsfSim80.coll,TRUE, 0.8, "Data was simulated using Youssef's
 
 
 ```{r fig.height=15, fig.width=15}
-plot_A_B_beta.v2(image_files, 0.8, TRUE)
+#plot_A_B_beta.v2(image_files, 0.8, TRUE)
 ```
 
 
@@ -165,7 +165,7 @@ print_table(results_YsfSim90, TRUE, 0.9, "Data was simulated using Youssef's mod
 
 
 ```{r fig.height=15, fig.width=15}
-plot_A_B_beta.v2(image_files, 0.9, FALSE)
+#plot_A_B_beta.v2(image_files, 0.9, FALSE)
 ```
 
 
@@ -176,6 +176,6 @@ print_table(results_YsfSim90.coll, TRUE, 0.9, "Data was simulated using Youssef'
 
 
 ```{r fig.height=15, fig.width=15}
-plot_A_B_beta.v2(image_files, 0.9, TRUE)
+#plot_A_B_beta.v2(image_files, 0.9, TRUE)
 ```
 

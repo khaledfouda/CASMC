@@ -142,9 +142,9 @@ compare_and_save(0.8, TRUE, plot = TRUE, tofile = TRUE,
 compare_and_save(0.9, TRUE, plot = TRUE, tofile = TRUE,
                  lambda.1_grid = seq(0,2,length=20),lambda.2_grid = seq(.9, 0, length=20),
                  alpha_grid = alpha_grid, ncores=ncores)
-compare_and_save(0.8, FALSE, plot = TRUE, tofile = TRUE,
-                 lambda.1_grid = seq(0,2,length=20),lambda.2_grid = seq(.9, 0, length=20),
-                 alpha_grid = alpha_grid, ncores=ncores)
+# compare_and_save(0.8, FALSE, plot = TRUE, tofile = TRUE,
+#                  lambda.1_grid = seq(0,2,length=20),lambda.2_grid = seq(.9, 0, length=20),
+#                  alpha_grid = alpha_grid, ncores=ncores)
 compare_and_save(0.9, FALSE, plot = TRUE, tofile = TRUE,
                  lambda.1_grid = seq(0,2,length=20),lambda.2_grid = seq(.9, 0, length=20),
                  alpha_grid = alpha_grid, ncores=ncores)
