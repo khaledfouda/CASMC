@@ -14,7 +14,11 @@ if(missingness == 0){
 Y_train = (gen.dat$Y * W_valid) 
 Y_train[Y_train==0] = NA
 
-sout1 <- simpute.als.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = TRUE)
+start_time <- Sys.time()
+sout1 <- simpute.als.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = FALSE)
+sout1 <- simpute.als.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = FALSE)
+sout1 <- simpute.als.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = FALSE)
+round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
 
 
 sout2 <- simpute.svd.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = TRUE)
@@ -26,10 +30,29 @@ test_error(sout1$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 test_error(sout1$beta_hat, gen.dat$beta)
 test_error(sout1$B_hat, gen.dat$B)
 
-sout2 <- simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30,type="als")
+
+gen.dat$Y*W_valid - sout2$B_hat
+
+start_time <- Sys.time()
+sout2 <- simpute.cov.cv.v2(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE,
+                           lambda1.optimize = TRUE,
+                           lambda1.grid = seq(0,1000, length.out=20),
+                           rank.limit = 30,type="als")
+round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
+
 test_error(sout2$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 test_error(sout2$beta_hat, gen.dat$beta)
 test_error(sout2$B_hat, gen.dat$B)
+sout2$lambda1
+
+
+sout3 <- simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE,
+                           rank.limit = 30,type="als")
+test_error(sout3$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(sout3$beta_hat, gen.dat$beta)
+test_error(sout3$B_hat, gen.dat$B)
+sout2$lambda1
+
 
 sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
 test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])

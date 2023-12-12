@@ -4,7 +4,7 @@ lambda0.cov <- function(Y, X){
    n1 <- dim(Y)[1]
    #n2 <- dim(Y)[2]
    #m1 <- dim(X)[2]
-   ynas <- is.na(Y)
+   ynas <- Y==0 #is.na(Y)
    
    # The following two lines are as shown in (c) and (d)
    X.X = t(X) %*% X
@@ -33,7 +33,7 @@ simpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lamb
       fit.function <- simpute.als.cov
    
    # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
-   Y[Y==0] = NA
+   #Y[Y==0] = NA
    #xs <- as(Y, "Incomplete")
    
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov(Y, X) * lambda.factor, lambda.init) 

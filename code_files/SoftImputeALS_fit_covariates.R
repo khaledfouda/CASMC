@@ -22,24 +22,19 @@ clean.warm.start=function(a){
 }
 
 simpute.als.cov <-
-   function (Y, X, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=NULL){
+   function (Y, X, beta_partial, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=NULL){
    
    # are you scaling???
    
    n1 <- dim(Y)[1]
    n2 <- dim(Y)[2]
    m1 <- dim(X)[2]
-   ynas <- is.na(Y)
+   ynas <- Y == 0
+   #ynas <- is.na(Y)
    nz=n1*n2-sum(ynas)
    
    # The following two lines are as shown in (c) and (d)
-   X.X = t(X) %*% X
-   P_X = X %*% solve(X.X) %*% t(X)
-   P_bar_X = diag(1,n1) - P_X
-   #theta_hat = theta_estimator(W=W, X=X)
-   beta_partial = solve(X.X) %*% t(X)
-   
-   yfill <- Y
+   yfill <- Y #as(Y, "sparseMatrix")
    #yfill[ynas] <- 0
    
    
