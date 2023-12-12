@@ -98,7 +98,8 @@ compare_and_save <- function(missingness,coll=TRUE,
       #----------------------------------------------------------------------------
       # soft Impute model with covariates
       start_time = Sys.time()
-      sout <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30, print.best=FALSE, rank.step=4)
+      sout <- simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30, 
+                             print.best=FALSE, rank.step=4, type="als")
       results$simputeCov.time[i] =round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
       results$simputeCov.lambda.1[i] = sout$lambda
       results$simputeCov.error.test[i] = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])

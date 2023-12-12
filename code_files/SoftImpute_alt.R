@@ -21,10 +21,15 @@ sout2 <- simpute.svd.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = TRUE)
 
 
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
-sout1 <- simpute.svd.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=FALSE, rank.limit = 30)
+sout1 <- simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
 test_error(sout1$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 test_error(sout1$beta_hat, gen.dat$beta)
 test_error(sout1$B_hat, gen.dat$B)
+
+sout2 <- simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30,type="als")
+test_error(sout2$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(sout2$beta_hat, gen.dat$beta)
+test_error(sout2$B_hat, gen.dat$B)
 
 sout <- simpute.orig(gen.dat$Y*W_valid, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
 test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])

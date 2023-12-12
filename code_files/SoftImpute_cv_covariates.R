@@ -21,11 +21,21 @@ lambda0.cov <- function(Y, X){
    return(svd(yplus)$d[1])
 }
 
-simpute.svd.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
-                              trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, rank.init=10, rank.limit=50, rank.step=2){
+simpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+                              trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
+                           rank.init=10, rank.limit=50, rank.step=2,
+                           type="als"){
+   
+   stopifnot(type %in% c("svd", "als"))
+   if(type == "svd"){
+      fit.function <- simpute.svd.cov
+   }else
+      fit.function <- simpute.als.cov
+   
    # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
    Y[Y==0] = NA
    #xs <- as(Y, "Incomplete")
+   
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov(Y, X) * lambda.factor, lambda.init) 
    #lam0 <- 40 
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
@@ -41,7 +51,7 @@ simpute.svd.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.
    counter <- 1
    
    for(i in seq(along=lamseq)) {
-      fiti <- simpute.svd.cov(Y, X, thresh=thresh, lambda = lamseq[i], J=rank.max, warm.start = warm)
+      fiti <- fit.function(Y, X, thresh=thresh, lambda = lamseq[i], J=rank.max, warm.start = warm)
       
       # compute rank.max for next iteration
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
