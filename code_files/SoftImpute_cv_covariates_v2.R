@@ -84,6 +84,7 @@ simpute.cov.cv.v2 <- function(Y, X, W, A,
    Y.valid = A[W==0]
    X.X = t(X) %*% X
    beta_partial = solve(X.X) %*% t(X)
+   best_lambda1 = 0
    # for each lambda in the grid do ...>
    for(i in seq(along=lamseq)) {
       # find the optimal lambda before going to every fit function
@@ -130,7 +131,7 @@ simpute.cov.cv.v2 <- function(Y, X, W, A,
    }
    #-----------
    # step 2: Optimizing for lambda.1 after finding the optimal lambda.2
-   fiti = optimize_lambda1(W, Y.minus.B, X, lambda1.grid, A[W==0], trace=FALSE)
+   fiti = optimize_lambda1(W, Y.minus.B, X, lambda1.grid, Y.valid, trace=FALSE)
    best_fit$lambda1 = fiti$lambda1
    best_beta = fiti$beta
    #----------------------------------------------------------------------

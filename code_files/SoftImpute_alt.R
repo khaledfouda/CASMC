@@ -183,4 +183,62 @@ for(i in seq(along=lamseq)) {
 print(best_fit)
 
 #-------------------------------
+###################################################
 
+
+
+optimize_lambda1 <- function(W, Y.minus.B, X, lambda1.grid, Y.valid, trace=FALSE, acc=4){
+   #' W: Validation mask where Wij=0 if the cell belongs to the validation set and 1 if belongs to the training or test
+   #' fiti: training object containing the SVD decomposition of the low-rank matrix (UDV) 
+   #'  lambda1.grid: grid of possible values for lambda1
+   #'  Y.valid: A vector of the true values of Y for the validation set.
+   #'  ------------------
+   #'  Returns: best.lambda1: optimal value
+   #'           Xbeta: the term X^T beta corresponding to the optimal lambda
+   X.X = t(X) %*% X
+   XY <- t(X) %*% Y.minus.B
+   validation_indices <- which(W == 0, arr.ind = TRUE)
+   best_score = Inf
+   best_lambda1 = NULL
+   best_beta = NULL
+   nr <- nrow(X.X)
+   n1n2 = svd(X.X)$d[1]
+   Y.train <- Y.minus.B
+   
+   for(lambda1 in lambda1.grid){
+      beta_partial = solve(X.X + n1n2*lambda1* diag(1, nr)) %*% t(X)
+      for(i in 1:10){
+         #print(i)
+         beta.estim = beta_partial %*% Y.train
+         soft_estim = Y.minus.B  + X %*% beta.estim
+         Y.train[W==0] = soft_estim[W==0]
+         err = round(test_error(soft_estim[W==0], Y.valid),acc)
+         #print(err)
+         #print(test_error(beta.estim, gen.dat$beta))
+      }
+      #soft_estim = compute_test_estimates(validation_indices, Y.minus.B, X, beta.estim)
+      if(err < best_score){
+         best_score = err
+         best_lambda1 = lambda1
+         beta_partial = beta_partial
+         best_beta = beta.estim
+      }
+         print(test_error(beta.estim, gen.dat$beta))
+         print(paste(err, lambda1))
+   }
+   results = list(lambda1 = best_lambda1, score=best_score, beta_partial =beta_partial%*% t(X), beta=best_beta)
+   results
+}
+
+W <- W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
+Y.minus.B <- Y_train <- gen.dat$Y * W_valid
+Y.valid <- gen.dat$Y[W_valid ==0]
+lambda1.grid <- seq(0,2,length.out=10)
+X <- gen.dat$X
+acc <- 4
+lambda1 <- 0
+
+
+opt.out <- optimize_lambda1(W_valid, Y_train, gen.dat$X, seq(0,2,length.out=10), Y_valid)
+
+test_error(sout1$beta_hat, gen.dat$beta)
