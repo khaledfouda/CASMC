@@ -1,50 +1,4 @@
-compute_test_estimates <- function(test_indices, Y.minus.B, X, beta.estim){
-   estimates <- numeric(length(test_indices[, 1]))
-   for (idx in seq_along(estimates)) {
-      i <- test_indices[idx, 1]
-      j <- test_indices[idx, 2]
-      estimates[idx] <- Y.minus.B[i, j] + sum(X[i, ] * beta.estim[, j])
-   }
-   return(estimates)
-}
-
-
-optimize_lambda1 <- function(W, Y.minus.B, X, lambda1.grid, Y.valid, trace=FALSE, acc=4){
-   #' W: Validation mask where Wij=0 if the cell belongs to the validation set and 1 if belongs to the training or test
-   #' fiti: training object containing the SVD decomposition of the low-rank matrix (UDV) 
-   #'  lambda1.grid: grid of possible values for lambda1
-   #'  Y.valid: A vector of the true values of Y for the validation set.
-   #'  ------------------
-   #'  Returns: best.lambda1: optimal value
-   #'           Xbeta: the term X^T beta corresponding to the optimal lambda
-   X.X = t(X) %*% X
-   XY <- t(X) %*% Y.minus.B
-   validation_indices <- which(W == 0, arr.ind = TRUE)
-   best_score = Inf
-   best_lambda1 = NULL
-   best_beta = NULL
-   nr <- nrow(X.X)
-   n1n2 = nrow(W)*nrow(W)#nr*nr#svd(X.X)$d[1]
-   
-   for(lambda1 in lambda1.grid){
-      beta_partial = solve(X.X + n1n2*lambda1* diag(1, nr))
-      beta.estim = beta_partial %*% XY
-      soft_estim = Y.minus.B  + X %*% beta.estim
-      #soft_estim = compute_test_estimates(validation_indices, Y.minus.B, X, beta.estim)
-      err = round(test_error(soft_estim[W==0], Y.valid),acc)
-      if(err < best_score){
-         best_score = err
-         best_lambda1 = lambda1
-         beta_partial = beta_partial
-         best_beta = beta.estim
-         #print(paste(err, lambda1))
-      }
-   }
-   list(lambda1 = best_lambda1, score=best_score, beta_partial =beta_partial%*% t(X), beta=best_beta)
-}
-
-
-simpute.cov.cv.v2 <- function(Y, X, W, A, 
+simpute.cov.cv.v3 <- function(Y, X, W, A, 
                               # lambda 2 for the regularization on the low-rank matrices A & B
                               lambda2.factor=1/4, lambda2.init=NA, n.lambda2=20,
                               # lambda 1 for the regularization on the covariate coefficients
@@ -85,10 +39,6 @@ simpute.cov.cv.v2 <- function(Y, X, W, A,
    X.X = t(X) %*% X
    beta_partial = solve(X.X) %*% t(X)
    best_lambda1 = 0
-   #--------------------------------------------------
-   # we start by fidning the optimal lambda 1 
-   
-   #-----------------------------------------------------
    # for each lambda in the grid do ...>
    for(i in seq(along=lamseq)) {
       # find the optimal lambda before going to every fit function
@@ -147,4 +97,3 @@ simpute.cov.cv.v2 <- function(Y, X, W, A,
    best_fit$rank_A = qr(best_fit$A_hat)$rank
    return(best_fit)
 }
-#--------------------------------------------------------------------

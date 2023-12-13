@@ -21,10 +21,10 @@ lambda0.cov <- function(Y, X){
    return(svd(yplus)$d[1])
 }
 
-simpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+simpute.cov.cv <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
                            rank.init=10, rank.limit=50, rank.step=2,
-                           type="als"){
+                           type="als", lambda1=0, n1n2=1){
    
    stopifnot(type %in% c("svd", "als"))
    if(type == "svd"){
@@ -32,6 +32,7 @@ simpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lamb
    }else
       fit.function <- simpute.als.cov
    
+   stopifnot(n1n2 %in% 1:3)
    # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
    #Y[Y==0] = NA
    #xs <- as(Y, "Incomplete")
@@ -49,9 +50,15 @@ simpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lamb
    best_estimates = NA
    best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
    counter <- 1
-   
+   X.X = t(X) %*% X
+   if(n1n2 == 2){
+      n1n2 = svd(X)$d[1]
+   }else if(n1n2 == 3){
+      n1n2 = nrow(Y) * ncol(Y)
+   }
+   beta_partial = solve(X.X +  diag(n1n2*lambda1, ncol(X))) %*% t(X)
    for(i in seq(along=lamseq)) {
-      fiti <- fit.function(Y, X, thresh=thresh, lambda = lamseq[i], J=rank.max, warm.start = warm)
+      fiti <- fit.function(Y, X, beta_partial, thresh=thresh, lambda = lamseq[i], J=rank.max, warm.start = warm)
       
       # compute rank.max for next iteration
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
@@ -61,7 +68,7 @@ simpute.cov.cv <- function(Y, X, W, A, lambda.factor=1/4, lambda.init=NA, n.lamb
       v=as.matrix(fiti$v)
       vd=v*outer(rep(1,nrow(v)),fiti$d)
       soft_estim = fiti$u %*% t(vd)  + X %*% fiti$beta.estim
-      err = test_error(soft_estim[W==0], A[W==0])
+      err = test_error(soft_estim[W==0], Y.valid)
       #----------------------------
       warm <- fiti # warm start for next 
       if(trace==TRUE)

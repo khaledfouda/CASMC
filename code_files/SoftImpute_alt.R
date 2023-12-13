@@ -11,6 +11,7 @@ if(missingness == 0){
 }else
    gen.dat <- generate_simulation_data_ysf(2,dim[i],dim[i],10,10, missing_prob = missingness,coll=coll)
 
+W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid) 
 Y_train[Y_train==0] = NA
 
@@ -24,8 +25,64 @@ round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
 sout2 <- simpute.svd.cov(Y_train, gen.dat$X, 3, 1e-3, 30,trace.it = TRUE)
 
 
-W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
-sout1 <- simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)
+
+lambda1.grid <- seq(0,100,length.out=4)
+model_output <- list()
+validation_errors <- rep(NA, length(lambda1.grid))
+
+for(i in 1:length(lambda1.grid)){
+   model_output[[i]] <- simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y,
+                                       trace=FALSE, rank.limit = 30, lambda1=lambda1.grid[i])
+}
+validation_error <- lapply(model_output, function(d) d$error) %>% unlist()
+best_fit = model_output[[which.min(validation_error)]]
+
+#----------
+
+lambda1.grid <- seq(0, 20, length.out=10)
+
+softImputeALS_L2 <- function(Y.train, Y.valid, W.valid, X, lambda1.grid=seq(0,20,length.out=10), n1n2=1, no_cores=NA, max_cores=20){
+   
+   if(is.na(no_cores)) no_cores = length(lambda1.grid)
+   no_cores = min(max_cores, no_cores)
+   
+   model_output <- mclapply(lambda1.grid, function(lambda) {
+      simpute.cov.cv(Y.train, X, W.valid, Y.valid,
+                     trace=FALSE, rank.limit = 30, lambda1=lambda,n1n2 = n1n2)
+   }, mc.cores = no_cores)
+   
+   valid_errors <- unlist(lapply(model_output, function(d) d$error))
+   best_index = which.min(valid_errors)
+   best_fit <- model_output[[best_index]]
+   list(best_score=valid_errors[best_index], best_fit=best_fit, lambda1 = lambda1.grid[best_index])
+}
+
+results <- softImputeALS_L2(gen.dat$Y*W_valid, gen.dat$Y[W_valid==0], W_valid, gen.dat$X)
+
+no_cores = min(20, length(lambda1.grid))
+
+model_output <- mclapply(lambda1.grid, function(lambda) {
+   simpute.cov.cv(gen.dat$Y*W_valid, gen.dat$X, W_valid, gen.dat$Y,
+                  trace=FALSE, rank.limit = 30, lambda1=lambda,n1n2 = 1)
+}, mc.cores = no_cores)
+validation_error <- unlist(lapply(model_output, function(d) d$error))
+best_fit <- model_output[[which.min(validation_error)]]
+validation_error
+test_errors <- unlist(lapply(model_output, function(d) test_error(d$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])))
+
+# [1] 0.3043862 [0.2720237] 0.2746299 0.2816688 0.2904483 0.2963708 0.3022300 0.3068791 0.3126155 0.3168772 # 1 / 0-100
+#     0.3021313 0.2896868 0.2810955 0.2764015 0.2736201 0.2730740 [0.2716675] 0.2723489 0.2729733 0.2734022     # 1 / 0-20
+# [1] [0.3028395] 0.3511031 0.3544883 0.3553735 0.3507690 0.3494529 0.3524645 0.3510712 0.3543921 0.3490639 # 2 / 0-100
+# [1] [0.3022256] 0.3284005 0.3440804 0.3456595 0.3452691 0.3488261 0.3493347 0.3461140 0.3515047 0.3471571 # 2 / 0-2
+# [1] [0.3026262] 0.3499032 0.3527240 0.3493431 0.3512216 0.3526009 0.3505592 0.3525565 0.3537018 0.3490670 # 3 / 0-100
+# [1] [0.3010404] 0.3501780 0.3525480 0.3524318 0.3509615 0.3490343 0.3492069 0.3505750 0.3488609 0.3485438   # 3 / 0-1
+#      0.3028448 0.3522959 0.3509149 0.3502864 0.3504158 0.3486029 0.3508370 0.3544691 0.3503435 0.3500651
+#      0.3024280 0.2873747 0.2782052 0.2737401 [0.2725309] 0.2728103 0.2733185 0.2741148 0.2751018 0.2767083 # 4 / 0-1
+# [1]  0.3031338 0.2938073 0.2871283 0.2816428 0.2771472 0.2762637 0.2737229 [0.2721922] 0.2729892 0.2730445 # 4 / 0-0.5
+X.X = t(gen.dat$X) %*% gen.dat$X
+svd(gen.dat$X)$d[1]
+
+
 test_error(sout1$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 test_error(sout1$beta_hat, gen.dat$beta)
 test_error(sout1$B_hat, gen.dat$B)
