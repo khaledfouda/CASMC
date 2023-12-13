@@ -158,7 +158,32 @@ simpute.orig <- function(Y, W, A, n.lambda=20,
    best_fit$beta_hat = NA
    return(best_fit)
 }
-
+#-------------------------------------------------------------------
+softImputeALS_L2 <- function(Y.train, Y.valid, W.valid, X, lambda1.grid=seq(0,20,length.out=10),
+                             n1n2=1, no_cores=NA, max_cores=20, rank.limit=30){
+   
+   if(is.na(no_cores)) no_cores = length(lambda1.grid) + 1
+   no_cores = min(max_cores, no_cores)
+   
+   if(no_cores > 1){
+      model_output <- mclapply(lambda1.grid, function(lambda) {
+         simpute.cov.cv(Y.train, X, W.valid, Y.valid,
+                        trace=FALSE, rank.limit = rank.limit, lambda1=lambda,n1n2 = n1n2,print.best = FALSE)
+      }, mc.cores = no_cores)
+   }else{
+      model_output = list()
+      for(i in 1:length(lambda1.grid)){
+         model_output[[i]] <- simpute.cov.cv(Y.train, X, W.valid, Y.valid,
+                                             trace=FALSE, rank.limit = rank.limit,
+                                             lambda1=lambda1.grid[i],n1n2 = n1n2, print.best = FALSE)
+      }
+   }
+   
+   valid_errors <- unlist(lapply(model_output, function(d) d$error))
+   best_index = which.min(valid_errors)
+   best_fit <- model_output[[best_index]]
+   list(best_score=valid_errors[best_index], best_fit=best_fit, lambda1 = lambda1.grid[best_index])
+}
 
 
 
