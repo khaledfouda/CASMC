@@ -55,8 +55,9 @@ coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-3,
    Y_valid_tr = t(Y_valid)
    Y_train_tr = t(Y_train)
    W_valid_tr = t(W_valid)
-   ymiss = Y_train == 0
-   yfill <- Y_train
+   yobs = Y_train != 0
+   y.star <- Y_train
+   Y_train_obs <- Y_train[yobs]
    #A_tr = t(A)
    
    
@@ -97,6 +98,7 @@ coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-3,
    A.hat = A.hat_x + A.hat_z
    rho.1 = 1/(1+rho)
    rho.2 = (1-rho)/(1+rho)
+   part1 = rho.1 * Y_train_obs
    diff = Inf
    tol_counter = 0
    old_diff = Inf
@@ -112,34 +114,20 @@ coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-3,
       print("X is better, Entering loop 1")
       while(iter < maxiter & diff > epsilon){
          # 1. row covariates, (Y1)   
-         y.star = (rho.1 * y_train - rho.2 * A.hat_z) 
+         #y.star[yobs] = part1 - rho.2 * A.hat_z[yobs]  #* W * W_valid
+         y.star = rho.1 * Y_train - rho.2 * A.hat_z  * W * W_valid
+         
          A.hat_x = coop_fit_step(y.star, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
                                  print.best, trace_fin, rank.step, tol=tol)
          
-         #y.hat = ((A.hat_x + rho.2 * A.hat_z) / rho.1)
-         #yfill[ymiss] = y.hat[ymiss]
-         # best_param = Mao.cv(A, X, y.star, W, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
-         #                       numCores, n1n2_optimized, theta_estimator)$best_parameters
-         # A.hat_x = Mao.fit(y.star* W , X, W, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
-         #                   n1n2_optimized, theta_estimator )$A_hat
-         
-         # the following estimates A using X according to the method in section "Estimation"
-         # A_estim_x = (1-rho) * A.hat_x + (1+rho) * A.hat_z
-         # 2. Column covariates (Y2)
-         y.star = t(rho.1 * y_train - rho.2 * A.hat_x) 
-         
-         A.hat_z = t(coop_fit_step(y.star, Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
+         # 2. Column Covariates
+         y.star = rho.1 * Y_train - rho.2 * A.hat_x  * W * W_valid
+         A.hat_z = t(coop_fit_step(t(y.star), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
                                    print.best, trace_fin, rank.step, tol=tol))
          
-         #y.hat = t((A.hat_z + rho.2 * t(A.hat_x)) / rho.1) 
-         #yfill[ymiss] = y.hat[ymiss]
-         # best_param = Mao.cv(A_tr, Z, y.star, W_tr, n_folds, lambda.1_grid, lambda.2_grid, alpha_grid, seed,
-         #                       numCores, n1n2_optimized, theta_estimator)$best_parameters
-         # A.hat_z = t(Mao.fit(y.star* W_tr , Z, W_tr, best_param$lambda.1, best_param$lambda.2, best_param$alpha, 
-         #                     n1n2_optimized, theta_estimator )$A_hat)
-         # the following estimates A using Z according to the method in section "Estimation"
-         # A_estim_z = (1-rho) * A.hat_z + (1+rho) * A.hat_x
-         # update stopping criteria
+         
+         
+         
          y.hat = A.hat_x + A.hat_z
          diff = sqrt(mean((y.hat - y.hat.old)**2))
          y.hat.old = y.hat
@@ -219,9 +207,9 @@ coop_fit <- function(A, X, Z, W, maxiter=100, epsilon=1e-3,
 } 
 
 
-gen.dat <- generate_simulation_data_ysf(1,600,600,10,10, missing_prob = 0.8,coll=F)
+gen.dat <- generate_simulation_data_ysf(1,500,500,5,10, missing_prob = 0.8,coll=T, seed=2023)
 
-out <- coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W, rho=0.6, tol=2,trace_fin = F)
+out <- coop_fit(gen.dat$A, gen.dat$X, gen.dat$Z, gen.dat$W, rho=0.9, tol=2,trace_fin = F)
 
 
 
