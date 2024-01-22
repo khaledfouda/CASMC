@@ -2,7 +2,7 @@
 simpute.cov.cv.L2 <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
                            rank.init=10, rank.limit=50, rank.step=2,
-                           type="als", lambda1=0, lambda1.grid=NA, n1n2=1, warm=NULL){
+                           type="als", lambda1=0, lambda1.grid=NA, n1n2=1, warm=NULL, quiet=FALSE){
    
    stopifnot(type %in% c("svd", "als"))
    if(type == "svd"){
@@ -98,7 +98,7 @@ simpute.cov.cv.L2 <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=N
       #soft_estim = fiti$u %*% t(vd)  + X %*% fiti$beta.estim
       #----------------------------
       if(trace==TRUE)
-         cat(sprintf("%2d lambda1=%9.5g, lambda2=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
+         print(sprintf("%2d lambda1=%9.5g, lambda2=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
                      i, best_lambda1, lamseq[i], rank.max, rank, best_lambda1_error))
       #-------------------------
       # register best fir
@@ -114,12 +114,13 @@ simpute.cov.cv.L2 <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=N
       #    counter=1
       # }else counter = counter + 1
       if(counter >= tol){
-         cat(sprintf("Performance didn't improve for the last %d iterations.", counter))
+         if(quiet == FALSE)
+            print(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }
    }
    if(print.best==TRUE) 
-      cat(sprintf("BEST lambda1=%9.5g, lambda2=%9.5g, rank.max = %d, error = %.5f\n",
+      print(sprintf("BEST lambda1=%9.5g, lambda2=%9.5g, rank.max = %d, error = %.5f\n",
                   best_overall_lambda1, best_overall_lambda2, best_overall_J, best_overall_error))
    # run final fit with the given parameter:
    if(best_overall_lambda1 == 0){

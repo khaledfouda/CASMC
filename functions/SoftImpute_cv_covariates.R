@@ -24,7 +24,7 @@ lambda0.cov <- function(Y, X){
 simpute.cov.cv <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
                            rank.init=10, rank.limit=50, rank.step=2,
-                           type="als", lambda1=0, n1n2=1, warm=NULL){
+                           type="als", lambda1=0, n1n2=1, warm=NULL, quiet=FALSE){
    
    stopifnot(type %in% c("svd", "als"))
    if(type == "svd"){
@@ -70,7 +70,7 @@ simpute.cov.cv <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, 
       #----------------------------
       warm <- fiti # warm start for next 
       if(trace==TRUE)
-         cat(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
+         print(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
                      i, lamseq[i], rank.max, rank, err))
       #-------------------------
       # register best fir
@@ -86,7 +86,8 @@ simpute.cov.cv <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, 
          counter=1
       }else counter = counter + 1
       if(counter >= tol){
-         cat(sprintf("Performance didn't improve for the last %d iterations.", counter))
+         if(quiet == FALSE)
+            print(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }
       # compute rank.max for next iteration

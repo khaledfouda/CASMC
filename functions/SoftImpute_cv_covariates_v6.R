@@ -56,7 +56,7 @@ simpute.cov.kfold.lambda1 <- function(Y, X, W, lambda2=NA, J=NA,
          best_error = err
       }
    if(trace==TRUE)
-      cat(sprintf("%2d lambda1=%9.5g, lambda2=%9.5g, rank.max = %d, error = %.5f\n",
+      print(sprintf("%2d lambda1=%9.5g, lambda2=%9.5g, rank.max = %d, error = %.5f\n",
                   i, best_lambda1, lambda2, J, best_error))
    }
    
@@ -141,7 +141,7 @@ simpute.cov.kfold <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lamb
       #----------------------------
       #warm <- fiti # warm start for next 
       if(trace==TRUE)
-         cat(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
+         print(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
                      i, lamseq[i], rank.max, rank, err))
       #-------------------------
       # register best fir
@@ -160,13 +160,13 @@ simpute.cov.kfold <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lamb
          #best_B = fiti$u %*% t(vd)
       }else counter = counter + 1
       if(counter >= tol){
-         cat(sprintf("Performance didn't improve for the last %d iterations.", counter))
+         print(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }
       # compute rank.max for next iteration
       rank.max <- min(rank+rank.step, rank.limit)
    }
-   if(print.best==TRUE) cat(sprintf("lambda=%9.5g, rank.max = %d, error = %.5f\n",
+   if(print.best==TRUE) print(sprintf("lambda=%9.5g, rank.max = %d, error = %.5f\n",
                                     best_lambda, best_rank, best_error))
    
    fiti <- fit.function(Y, X, beta_partial, thresh=thresh, lambda = best_lambda, J=best_rank, warm.start = fiti)
