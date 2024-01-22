@@ -1,0 +1,559 @@
+---
+title: "Mao's Method Implementation"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-11-14"
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+
+```{r setup, include=TRUE}
+path_to_code <- "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE,  cache = TRUE)
+knitr::opts_knit$set(root.dir=path_to_code)
+```
+
+
+```{r , include=TRUE, eval=TRUE, message=FALSE,warning=FALSE}
+path_to_code = "./functions/"
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+library(magrittr)
+require(foreach)
+require(doParallel)
+library(ggplot2)
+library(hexbin)
+library(patchwork)
+source("./code_files/import_lib.R")
+```
+
+## References:
+
+1. Matrix Completion With Covariate Information by Xiaojun Mao et al.
+2. Youssef's work (Document and code)
+
+## Notes:
+- Formulas with ids in the form ([0-9]*) have the same ids in Mao's paper.  
+
+
+We consider a matrix of interest $A \in \Re^{n_1\times n_2}$ with row covariates $X  \in \Re ^{n_1 \times m}$ and the model
+
+$$
+A = X \beta + B
+$$
+
+where $B$ is a low rank matrix and orthogonal to $X$. 
+We assume that we don't fully observe $A_0$ and that we have a slightly corrupted (and later, also partially observed when multiplied by $W$) version of it called $Y$.
+This follows the model 
+
+$$
+Y_{ij} = A_{ij} + \epsilon_{ij}
+$$
+
+where $\epsilon_{ij}$ are i.i.d normal with 0 mean and finite variance.
+
+We consider the sampling indicator $w_{ij}=1$ if $Y_{ij}$ is observed and 0 otherwise. $w_{ij}$ is independent from $\epsilon_{ij}$.
+
+In Mao's paper, the sampling (~~missingness~~inclusion) probabilities ($\theta_{ij}$) may depend on a subset of the covariates, and are modeled as 
+$$ w_{ij} \sim Bernoulli(\theta_{ij}(x_i))$$
+The loss function in (5) consists of the the minimizer $\hat{R}^*$, $L_2$ regularization on $\beta$ and $B$, and a $L_1$ regularization on $B$. 
+
+$$
+\begin{aligned}
+&f(\beta, B, \lambda_1, \lambda_2, \alpha) = \hat{R}^*(\beta,B) + \lambda_1 ||\beta||^2_F + \lambda_2(\alpha ||B||_* + (1-\alpha||B||^2_F))  \text{        }&&(5) \\
+&\hat{R}^*(\beta,B) = \frac{1}{n_1n_2} \{||X\beta - P_x \text{ } big(W*\hat\theta^**Y) ||^2_F+|| B - P_{\overline x}(W * \hat\theta^* * Y) ||^2_F \} && (4)
+\end{aligned}
+$$
+
+
+In the code below, and based on the loss function defined in (5) and (4), we estimate $\beta$, $B$ using formulas (8) and (11) as written below:
+
+$$
+\begin{aligned}
+\hat{\beta} &= (X^TX + n_1n_2\lambda_1 I_{m})^{-1} X^T (W * \hat\theta^* *Y)\text{        }&&(8)\\
+\hat{B} &= \frac{1}{1+2(1-\alpha) n_1n_2\lambda_2} T_{\alpha n_1 n_2 \lambda_2}(P_{\overline x}(W * \hat\theta^* *Y))\text{        }&&(11)
+\end{aligned}
+$$
+Where $\lambda_1,\lambda_2, \alpha$ are the regularization hyperparameters for $\beta$ and $B$, and
+$$
+\begin{aligned}
+&T_c(D) = U \times Diag\{(\sigma_i-c)_+\}\times V^T\text{        }&&(b)\\
+&P_{\overline x} = 1 - P_{X}\text{        }&&(c)\\
+&P_{X} = X(X^TX)^{-1}X^T\text{        }&&(d)
+\end{aligned}
+$$
+As for $\hat\theta^*$, we have three methods of estimating it where the first method is by fitting a logistic model assuming that the probabilities depend on some of the covariates, the second method uses the proportion of missing values within each column and the third method uses the proportion of missing values in the data.
+
+$$
+\begin{aligned}
+ &\hat\theta^* = {\hat\theta_{ij}^{-1}(x_i) = {(expit((1,x_i^T)\gamma_{ij}))}^{-1}}\text{        }&&(a1)\\
+ &\hat\theta^* = {\hat\theta_{ij}^{-1}(x_i) = (\frac{1}{n_1}\sum_{l=1}^{n_1}{I(W_{lj}=1)})^{-1} }\text{        }&&(a2)\\
+ &\hat\theta^* = {\hat\theta_{ij}^{-1}(x_i) = (\frac{1}{n_1n_2}\sum_{l=1}^{n_1}\sum_{k=1}^{n_2}{I(W_{lk}=1)})^{-1} }\text{        }&&(a3)\\
+
+\end{aligned}
+$$
+Where $\gamma_{ij}$ are the logistic model coefficients.
+
+----------------------
+
+## 1) Implementation with fixed $\lambda_1, \lambda_2,  \alpha$ 
+
+The following function, $Mao.fit()$, estimates $\hat\beta$ and $\hat B$ as above with fixed (given) hyperparameters. I will try to use the same notations as above to avoid confusion.
+
+```{r code=readLines(paste0(path_to_code, "/Mao_fit.R")),eval=TRUE}
+
+```
+
+
+
+-----------------------------------------------------------
+
+
+## 2) Hyperparameter Optimization
+
+Hyperparameter optimization for $\lambda_1,\lambda_2,\alpha$ is done using k-fold (k=5 by default) and grid search. Mao's paper optimizes for each parameter separately while fixing the other two. The explored/recommended the range of (0-2) for $\lambda_1$, (0.1,0.9) for $\lambda_2$, and (0.992,1) for $\alpha$.
+
+##### K-fold algorithm
+
+The function  $k\_fold\_cells()$ takes in the original mask (train/test) and number of folds, and returns a list of k masks with a value of 0 for validation and 1 if not in validation (ie, either train or test). Cells are randomly shuffled and an equal number of cells is assigned to each fold per row. This is to insure that there's enough validation data in each row to validate the $\beta$ estimates. 
+
+```{r code=readLines(paste0(path_to_code, "/Mao_cv.R")),eval=TRUE}
+
+```
+
+
+
+
+### Notes regarding parts 1 and 2:
+
+#### 1. $n_1*n_2$ alternative:
+  
+  I have tested both methods (using the actual $n_1*n_2$ and using the Eigen value formulas provided by Mao) and found that Mao's method     provided easier hyperparameter optimization. Changing method does not affect $\lambda_1$ and has a little but noticeable effect on $\alpha$. However, it has a strong effect on $\lambda_2$. For Mao's approach, the optimal $\lambda_2$ is always found somewhere between 0.1 and 0.9. However, when replacing it with $n_1*n_2$, the optimal $\lambda_2$ becomes very large. Cross-validation always selected the highest value of $\lambda_2$ provided. I stopped testing at $\lambda_2=100$ where the optimal value was still larger than that. 
+
+
+#### 2. Grid optimization vs separate optimization:
+
+  Mao's cross-validation function optimized each parameter separetly while I initially used a grid of the 3 parameters. To  compare the approaches, I fixed two parameters at optimal values and then optimized for the third. After that, I fixed them at non-optimal values and then optimized for the third. If the two results are equal, then the third parameter doesn't depend on the other two parameters. I found that $\lambda_1$ does not depend on either $\lambda_2$ or $\alpha$. However, $\lambda_2$ and $\alpha$ depend on the value of the other and hence needed to be optimized together. My final solution is to first set $\lambda_1=0$ (the reason is mentioned later) and optimized for $\lambda_2$ and $\alpha$ together using a grid. After finding their optimal values, I set them to their optimal values and optimize for $\lambda_1$. I used parallel computing (number of cores = 8 by default) for the grid optimization and a simple for loop for $\lambda_1$ optimization.
+
+#### 3. Logistic Model for estimating the probabilities of missingness:
+
+Mao's paper proposed a logistic model to estimate the probabilities of missingness using the matrix of covariates. His empirical study involved a dataset where these probabilities were dependent on some of the covariates (age group and gender). However, for genetic methylation, we don't expect that. I experimented with the suggested logistic model ($theta\_default()$), using the proportion of missing values within the same column ($theta\_random()$), and using a single value representing the proportion of missing values in the whole data ($theta\_simple()$). The results, shown in part (a) of the results section, shows that logistic model > proportion within column > proportion of all data.
+
+#### 4. The subset used as a test set for validation: 
+
+  K-fold cross-validation was used for optimization with a default of 5 folds. Since this is not a predictive model, it was not possible to apply the model on the test fold. Therefore, the score function (MSE) used the missing training values (ie, those with $W_{ij}=0$).
+
+#### 5. Stanrdadization of rows and columns in the dataset
+
+In our simulation and implementation we didn't consider to normalizing the rows and columns to 0 mean and unit variance, which is considered n Mao's paper. This is to be considered later. 
+
+#### 6. *(NEW)* Rank of estimated matrices
+
+The input matrices $A,\beta$ have ranks $min(n_1,n_2), m$ and $B$ has rank $m$ (default=5) for Youssef's simulation and $r$(default=10) for Mao's simulation. In both cases, $B$ is simulated as a low-rank matrix. The rank of $\hat{B}$ is increase by a factor of 3 or 4 depending on the simulation parameter but still far from being a full-rank.  The rank $\hat{\beta}$ is equal to the rank of $\beta$ and the rank of $\hat{A} = m + rank(\hat{B}) <<<< rank(A)$. For example, when $rank(A)=700$, $rank(\hat{A})=18$ (in Youssef's simulation). Below are the 18 non-zero singular values of $\hat{A}$ in that case, where we see a large drop in the values after the 6th singular value:
+
+1131.3050162  221.6896957  215.9150270  211.6247514  203.9008080  196.4619305   26.7253143   17.9424518   15.0662677
+14.2873524   10.4373681    8.3180618    7.9318012    6.1274801    5.1341907    1.9451653    1.8534295    0.5812634
+
+Finally, in Mao's original simulation in the paper, the rank was also smaller in the cases where $\alpha=1$ and is doubled when $\alpha != 1$.
+
+Next steps is to recreate Mao's simulation and investigate the rank more in depth. 
+
+
+---------------------------------------------------------------------------
+
+
+## 2) Simulation Test
+
+For simulation, I was presented with 3 models, two defined by Youssef and one by Mao. I will show below the three models, and later for evaluation, I will use the second model by Youssef.
+
+Using the same notations as before, Mao's simulation model is defined as:
+
+$$
+\begin{aligned}
+Y = X \beta + B + \epsilon = A + \epsilon && (S0)
+\end{aligned}
+$$
+Where $B = P_{\overline x} U V^T$ such that $U \in \Re^{n_1\times r}$ and $V \in \Re^{n_2\times r}$.
+Moreover, $X, \beta, U,V \sim Gaussian(0,1)$. The error matrix $\epsilon \in \Re^{n_1\times n_2}\sim Gaussian(0,\sigma^2_\epsilon)$ with $\sigma^2_\epsilon$ is chosen such that the signal-to-noise ratio (SNR) is set to 1. That is
+
+$$\sigma^2_\epsilon = \frac{\sum(A-\bar A)^2}{n_1n_2-1}$$
+Finally, for their simulation, they set $m=20,r=10$ and explored the following values for the matrix dimensions $n1=n2=400,600,800,1000$.
+ 
+ This simulation is defined below in the function $generate\_simulation\_data\_mao()$.
+ 
+ Youssef's simulation involved row and column covariates to adapt to his data. The notations below are diffferent than those used by Youssef. I tried to standardize to Mao's notation style so we don't get confused. Youssef's two models are defined below:
+
+ $$
+ \begin{aligned}
+ & Y = X \beta_x + (Z\beta_z)^T + P_{\overline x} BP_{\overline z} + \epsilon && (S1)\\
+ & Y = X \beta_x + P_{\overline x} B + \epsilon&&(S2)
+ \end{aligned} 
+ $$
+Clearly the first model employs row and column covariates while the second column employs only row covariates. $X \in \Re^{n_1\times m_1}$ will always be associated with row covariates while $Z \in \Re^{n_2\times m_2}$ will be associated with column covariates. 
+The coefficients associated with each set of covariates are $\beta_x \in \Re^{m_1\times n_2}$ and $\beta_z \in \Re^{m_2\times n_1}$. The low rank matrix $B=B_xB_z$ is the product of matrices $B_x \in \Re^{n_1\times m_2}$ and $B_z \in \Re^{m_2\times n_2}$.
+$X, Z, \epsilon \sim Gaussian(0,1)$ while $\beta_x, \beta_z, B_x, B_z \sim U(0,1)$
+ 
+ For his simulation, he set $n_1=n_2=300$, $m_1=5$, $m_2=10$ and the missingness probability ranging from $30\%$ to $80\%$. Both models are defined in the function $generate\_simulation\_data\_ysf()$.
+ 
+For the rest of this document, I will be using Youssef's second model (S2). 
+ 
+```{r code=readLines(paste0(path_to_code, "/Mao_sim.R")),eval=TRUE}
+
+```
+
+```{r code=readLines(paste0(path_to_code, "/Ysf_sim.R")),eval=TRUE}
+
+```
+
+## 3) Results:
+
+```{r eval=TRUE}
+saved_data = "./Mao/saved_data/"
+```
+
+
+The following function helps in comparing Actual vs Estimated values with a perfect-fit line and a linear-fit line. 
+
+```{r code=readLines(paste0(path_to_code, "/graph_estim.R")),eval=TRUE}
+
+```
+#### Generating Mao's simulations from table 1 page 206
+
+```{r}
+dimensions = c(400, 600, 800, 1000)
+RMSE_A <- RMSE_beta <- RMSE_B <- test_errors <- rank <- rep(0,4)
+best_params_list = list()
+B = 30 # number of simulations to run.
+# i = 1
+for(b in 1:B){
+  for(i in 1:4){
+    gen.dat <- generate_simulation_data_mao(n1=dimensions[i],n2=dimensions[i],m=5,r=10, seed=b)
+    cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$Y, gen.dat$W,
+                     n_folds=5, 
+                     lambda.1_grid = seq(0,2,length=20),
+                     lambda.2_grid = seq(.9, 0, length=10),
+                     alpha_grid = seq(0.992, 1, length=10),
+                     numCores = 4,n1n2_optimized = TRUE,theta_estimator = theta_default,seed = b)
+    
+    mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, cv.out$best_parameters$lambda.1,  
+                       cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha, 
+                       theta_estimator = theta_default)
+    best_params_list[[i]] =  cv.out$best_parameters
+    test_errors[i] = test_errors[i] + test_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+    RMSE_A[i] = RMSE_A[i] + sqrt(mean((gen.dat$A - mao.out$A_hat)^2))
+    RMSE_beta[i] = RMSE_beta[i] + sqrt(mean((gen.dat$beta - mao.out$beta_hat)^2))
+    RMSE_B[i] = RMSE_B[i] + sqrt(mean((gen.dat$B - mao.out$B_hat)^2))
+    rank[i] = rank[i] +  mao.out$rank
+    print(i) 
+    #print(cv.out$best_parameters)
+  }
+  print(paste(".....",b,"....")) 
+}
+RMSE_A <- RMSE_A / B 
+RMSE_beta <- RMSE_beta / B                                        
+RMSE_B <- RMSE_B / B 
+test_errors <- test_errors / B                     
+rank <- rank / B   
+
+
+results <- data.frame(dimension=dimensions, RMSE_A=RMSE_A, RMSE_beta=RMSE_beta, RMSE_B=RMSE_B, test_error=test_errors,
+           rank=rank,
+           alpha=unlist(sapply(best_params_list, function(x) x$alpha)), 
+           lambda_1=unlist(sapply(best_params_list, function(x) x$lambda.1)),
+           lambda_2=unlist(sapply(best_params_list, function(x) x$lambda.2)))
+write.csv(results, file = paste0(saved_data, "sim_results_MAO_table1_B30_2.csv"), row.names = FALSE)
+
+```
+
+```{r eval=TRUE}
+
+results <- read.csv(paste0(saved_data,"sim_results_MAO_table1_B30_1.csv"))
+#results
+kable(results,format = "pipe")
+```
+
+
+
+#### a) Model Check by Comparing Results with Youssef
+
+Below, we replicate the second simulation by Youssef and show that the results for the Mao model are identical.
+
+```{r}
+# The following code is used to find the optimal parameters and compute the test RMSE values. It's not evaluated at run. 
+# The RMSE values are used in the following block to produce the graphs.
+missingness = seq(.3,.9,.1)
+
+thetas = list(theta_default, theta_simple, theta_random)
+names = c("theta_default", "theta_simple", "theta_random")
+for(t in 2:3){
+  RMSE_vals <- test_errors <- rep(NA,length(missingness))
+  cv.out_list = list()
+  for(i in 1:length(missingness)){
+    gen.dat <- generate_simulation_data_ysf(2,300,300,5,10, missing_prob = missingness[i],coll=TRUE)
+    cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$Y, gen.dat$W,
+                     n_folds=5, 
+                     lambda.1_grid = seq(0,2,length=20),
+                     lambda.2_grid = seq(.9, 0, length=20),
+                     alpha_grid = seq(0.992, 1, length=10),
+                     numCores = 8,n1n2_optimized = TRUE,theta_estimator = thetas[[t]])
+    
+    mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, cv.out$best_parameters$lambda.1, 
+                       cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha, 
+                       theta_estimator = thetas[[t]])
+    cv.out_list[[i]] = cv.out
+    test_errors[i] = test_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+    RMSE_vals[i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+    print(i)
+    #print(cv.out$best_parameters)
+  }
+  
+  output <- data.frame(method = names[t], missingness = missingness, 
+               test_errors=test_errors, RMSE_A=RMSE_vals, 
+               lambda.2 = unlist(sapply(cv.out_list, function(x) x$best_parameters$lambda.2)),
+               lambda.1 = unlist(sapply(cv.out_list, function(x) x$best_parameters$lambda.1)),
+               alpha = unlist(sapply(cv.out_list, function(x) x$best_parameters$alpha)))
+  
+  write.csv(output, paste0(saved_data,paste0("a_",names[t],"_1_.csv")), row.names = F)
+}
+```
+
+
+```{r eval=TRUE, fig.height=6, fig.width=8}
+missingness = seq(.3,.9,.1)
+names = c("theta_default", "theta_simple", "theta_random")
+
+
+
+results <- rbind( read.csv(paste0(saved_data,paste0("a_",names[1],"_.csv"))) %>% mutate(label="Logistic model"),
+                  read.csv(paste0(saved_data,paste0("a_",names[2],"_.csv"))) %>% mutate(label="Proportion within column"),
+                  read.csv(paste0(saved_data,paste0("a_",names[3],"_.csv"))) %>% mutate(label="Proportion overall")) 
+                  
+
+results %>%
+  ggplot(aes(x = missingness, y=test_errors, group=label, color=label)) +
+  geom_line() + 
+  geom_point(size = 3, shape=17) +
+  theme_bw() +  
+  scale_color_manual(values = c("red","pink", "cyan")) +
+  labs(x = "missing %", y = "RMSE", title = "Model 2; n1=n2=300; m=5;", 
+       subtitle = "RMSE on the missing data.", color="Theta Method") +
+  theme(legend.position = "bottom") 
+```
+
+
+
+Mao's logistic model surprisingly performed better than using the proportion of missing values. It will be used for the coming results.
+
+#### b) Checking the quality of the estimates compared to the original values
+
+```{r eval=TRUE, fig.height=10, fig.width=14}
+
+graphs_A = list()
+graphs_beta = list()
+graphs_B = list()
+part_b_data <- read.csv(paste0(saved_data,"sim_results_MAO_table1_B30_1.csv"))[c(1,3,4),]
+
+
+
+for(i in 1:nrow(part_b_data)){
+  gen.dat <- generate_simulation_data_mao(part_b_data$dimension[i],part_b_data$dimension[i])
+  #gen.dat <- generate_simulation_data_ysf(2, results$dim[i],results$dim[i],5,5,0.5)
+  mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, part_b_data$lambda_1[i], 
+                     part_b_data$lambda_2[i], part_b_data$alpha[i],n1n2_optimized = T,theta_estimator = theta_default)
+  graphs_beta[[i]] = plot_actual.vs.estimated(gen.dat$beta, mao.out$beta_hat, "Beta", expression(hat("Beta")),title="")
+  graphs_B[[i]] = plot_actual.vs.estimated(gen.dat$B[gen.dat$W==0], mao.out$B_hat[gen.dat$W==0], "B", expression(hat("B")),title="")
+  graphs_A[[i]] = plot_actual.vs.estimated(gen.dat$A[gen.dat$W==0], mao.out$A_hat[gen.dat$W==0], "A", expression(hat("A")),title="")
+}
+
+combined_plot <- (graphs_A[[1]] | graphs_beta[[1]] | graphs_B[[1]]) / 
+                 (graphs_A[[2]] | graphs_beta[[2]] | graphs_B[[2]]) / 
+                 (graphs_A[[3]] | graphs_beta[[3]] | graphs_B[[3]]) +
+                 plot_layout(guides = "collect") +
+                 plot_annotation(title = "Comparing original and estimated values (Only data with W=0 is included)",
+                                 subtitle = "with n1 = n2 = 300, 500, and 700; m=5, and probability of missingness is 0.8",)
+
+combined_plot & theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "lines"),legend.position = "none") 
+```
+
+
+#### c) How is the proportion of missing data affects the optimal parameter values?
+
+
+```{r eval=TRUE, fig.height=6, fig.width=8}
+names = c("theta_default", "theta_simple", "theta_random")
+results <- rbind( read.csv(paste0(saved_data,paste0("a_",names[1],"_.csv"))) %>% mutate(label="Logistic model"),
+                  read.csv(paste0(saved_data,paste0("a_",names[2],"_.csv"))) %>% mutate(label="Proportion within column"),
+                  read.csv(paste0(saved_data,paste0("a_",names[3],"_.csv"))) %>% mutate(label="Proportion overall")) 
+                  
+
+results %>%
+  ggplot(aes(x = missingness)) +
+   geom_line(aes( y = alpha, color="Alpha")) + 
+  geom_point(aes( y = alpha), size = 3) +
+  geom_line(aes( y = lambda.1, color="Lambda 1")) + 
+  geom_point(aes( y = lambda.1), size = 3) +
+  geom_line(aes( y = lambda.2, color="Lambda 2")) + 
+  geom_point(aes( y = lambda.2), size = 3) +
+  theme_bw() +  
+  scale_color_manual(values = c("Alpha" = "darkgreen", "Lambda 1" = "darkred",
+                                "Lambda 2"="darkblue")) +
+  scale_shape_manual(values = c("Alpha" = 17, "Lambda 1" = 15, "Lambda 2" = 18)) +
+  labs(x = "missing %", y = "Parameter Value", title = "Hyperparameters vs missing percentage", 
+       subtitle = "Settings are the same as the previous plot", color="Hyperparameter") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~label)
+```
+
+
+
+
+In almost all of our simulations the optimal value for $\alpha$ was 1. This removes the effect of the $L_2$-regularization on B and the loss function reduces to the following:
+
+$$
+\begin{aligned}
+&f(\beta, B, \lambda_1, \lambda_2, \alpha) = \hat{R}^*(\beta,B) + \lambda_1 ||\beta||^2_F + \lambda_2 ||B||_*   \text{        }&&(e) \\
+\end{aligned}
+$$
+
+#### d) How's changing the values of the hyperparameters affects the model?
+
+In the simulation below, we set two hyparameters to their optimal values which changing the third within the recommended range and compute the test RMSE. This is repeated for the three parameters. The results confirms our observation that the optimal values for $\alpha$ and $\lambda_1$ are 1 and 0. 
+
+```{r}
+gen.dat <- generate_simulation_data_ysf(2,700,700,8,8,missing_prob = 0.6,coll = T)
+cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$W,
+                   n_folds=5, 
+                   lambda.1_grid = seq(0,2,length=20),
+                   lambda.2_grid = seq(.9, 0.1, length=20),
+                   alpha_grid = seq(0.992, 1, length=10),
+                   numCores = 8,n1n2_optimized = TRUE,theta_estimator = theta_default)
+cv.out$best_parameters
+```
+
+
+```{r}
+#optim_values = list(alpha=0.992, lambda.1=0, lambda.2=0.9)
+optim_values = list(alpha=1, lambda.1=0, lambda.2=0.1421053)
+
+part_d_data <- read.csv("sim_results_MAO_table1_B30_1.csv")[c(3),]
+
+
+RMSE_vals = rep(NA, 30)
+lambda.1 = seq(0,2,length=10)
+lambda.2 = seq(.9, 0.1, length=10)
+alpha = seq(0.992, 1, length=10)
+
+gen.dat <- generate_simulation_data_mao(part_d_data$dimension[1],part_d_data$dimension[1])
+
+for (i in 1:10){
+  mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, lambda.1[i], 
+                   part_d_data$lambda_2[1], part_d_data$alpha[1],n1n2_optimized = T,theta_estimator = theta_default)
+  
+  RMSE_vals[i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+  mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, part_d_data$lambda_1[1], 
+                   lambda.2[i], part_d_data$alpha[1],n1n2_optimized = T,theta_estimator = theta_default)
+  
+  RMSE_vals[10+i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+  
+    mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, part_d_data$lambda_1[1], 
+                   part_d_data$lambda_2[1], alpha[i],n1n2_optimized = T,theta_estimator = theta_default)
+  RMSE_vals[20+i] = sqrt(mean((gen.dat$A[gen.dat$W==0] - mao.out$A_hat[gen.dat$W==0])^2)) 
+}
+
+saveRDS(RMSE_vals, "part_d_data.rds")
+```
+
+
+```{r eval=TRUE, fig.height=6, fig.width=8}
+RMSE_vals = readRDS(paste0(saved_data,"part_d_data.rds"))
+lambda.1 = seq(0,2,length=10)
+lambda.2 = seq(.9, 0.1, length=10)
+alpha = seq(0.992, 1, length=10)
+
+data.frame(RMSE=RMSE_vals, labels=rep(c("Lambda 1", "Lambda 2", "Alpha"),each=10),
+           values=c(lambda.1, lambda.2, alpha)) %>%
+  ggplot(aes(x = values, y = RMSE, group = labels, color = labels, shape = labels)) +
+  geom_line() +  # Add lines
+  geom_point(size = 3) +  # Add points with a specified size
+  scale_color_manual(values = c("Alpha" = "red", "Lambda 1" = "green", "Lambda 2" = "blue")) +
+  scale_shape_manual(values = c("Alpha" = 17, "Lambda 1" = 15, "Lambda 2" = 18)) +
+  theme_minimal() +  # Use a minimal theme
+  labs(x = "Hyperparameter value", y = "RMSE", title = "Hyperparameters change vs RMSE", 
+       subtitle = "Model 2; n1=n2=700; m=5; RMSE on the missing data.") +
+  theme(legend.position = "bottom")  
+  
+```
+
+
+
+
+
+
+
+
+
+```{r}
+gen.dat1 <- generate_simulation_data_mao()
+gen.dat <- generate_simulation_data_ysf(2,300,300,10,10,missing_prob = 0.7)
+
+cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$W,
+                 n_folds=5, 
+                 #lambda.1_grid = c(0),
+                 lambda.1_grid = seq(0,2,length=20),
+                 
+                 lambda.2_grid = seq(.9, 0.1, length=20),
+                 #lambda.2_grid = c(0.1842),
+                 
+                 alpha_grid = seq(0.992, 1, length=10),
+                 #alpha_grid = c(0),
+                 
+                 numCores = 8,n1n2_optimized = TRUE);cv.out
+
+mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, cv.out$best_parameters$lambda.1, 
+                   cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha)
+
+RMSE.A = sqrt(mean((gen.dat$A - mao.out$A_hat)^2)) 
+Rank.diff = mao.out$rank - gen.dat$rank
+RMSE.A
+Rank.diff
+
+
+```
+
+
+
+```{r}
+plot_actual.vs.estimated(gen.dat$beta, mao.out$beta_hat, expression(beta), expression(hat(beta)))
+plot_actual.vs.estimated(gen.dat$B, mao.out$B_hat, "B", expression(hat("B")))
+plot_actual.vs.estimated(gen.dat$A, mao.out$A_hat, "A", expression(hat("A")))
+```
+
+
+```{r }
+
+mat_dim <- c(300, 500, 700)
+title = paste("Results on Model 2 (Yousef) with m=5, and probability of missingness is 0.5")
+results = data.frame(lambda_1=c(0,0,0), lambda_2=c(0.1842,0.142,0.142), alpha=c(1,1,1), dim=mat_dim, row.names = mat_dim)
+
+for(i in 1:length(mat_dim)){
+  gen.dat <- generate_simulation_data_ysf(2, results$dim[i],results$dim[i],5,5,0.5)
+  mao.out <- Mao.fit(gen.dat$A*gen.dat$W, gen.dat$X, results$lambda_1[i], 
+                     results$lambda_2[i], results$alpha[i])
+  results$RMSE.A[i] = sqrt(mean((gen.dat$A - mao.out$A_hat)^2)) %>% round(4)
+  results$RMSE.beta[i] = sqrt(mean((gen.dat$beta.x - mao.out$beta_hat)^2)) %>% round(4)
+  results$RMSE.B[i] = sqrt(mean((gen.dat$B - mao.out$B_hat)^2)) %>% round(4)
+  results$Rank[i] = gen.dat$rank
+  results$Rank_estim[i] = mao.out$rank
+  results$Rank_A[i] = qr(mao.out$A_hat)$rank
+}
+results %>% dplyr::select(-dim) %>% 
+   kable("html", caption = "Descriptive caption for your table") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+

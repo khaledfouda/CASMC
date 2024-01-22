@@ -1,0 +1,183 @@
+---
+title: "Comparing Mao Implementations"
+author: "Khaled Fouda"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = F, cache = FALSE)
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+#source("./Mao/SMC_functions6.R")
+```
+
+
+```{r include=TRUE, message=FALSE, warning=FALSE}
+source("./code_files/Mao_import_lib.R")
+data_dir = "./Mao/saved_data/"
+
+```
+
+### Read the results
+
+
+```{r}
+
+results_MaoSim <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_MaoSim.csv"))
+results_YsfSim80 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_80_coll_FALSE.csv"))
+results_YsfSim90 <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_90_coll_FALSE.csv"))
+results_YsfSim80.coll <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_80_coll_TRUE.csv"))
+results_YsfSim90.coll <-read.csv(paste0(data_dir, "compare_Mao_Youssef_Implementation_YsfSim_90_coll_TRUE.csv"))
+```
+
+
+
+```{r}
+# Function to color minimum values in green
+color_min_values <- function(data, columns) {
+  data <- as.data.frame(data)
+  for (col_name in columns) {
+    col_min <- min(as.numeric(data[[col_name]]), na.rm = TRUE)
+    colrounded <- round(as.numeric(data[[col_name]]),4)
+    data[[col_name]] <- cell_spec(ifelse(as.numeric(data[[col_name]])== 9999,'',colrounded),
+                                  "html", color = ifelse(as.numeric(data[[col_name]])== 9999, "grey98", "black"),
+                                  background = ifelse(as.numeric(data[[col_name]]) == col_min, "lightgreen", "grey98"))
+  }
+    col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
+    data[["rank"]] <- cell_spec(data[["rank"]], "html", 
+                                  background = ifelse(abs(data[["rank_diff"]]) == col_min, "lightgreen", "grey98"))
+  return(data)
+}
+# results <- results_MaoSim
+print_table <- function(results, missing=FALSE, prob=NA, caption=""){
+   
+   results %<>%
+      #mutate(across(.cols = contains("Ysf.error"), ~ round(., 7))) %>% 
+      #mutate(across(.cols = contains("new.error"), ~ round(., 7))) %>%
+      mutate(missing_prob = prob, Mao.Method = "Mao", 
+             simpute.Method="Simpute", simputeCov.Method="Simpute/Covariates",
+             simputeL2.Method="Simpute/Covariates/L2") %>%
+      arrange(simpute.rank) ### this is a temporary fix; will fix it later.
+      
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("Mao")) -> Mao_results
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("simpute.")) -> sim_results
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("simputeCov")) -> simcov_results
+   results %>%
+      select(Dim, true_rank, missing_prob, contains("simputeL2")) -> simL2_results
+   
+   
+   sim_results$simpute.lambda.1 = 9999
+   sim_results$simpute.alpha = 9999
+   simcov_results$simputeCov.lambda.1 = 9999
+   simcov_results$simputeCov.alpha = 9999
+   simL2_results$simputeL2.alpha = 9999
+   
+   names(Mao_results) <- gsub("Mao\\.", "", names(Mao_results))
+   names(sim_results) <- gsub("simpute\\.", "", names(sim_results))
+   names(simcov_results) <- gsub("simputeCov\\.", "", names(simcov_results))
+   names(simL2_results) <- gsub("simputeL2\\.", "", names(simL2_results))
+  
+   names(Mao_results) <- gsub("error\\.", "", names(Mao_results))
+   names(sim_results) <- gsub("error\\.", "", names(sim_results))
+   names(simcov_results) <- gsub("error\\.", "", names(simcov_results))
+   names(simL2_results) <- gsub("error\\.", "", names(simL2_results))
+   
+   Mao_results$Method <- 'Mao'
+   sim_results$Method <- 'SImpute/Original'
+   simcov_results$Method <- 'SImpute/Covariates'
+   simL2_results$Method <- 'SImpute/Covariates/L2'
+   
+   combined_results <- rbind(Mao_results, sim_results, simcov_results, simL2_results) %>% 
+      mutate(tmp_rank = rep(1:4,4)) %>% # temporary fix, change!!
+      arrange(tmp_rank) %>% # temporary fix, change!!
+      select(-Dim, -tmp_rank) %>%
+      rename(A=all, A_test=test)
+   
+   if(missing==FALSE){
+      combined_results %<>% select(-missing_prob)
+      nfixed=2
+   }else
+      nfixed=3
+    
+   combined_results %<>% relocate(Method, .before=true_rank) %>%
+      mutate(alpha = ifelse(alpha==9999, '',round(alpha,4)),
+             lambda.1 = ifelse(lambda.1==9999, '', round(lambda.1,4)),
+             lambda.2 = ifelse(lambda.2==9999, '', round(lambda.2,4))) %>%
+      mutate(beta = ifelse(is.na(beta), 9999, beta),B = ifelse(is.na(B), 9999, B))
+   
+   
+   
+# Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
+   error_columns <- c("A_test", "B", "beta", "A","time")
+   combined_results$rank_diff = combined_results$rank - combined_results$true_rank
+   for(i in seq(1,16,4))
+      combined_results[i:(i+3), ] <- color_min_values(combined_results[i:(i+3), ], error_columns)
+   
+   combined_results %<>% mutate(seconds=time) %>% select(-time) 
+   kable(combined_results, "html", escape=FALSE, align = 'c', caption=caption) %>%
+     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
+     pack_rows("400x400", 1, 4) %>%
+     pack_rows("600x600", 5, 8) %>% 
+     pack_rows("800x800", 9, 12) %>% 
+     pack_rows("1000x1000", 13, 16)
+  
+}
+```
+
+```{r fig.height=15, fig.width=15}
+#results <- results_MaoSim
+print_table(results_MaoSim,caption = "Data was simulated using Mao with m=5 and r=10")
+```
+
+
+```{r fig.height=15, fig.width=15}
+#plot_A_B_beta.v2(image_files, 0, FALSE)
+```
+
+
+```{r fig.height=15, fig.width=15}
+print_table(results_YsfSim80,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and without collinearity")
+```
+
+
+```{r fig.height=15, fig.width=15}
+#plot_A_B_beta.v2(image_files, 0.8, FALSE)
+```
+
+```{r fig.height=15, fig.width=15}
+print_table(results_YsfSim80.coll,TRUE, 0.8, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
+```
+
+
+```{r fig.height=15, fig.width=15}
+#plot_A_B_beta.v2(image_files, 0.8, TRUE)
+```
+
+
+```{r fig.height=15, fig.width=15}
+print_table(results_YsfSim90, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and without collinearity")
+```
+
+
+```{r fig.height=15, fig.width=15}
+#plot_A_B_beta.v2(image_files, 0.9, FALSE)
+```
+
+
+
+```{r fig.height=15, fig.width=15}
+print_table(results_YsfSim90.coll, TRUE, 0.9, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")
+```
+
+
+```{r fig.height=15, fig.width=15}
+#plot_A_B_beta.v2(image_files, 0.9, TRUE)
+```
+
