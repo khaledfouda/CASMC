@@ -48,10 +48,15 @@ __packages
 # ignore saved data folder
 */saved_data/
 Mao/saved_data/
-
+saved_data/
+saved_data/*
 
 # remove csv files
 *.csv
 *.tsv
 
+# remove rmd cache folders
 
+*_cache/
+*_cache/html/*
+*_cache/*
