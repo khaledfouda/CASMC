@@ -16,8 +16,9 @@ coop_fit_step <- function(Y_train, X, W_valid, Y_valid, lambda1.grid = seq(0,20,
    if(trace_fin)
       print(sprintf("Validation Error: %.3f, rank: %.0f",
                           test_error(sout$A_hat[W_valid==0], Y_valid), sout$rank_A))
-   #list(A_hat = sout$A_hat)
-   sout$A_hat
+   #list(A = sout$A_hat, beta = sout$beta_hat, B=sout$B_hat, lambda1 = sout$lambda1, lambda2 = sout$lambda2)
+   #sout$A_hat
+   sout
 }
 
 coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3, 
@@ -55,10 +56,10 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
    
    # to obtain initial estimates, we run the MAO function on each covariate matrix individually
    A.hat_x = coop_fit_step(Y, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
-                           print.best, trace_fin, rank.step, tol=tol)
+                           print.best, trace_fin, rank.step, tol=tol)$A_hat
 
    A.hat_z = t(coop_fit_step(t(Y), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
-                           print.best, trace_fin, rank.step, tol=tol))
+                           print.best, trace_fin, rank.step, tol=tol))$A_hat
    # reporting test errors
    valid_error_x = test_error(A.hat_x[ymiss], Y_valid)
    valid_error_z = test_error(A.hat_z[ymiss], Y_valid)
@@ -100,12 +101,14 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
       if(X_first){
          # 1. row covariates, (Y1)   
          y.star = Y - rho.2 * (A.hat_z * W) 
-         A.hat_x = coop_fit_step(y.star, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
+         fit.x = coop_fit_step(y.star, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
                                  print.best, trace_fin, rank.step, tol=tol)
+         A.hat_x = fit.x$A_hat
          # 2. Column Covariates
          y.star = Y - rho.2 * (A.hat_x * W) 
-         A.hat_z = t(coop_fit_step(t(y.star), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
+         fit.z = t(coop_fit_step(t(y.star), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
                                    print.best, trace_fin, rank.step, tol=tol))
+         A.hat_z = fit.z$A_hat
       }else{
          # 1. Column Covariates (Z)
          y.star = Y - rho.2 * (A.hat_x * W) 
@@ -122,6 +125,7 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
       # compute the difference in prediction
       diff = sqrt(mean((y.hat[ymiss] - y.hat.old[ymiss])**2))
       # implement the objective function later!!!
+      obj = #....
       #--------------------------------------------------------
       # update variables and print
       y.hat.old = y.hat
