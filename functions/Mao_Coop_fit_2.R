@@ -32,7 +32,9 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
                          theta_estimator = theta_default,
                          seed = 2023,
                          tol=3, trace=FALSE, rank.limit = 30, print.best=FALSE,
-                     trace_fin = FALSE, rank.step=4){
+                     trace_fin = FALSE, rank.step=4,
+                     early_stopping=TRUE, patience =3,
+                     verbose=TRUE, track=TRUE){
    #' Input:
    #'       A: The response matrix of dimension n1 by n2. We assume that Y = A * W
    #'       X: The row covariates of dimension n1 by m1
@@ -46,6 +48,7 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
    # The following is to compute the time taken to apply the algorithm till convergence or reaching max iter
    start_time <- Sys.time()
    # Compute some variables and have the transposes ready.
+   A = Y
    W <- W * W_valid
    Y <- Y * W 
    
@@ -55,50 +58,43 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
    ymiss <- W_valid == 0
    
    # to obtain initial estimates, we run the MAO function on each covariate matrix individually
-   A.hat_x = coop_fit_step(Y, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
-                           print.best, trace_fin, rank.step, tol=tol)$A_hat
-
-   A.hat_z = t(coop_fit_step(t(Y), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
-                           print.best, trace_fin, rank.step, tol=tol))$A_hat
+   fit.x = coop_fit_step(Y, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
+                           print.best, trace_fin, rank.step, tol=tol)
+   A.hat_x = fit.x$A_hat
+   fit.z = coop_fit_step(t(Y), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
+                           print.best, trace_fin, rank.step, tol=tol)
+   A.hat_z = t(fit.z$A_hat)
+   y.hat <- y.hat.old <- ((A.hat_x+A.hat_z)/2)
    # reporting test errors
    valid_error_x = test_error(A.hat_x[ymiss], Y_valid)
    valid_error_z = test_error(A.hat_z[ymiss], Y_valid)
-   #print(test_error_z)
-   valid_error_avg = test_error(((A.hat_x+A.hat_z)/2)[ymiss], Y_valid)
-   print(paste("Validation error using only X is:",
-         round(valid_error_x,4),
-         ", and using only Z:",
-         round(valid_error_z,4),
-         ", and using their average:",
-         round(valid_error_avg,4)
-   ))
+   valid_error_avg = test_error(y.hat[ymiss], Y_valid)
    
-   # We assume to row covariates are minimized first for now.
-   #n1 = dim(Y)[1]
-   #n2 = dim(Y)[2]
-   #A.hat = A.hat_x + A.hat_z
+   if(verbose)
+      print(paste("Validation error using only X is:",
+            round(valid_error_x,4),
+            ", and using only Z:",
+            round(valid_error_z,4),
+            ", and using their average:",
+            round(valid_error_avg,4)
+      ))
    
-   iter = 0
+   best_fit = list(fit_x = fit.x, fit_z = fit.z, preds=y.hat, valid_error=valid_error_avg)
+   #-------------------------------
+   iter = 1
    rho.1 = 1/(1+rho)
    rho.2 = (1-rho)/(1+rho)
    Y = rho.1 * Y
    
    diff <- old_diff <- Inf
    tol_counter = 0
-   y.hat.old = A.hat_x + A.hat_z
    X_first <- ifelse(valid_error_x <= valid_error_z, TRUE, FALSE)
    # If X is better fit then we start with it, if Z is better then we start with Z
    # The two while loops are identical except for the order of the two models.
    
-   # case 1: X is better
-   if(valid_error_x <= valid_error_z){
-      print("X is better, Entering loop 1")
-   }else
-      print("Z is better, Entering loop 2")
-   
    
    while(iter < maxiter & diff > epsilon){
-      if(X_first){
+      if(!X_first){
          # 1. row covariates, (Y1)   
          y.star = Y - rho.2 * (A.hat_z * W) 
          fit.x = coop_fit_step(y.star, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
@@ -106,63 +102,129 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
          A.hat_x = fit.x$A_hat
          # 2. Column Covariates
          y.star = Y - rho.2 * (A.hat_x * W) 
-         fit.z = t(coop_fit_step(t(y.star), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
-                                   print.best, trace_fin, rank.step, tol=tol))
-         A.hat_z = fit.z$A_hat
+         fit.z = coop_fit_step(t(y.star), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
+                                   print.best, trace_fin, rank.step, tol=tol)
+         A.hat_z = t(fit.z$A_hat)
       }else{
-         # 1. Column Covariates (Z)
+         # 2. Column Covariates
          y.star = Y - rho.2 * (A.hat_x * W) 
-         A.hat_z = t(coop_fit_step(t(y.star), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
-                                   print.best, trace_fin, rank.step, tol=tol))
-         # 2. row covariates, (X)   
+         fit.z = coop_fit_step(t(y.star), Z, W_valid_tr, Y_valid_tr, lambda1.grid, trace, rank.limit,
+                               print.best, trace_fin, rank.step, tol=tol)
+         A.hat_z = t(fit.z$A_hat)
+         # 2. Column Covariates (Z)
          y.star = Y - rho.2 * (A.hat_z * W) 
-         A.hat_x = coop_fit_step(y.star, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
-                                 print.best, trace_fin, rank.step, tol=tol)
+         fit.x = coop_fit_step(y.star, X, W_valid, Y_valid, lambda1.grid, trace, rank.limit,
+                               print.best, trace_fin, rank.step, tol=tol)
+         A.hat_x = fit.x$A_hat
       }
       #-----------------------------------------------------
       # prediction is the sum of two
       y.hat = A.hat_x + A.hat_z
       # compute the difference in prediction
       diff = sqrt(mean((y.hat[ymiss] - y.hat.old[ymiss])**2))
-      # implement the objective function later!!!
-      obj = #....
+      valid_error = test_error(y.hat[ymiss], Y_valid)
+      
+      if(track){
+         
+      # loss as defined in (Y0)
+      loss <- norm( (A - A.hat_x - A.hat_z) * W , type="F")^2 +
+         rho * norm( (A.hat_x - A.hat_z) * W, type="F") ^2 +
+         fit.x$lambda1 * norm(fit.x$beta_hat, type="F")^2 +
+         fit.z$lambda1 * norm(fit.z$beta_hat, type="F") ^2 +
+         fit.x$lambda2 * sum(svd(fit.x$B_hat)$d) +
+         fit.z$lambda2 * sum(svd(fit.z$B_hat)$d)
+      
+      print(sprintf("Iteration %.0f - validation error: %.4f - diff: %.3f - loss: %.3f",
+                    iter, valid_error, diff, loss))
+      }
       #--------------------------------------------------------
       # update variables and print
-      y.hat.old = y.hat
+      if(valid_error < best_fit$valid_error){
+         tol_counter = 0
+         best_fit = list(fit_x = fit.x, fit_z = fit.z, preds=y.hat, valid_error=valid_error)
+      }else 
+         tol_counter = tol_counter + 1
+      if(early_stopping){
+         if(tol_counter >= patience)
+            break
+      }
+      
+      
+      # update variables for next iteration
       iter = iter + 1
-      valid_error = test_error(y.hat[ymiss], Y_valid)
-      print(sprintf("Iteration %.0f - validation error: %.3f - diff: %.5f",
-                    iter, valid_error, diff))
-      if(diff >= old_diff){ tol_counter = tol_counter + 1}else{tol_counter = 0}
-      if(tol_counter >= tol) break
+      y.hat.old = y.hat
       old_diff = diff
-      # STOP if the difference has been increasing for 3 continuous iterations
    }
-   
-   if(tol_counter>=tol) 
-      print(paste0("Diff did not decrease for ", tol, " iterations. Quitting before reaching Max iterations."))
-   
-   if(iter >= maxiter){
-      print("Reached Max iterations before converging.")
-   }else if(tol_counter < tol)
-      print("Converged.")
-   
-   valid_error = test_error(y.hat[ymiss], Y_valid)
-   print(paste("Validation error resulted from applying the Coop Model is",valid_error))
-   
-   time_taken <- round(as.numeric(difftime(Sys.time(), start_time, units='mins')),3)   
-   
-   print(paste0("Run time is ",time_taken, " minutes."))
-   print(paste0("Average Run time per iteration is ",round(time_taken/iter,3), " minutes."))
-   return(y.hat)
+   if(verbose){
+      if(tol_counter>=patience) 
+         print(paste0("Validation error has not decreased for ",
+                      patience, " iterations. Quitting before reaching Max iterations."))
+      if(iter >= maxiter){
+         print("Reached Max iterations before converging.")
+      }else if(tol_counter < patience)
+         print(paste0("Converged after ", iter, " iterations."))
+      print(paste("Validation error resulted from best fit is",round(best_fit$valid_error,4)))
+      time_taken <- as.numeric(difftime(Sys.time(), start_time, units='mins'))   
+      print(paste0("Total run time is ",round(time_taken,1), " minutes."))
+      print(paste0("Average run time per iteration is ",round(time_taken/iter,1), " minutes."))
+   }
+   return(best_fit)
 } 
 
 
-gen.dat <- generate_simulation_data_ysf(1,500,500,5,5, missing_prob = 0.8,coll=F)
+
+coop_find_rho <- function(gen.dat, W_valid, early_maxiter=3, final_maxiter=30,
+                          rho.grid = seq(0.1,0.99,length.out=10), print_best=TRUE,
+                          seed=2023, patience=5, verbose=FALSE, tol=2, track=FALSE){
+   
+   Y_valid <- gen.dat$Y[W_valid==0]
+   best_rho <- -1
+   lowest_error <- Inf
+   start_time <- Sys.time()
+   
+   for(rho in rho.grid){
+      if(print_best)
+         print(paste0("Attempting rho = ",round(rho,4)))
+      out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid,
+                      Y_valid, rho=rho, tol=tol,trace_fin = F, verbose=verbose,
+                      early_stopping = TRUE, track=track,
+                      patience=patience, maxiter = early_maxiter, seed = seed)
+      if (out$valid_error < lowest_error){
+         lowest_error <- out$valid_error
+         best_rho <- rho
+         if(print_best)
+            print(paste("Best rho is",round(rho,2),
+                         "with validation error of", round(lowest_error,4) ))
+      }
+   }
+   out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid,
+                   Y_valid, rho=best_rho, tol=tol,trace_fin = F, verbose=print_best,
+                   early_stopping = TRUE, track=print_best,
+                   patience=patience, maxiter = final_maxiter, seed = seed)
+   
+   
+   time_in_minutes =  as.numeric(difftime(Sys.time(), start_time, units='mins'))
+   list(rho=best_rho, fit=out, time_in_minutes=time_in_minutes)
+}
+
+
+
+
+setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
+source("./code_files/import_lib.R")
+
+gen.dat <- generate_simulation_data_ysf(1,500,500,5,10, missing_prob = 0.8,coll=T,seed=3023)
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
+
+coop_find_rho(gen.dat, W_valid,  print_best = TRUE,early_maxiter = 2)
+
+
 Y_valid <- gen.dat$Y[W_valid==0]
 
-out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid, Y_valid, rho=0.9, tol=2,trace_fin = F)
+out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid,
+                Y_valid, rho=0.3, tol=2,trace_fin = F, verbose=FALSE, early_stopping = TRUE,
+                patience=5, maxiter = 15, seed = 3023)
 
-test_error(out[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(out$preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(out$preds[W_valid==0], gen.dat$A[W_valid==0])
 
