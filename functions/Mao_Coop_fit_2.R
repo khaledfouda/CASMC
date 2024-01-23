@@ -175,36 +175,67 @@ coop_fit <- function(Y, X, Z, W, W_valid, Y_valid, maxiter=100, epsilon=1e-3,
 
 coop_find_rho <- function(gen.dat, W_valid, early_maxiter=3, final_maxiter=30,
                           rho.grid = seq(0.1,0.99,length.out=10), print_best=TRUE,
-                          seed=2023, patience=5, verbose=FALSE, tol=2, track=FALSE){
+                          seed=2023, patience=5, verbose=FALSE, tol=2, track=FALSE,
+                          max_cores=10){
+   num_cores = length(rho.grid)
+   if(max_cores < num_cores){
+      num_cores = round(length(rho.grid)/2)
+      if(max_cores < num_cores){
+         num_cores = min(round(length(rho.grid)/3),max_cores)
+      }
+   }
+   print(paste("Running on",num_cores,"cores."))
+   require(foreach)
+   require(doParallel)
    
    Y_valid <- gen.dat$Y[W_valid==0]
-   best_rho <- -1
-   lowest_error <- Inf
    start_time <- Sys.time()
    
-   for(rho in rho.grid){
-      if(print_best)
-         print(paste0("Attempting rho = ",round(rho,4)))
+   cl <- makeCluster(num_cores)
+   registerDoParallel(cl)
+   
+   #for(rho in rho.grid){
+   results <- foreach(rho = rho.grid, .combine='list', .multicombine = TRUE,
+                      .export = c("coop_fit", "coop_fit_step")) %dopar%{   
+      #if(print_best)
+      #   print(paste0("Attempting rho = ",round(rho,4)))
+    source("./code_files/import_lib.R")
       out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid,
                       Y_valid, rho=rho, tol=tol,trace_fin = F, verbose=verbose,
                       early_stopping = TRUE, track=track,
                       patience=patience, maxiter = early_maxiter, seed = seed)
-      if (out$valid_error < lowest_error){
-         lowest_error <- out$valid_error
-         best_rho <- rho
-         if(print_best)
-            print(paste("Best rho is",round(rho,2),
-                         "with validation error of", round(lowest_error,4) ))
+      list(rho=rho, fit=out)
+   }
+   #stopImplicitCluster()
+   stopCluster(cl)
+   #    if (out$valid_error < lowest_error){
+   #       lowest_error <- out$valid_error
+   #       best_rho <- rho
+   # }
+   lowest_error = Inf
+   print("done")
+   for(res in results){
+      #print(res)
+      if(res$fit$valid_error < lowest_error){
+         lowest_error <- res$fit$valid_error
+         best_rho = res$rho
+         best_fit = res$fit
       }
    }
-   out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid,
-                   Y_valid, rho=best_rho, tol=tol,trace_fin = F, verbose=print_best,
-                   early_stopping = TRUE, track=print_best,
-                   patience=patience, maxiter = final_maxiter, seed = seed)
    
+   if(print_best)
+      print(paste("Best rho is",round(best_rho,2),
+                   "with validation error of", round(lowest_error,4) ))
+   # 
+   # out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid,
+   #                 Y_valid, rho=best_rho, tol=tol,trace_fin = F, verbose=print_best,
+   #                 early_stopping = TRUE, track=print_best,
+   #                 patience=patience, maxiter = final_maxiter, seed = seed)
+   # 
    
    time_in_minutes =  as.numeric(difftime(Sys.time(), start_time, units='mins'))
-   list(rho=best_rho, fit=out, time_in_minutes=time_in_minutes)
+   print(paste("Total time taken: ", round(time_in_minutes,1),"minutes."))
+   list(rho=best_rho, fit=best_fit, time_in_minutes=time_in_minutes)
 }
 
 
@@ -213,11 +244,15 @@ coop_find_rho <- function(gen.dat, W_valid, early_maxiter=3, final_maxiter=30,
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
 
-gen.dat <- generate_simulation_data_ysf(1,500,500,5,10, missing_prob = 0.8,coll=T,seed=3023)
+gen.dat <- generate_simulation_data_ysf(1,500,500,5,10, missing_prob = 0.9,coll=T,seed=3023)
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 
-coop_find_rho(gen.dat, W_valid,  print_best = TRUE,early_maxiter = 2)
-
+out <- coop_find_rho(gen.dat, W_valid,  print_best = TRUE,early_maxiter = 50,max_cores = 10,
+                     rho.grid = seq(0.1,0.99,length.out=10))
+out$time_in_minutes
+out$rho
+ 
+test_error(out$fit$preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 
 Y_valid <- gen.dat$Y[W_valid==0]
 
