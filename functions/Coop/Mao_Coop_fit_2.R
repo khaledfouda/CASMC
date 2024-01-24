@@ -240,26 +240,3 @@ coop_find_rho <- function(gen.dat, W_valid, early_maxiter=3, final_maxiter=30,
 
 
 
-
-setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
-source("./code_files/import_lib.R")
-
-gen.dat <- generate_simulation_data_ysf(1,500,500,5,10, missing_prob = 0.9,coll=T,seed=3023)
-W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
-
-out <- coop_find_rho(gen.dat, W_valid,  print_best = TRUE,early_maxiter = 50,max_cores = 10,
-                     rho.grid = seq(0.1,0.99,length.out=10))
-out$time_in_minutes
-out$rho
- 
-test_error(out$fit$preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
-
-Y_valid <- gen.dat$Y[W_valid==0]
-
-out <- coop_fit(gen.dat$Y, gen.dat$X, gen.dat$Z, gen.dat$W, W_valid,
-                Y_valid, rho=0.3, tol=2,trace_fin = F, verbose=FALSE, early_stopping = TRUE,
-                patience=5, maxiter = 15, seed = 3023)
-
-test_error(out$preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
-test_error(out$preds[W_valid==0], gen.dat$A[W_valid==0])
-
