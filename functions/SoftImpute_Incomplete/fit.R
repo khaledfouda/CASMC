@@ -1,26 +1,31 @@
-Ssimpute.als <-
-function (x, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE) 
+simpute.als.fit_Incomplete <-
+function (y, X, J = 2, thresh = 1e-05, lambda=0, 
+          maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE) 
 {
   ###This function expects an object of class "Incomplete" which inherits from "sparseMatrix", where the missing entries
   ###are replaced with zeros. If it was centered, then it carries the centering info with it
-  this.call=match.call()
-  a=names(attributes(x))
-  binames=c("biScale:row","biScale:column")
-  if(all(match(binames,a,FALSE))){
-    biats=attributes(x)[binames]
-  } else biats=NULL
   
-  if(!inherits(x,"dgCMatrix"))x=as(x,"dgCMatrix")
-  irow=x@i
-  pcol=x@p
-  n <- dim(x)
+  #this.call=match.call()
+  #a=names(attributes(x))
+  #binames=c("biScale:row","biScale:column")
+  #if(all(match(binames,a,FALSE))){
+  #  biats=attributes(x)[binames]
+  #} else biats=NULL
+  
+  if(!inherits(y,"dgCMatrix")) y=as(y,"dgCMatrix")
+  irow=y@i
+  pcol=y@p
+  n <- dim(y)
   m <- n[2]
   n <- n[1]
-  nz=nnzero(x)
+  nz=nnzero(y)
+  
   warm=FALSE
   if(!is.null(warm.start)){
+    clean.warm.start(warm.start)
     #must have u,d and v components
-    if(!all(match(c("u","d","v"),names(warm.start),0)>0))stop("warm.start does not have components u, d and v")
+    if(!all(match(c("u","d","v"),names(warm.start),0)>0))
+      stop("warm.start does not have components u, d and v")
     warm=TRUE
     D=warm.start$d
     JD=sum(D>0)
@@ -39,6 +44,7 @@ function (x, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=
       U=cbind(U,Ua)
       V=cbind(warm.start$v,matrix(0,m,Ja))
     }
+    # update yfill[ynas] = UDV + XBETA
   }
   else
     {
@@ -46,38 +52,49 @@ function (x, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=
       U=matrix(rnorm(n*J),n,J)
       U=svd(U)$u
       Dsq=rep(1,J)# we call it Dsq because A=UD and B=VD and AB'=U Dsq V^T
+      # update yfill[ynas] = 0
     }
+  
+  # initial beta estimates using yfill - yplus = yfill - xbeta
   ratio <- 1
   iter <- 0
-  xres=x
+  yres=y
+  
   while ((ratio > thresh)&(iter<maxit)) {
     iter <- iter + 1
     U.old=U
     V.old=V
     Dsq.old=Dsq
-   ## U step
+    #---------------------------------
+    ## U step # yres is yplus
     if(iter>1|warm){
       BD=UD(V,Dsq,m)
-      xfill=suvC(U,BD,irow,pcol)
-      xres@x=x@x-xfill
+      yfill=suvC(U,BD,irow,pcol)
+      yres@x = y@x - yfill
     }else BD=0 
-    B=t(t(U)%*%xres)+BD
+    B=t(t(U)%*%yres)+BD
     if(lambda>0)B=UD(B,Dsq/(Dsq+lambda),m)
     Bsvd=svd(B)
     V=Bsvd$u
     Dsq=Bsvd$d
     U=U%*%Bsvd$v
+    # update yhat = UDV then yfill[ynas] = yhat[ynas] + xbeta[ynas]
+    # compute beta estimates and yplus (yres) = yfill - xbeta
+    #------------------------------------
     ## V step
     AD=UD(U,Dsq,n)
-    xfill=suvC(AD,V,irow,pcol)
-    xres@x=x@x-xfill
-  if(trace.it)  obj=(.5*sum(xres@x^2)+lambda*sum(Dsq))/nz
-    A=xres%*%V+AD
+    yfill=suvC(AD,V,irow,pcol)
+    yres@x = y@x - yfill
+  if(trace.it)  obj=(.5*sum(yres@x^2)+lambda*sum(Dsq))/nz # update later
+    A=yres%*%V+AD
     if(lambda>0)A= UD(A,Dsq/(Dsq+lambda),n)
     Asvd=svd(A)
     U=Asvd$u
     Dsq=Asvd$d
     V=V %*% Asvd$v
+    # update yhat = UDV then yfill[ynas] = yhat[ynas] + xbeta[ynas]
+    # compute beta estimates and yplus (yres) = yfill - xbeta
+    #------------------------------------------------------------------------------
     ratio=Frob(U.old,Dsq.old,V.old,U,Dsq,V)
     if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, "\n")
   }
@@ -85,8 +102,8 @@ function (x, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=
   if(lambda>0&final.svd){
     AD=UD(U,Dsq,n)
     xfill=suvC(AD,V,irow,pcol)
-    xres@x=x@x-xfill
-    A=xres%*%V+AD
+    yres@x=y@x-yfill
+    A=yres%*%V+AD
     Asvd=svd(A)
     U=Asvd$u
     Dsq=Asvd$d
@@ -94,14 +111,14 @@ function (x, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=
     Dsq=pmax(Dsq-lambda,0)
     if(trace.it){
       AD=UD(U,Dsq,n)
-      xfill=suvC(AD,V,irow,pcol)
-      xres@x=x@x-xfill
-      obj=(.5*sum(xres@x^2)+lambda*sum(Dsq))/nz
+      yfill=suvC(AD,V,irow,pcol)
+      yres@x=y@x-yfill
+      obj=(.5*sum(yres@x^2)+lambda*sum(Dsq))/nz
       cat("final SVD:", "obj",format(round(obj,5)),"\n")
     }
   }
   J=min(sum(Dsq>0)+1,J)
-  out=list(u=U[, seq(J)], d=Dsq[seq(J)], v=V[,seq(J)])
-  attributes(out)=c(attributes(out),list(lambda=lambda,call=this.call),biats)
+  out=list(u=U[, seq(J)], d=Dsq[seq(J)], v=V[,seq(J)], lambda=lambda, rank=J)
+  #attributes(out)=c(attributes(out),list(lambda=lambda,call=this.call),biats)
   out
 }

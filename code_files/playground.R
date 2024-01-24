@@ -6,6 +6,23 @@ gen.dat <- generate_simulation_data_ysf(1,500,500,5,10, missing_prob = 0.9,coll=
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_valid <- gen.dat$Y[W_valid==0]
 
+Y_train <- gen.dat$Y
+Y_train[Y_train==0] = NA
+y = Y_train %>% as.matrix()
+ys <- as(y, "Incomplete")
+
+
+fits <- simpute.als.fit_Incomplete(ys, gen.dat$X, trace=TRUE, lambda=3)
+fits$rank
+fits$lambda
+system.time({fitss <- simpute.als.fit_Incomplete(ys, J = 3, lambda=1.9)})
+
+
+
+
+
+
+
 out <- coop_find_rho(gen.dat, W_valid,  print_best = TRUE,early_maxiter = 50,max_cores = 10,
                      rho.grid = seq(0.1,0.99,length.out=10))
 out$time_in_minutes
