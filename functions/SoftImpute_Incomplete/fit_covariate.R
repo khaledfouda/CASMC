@@ -107,9 +107,8 @@ function (y, X, J = 2, thresh = 1e-05, lambda=0,
     #print(paste("Execution time 1 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),5), "seconds"))
     tU = t(U)
     tBD = t(BD)
-    #BD = t(BD)
-    B =    (tU - (t(U) %*% hat_sp)) %*% S         + #t(t(U) %*% ((diag(1,n,n) - hat_sp) %*% S)) +
-      (tBD -  (((tU%*% hat) %*% U) %*% tBD) )  #((t(U)%*% hat) %*% U) %*% BD) 
+    B =    (tU - (tU %*% hat_sp)) %*% S         + 
+      (tBD -  (((tU%*% hat) %*% U) %*% tBD) )
     #B=t(t(U)%*%S)+BD
     #print(paste("Execution time 2 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),5), "seconds"))
     if(lambda>0)B= B * (Dsq/(Dsq+lambda)) #UD(B,Dsq/(Dsq+lambda),m)
