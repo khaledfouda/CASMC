@@ -21,12 +21,12 @@ function (y, X, J = 2, thresh = 1e-05, lambda=0,
   n <- n[1]
   nz=nnzero(y)
   #-------------------------------
-    start_time <- Sys.time()
+  start_time <- Sys.time()
   # hat2 <- X %*% solve(t(X) %*% X) %*% t(X)
   # 
-    p = ncol(X)
-    Q <- qr.Q(Matrix::qr(X))[,1:p]
-    hat <- Q %*% t(Q)
+  #p = ncol(X)
+  Q <- qr.Q(Matrix::qr(X)) #[,1:p]
+  hat <- Q %*% t(Q)
   #svdX <- fast.svd(X)
   #hat = svdX$u %*% Diagonal(length(svdX$d)) %*% t(svdX$u)
   onesSparse <- ys

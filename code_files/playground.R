@@ -50,8 +50,8 @@ lambda2 = 10
 max.rank = 15
 start_time <- Sys.time()
 beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
-sout <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.rank, thresh =  1e-3,
-                        lambda= lambda2,trace.it = F,warm.start = NULL, maxit=10)
+sout <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.rank, thresh =  1e-6,
+                        lambda= lambda2,trace.it = F,warm.start = NULL, maxit=30)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 sout$A_hat = sout$u %*% (sout$d * t(sout$v))
 print(paste("Test error =", round(test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
@@ -62,7 +62,7 @@ y[y==0] = NA
 ys <- as(y, "Incomplete")
 start_time <- Sys.time()
 fits <- simpute.als.fit_Incomplete(ys, gen.dat$X, trace=F, J=max.rank, thresh=1e-6, lambda=lambda2,
-                                   final.svd = T,maxit = 10)
+                                   final.svd = T,maxit = 30)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 preds <- fits$u %*% (fits$d * t(fits$v))
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
