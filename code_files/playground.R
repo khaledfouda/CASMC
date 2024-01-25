@@ -41,17 +41,17 @@ system.time({fitss <- simpute.als.fit_Incomplete(ys, J = 3, lambda=1.9)})
 
 #---------------------------------
 # old model 
-gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.96,coll=TRUE)
+gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=TRUE)
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
 
-beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
 lambda2 = 10
 max.rank = 15
 start_time <- Sys.time()
+beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
 sout <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.rank, thresh =  1e-3,
-                        lambda= lambda2,trace.it = F,warm.start = NULL)
+                        lambda= lambda2,trace.it = F,warm.start = NULL, maxit=10)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 sout$A_hat = sout$u %*% (sout$d * t(sout$v))
 print(paste("Test error =", round(test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
@@ -67,7 +67,22 @@ print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time
 preds <- fits$u %*% (fits$d * t(fits$v))
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 
-
+#----------
+timespent = rep(0,2)
+start_time <- Sys.time()
+for(i in 1:1000){
+#hat2 <- X %*% solve(t(X) %*% X) %*% t(X)}
+ p = ncol(X)
+ Q <- qr.Q(Matrix::qr(X))[,1:p]
+ hat <- Q %*% t(Q)}
+#svdX <- fast.svd(X)
+#hat = svdX$u %*% Diagonal(length(svdX$d)) %*% t(svdX$u)
+# onesSparse <- ys
+# onesSparse@x[] <- 1
+# hat_sp <- as(as.matrix(hat), "Incomplete")
+# hat_sp <- hat_sp * onesSparse
+timespent[1] = timespent[1] + as.numeric(difftime(Sys.time(), start_time,units = "secs"))
+timespent
 #---------------------------
 # new model
 y = Y_train
