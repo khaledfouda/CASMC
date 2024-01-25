@@ -1,5 +1,6 @@
-simpute.als.fit_Incomplete_old <-
-function (y, J = 2, thresh = 1e-05, lambda=0, 
+require(corpcor)
+simpute.als.fit_Incomplete <-
+function (y, X, J = 2, thresh = 1e-05, lambda=0, 
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE) {
   ###This function expects an object of class "Incomplete" which inherits from "sparseMatrix", where the missing entries
   ###are replaced with zeros. If it was centered, then it carries the centering info with it
@@ -18,7 +19,17 @@ function (y, J = 2, thresh = 1e-05, lambda=0,
   m <- n[2]
   n <- n[1]
   nz=nnzero(y)
+  #-------------------------------
+  hat <- X %*% solve(t(X) %*% X) %*% t(X)
+  onesSparse <- ys
+  onesSparse@x[] <- 1
+  hat_sp <- as(hat, "Incomplete")
+  hat_sp <- hat_sp * onesSparse
   
+  
+  # hat_sp[y == 0] = NA
+  # hat_sp <- as(hat_sp, "Incomplete")
+  #---------------------------------------------------
   warm=FALSE
   if(!is.null(warm.start)){
     clean.warm.start(warm.start)
@@ -32,8 +43,10 @@ function (y, J = 2, thresh = 1e-05, lambda=0,
       U=warm.start$u[,seq(J),drop=FALSE]
       V=warm.start$v[,seq(J),drop=FALSE]
       Dsq=D[seq(J)]
+      r = J
     }else{
       Dsq=c(D,rep(D[JD],J-JD))
+      r = length(Dsq)
       Ja=J-JD
       U=warm.start$u
       Ua=matrix(rnorm(n*Ja),n,Ja)
@@ -51,10 +64,11 @@ function (y, J = 2, thresh = 1e-05, lambda=0,
       # update yfill[ynas] = 0
     }
   
+  r = length(Dsq)
   # initial beta estimates using yfill - yplus = yfill - xbeta
   ratio <- 1
   iter <- 0
-  yres=y
+  S=y
   
   while ((ratio > thresh)&(iter<maxit)) {
     iter <- iter + 1
@@ -62,34 +76,64 @@ function (y, J = 2, thresh = 1e-05, lambda=0,
     V.old=V
     Dsq.old=Dsq
     #---------------------------------
-    ## U step # yres is yplus
+    ## U step # S is yplus
     if(iter>1|warm){
+      # 1
+      start_time <- Sys.time()
       BD=UD(V,Dsq,m)
+      # 2
       yfill=suvC(U,BD,irow,pcol)
-      yres@x = y@x - yfill
-    }else BD=0 
-    B=t(t(U)%*%yres)+BD
+      # 3
+      S@x = y@x - yfill - lsq.sp
+    }else BD=matrix(0,m,r) 
+    # 4
+    lsq.sp = hat_sp@x * S@x
+    # 5
+    #UtHat = t(U) %*% hat
+    # 6
+    print(paste("Execution time 1 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),5), "seconds"))
+    that = t(hat)
+    tu = t(U)
+    start_time <- Sys.time()
+    #BD = t(BD)
+    B = t(t(U) %*% ((diag(1,n,n) - hat_sp) %*% S)) +
+      (BD - BD %*% ((tu %*% that) %*% U) )  #((t(U)%*% hat) %*% U) %*% BD) 
+    #B=t(t(U)%*%S)+BD
+    print(paste("Execution time 2 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),5), "seconds"))
+    start_time <- Sys.time()
     if(lambda>0)B=UD(B,Dsq/(Dsq+lambda),m)
+    print(paste("Execution time 3 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),5), "seconds"))
+    start_time <- Sys.time()
     Bsvd=svd(B)
     V=Bsvd$u
     Dsq=Bsvd$d
     U=U%*%Bsvd$v
+    r = length(Dsq)
+    print(paste("Execution time 4 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),5), "seconds"))
     # update yhat = UDV then yfill[ynas] = yhat[ynas] + xbeta[ynas]
-    # compute beta estimates and yplus (yres) = yfill - xbeta
+    # compute beta estimates and yplus (S) = yfill - xbeta
     #------------------------------------
     ## V step
+    # 1
     AD=UD(U,Dsq,n)
+    # 2
     yfill=suvC(AD,V,irow,pcol)
-    yres@x = y@x - yfill
-  if(trace.it)  obj=(.5*sum(yres@x^2)+lambda*sum(Dsq))/nz # update later
-    A=yres%*%V+AD
+    # 3
+    S@x = y@x - yfill - lsq.sp
+  if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
+    # 4
+    lsq.sp = hat_sp@x * S@x
+    # 5
+    A = (S - hat_sp %*% S) %*% V + (diag(1,n,n) - hat) %*% AD
+    #A=S%*%V+AD
     if(lambda>0)A= UD(A,Dsq/(Dsq+lambda),n)
     Asvd=svd(A)
     U=Asvd$u
     Dsq=Asvd$d
     V=V %*% Asvd$v
+    r = length(Dsq)
     # update yhat = UDV then yfill[ynas] = yhat[ynas] + xbeta[ynas]
-    # compute beta estimates and yplus (yres) = yfill - xbeta
+    # compute beta estimates and yplus (S) = yfill - xbeta
     #------------------------------------------------------------------------------
     ratio=Frob(U.old,Dsq.old,V.old,U,Dsq,V)
     if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, "\n")
@@ -98,8 +142,8 @@ function (y, J = 2, thresh = 1e-05, lambda=0,
   if(lambda>0&final.svd){
     AD=UD(U,Dsq,n)
     xfill=suvC(AD,V,irow,pcol)
-    yres@x=y@x-yfill
-    A=yres%*%V+AD
+    S@x=y@x-yfill #- lsq.sp
+    A=S%*%V+AD
     Asvd=svd(A)
     U=Asvd$u
     Dsq=Asvd$d
@@ -108,8 +152,8 @@ function (y, J = 2, thresh = 1e-05, lambda=0,
     if(trace.it){
       AD=UD(U,Dsq,n)
       yfill=suvC(AD,V,irow,pcol)
-      yres@x=y@x-yfill
-      obj=(.5*sum(yres@x^2)+lambda*sum(Dsq))/nz
+      S@x=y@x-yfill
+      obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz
       cat("final SVD:", "obj",format(round(obj,5)),"\n")
     }
   }
