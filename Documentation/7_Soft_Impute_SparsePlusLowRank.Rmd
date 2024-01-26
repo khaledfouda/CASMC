@@ -1,0 +1,72 @@
+---
+title: "7 - Soft Impute (ALS) with Covariates and Sparse + Low-Rank"
+author: "Khaled Fouda"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r setup, include=TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE)
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+library(softImpute)
+
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+```
+
+
+```{r include=TRUE, warning=FALSE, message=FALSE, eval=TRUE}
+source("./code_files/import_lib.R")
+```
+
+# References
+
+[1] Hastie (2015) Matrix Completion and Low-Rank SVD via Fast Alternating Least Squares.
+
+[2] [SoftImpute Github Implementation](https://github.com/cran/softImpute/tree/b497771beea6c466266082524a9b0c91b98126a7)
+
+Building on the model in 3 - Alternating Least Squares, we have defined and implemented the ALS method with covariates where we compute the full $\hat{M}=S_\lambda(Y)=UD_\lambda V'$ at each iteration and where we have $\hat{Y}$ the filled response matrix where the missing values are filled with predictions from $\hat{M}$. 
+
+Here, we attempt to implement the method by separting $\hat{Y}$ into a Sparse matrix  (misssing values are kept as 0) and a low rank matrix (containing predictions). Moreover, We attempt to avoid computing $\hat{M}=S_\lambda(Y)=UD_\lambda V'$ at each step and we rely on the following quantities for the updates $U, UD,D,DV,V$. This avoid matrix operations on matrices of dimensions $nxm$. 
+
+
+We begin by illustrating the Authors' approach for the case where there are no covariates, then, we will adapt the formulas for the covariates. 
+
+
+Recall our objective function
+
+$$
+\begin{aligned}
+minimize && \frac{1}{2} \|Y-AB^T - X\beta\|^2_F + \frac{\lambda}{2} (||A||^2_F+||B||^2_F)  && (ALS1)
+\end{aligned}
+$$
+
+
+Where $Y \in \Re^{n\times m}$, $A \in \Re^{n\times r}$, $B \in \Re^{m \times r},$ and $X \in \Re^{n\times k}$.
+We assume that $max(r,k) <<< min(m,n)$. 
+
+Recall Algorithm ALS/Covarites in our document (3-ALS.html), at step t,  we begin by fixing $A$ and we solve for $B$ and $\beta$ as:
+  
+   -  $DB^T = (D^2 + \lambda I)^{-1}D^2U^TY^+ = (D^2/(D^2+\lambda))U^TY^+$
+   -  $\bar{B}D = \tilde{U}\tilde{D}^2\tilde{V}^T$
+      -  $V \leftarrow \tilde{U}$
+      -  $D^2 \leftarrow \tilde{D^2}$
+   - $Y^*[\overline\Omega] = AB^T[\overline{\Omega}] + X \hat\beta[\overline{\Omega}] = UD^2V^T[\overline \Omega] + X \hat \beta[\overline{\Omega}]$
+   - $\hat{\beta} = (X^TX)^{-1} X^T Y^*$
+   -  $Y^+= Y^* - X \hat \beta$
+   
+   
+Our objective, is to avoid any matrix operation that will result in a $n\times m$ dimensions. That is, we want to replace $UD^2V^T$, $X\hat\beta$, $Y+$, and $Y^*$ with either lower rank matrices, sparse matrices, or a combination of both.
+
+We begin by defining the Hat (projection) matrix of X since this matrix will be fixed for the model fitting and will only be computed once. Note that this matrix have a high dimension, and high rank, which are two things we want to avoid. We will later define a sparse version of it.
+
+$$
+H = X (X^TX)^{-1} X^T
+$$
+
+

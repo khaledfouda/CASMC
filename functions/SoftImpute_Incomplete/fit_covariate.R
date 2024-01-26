@@ -137,11 +137,11 @@ function (y, X, J = 2, thresh = 1e-05, lambda=0,
     # timespent[2] = timespent[2] + as.numeric(difftime(Sys.time(), start_time,units = "secs"))
     #A=S%*%V+AD
 
-    if(lambda>0) A = (t(A) * (Dsq/(Dsq+lambda))) #UD(A,Dsq/(Dsq+lambda),n)
+    if(lambda>0) A = t(t(A) * (Dsq/(Dsq+lambda))) #UD(A,Dsq/(Dsq+lambda),n)
     Asvd=  fast.svd(as.matrix(A))
-    U= t(Asvd$u)
+    U= (Asvd$u)
     Dsq=Asvd$d
-    V=V %*% Asvd$v
+    V=V %*% (Asvd$v)
     r = length(Dsq)
     tU = t(U)
     # update yhat = UDV then yfill[ynas] = yhat[ynas] + xbeta[ynas]
