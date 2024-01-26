@@ -69,4 +69,52 @@ $$
 H = X (X^TX)^{-1} X^T
 $$
 
+However, to reduce computational time, we estimated this matrix using the QR decomposition,
+let Q be the Q matrix in the QR decomposition, then
+
+$$
+ \hat{H} = Q Q^T
+$$
+
+Moreover, we define the following two low rank matrices which will be very useful in our calculations
+
+$$
+\begin{aligned}
+V^* = V D^2  & \in \Re^{m \in r}\\
+U^* = U D^2  & \in \Re^{n \in r}\\
+\end{aligned}
+$$
+We let $Y^s$ be Sparse Matrix where the cells corresponding to the missing values are set to 0. Similarly, any matrix and superscript $^s$ is a sparse version of said matrix where the cells corresponding to the missing values in $Y$ are set to 0. For example, we have $H^s$ which is a sparse version of $H$ where we only keep the values ....
+
+
+in our algorithm, we assume that $Y^+$ is the version of $Y$ where the missing values are replace by estimates from $\hat{M}$ and that the covariates effect is removed from all cells. 
+It's worth noting that $\hat{M}$ are the predictions of $Y$ *after* removing the covariates effect. That is, if we want a version of $Y$ where the missing values are replaced by predictions but without adjusting for the covariates, we need to add $X\hat\beta$ back. Let $Y^*$ be this matrix.
+
+Let $C = X^T\beta=HY^*$ be the covariates effects, and $C'$ be the estimates from the previous iteration.
+then we have: 
+
+
+$$
+\begin{aligned}
+Y^* &= P_{\Omega}(Y - \hat{M} - C') + \hat{M} + C' \\&= S + \hat{M} + C' \\
+Y^+ &= Y^* - C 
+\end{aligned}
+$$
+Where $S = P_{\Omega}(Y - \hat{M} - C')$ is a sparse matrix and $\hat{M}$ is a product of low-rank matrices. Our bottleneck here is the matrix $C$ of dimension $n \times m$.
+
+Let's expand $C$:
+
+$$
+\begin{aligned}
+C &= HY^* = HS + H\hat{M} + HC'\\ &= HS + HU{V^*}^T + HC' \\
+C' &= HS + HU{V^*}^T + HC''
+\end{aligned}
+$$
+
+An interesting 
+
+
+
+
+
 

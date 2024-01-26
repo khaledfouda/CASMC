@@ -13,7 +13,6 @@ ys <- as(y, "Incomplete")
 
 ysn <- y
 
-y[ys==0]
 
 
 onesSparse <- ys
@@ -41,12 +40,12 @@ system.time({fitss <- simpute.als.fit_Incomplete(ys, J = 3, lambda=1.9)})
 
 #---------------------------------
 # old model 
-gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=TRUE)
+gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=FALSE)
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
 
-lambda2 = 10
+lambda2 = 31
 max.rank = 15
 start_time <- Sys.time()
 beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
@@ -55,19 +54,55 @@ set.seed(2023);sout <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 sout$A_hat = sout$u %*% (sout$d * t(sout$v))
 print(paste("Test error =", round(test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+sqrt(mean( (sout$A_hat[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+
 #-----------------------
 # new model
 y = Y_train
 y[y==0] = NA
 ys <- as(y, "Incomplete")
+yvalid = gen.dat$Y
+yvalid[W_valid==1] = NA
+yvalid[yvalid==0] = NA
+yvalid <- as(yvalid, "Incomplete")
+
 start_time <- Sys.time()
-set.seed(2023);fits <- simpute.als.fit_Incomplete(ys, gen.dat$X, trace=T, J=max.rank, thresh=1e-6, lambda=lambda2,
-                                   final.svd = F,maxit = 400)
+set.seed(2023);fits <- simpute.als.fit_Incomplete_2(ys, gen.dat$X, yvalid, trace=T, J=max.rank,
+                                                    thresh=1e-6, lambda=31,
+                                   final.svd = T,maxit = 300, patience=1)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 preds <- fits$u %*% (fits$d * t(fits$v))
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
-
+sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 #----------
+fits <- NULL
+start_time <- Sys.time()
+lambda2_vals = seq(140,0,-5)
+scores = rep(NA, length(lambda2_vals))
+for(i in 1:length(lambda2_vals)){
+   
+set.seed(2023);fits <- simpute.als.fit_Incomplete_2(ys, gen.dat$X, yvalid, trace=F, J=5,
+                                                    thresh=1e-6, lambda=lambda2_vals[i], warm.start = fits,
+                                                    final.svd = T,maxit = 1000, patience=1)
+preds <- fits$u %*% (fits$d * t(fits$v))
+scores[i] = round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)#fits$best_score
+print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+
+}
+
+min(scores)
+lambda2_vals[which.min(scores)]
+
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+
+
+
+
+
+
+
+#-------------------------------
 timespent = rep(0,2)
 start_time <- Sys.time()
 for(i in 1:1000){

@@ -95,6 +95,10 @@ function (y, X, J = 2, thresh = 1e-05, lambda=0,
       BD=UD(V,Dsq,m)
       # 2
       yfill=suvC(U,BD,irow,pcol)
+      tt = suvC(hat[1:500,1:500], tt2[1:500,1:400], irow, pcol)
+      tt2 = U %*% t(BD) 
+      dim(hat)
+      
       # 3
       S@x = y@x - yfill - lsq.sp
     }else BD=matrix(0,m,r) 
