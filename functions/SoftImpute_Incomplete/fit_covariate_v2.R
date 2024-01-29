@@ -19,7 +19,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     H <- Q %*% t(Q)
   }
   I_H <- Diagonal(n) - H
-  H <- NULL
+  #H #<- NULL
   
   #---------------------------------------------------
   warm=FALSE
@@ -60,6 +60,8 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   ratio <- 1
   iter <- 0
   S=y
+  HM_obs_sum_A = HM_obs_sum_B = rep(0, nz)
+  sign = +1
   #----------------------------------------
   counter = 0
   best_score = Inf
@@ -72,19 +74,22 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     V.old= t(V)
     Dsq.old=Dsq
     #---------------------------------
+    HU = H %*% U
     ## U step # S is yplus
     if(iter>1|warm){
       # 1
       VDsq=UD(V,Dsq,m)
       # 2
       M_obs = suvC(U,VDsq,irow,pcol)
+      HM_obs_sum_B = HM_obs_sum_B + sign * suvC(HU, VDsq, irow, pcol) 
       # 3
-      S@x = y@x - M_obs
+      S@x = y@x - M_obs + sign *  HM_obs_sum_B
       
     }else VDsq=matrix(0,m,r) 
     # 6
-    HU = I_H %*% U
-    B = t(S) %*% HU + (VDsq %*% (tU %*% HU))
+    IHU = Diagonal(n) %*% U - HU
+    
+    B = t(S) %*% IHU + (VDsq %*% (tU %*% IHU))  
     
     if(lambda>0) B = t(t(B) * (Dsq/(Dsq+lambda))) 
     
@@ -100,7 +105,10 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     # 2
     M_obs = suvC(UDsq,V,irow,pcol)
     # 3
-    S@x = y@x - M_obs
+    
+    HM_obs_sum_A = HM_obs_sum_A + sign * suvC(H%*%UDsq, V, irow, pcol)
+    S@x = y@x - M_obs + sign * HM_obs_sum_A 
+    sign = sign * -1
   
     if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
     # 4
@@ -151,7 +159,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))
   out=list(u=U[, seq(J)], d=Dsq[seq(J)], v=V[,seq(J)], lambda=lambda, rank=J,
-           lsq.sp = lsq.sp, best_iter=best_iter, best_score=best_score, last_score=valid_error)
+           best_iter=best_iter, best_score=best_score, last_score=valid_error)
   
   out
 }

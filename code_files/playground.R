@@ -66,8 +66,13 @@ yvalid[W_valid==1] = NA
 yvalid[yvalid==0] = NA
 yvalid <- as(yvalid, "Incomplete")
 
+#$$
+y=ys; X=gen.dat$X; H=NULL; J = 2; thresh = 1e-05; lambda=2; 
+maxit=100;trace.it=T;warm.start=NULL;final.svd=FALSE; patience=3
+#$$
+
 start_time <- Sys.time()
-set.seed(2023);fits <- simpute.als.fit_Incomplete_2(ys, gen.dat$X, yvalid, trace=T, J=max.rank,
+set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=T, J=max.rank,
                                                     thresh=1e-6, lambda=31,
                                    final.svd = T,maxit = 300, patience=1)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
@@ -81,7 +86,7 @@ lambda2_vals = seq(140,0,-5)
 scores = rep(NA, length(lambda2_vals))
 for(i in 1:length(lambda2_vals)){
    
-set.seed(2023);fits <- simpute.als.fit_Incomplete_2(ys, gen.dat$X, yvalid, trace=F, J=5,
+set.seed(2023);fits <- simpute.als.fit_splr(ys, yvalid, gen.dat$X, trace=F, J=5,
                                                     thresh=1e-6, lambda=lambda2_vals[i], warm.start = fits,
                                                     final.svd = T,maxit = 1000, patience=1)
 preds <- fits$u %*% (fits$d * t(fits$v))
