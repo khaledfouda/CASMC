@@ -115,7 +115,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
     # 4
     A = I_H %*% ( (S%*%V) + UDsq )
-    
+    A.old <- S + UDsq %*% t(V)
     if(lambda>0) A = t(t(A) * (Dsq/(Dsq+lambda))) 
     #-----------------------------------------------------------------------------------
     valid_preds = yvalid@x - suvC(UDsq, V, yvalid@i, yvalid@p)
@@ -127,6 +127,8 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     }else
       counter = counter + 1
     #-----------------------------------------------------------------------------------
+    V.old= V
+    Dsq.old=Dsq
     Asvd=  fast.svd(as.matrix(A))
     U= (Asvd$u)
     Dsq=Asvd$d
@@ -138,7 +140,13 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, 
                     "training RMSE",sqrt(mean((S@x)^2)),
                     "valid RMSE", valid_error, "\n")
+  
   }
+  #yfill = A.old#solve(I_H) %*% A %*% solve(V) 
+  yfill = as.matrix(y)
+  ynas = is.na(yfill)
+  yfill[ynas] = A.old[ynas] #(UD(U,Dsq,n) %*% t(V))[ynas]
+  beta_estim = H %*% yfill
   if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
   if(lambda>0&final.svd){
     UDsq=UD(U,Dsq,n)
@@ -158,11 +166,6 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       cat("final SVD:", "obj",format(round(obj,5)),"\n")
     }
   }
-  
-  yfill = as.matrix(y)
-  ynas = is.na(yfill)
-  yfill[ynas] = (UD(U,Dsq,n) %*% t(V))[ynas]
-  beta_estim = H %*% yfill
   
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))
