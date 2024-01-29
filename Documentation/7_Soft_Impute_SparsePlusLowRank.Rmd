@@ -30,6 +30,11 @@ source("./code_files/import_lib.R")
 
 [2] [SoftImpute Github Implementation](https://github.com/cran/softImpute/tree/b497771beea6c466266082524a9b0c91b98126a7)
 
+
+# Notation:
+
+[1] When a matrix is called Sparse below that means it has a sparse class from the package Matrix in R which saves the matrix as 3 lists: list of non-missing values, list of row locations and a list of column locations.
+
 Building on the model in 3 - Alternating Least Squares, we have defined and implemented the ALS method with covariates where we compute the full $\hat{M}=S_\lambda(Y)=UD_\lambda V'$ at each iteration and where we have $\hat{Y}$ the filled response matrix where the missing values are filled with predictions from $\hat{M}$. 
 
 Here, we attempt to implement the method by separting $\hat{Y}$ into a Sparse matrix  (misssing values are kept as 0) and a low rank matrix (containing predictions). Moreover, We attempt to avoid computing $\hat{M}=S_\lambda(Y)=UD_\lambda V'$ at each step and we rely on the following quantities for the updates $U, UD,D,DV,V$. This avoid matrix operations on matrices of dimensions $nxm$. 
@@ -63,10 +68,15 @@ Recall Algorithm ALS/Covarites in our document (3-ALS.html), at step t,  we begi
    
 Our objective, is to avoid any matrix operation that will result in a $n\times m$ dimensions. That is, we want to replace $UD^2V^T$, $X\hat\beta$, $Y+$, and $Y^*$ with either lower rank matrices, sparse matrices, or a combination of both.
 
-We begin by defining the Hat (projection) matrix of X since this matrix will be fixed for the model fitting and will only be computed once. Note that this matrix have a high dimension, and high rank, which are two things we want to avoid. We will later define a sparse version of it.
+We begin by defining the Hat (projection) matrix of X since this matrix will be fixed for the model fitting and will only be computed once. Note that this matrix have a high dimension, and high rank, which are two things we want to avoid. 
 
 $$
 H = X (X^TX)^{-1} X^T
+$$
+Let 
+
+$$
+H^* = (I_n-H).
 $$
 
 However, to reduce computational time, we estimated this matrix using the QR decomposition,
@@ -96,11 +106,66 @@ then we have:
 
 $$
 \begin{aligned}
-Y^* &= P_{\Omega}(Y - \hat{M} - C') + \hat{M} + C' \\&= S + \hat{M} + C' \\
-Y^+ &= Y^* - C 
+Y^* &= P_{\Omega}(Y - \hat{M}) - P_{\Omega}( C') + \hat{M} + C' &&\\&= S  - P_{\Omega}( C') + \hat{M} + C' && (\text{SPLR 1}) \\
+Y^+ &= Y^* - C &&\\
+& = Y^* - HY^* \\
+&= (I_n-H) Y^*
 \end{aligned}
 $$
-Where $S = P_{\Omega}(Y - \hat{M} - C')$ is a sparse matrix and $\hat{M}$ is a product of low-rank matrices. Our bottleneck here is the matrix $C$ of dimension $n \times m$.
+Where $S = P_{\Omega}(Y - \hat{M})$ is a sparse matrix, $P_{\Omega}( C')$ is also a sparse matrix of the covariate estimates for the observed data, and $\hat{M}$ is a product of low-rank matrices. Our bottleneck here is the matrix $C$ of dimension $n \times m$.
+
+We will explore each of the four quantities in equation (SPLR 1) and how to optimize their calculations, but first let's look at the estimates of $A$ and $B$.
+
+
+From our previous document We have $\hat{B}$ represented as (note that the formula below estimates DB instead of B since we take the SVD of BD and not B)
+
+
+
+$$
+\hat{B}^T = D^* U^T Y^+,
+$$
+
+where $D^* = D^2/(D^2+\lambda)$ being a vector of length $k$. 
+Let $U_H = U^T(I_n-H)$ be the product of the low rank matrix $U$ and the projection matrix. Although this product is expensive, it results a low-rank matrix and is used in multiple places.
+
+Using our new expansion of $Y^+$ we get
+
+
+$$
+\begin{aligned}
+\hat{B}^T &= D^* (U^TH^*S - U^TH^*P_{\Omega}( C') + U^TH^* U DV^T + U^TH^*C')\\
+& = D^* (U_H S - U_HP_{\Omega}( C') + U_H U DV^T + U_HC')
+\end{aligned}
+$$
+Let's consider each part of them individually:
+
+1. $U_H S$ is a sparse matrix multiplied by a low rank matrix. This is done efficiently by R.
+2. $U_H U DV^T$ The only escape from this is to carefully choose the order of the multiplication so that the dimensions of each product is always the lowest. The order is $(((U_H U) D)V^T)$
+3. $U_H C'$: Assuming no regularization on the covariates, the Hat matrix is then idempotent.
+
+$$
+\begin{aligned}
+U_H C' &= U^T(I_n-H)HY^*_{old} \\
+& = U^T(H-H.H) Y^*_{old} \\
+& = U^T(H-H) Y^*_{old} \\
+& = 0
+\end{aligned}
+$$
+4. $U_H P_{\Omega}( C')$:
+
+At step $i$ we have
+
+$$
+\begin{aligned}
+P_{\Omega}( C_{(i-1)}) &= P_{\Omega}( HY_{i-1}^*)\\
+&= P_{\Omega}(HY - H\hat{M}_{(i-1)} + HH C_{(i-2)})\\
+&= P_{\Omega}(HY - H\hat{M}_{(i-1)} + H C_{(i-2)}) && \text{By idempotent property} \\
+&= P_{\Omega}(HY - H\hat{M}_{(i-1)} - HY + H\hat{M}_{(i-2)} + H.H C_{(i-3)}) \\
+& = \cdots\\
+& = P_{\Omega}(H (-\hat{M}_{(i-1)}+\hat{M}_{(i-2)}-\hat{M}_{(i-3)}+\cdots))
+\end{aligned}
+$$
+
 
 Let's expand $C$:
 

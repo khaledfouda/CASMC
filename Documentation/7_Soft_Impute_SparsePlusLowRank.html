@@ -1641,6 +1641,13 @@ knitr::opts_knit$set(root.dir=&quot;/mnt/campus/math/research/kfouda/main/HEC/Yo
 Alternating Least Squares.</p>
 <p>[2] <a href="https://github.com/cran/softImpute/tree/b497771beea6c466266082524a9b0c91b98126a7">SoftImpute
 Github Implementation</a></p>
+</div>
+<div id="notation" class="section level1">
+<h1>Notation:</h1>
+<p>[1] When a matrix is called Sparse below that means it has a sparse
+class from the package Matrix in R which saves the matrix as 3 lists:
+list of non-missing values, list of row locations and a list of column
+locations.</p>
 <p>Building on the model in 3 - Alternating Least Squares, we have
 defined and implemented the ALS method with covariates where we compute
 the full <span class="math inline">\(\hat{M}=S_\lambda(Y)=UD_\lambda
@@ -1684,6 +1691,130 @@ UD^2V^T[\overline \Omega] + X \hat
 Y^*\)</span></li>
 <li><span class="math inline">\(Y^+= Y^* - X \hat \beta\)</span></li>
 </ul>
+<p>Our objective, is to avoid any matrix operation that will result in a
+<span class="math inline">\(n\times m\)</span> dimensions. That is, we
+want to replace <span class="math inline">\(UD^2V^T\)</span>, <span class="math inline">\(X\hat\beta\)</span>, <span class="math inline">\(Y+\)</span>, and <span class="math inline">\(Y^*\)</span> with either lower rank matrices,
+sparse matrices, or a combination of both.</p>
+<p>We begin by defining the Hat (projection) matrix of X since this
+matrix will be fixed for the model fitting and will only be computed
+once. Note that this matrix have a high dimension, and high rank, which
+are two things we want to avoid.</p>
+<p><span class="math display">\[
+H = X (X^TX)^{-1} X^T
+\]</span> Let</p>
+<p><span class="math display">\[
+H^* = (I_n-H).
+\]</span></p>
+<p>However, to reduce computational time, we estimated this matrix using
+the QR decomposition, let Q be the Q matrix in the QR decomposition,
+then</p>
+<p><span class="math display">\[
+\hat{H} = Q Q^T
+\]</span></p>
+<p>Moreover, we define the following two low rank matrices which will be
+very useful in our calculations</p>
+<p><span class="math display">\[
+\begin{aligned}
+V^* = V D^2  &amp; \in \Re^{m \in r}\\
+U^* = U D^2  &amp; \in \Re^{n \in r}\\
+\end{aligned}
+\]</span> We let <span class="math inline">\(Y^s\)</span> be Sparse
+Matrix where the cells corresponding to the missing values are set to 0.
+Similarly, any matrix and superscript <span class="math inline">\(^s\)</span> is a sparse version of said matrix
+where the cells corresponding to the missing values in <span class="math inline">\(Y\)</span> are set to 0. For example, we have
+<span class="math inline">\(H^s\)</span> which is a sparse version of
+<span class="math inline">\(H\)</span> where we only keep the values
+….</p>
+<p>in our algorithm, we assume that <span class="math inline">\(Y^+\)</span> is the version of <span class="math inline">\(Y\)</span> where the missing values are replace by
+estimates from <span class="math inline">\(\hat{M}\)</span> and that the
+covariates effect is removed from all cells. It’s worth noting that
+<span class="math inline">\(\hat{M}\)</span> are the predictions of
+<span class="math inline">\(Y\)</span> <em>after</em> removing the
+covariates effect. That is, if we want a version of <span class="math inline">\(Y\)</span> where the missing values are replaced
+by predictions but without adjusting for the covariates, we need to add
+<span class="math inline">\(X\hat\beta\)</span> back. Let <span class="math inline">\(Y^*\)</span> be this matrix.</p>
+<p>Let <span class="math inline">\(C = X^T\beta=HY^*\)</span> be the
+covariates effects, and <span class="math inline">\(C&#39;\)</span> be
+the estimates from the previous iteration. then we have:</p>
+<p><span class="math display">\[
+\begin{aligned}
+Y^* &amp;= P_{\Omega}(Y - \hat{M}) - P_{\Omega}( C&#39;) + \hat{M} +
+C&#39; &amp;&amp;\\&amp;= S  - P_{\Omega}( C&#39;) + \hat{M} + C&#39;
+&amp;&amp; (\text{SPLR 1}) \\
+Y^+ &amp;= Y^* - C &amp;&amp;\\
+&amp; = Y^* - HY^* \\
+&amp;= (I_n-H) Y^*
+\end{aligned}
+\]</span> Where <span class="math inline">\(S = P_{\Omega}(Y -
+\hat{M})\)</span> is a sparse matrix, <span class="math inline">\(P_{\Omega}( C&#39;)\)</span> is also a sparse
+matrix of the covariate estimates for the observed data, and <span class="math inline">\(\hat{M}\)</span> is a product of low-rank
+matrices. Our bottleneck here is the matrix <span class="math inline">\(C\)</span> of dimension <span class="math inline">\(n \times m\)</span>.</p>
+<p>We will explore each of the four quantities in equation (SPLR 1) and
+how to optimize their calculations, but first let’s look at the
+estimates of <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span>.</p>
+<p>From our previous document We have <span class="math inline">\(\hat{B}\)</span> represented as (note that the
+formula below estimates DB instead of B since we take the SVD of BD and
+not B)</p>
+<p><span class="math display">\[
+\hat{B}^T = D^* U^T Y^+,
+\]</span></p>
+<p>where <span class="math inline">\(D^* = D^2/(D^2+\lambda)\)</span>
+being a vector of length <span class="math inline">\(k\)</span>. Let
+<span class="math inline">\(U_H = U^T(I_n-H)\)</span> be the product of
+the low rank matrix <span class="math inline">\(U\)</span> and the
+projection matrix. Although this product is expensive, it results a
+low-rank matrix and is used in multiple places.</p>
+<p>Using our new expansion of <span class="math inline">\(Y^+\)</span>
+we get</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{B}^T &amp;= D^* (U^TH^*S - U^TH^*P_{\Omega}( C&#39;) + U^TH^* U
+DV^T + U^TH^*C&#39;)\\
+&amp; = D^* (U_H S - U_HP_{\Omega}( C&#39;) + U_H U DV^T + U_HC&#39;)
+\end{aligned}
+\]</span> Let’s consider each part of them individually:</p>
+<ol style="list-style-type: decimal">
+<li><span class="math inline">\(U_H S\)</span> is a sparse matrix
+multiplied by a low rank matrix. This is done efficiently by R.</li>
+<li><span class="math inline">\(U_H U DV^T\)</span> The only escape from
+this is to carefully choose the order of the multiplication so that the
+dimensions of each product is always the lowest. The order is <span class="math inline">\((((U_H U) D)V^T)\)</span></li>
+<li><span class="math inline">\(U_H C&#39;\)</span>: Assuming no
+regularization on the covariates, the Hat matrix is then
+idempotent.</li>
+</ol>
+<p><span class="math display">\[
+\begin{aligned}
+U_H C&#39; &amp;= U^T(I_n-H)HY^*_{old} \\
+&amp; = U^T(H-H.H) Y^*_{old} \\
+&amp; = U^T(H-H) Y^*_{old} \\
+&amp; = 0
+\end{aligned}
+\]</span> 4. <span class="math inline">\(U_H P_{\Omega}(
+C&#39;)\)</span>:</p>
+<p>At step <span class="math inline">\(i\)</span> we have</p>
+<p><span class="math display">\[
+\begin{aligned}
+P_{\Omega}( C_{(i-1)}) &amp;= P_{\Omega}( HY_{i-1}^*)\\
+&amp;= P_{\Omega}(HY - H\hat{M}_{(i-1)} + HH C_{(i-2)})\\
+&amp;= P_{\Omega}(HY - H\hat{M}_{(i-1)} + H C_{(i-2)}) &amp;&amp;
+\text{By idempotent property} \\
+&amp;= P_{\Omega}(HY - H\hat{M}_{(i-1)} - HY + H\hat{M}_{(i-2)} + H.H
+C_{(i-3)}) \\
+&amp; = \cdots\\
+&amp; = P_{\Omega}(H
+(-\hat{M}_{(i-1)}+\hat{M}_{(i-2)}-\hat{M}_{(i-3)}+\cdots))
+\end{aligned}
+\]</span></p>
+<p>Let’s expand <span class="math inline">\(C\)</span>:</p>
+<p><span class="math display">\[
+\begin{aligned}
+C &amp;= HY^* = HS + H\hat{M} + HC&#39;\\ &amp;= HS + HU{V^*}^T +
+HC&#39; \\
+C&#39; &amp;= HS + HU{V^*}^T + HC&#39;&#39;
+\end{aligned}
+\]</span></p>
+<p>An interesting</p>
 </div>
 
 

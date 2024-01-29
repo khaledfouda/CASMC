@@ -1,6 +1,6 @@
 require(corpcor)
-simpute.als.fit_Incomplete_2 <-
-function (y, X, yvalid, J = 2, thresh = 1e-05, lambda=0, 
+simpute.als.fit_splr <-
+function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0, 
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE,
           patience=3) {
 
@@ -13,8 +13,11 @@ function (y, X, yvalid, J = 2, thresh = 1e-05, lambda=0,
   n <- n[1]
   nz=nnzero(y)
   #-------------------------------
-  Q <- qr.Q(Matrix::qr(X)) #[,1:p]
-  H <- Q %*% t(Q)
+  if(is.null(H)){
+    stopifnot(!is.null(X))
+    Q <- qr.Q(Matrix::qr(X)) #[,1:p]
+    H <- Q %*% t(Q)
+  }
   I_H <- Diagonal(n) - H
   H <- NULL
   
