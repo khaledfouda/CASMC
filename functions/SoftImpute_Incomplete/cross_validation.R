@@ -1,6 +1,6 @@
 simpute.cov.cv_splr <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                            trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
-                           rank.init=10, rank.limit=50, rank.step=2,
+                           rank.init=10, rank.limit=50, rank.step=2, patience=2,
                            lambda1=0, n1n2=1, warm=NULL, quiet=FALSE){
    
    
@@ -28,10 +28,17 @@ simpute.cov.cv_splr <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init
    }else if(n1n2 == 3){
       n1n2 = nrow(Y) * ncol(Y)
    }
-   beta_partial = solve(X.X +  diag(n1n2*lambda1, ncol(X))) %*% t(X)
+   if(lambda1 !=0) print("Setting lambda 1 to 0 to preseve the idempotent property of the Hat matrix")
+   #H = solve(X.X +  diag(n1n2*lambda1, ncol(X))) %*% t(X)
+   Q <- qr.Q(Matrix::qr(X)) #[,1:p]
+   H <- Q %*% t(Q)
+   
+   
    for(i in seq(along=lamseq)) {
-      fiti <- simpute.als.fit_splr(Y, X, beta_partial, thresh=thresh, lambda = lamseq[i], J=rank.max, warm.start = warm)
-      
+      fiti <- simpute.als.fit_splr(y = Y, yvalid = Y.valid, X = X, H = H,
+                                   trace=F, J=rank.max, thresh=thresh, lambda=lamseq[i],
+                                   warm.start = warm, patience=patience, maxit=100)
+                                   
       
       # get test estimates and test error
       v=as.matrix(fiti$v)

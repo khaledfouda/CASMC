@@ -165,9 +165,21 @@ P_{\Omega}( C_{(i-1)}) &= P_{\Omega}( HY_{i-1}^*)\\
 & = P_{\Omega}(H (-\hat{M}_{(i-1)}+\hat{M}_{(i-2)}-\hat{M}_{(i-3)}+\cdots))
 \end{aligned}
 $$
+Similarly, $\hat{A}$ can be expressed as (again, we show $AD$ instead for ease of calculations):
 
 
+$$
+\begin{aligned}
+\hat{A}^T &= D^* Y^+ V \\
+& = D^* (H^* SV - H^*P_{\Omega}( C')V + H^* U D^2V^TV + H^*C'V)\\
+& = D^* (H^* (S -P_{\Omega}( C'))V + H^* U D^2) \\
+\end{aligned}
+$$
+--------------------------------------------------------------
 
+The term $H^*UD = (I_n-H)A$ corresponds to the residuals from fitting the covariates $X$ to $A$. That is, they are the residuals of the model $A = \beta_A X + \epsilon_A$
+
+Similarly
 ---------------------------------------------
 
 Let's expand $C$:

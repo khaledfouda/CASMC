@@ -1,3 +1,4 @@
+# not used. delete later
 lambda0.matrix=function(x,lambda=0,maxit=100,trace.it=FALSE,thresh=1e-5){
   ismiss=is.na(x)
   if(any(ismiss))x[ismiss]=0
@@ -14,3 +15,7 @@ setGeneric("lambda0",lambda0.matrix)
 setMethod("lambda0","Incomplete",lambda0.Incomplete)
 setMethod("lambda0","SparseplusLowRank",lambda0.Incomplete)
 setMethod("lambda0","sparseMatrix",lambda0.Incomplete)
+
+
+
+

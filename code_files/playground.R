@@ -53,6 +53,11 @@ set.seed(2023);sout <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.
                         lambda= lambda2,trace.it = T,warm.start = NULL, maxit=100)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 sout$A_hat = sout$u %*% (sout$d * t(sout$v))
+fiti <- sout
+v=as.matrix(fiti$v)
+vd=v*outer(rep(1,nrow(v)),fiti$d)
+sout$A_hat = fiti$u %*% t(vd)  + X %*% fiti$beta.estim
+
 print(paste("Test error =", round(test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 sqrt(mean( (sout$A_hat[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
@@ -76,9 +81,18 @@ set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  t
                                                     thresh=1e-6, lambda=31,
                                    final.svd = T,maxit = 300, patience=1)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
-preds <- fits$u %*% (fits$d * t(fits$v))
+
+H = X %*% solve(t(X) %*% X) %*% t(X)
+
+fits$beta_estims = (Diagonal(800)-H) %*% fits$u %*% (fits$d * t(fits$v))
+all(round(fits$beta_estims,10) == 0)
+
+preds <- fits$u %*% (fits$d * t(fits$v)) + fits$beta_estim
+
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+dim(fiti$beta.estim)
+dim(X)
 #----------
 fits <- NULL
 start_time <- Sys.time()
@@ -146,6 +160,10 @@ fits <- softImpute(ys, trace=F, rank.max=max.rank, thresh=1e-3, lambda=lambda2,
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 preds <- fits$u %*% (fits$d * t(fits$v))
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+
+
+soft_estim = complete(Y_train, fits)
+print(paste("Test error =", round(test_error(soft_estim[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 
 #-------------------------------------------------------------------------------------------------
 out <- coop_find_rho(gen.dat, W_valid,  print_best = TRUE,early_maxiter = 50,max_cores = 10,

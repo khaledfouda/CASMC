@@ -17,8 +17,10 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     stopifnot(!is.null(X))
     Q <- qr.Q(Matrix::qr(X)) #[,1:p]
     H <- Q %*% t(Q)
+    #H = X %*% solve(t(X) %*% X) %*% t(X)
   }
   I_H <- Diagonal(n) - H
+  
   #H #<- NULL
   
   #---------------------------------------------------
@@ -81,12 +83,12 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       VDsq=UD(V,Dsq,m)
       # 2
       M_obs = suvC(U,VDsq,irow,pcol)
-      HM_obs_sum_B = HM_obs_sum_B + sign * suvC(HU, VDsq, irow, pcol) 
+      S@x = y@x - M_obs - sign *  HM_obs_sum_B
       # 3
-      S@x = y@x - M_obs + sign *  HM_obs_sum_B
       
     }else VDsq=matrix(0,m,r) 
     # 6
+    HM_obs_sum_B = HM_obs_sum_B + sign * suvC(HU, VDsq, irow, pcol) 
     IHU = Diagonal(n) %*% U - HU
     
     B = t(S) %*% IHU + (VDsq %*% (tU %*% IHU))  
@@ -106,8 +108,8 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     M_obs = suvC(UDsq,V,irow,pcol)
     # 3
     
+    S@x = y@x - M_obs - sign * HM_obs_sum_A 
     HM_obs_sum_A = HM_obs_sum_A + sign * suvC(H%*%UDsq, V, irow, pcol)
-    S@x = y@x - M_obs + sign * HM_obs_sum_A 
     sign = sign * -1
   
     if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
@@ -141,7 +143,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   if(lambda>0&final.svd){
     UDsq=UD(U,Dsq,n)
     M_obs=suvC(UDsq,V,irow,pcol)
-    S@x=y@x-M_obs #- lsq.sp
+    S@x=y@x-M_obs #- HM_obs_sum_A
     A= S%*%V+UDsq
     Asvd=fast.svd(as.matrix(A))
     U=Asvd$u
@@ -156,10 +158,17 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       cat("final SVD:", "obj",format(round(obj,5)),"\n")
     }
   }
+  
+  yfill = as.matrix(y)
+  ynas = is.na(yfill)
+  yfill[ynas] = (UD(U,Dsq,n) %*% t(V))[ynas]
+  beta_estim = H %*% yfill
+  
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))
   out=list(u=U[, seq(J)], d=Dsq[seq(J)], v=V[,seq(J)], lambda=lambda, rank=J,
-           best_iter=best_iter, best_score=best_score, last_score=valid_error)
+           best_iter=best_iter, best_score=best_score, last_score=valid_error,
+           beta_estim=beta_estim)
   
   out
 }

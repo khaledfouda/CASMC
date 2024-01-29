@@ -131,7 +131,8 @@ simpute.orig <- function(Y, W, A, n.lambda=20,
       rank.max <- min(rank+rank.step, rank.limit)
       
       # get test estimates and test error
-      soft_estim = complete(Y, fiti)
+      #soft_estim = complete(Y, fiti)
+      soft_estim = fiti$u %*% (fiti$d * t(fiti$v))
       err = test_error(soft_estim[W==0], A[W==0])
       #----------------------------
       warm <- fiti # warm start for next 

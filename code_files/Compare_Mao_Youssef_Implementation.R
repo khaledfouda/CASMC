@@ -8,9 +8,10 @@ compare_and_save <- function(missingness,coll=TRUE,
                              alpha_grid = seq(0.992, 1, length=10), plot=FALSE, tofile=FALSE, graph_label="",ncores=2){
    
    setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
-   source("./Mao/SMC_functions6.R")
-   source("./code_files/Mao_import_lib.R")
-   data_dir = "./Mao/saved_data/"
+   
+   setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
+   source("./code_files/import_lib.R")
+   data_dir = "./saved_data/"
    stopifnot(missingness %in% c(0,0.8, 0.9))
    dim = seq(400,1000,200)
    results <- data.frame(Dim=paste0(dim,"x",dim), true_rank=NA, 
