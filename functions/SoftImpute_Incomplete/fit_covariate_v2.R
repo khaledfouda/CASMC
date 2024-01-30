@@ -33,7 +33,6 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     warm=TRUE
     D=warm.start$d
     JD=sum(D>0)
-    lsq.sp <- warm.start$lsq.sp
     if(JD >= J){
       U=warm.start$u[,seq(J),drop=FALSE]
       V=warm.start$v[,seq(J),drop=FALSE]
@@ -67,6 +66,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   #----------------------------------------
   counter = 0
   best_score = Inf
+  M_sum = UD(U,Dsq,n) %*% t(V) + S#matrix(0,n,m) # delete later
   #----------------------------------------
   
     #start_time <- Sys.time()
@@ -109,13 +109,13 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     # 3
     
     S@x = y@x - M_obs - sign * HM_obs_sum_A 
-    HM_obs_sum_A = HM_obs_sum_A + sign * suvC(H%*%UDsq, V, irow, pcol)
+    HM_obs_sum_A = HM_obs_sum_A + sign * suvC(H%*%UDsq, V, irow, pcol) # this doesn't change the quality of pred
     sign = sign * -1
+    M_sum = M_sum + UD(U,Dsq,n) %*% t(V) + S # delete later
   
     if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
     # 4
     A = I_H %*% ( (S%*%V) + UDsq )
-    A.old <- S + UDsq %*% t(V)
     if(lambda>0) A = t(t(A) * (Dsq/(Dsq+lambda))) 
     #-----------------------------------------------------------------------------------
     valid_preds = yvalid@x - suvC(UDsq, V, yvalid@i, yvalid@p)
@@ -143,10 +143,10 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   
   }
   #yfill = A.old#solve(I_H) %*% A %*% solve(V) 
-  yfill = as.matrix(y)
-  ynas = is.na(yfill)
-  yfill[ynas] = A.old[ynas] #(UD(U,Dsq,n) %*% t(V))[ynas]
-  beta_estim = H %*% yfill
+  #yfill = as.matrix(y)
+  #ynas = is.na(yfill)
+  #yfill[ynas] = A.old[ynas] #(UD(U,Dsq,n) %*% t(V))[ynas]
+  #beta_estim = H %*% yfill
   if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
   if(lambda>0&final.svd){
     UDsq=UD(U,Dsq,n)
@@ -171,7 +171,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   J = min(J, length(Dsq))
   out=list(u=U[, seq(J)], d=Dsq[seq(J)], v=V[,seq(J)], lambda=lambda, rank=J,
            best_iter=best_iter, best_score=best_score, last_score=valid_error,
-           beta_estim=beta_estim)
+           M_sum=M_sum)
   
   out
 }

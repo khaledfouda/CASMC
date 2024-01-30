@@ -70,26 +70,67 @@ yvalid = gen.dat$Y
 yvalid[W_valid==1] = NA
 yvalid[yvalid==0] = NA
 yvalid <- as(yvalid, "Incomplete")
-
+X <- gen.dat$X
 #$$
 y=ys; X=gen.dat$X; H=NULL; J = 2; thresh = 1e-05; lambda=2; 
 maxit=100;trace.it=T;warm.start=NULL;final.svd=FALSE; patience=3
 #$$
 
+
+
 start_time <- Sys.time()
-set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=T, J=max.rank,
+set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=T, J=31,
                                                     thresh=1e-6, lambda=31,
                                    final.svd = T,maxit = 300, patience=1)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 H = X %*% solve(t(X) %*% X) %*% t(X)
+M = fits$u %*% (fits$d * t(fits$v))
 
-fits$beta_estims = (Diagonal(800)-H) %*% fits$u %*% (fits$d * t(fits$v))
+
+
+ytmp = y 
+ytmp[is.na(y)] = (M)[is.na(y)]
+fits$beta_estim = H %*% ytmp
+
+preds <- predsa <- M + fits$beta_estim
+
+best_score = Inf
+patience = 3
+counter = 0
+alpha = 0.1
+H_part = (Diagonal(800) + alpha *  H )
+for(i in 1:400){
+   if(i == 1) preds <- predsa <-  fits$beta_estim
+preds <- H_part %*% (preds)
+RMSE = round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)
+#mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 )
+if(RMSE < best_score){
+   best_score = RMSE
+   best_i = i
+   best_preds = preds
+   counter = 0
+   #print(paste(i,RMSE))
+}else counter = counter + 1
+if(counter > patience){
+   print(paste("Exit on",i))
+   break
+}
+}
+print(paste(best_i, best_score))
+
+ytmp[is.na(y)] = (M - H %*% M)[is.na(y)]
+
+fits$beta_estims = H %*% (gen.dat$Y -  fits$u %*% (fits$d * t(fits$v)))
 all(round(fits$beta_estims,10) == 0)
+preds = best_preds + M
+preds = M+ fits$beta_estim #fits$beta_estim + M
+preds = M +  H %*% fits$M_sum #best_preds + M
+preds = M + (H %*% ( 1 *ys + 10 *M))
 
-preds <- fits$u %*% (fits$d * t(fits$v)) + fits$beta_estim
-
+preds =  M +  H %*% fits$M_sum/5
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+preds = M + best_preds
 sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 dim(fiti$beta.estim)
 dim(X)
@@ -197,6 +238,8 @@ system.time({fits <- softImpute(Y_train, rank.max = 3, lambda=1.9)})
 system.time({complete(ys, fitss)})
 # fitss <- deBias(ysc, fitss)
 preds <- fitss$u %*% (fitss$d * t(fitss$v))
+preds <- H %*% (ys-preds) + preds
+
 test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 
 system.time({complete(Y_train, fits)})
