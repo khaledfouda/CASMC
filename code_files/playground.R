@@ -123,14 +123,16 @@ ytmp[is.na(y)] = (M - H %*% M)[is.na(y)]
 
 fits$beta_estims = H %*% (gen.dat$Y -  fits$u %*% (fits$d * t(fits$v)))
 all(round(fits$beta_estims,10) == 0)
-preds = best_preds + M
 preds = M+ fits$beta_estim #fits$beta_estim + M
 preds = M +  H %*% fits$M_sum #best_preds + M
 preds = M + (H %*% ( 1 *ys + 10 *M))
 preds = M + H %*% (ys - M)
 
 preds =  M +  H %*% fits$M_sum 
+
+preds = best_preds + M
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+
 preds = M + best_preds
 sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 dim(fiti$beta.estim)

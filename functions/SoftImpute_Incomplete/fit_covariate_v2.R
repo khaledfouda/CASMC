@@ -12,6 +12,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   m <- n[2]
   n <- n[1]
   nz=nnzero(y)
+  yobs = y != 0
   #-------------------------------
   if(is.null(H)){
     stopifnot(!is.null(X))
@@ -63,6 +64,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   S=y
   HM_obs_sum_A = HM_obs_sum_B = rep(0, nz)
   sign = +1
+  xbeta.obs =  (H %*% y)[yobs]
   #----------------------------------------
   counter = 0
   best_score = Inf
@@ -83,20 +85,21 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       VDsq=UD(V,Dsq,m)
       # 2
       M_obs = suvC(U,VDsq,irow,pcol)
-      S@x = y@x - M_obs + (H %*% y)[y!=0] #sign *  HM_obs_sum_B
+      S@x = y@x - M_obs - xbeta.obs  
+      xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
+      #xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
+      #S@x = y@x - M_obs - xbeta.obs
       # 3
       
     }else VDsq=matrix(0,m,r) 
     # 6
-    #HM_obs_sum_B = HM_obs_sum_B + sign * suvC(HU, VDsq, irow, pcol) 
     IHU = Diagonal(n) %*% U - HU
-    M_sum = M_sum #+ sign * ( UD(U,Dsq,n) %*% t(V) )
     B = t(S) %*% IHU + (VDsq %*% (tU %*% IHU))  
     
     if(lambda>0) B = t(t(B) * (Dsq/(Dsq+lambda))) 
     
     Bsvd=fast.svd((as.matrix(B)))
-    V=(Bsvd$u)      #V=BsVDsq$u
+    V=(Bsvd$u)      
     Dsq=Bsvd$d
     U=U%*% (Bsvd$v)
     r = length(Dsq)
@@ -104,22 +107,23 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     ## V step
     # 1
     UDsq = UD(U,Dsq,n)
+    #VDsq = UD(V,Dsq,n)
+    #HU = H %*% U
     # 2
     M_obs = suvC(UDsq,V,irow,pcol)
     # 3
+    S@x = y@x - M_obs - xbeta.obs  
     
-    S@x = y@x - M_obs + (H %*% y)[y!=0] #sign * HM_obs_sum_A 
-    #HM_obs_sum_A = HM_obs_sum_A + sign * suvC(H%*%UDsq, V, irow, pcol) # this doesn't change the quality of pred
-    M_sum = M_sum #+ sign * ( UD(U,Dsq,n) %*% t(V) ) # delete later
-    sign = sign * -1
-  
+    #S@x = y@x - M_obs - xbeta.obs
+    
+    
     if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
     # 4
     A = I_H %*% ( (S%*%V) + UDsq )
     if(lambda>0) A = t(t(A) * (Dsq/(Dsq+lambda))) 
     #-----------------------------------------------------------------------------------
-    valid_preds = yvalid@x - suvC(UDsq, V, yvalid@i, yvalid@p)
-    valid_error = sqrt(mean(valid_preds^2))
+    #valid_preds = yvalid@x - suvC(UDsq, V, yvalid@i, yvalid@p)
+    valid_error = Inf#sqrt(mean(valid_preds^2))
     if(valid_error < best_score){
       counter = 0
       best_score = valid_error
@@ -127,8 +131,8 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     }else
       counter = counter + 1
     #-----------------------------------------------------------------------------------
-    V.old= V
-    Dsq.old=Dsq
+    #V.old= V
+    #Dsq.old=Dsq
     Asvd=  fast.svd(as.matrix(A))
     U= (Asvd$u)
     Dsq=Asvd$d
@@ -136,7 +140,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     r = length(Dsq)
     tU = t(U)
     #------------------------------------------------------------------------------
-    ratio= 2#Frob2(U.old,Dsq.old,V.old,tU,Dsq,V)
+    ratio= Frob2(U.old,Dsq.old,V.old,tU,Dsq,V)
     if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, 
                     "training RMSE",sqrt(mean((S@x)^2)),
                     "valid RMSE", valid_error, "\n")
@@ -171,7 +175,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   J = min(J, length(Dsq))
   out=list(u=U[, seq(J)], d=Dsq[seq(J)], v=V[,seq(J)], lambda=lambda, rank=J,
            best_iter=best_iter, best_score=best_score, last_score=valid_error,
-           M_sum=M_sum)
+           xbeta.obs=xbeta.obs)
   
   out
 }
