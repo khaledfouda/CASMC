@@ -1,10 +1,10 @@
 require(corpcor)
-simpute.als.fit_splr_v2 <-
+simpute.als.fit_splr <-
 function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0, 
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE,
           patience=3) {
 
-  
+  start_time <- Sys.time() #<<<<<<<<<<<<<
   if(!inherits(y,"dgCMatrix")) y=as(y,"dgCMatrix")
   irow=y@i
   pcol=y@p
@@ -18,6 +18,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     stopifnot(!is.null(X))
     Q <- qr.Q(Matrix::qr(X)) #[,1:p]
     H <- Q %*% t(Q)
+    Q <- NULL
     #H = X %*% solve(t(X) %*% X) %*% t(X)
   }
   I_H <- Diagonal(n) - H
@@ -54,30 +55,28 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       U=matrix(rnorm(n*J),n,J)
       U=fast.svd(U)$u
       Dsq=rep(1,J)# we call it Dsq because A=UD and B=VDsq and AB'=U Dsq V^T
-      # update yfill[ynas] = 0
-    }
-  tU = t(U)
-  r = length(Dsq)
+  }
   # initial beta estimates using yfill - yplus = yfill - xbeta
   ratio <- 1
   iter <- 0
   S=y
-  HM_obs_sum_A = HM_obs_sum_B = rep(0, nz)
-  sign = +1
   xbeta.obs =  (H %*% y)[yobs]
   #----------------------------------------
   counter = 0
   best_score = Inf
-  M_sum = UD(U,Dsq,n) %*% t(V) + S#matrix(0,n,m) # delete later
+  best_iter = NA
+  print(paste("Execution time 1 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
   #----------------------------------------
-  
-    #start_time <- Sys.time()
-  while ((ratio > thresh)&(iter<maxit)&(counter < patience)) {
+  time2 = 0
+  time3 = 0
+  #&(counter < patience)
+  while ((ratio > thresh)&(iter<maxit)) {
     iter <- iter + 1
     U.old=U
-    V.old= t(V)
+    V.old= V
     Dsq.old=Dsq
     #---------------------------------
+    start_time <- Sys.time() #<<<<<<<<<<<<
     HU = H %*% U
     ## U step # S is yplus
     if(iter>1|warm){
@@ -86,42 +85,39 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       # 2
       M_obs = suvC(U,VDsq,irow,pcol)
       S@x = y@x - M_obs - xbeta.obs  
-      xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
-      #xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
-      #S@x = y@x - M_obs - xbeta.obs
-      # 3
-      
-    }else VDsq=matrix(0,m,r) 
+  
+    }else {
+      VDsq=matrix(0,m,J) 
+      S@x = y@x - xbeta.obs
+    }
     # 6
-    IHU = Diagonal(n) %*% U - HU
-    B = t(S) %*% IHU + (VDsq %*% (tU %*% IHU))  
+    xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
+    IHU =  U - HU
     
-    if(lambda>0) B = t(t(B) * (Dsq/(Dsq+lambda))) 
+    B = as.matrix(t(S) %*% IHU) + (VDsq %*% (t(U) %*% IHU))  
     
-    Bsvd=fast.svd((as.matrix(B)))
-    V=(Bsvd$u)      
-    Dsq=Bsvd$d
-    U=U%*% (Bsvd$v)
-    r = length(Dsq)
+    if(lambda>0) B = t(t(B) *(Dsq/(Dsq+lambda))) 
+    
+    Bsvd=fast.svd(B)
+    V = Bsvd$u      
+    Dsq = Bsvd$d
+    U = U%*% (Bsvd$v)
     #------------------------------------
     ## V step
-    # 1
+    time2 = time2 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
+    
+    start_time <- Sys.time() #<<<<
+    
     UDsq = UD(U,Dsq,n)
-    #VDsq = UD(V,Dsq,n)
-    #HU = H %*% U
-    # 2
     M_obs = suvC(UDsq,V,irow,pcol)
-    # 3
     S@x = y@x - M_obs - xbeta.obs  
-    
-    #S@x = y@x - M_obs - xbeta.obs
-    
-    
-    if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
-    # 4
     A = I_H %*% ( (S%*%V) + UDsq )
     if(lambda>0) A = t(t(A) * (Dsq/(Dsq+lambda))) 
+    Asvd=  fast.svd(as.matrix(A))
+    
+    
     #-----------------------------------------------------------------------------------
+    if(trace.it)  obj=2#(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
     #valid_preds = yvalid@x - suvC(UDsq, V, yvalid@i, yvalid@p)
     valid_error = Inf#sqrt(mean(valid_preds^2))
     if(valid_error < best_score){
@@ -131,32 +127,32 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     }else
       counter = counter + 1
     #-----------------------------------------------------------------------------------
-    #V.old= V
-    #Dsq.old=Dsq
-    Asvd=  fast.svd(as.matrix(A))
-    U= (Asvd$u)
-    Dsq=Asvd$d
-    V=V %*% (Asvd$v)
-    r = length(Dsq)
-    tU = t(U)
+    U = Asvd$u
+    Dsq = Asvd$d
+    V = V %*% (Asvd$v)
+    time3 = time3 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
+    
     #------------------------------------------------------------------------------
-    ratio= Frob2(U.old,Dsq.old,V.old,tU,Dsq,V)
+    ratio= 2# Frob(U.old,Dsq.old,V.old,U,Dsq,V)
     if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, 
-                    "training RMSE",sqrt(mean((S@x)^2)),
+                    #"training RMSE",sqrt(mean((S@x)^2)),
                     "valid RMSE", valid_error, "\n")
   
   }
-  #yfill = A.old#solve(I_H) %*% A %*% solve(V) 
-  #yfill = as.matrix(y)
-  #ynas = is.na(yfill)
-  #yfill[ynas] = A.old[ynas] #(UD(U,Dsq,n) %*% t(V))[ynas]
-  #beta_estim = H %*% yfill
   if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
   if(lambda>0&final.svd){
-    UDsq=UD(U,Dsq,n)
-    M_obs=suvC(UDsq,V,irow,pcol)
-    S@x=y@x-M_obs #- HM_obs_sum_A
-    A= S%*%V+UDsq
+    
+    UDsq = UD(U,Dsq,n)
+    M_obs = suvC(UDsq,V,irow,pcol)
+    S@x = y@x - M_obs - xbeta.obs  
+    A = I_H %*% ( (S%*%V) + UDsq )
+    
+    # UDsq=UD(U,Dsq,n)
+    # M_obs=suvC(UDsq,V,irow,pcol)
+    # S@x=y@x-M_obs #- HM_obs_sum_A
+    # A= S%*%V+UDsq
+    
+    
     Asvd=fast.svd(as.matrix(A))
     U=Asvd$u
     Dsq=Asvd$d
@@ -165,11 +161,14 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     if(trace.it){
       UDsq=UD(U,Dsq,n)
       M_obs=suvC(UDsq,V,irow,pcol)
-      S@x=y@x-M_obs
-      obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz
+      S@x=y@x-M_obs - xbeta.obs
+      obj = (.5*sum(S@x^2)+lambda*sum(Dsq))/nz
       cat("final SVD:", "obj",format(round(obj,5)),"\n")
     }
   }
+  
+  print(paste("Execution time 2 is",time2, "seconds"))
+  print(paste("Execution time 3 is",time3, "seconds"))
   
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))
