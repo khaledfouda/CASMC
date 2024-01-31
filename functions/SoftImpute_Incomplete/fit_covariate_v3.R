@@ -76,7 +76,6 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     V.old= V
     Dsq.old=Dsq
     #---------------------------------
-    start_time <- Sys.time() #<<<<<<<<<<<<
     HU = H %*% U
     ## U step # S is yplus
     if(iter>1|warm){
@@ -91,7 +90,21 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       S@x = y@x - xbeta.obs
     }
     # 6
-    xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
+    part1 <- numeric(length(yobs))
+    start_time <- Sys.time() #<<<<<<<<<<<<
+    
+    for (j in 1:ncol(S)) {
+      col_product <- H %*% S[, j]
+      part1[which(S[, j] != 0)] <- col_product[yobs[, j]]
+    }
+    # part1 = suvC(H) (H %*% (S))[yobs] 
+    time2 = time2 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
+    start_time <- Sys.time() #<<<<
+    part2 = suvC(HU,VDsq, irow, pcol)
+    time3 = time3 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
+    xbeta.obs = part1+part2 +xbeta.obs
+    # xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
+    
     IHU =  U - HU
     
     B = as.matrix(t(S) %*% IHU) + (VDsq %*% (t(U) %*% IHU))  
@@ -104,9 +117,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     U = U%*% (Bsvd$v)
     #------------------------------------
     ## V step
-    time2 = time2 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
     
-    start_time <- Sys.time() #<<<<
     
     UDsq = UD(U,Dsq,n)
     M_obs = suvC(UDsq,V,irow,pcol)
@@ -130,7 +141,6 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     U = Asvd$u
     Dsq = Asvd$d
     V = V %*% (Asvd$v)
-    time3 = time3 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
     
     #------------------------------------------------------------------------------
     ratio= 2# Frob(U.old,Dsq.old,V.old,U,Dsq,V)

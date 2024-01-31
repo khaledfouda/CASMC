@@ -282,3 +282,69 @@ sum(ys!=0)
 
 # Optional: Convert to a list of indices
 indices_list <- split(indices, seq(nrow(indices)))
+###########################################################
+
+n = 100
+m = 500
+
+
+H = matrix(rnorm(n*n), n,n)
+mask = Matrix( rbinom(n*m,1,0.1),n,m )
+S = matrix(rnorm(n*m), n,m) * mask
+S = Matrix(S, sparse = TRUE)
+
+sp = S@p
+si = S@i
+sx = S@x
+r = length(sx)
+
+function(H, sp, si, sx, n, m, r){
+   
+
+index = 1
+result = numeric(r)
+
+for(j in 1:m){
+   
+   jstart = sp[j] +1
+   jend = sp[j+1]
+   
+   if(jstart > jend) next
+   
+   ind = jstart:jend
+   # observed subset for column j in S
+   si_sub = si[ind] + 1
+   
+   # we now compute the subset of rows in H which correspond to observed rows in S
+   
+   sx_sub = sx[ind]
+   # to be multiplied by each column in H
+   
+   h_sub = H[,si_sub]
+   
+   
+   for(hrow in si_sub){
+      result[index] = geometry::dot(sx_sub, h_sub[hrow,])
+      index = index + 1
+   }
+}
+return(result)
+}
+
+
+h_sub[hrow,]
+sx_sub
+
+all(round((H %*% S)[S!=0],5) == round(result,5))
+
+length((H %*% S)[S!=0])
+result %>% length
+result[1:10]
+(H %*% S)[S!=0][1:10]
+
+length(S@x)
+
+library(geometry)
+install.packages("geometry")
+
+
