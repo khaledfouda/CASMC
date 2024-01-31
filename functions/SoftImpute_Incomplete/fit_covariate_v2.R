@@ -83,14 +83,14 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       VDsq=UD(V,Dsq,m)
       # 2
       M_obs = suvC(U,VDsq,irow,pcol)
-      S@x = y@x - M_obs - sign *  HM_obs_sum_B
+      S@x = y@x - M_obs + (H %*% y)[y!=0] #sign *  HM_obs_sum_B
       # 3
       
     }else VDsq=matrix(0,m,r) 
     # 6
-    HM_obs_sum_B = HM_obs_sum_B + sign * suvC(HU, VDsq, irow, pcol) 
+    #HM_obs_sum_B = HM_obs_sum_B + sign * suvC(HU, VDsq, irow, pcol) 
     IHU = Diagonal(n) %*% U - HU
-    
+    M_sum = M_sum #+ sign * ( UD(U,Dsq,n) %*% t(V) )
     B = t(S) %*% IHU + (VDsq %*% (tU %*% IHU))  
     
     if(lambda>0) B = t(t(B) * (Dsq/(Dsq+lambda))) 
@@ -108,10 +108,10 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     M_obs = suvC(UDsq,V,irow,pcol)
     # 3
     
-    S@x = y@x - M_obs - sign * HM_obs_sum_A 
-    HM_obs_sum_A = HM_obs_sum_A + sign * suvC(H%*%UDsq, V, irow, pcol) # this doesn't change the quality of pred
+    S@x = y@x - M_obs + (H %*% y)[y!=0] #sign * HM_obs_sum_A 
+    #HM_obs_sum_A = HM_obs_sum_A + sign * suvC(H%*%UDsq, V, irow, pcol) # this doesn't change the quality of pred
+    M_sum = M_sum #+ sign * ( UD(U,Dsq,n) %*% t(V) ) # delete later
     sign = sign * -1
-    M_sum = M_sum + UD(U,Dsq,n) %*% t(V) + S # delete later
   
     if(trace.it)  obj=(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
     # 4

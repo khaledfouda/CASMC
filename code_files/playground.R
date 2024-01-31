@@ -80,7 +80,7 @@ maxit=100;trace.it=T;warm.start=NULL;final.svd=FALSE; patience=3
 
 start_time <- Sys.time()
 set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=T, J=31,
-                                                    thresh=1e-6, lambda=31,
+                                                    thresh=1e-6, lambda=31, H=H,
                                    final.svd = T,maxit = 300, patience=1)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
@@ -127,8 +127,9 @@ preds = best_preds + M
 preds = M+ fits$beta_estim #fits$beta_estim + M
 preds = M +  H %*% fits$M_sum #best_preds + M
 preds = M + (H %*% ( 1 *ys + 10 *M))
+preds = M + H %*% (ys - M)
 
-preds =  M +  H %*% fits$M_sum/5
+preds =  M +  H %*% fits$M_sum 
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 preds = M + best_preds
 sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
@@ -160,7 +161,8 @@ sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
 
 
-
+print(paste("Test error =", round(test_error(M, gen.dat$B),5)))
+print(paste("Test error =", round(test_error(sout$u %*% (sout$d * t(sout$v)), gen.dat$B),5)))
 
 #-------------------------------
 timespent = rep(0,2)
