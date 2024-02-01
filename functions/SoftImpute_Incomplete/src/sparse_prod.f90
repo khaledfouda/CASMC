@@ -11,14 +11,14 @@ subroutine sparse_prod(n, m, r, H, sp, si, sx, result)
 
     counter = 1
     do j = 1, m
-        jstart = sp(j) + 1
-        jend = sp(j + 1)
+        jstart = sp(j) 
+        jend = sp(j + 1) -1
 
         if (jstart <= jend) then
+            sx_sub = sx(jstart:jend)
             do ii = jstart, jend
-                hrow = si(ii) + 1
+                hrow = si(ii) 
                 call extract_row(H, hrow, n, h_sub_row)
-                sx_sub = sx(jstart:jend)
                 result(counter) = dot_product(h_sub_row, sx_sub)
                 counter = counter + 1
             end do

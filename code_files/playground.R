@@ -298,7 +298,7 @@ si = S@i
 sx = S@x
 r = length(sx)
 
-function(H, sp, si, sx, n, m, r){
+sparse_prod_R = function(H, sp, si, sx, n, m, r){
    
 
 index = 1
@@ -330,6 +330,31 @@ for(j in 1:m){
 }
 return(result)
 }
+
+
+system.time({
+   for(i in 1:1000) 
+         result = sparse_prod_R(H, sp, si, sx, n, m, r)
+      
+      })
+
+
+system.time({
+   for(i in 1:1000) 
+      
+result2 = sparse_prod(n, m, r, H, sp, si, sx)
+})
+
+   
+system.time({
+   for(i in 1:1000) 
+      
+result0 = (H %*% S)[S!=0]
+})
+
+result0[1:4]
+result[1:4]
+result2[1:4]
 
 
 h_sub[hrow,]
