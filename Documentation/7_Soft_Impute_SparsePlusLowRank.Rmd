@@ -9,6 +9,7 @@ editor_options:
 ---
 
 
+
 ```{r setup, include=TRUE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE)
 library(kableExtra)
@@ -155,6 +156,8 @@ $$
 
 At step $i$ we have
 
+<p style="text-align: center;"> The following is incorrect and the correct expansion follows </p> 
+
 $$
 \begin{aligned}
 P_{\Omega}( C_{(i-1)}) &= P_{\Omega}( HY_{i-1}^*)\\
@@ -165,6 +168,46 @@ P_{\Omega}( C_{(i-1)}) &= P_{\Omega}( HY_{i-1}^*)\\
 & = P_{\Omega}(H (-\hat{M}_{(i-1)}+\hat{M}_{(i-2)}-\hat{M}_{(i-3)}+\cdots))
 \end{aligned}
 $$
+
+<p style="text-align: center;"> The correct expansion </p>
+
+
+$$
+\begin{aligned}
+P_{\Omega}( C_{(i-1)}) &= P_{\Omega}( HY_{i-1}^*)\\
+&= P_{\Omega}(HP_{\Omega}(Y - \hat{M}_{(i-2)}-C_{i-2}) + H \hat{M}_{(i-2)} + H C_{(i-2)})\\
+&= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H \hat{M}_{(i-2)}) + P_{\Omega}(H C_{(i-2)})\\
+&= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H \hat{M}_{(i-2)}) + P_{\Omega}(H HY_{(i-2)})\\
+&= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H \hat{M}_{(i-2)}) + P_{\Omega}(H Y_{(i-2)})\\
+&= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H \hat{M}_{(i-2)}) + P_{\Omega}( C_{(i-2)})\\
+\end{aligned}
+$$
+Initializing it to
+
+$$
+P_{\Omega}( C)=P_{\Omega}(HY)
+$$
+we then use the following update function
+
+$$
+P_{\Omega}( C)=P_{\Omega}( C) +  P_{\Omega}(H(S-P_{\Omega}(C)) + P_{\Omega}(H \hat{M})  \\
+
+$$
+Let $S^* = S-P_{\Omega}( C)$ a sparse matrix. Then we have two terms (two vectors) to compute:
+
+a. $P_{\Omega}(HS^*)$ This could be very expensive to compute. To reduce the time we will decompose $HS^*$ into two low rank matrices of equal dimensions and then use the Fortran function $suvc()$ to compute the resulting vector.
+
+Let the SVT decomposition of $H$ be $u^Hv^H$ where $u^H=u[,1:J]$, $v^H=d[1:J]v^T[,1:J]$, and $J=\sum d_i>\epsilon$ where $\epsilon$ is very small ($1e-6$). This typically  reduces the rank significantly. Since $J$ will equal at most the number of covariates in $X$. 
+
+Using that and using $\hat{M} = UDV^T$ we have:
+
+$$
+  P_{\Omega}(H \hat{M}) = P_{\Omega}(H UDV^T) = suv(HU,DV^T)   \\
+  P_{\Omega}(H(S-P_{\Omega}(C)) =P_{\Omega}(HS^*) =suv( u^H, S^* v^H)
+
+$$
+
+
 Similarly, $\hat{A}$ can be expressed as (again, we show $AD$ instead for ease of calculations):
 
 
