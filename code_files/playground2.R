@@ -116,3 +116,48 @@ length(result0)
 summ$importance %>% t()  %>% as.data.frame() %>% arrange(desc(`Proportion of Variance`)) %>% head(10)
 
 svd(H)$d -> dd; dd[dd>1e-3]
+#########################################
+
+
+
+
+
+
+
+
+
+
+S = ys
+S@x = fits$xbeta.obs
+W = Y_train == 0
+
+
+n <- nrow(X)
+k <- ncol(X)
+m <- ncol(S)
+
+loss_function <- function(m_flat) {
+  M_est <- matrix(m_flat, nrow = k, ncol = m)
+  S_pred <- (X %*% M_est) * W
+  loss <- sum((S_pred - S)^2)
+  return(loss)
+}
+
+initial_guess <- runif(k * m)
+optim_result <- optim(initial_guess, loss_function, method = "L-BFGS-B")
+
+M_est <- matrix(optim_result$par, nrow = k, ncol = m)
+
+
+
+preds = best_preds + M
+print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+
+
+
+
+
+
+
+
+##################################################

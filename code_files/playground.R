@@ -173,6 +173,11 @@ sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 print(paste("Test error =", round(test_error(M, gen.dat$B),5)))
 print(paste("Test error =", round(test_error(sout$u %*% (sout$d * t(sout$v)), gen.dat$B),5)))
 #----------------------
+xb =fits$xbeta.obs
+
+
+length(xb)
+
 #-------------------------------
 timespent = rep(0,2)
 start_time <- Sys.time()

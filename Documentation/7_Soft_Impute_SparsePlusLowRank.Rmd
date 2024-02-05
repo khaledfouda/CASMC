@@ -190,8 +190,7 @@ $$
 we then use the following update function
 
 $$
-P_{\Omega}( C)=P_{\Omega}( C) +  P_{\Omega}(H(S-P_{\Omega}(C)) + P_{\Omega}(H \hat{M})  \\
-
+P_{\Omega}( C)=P_{\Omega}( C) +  P_{\Omega}(H(S-P_{\Omega}(C)) + P_{\Omega}(H \hat{M})  
 $$
 Let $S^* = S-P_{\Omega}( C)$ a sparse matrix. Then we have two terms (two vectors) to compute:
 

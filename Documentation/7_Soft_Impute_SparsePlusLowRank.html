@@ -1794,7 +1794,7 @@ U_H C&#39; &amp;= U^T(I_n-H)HY^*_{old} \\
 C&#39;)\)</span>:</p>
 <p>At step <span class="math inline">\(i\)</span> we have</p>
 <p style="text-align: center;">
-The following is incorrrect and the correct expansion follows
+The following is incorrect and the correct expansion follows
 </p>
 <p><span class="math display">\[
 \begin{aligned}
@@ -1808,7 +1808,50 @@ C_{(i-3)}) \\
 &amp; = P_{\Omega}(H
 (-\hat{M}_{(i-1)}+\hat{M}_{(i-2)}-\hat{M}_{(i-3)}+\cdots))
 \end{aligned}
-\]</span> Similarly, <span class="math inline">\(\hat{A}\)</span> can be
+\]</span></p>
+<p style="text-align: center;">
+The correct expansion
+</p>
+<p><span class="math display">\[
+\begin{aligned}
+P_{\Omega}( C_{(i-1)}) &amp;= P_{\Omega}( HY_{i-1}^*)\\
+&amp;= P_{\Omega}(HP_{\Omega}(Y - \hat{M}_{(i-2)}-C_{i-2}) + H
+\hat{M}_{(i-2)} + H C_{(i-2)})\\
+&amp;= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H
+\hat{M}_{(i-2)}) + P_{\Omega}(H C_{(i-2)})\\
+&amp;= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H
+\hat{M}_{(i-2)}) + P_{\Omega}(H HY_{(i-2)})\\
+&amp;= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H
+\hat{M}_{(i-2)}) + P_{\Omega}(H Y_{(i-2)})\\
+&amp;= P_{\Omega}(H(S_{i-2}-P_{\Omega}(C_{i-2})) + P_{\Omega}(H
+\hat{M}_{(i-2)}) + P_{\Omega}( C_{(i-2)})\\
+\end{aligned}
+\]</span> Initializing it to</p>
+<p><span class="math display">\[
+P_{\Omega}( C)=P_{\Omega}(HY)
+\]</span> we then use the following update function</p>
+<p><span class="math display">\[
+P_{\Omega}( C)=P_{\Omega}( C) +  P_{\Omega}(H(S-P_{\Omega}(C)) +
+P_{\Omega}(H \hat{M})  
+\]</span> Let <span class="math inline">\(S^* = S-P_{\Omega}(
+C)\)</span> a sparse matrix. Then we have two terms (two vectors) to
+compute:</p>
+<ol style="list-style-type: lower-alpha">
+<li><span class="math inline">\(P_{\Omega}(HS^*)\)</span> This could be
+very expensive to compute. To reduce the time we will decompose <span class="math inline">\(HS^*\)</span> into two low rank matrices of equal
+dimensions and then use the Fortran function <span class="math inline">\(suvc()\)</span> to compute the resulting
+vector.</li>
+</ol>
+<p>Let the SVT decomposition of <span class="math inline">\(H\)</span>
+be <span class="math inline">\(u^Hv^H\)</span> where <span class="math inline">\(u^H=u[,1:J]\)</span>, <span class="math inline">\(v^H=d[1:J]v^T[,1:J]\)</span>, and <span class="math inline">\(J=\sum d_i&gt;\epsilon\)</span> where <span class="math inline">\(\epsilon\)</span> is very small (<span class="math inline">\(1e-6\)</span>). This typically reduces the rank
+significantly. Since <span class="math inline">\(J\)</span> will equal
+at most the number of covariates in <span class="math inline">\(X\)</span>.</p>
+<p>Using that and using <span class="math inline">\(\hat{M} =
+UDV^T\)</span> we have:</p>
+<p>$$ P_{}(H ) = P_{}(H UDV^T) = suv(HU,DV^T) \ P_{}(H(S-P_{}(C))
+=P_{}(HS^*) =suv( u^H, S<sup>* v</sup>H)</p>
+<p>$$</p>
+<p>Similarly, <span class="math inline">\(\hat{A}\)</span> can be
 expressed as (again, we show <span class="math inline">\(AD\)</span>
 instead for ease of calculations):</p>
 <p><span class="math display">\[
