@@ -44,7 +44,7 @@ gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
-
+X <- gen.dat$X
 lambda2 = 31
 max.rank = 15
 start_time <- Sys.time()
@@ -70,23 +70,29 @@ yvalid = gen.dat$Y
 yvalid[W_valid==1] = NA
 yvalid[yvalid==0] = NA
 yvalid <- as(yvalid, "Incomplete")
-X <- gen.dat$X
 #$$
-y=ys; X=gen.dat$X; H=NULL; J = 2; thresh = 1e-05; lambda=2; 
-maxit=100;trace.it=T;warm.start=NULL;final.svd=FALSE; patience=3
+#y=ys; X=gen.dat$X; H=NULL; J = 2; thresh = 1e-05; lambda=2; 
+#maxit=100;trace.it=T;warm.start=NULL;final.svd=FALSE; patience=3
 #$$
 
-
+#--H
+H = X %*% solve(t(X) %*% X) %*% t(X)
+svdH <- fast.svd(H, thresh)
+J_H <- sum(svdH$d > 1e-6)
+print(J_H)
+svdH$d = NULL
+svdH$u = svdH$u[,1:J_H]
+svdH$v = t(svdH$v[,1:J_H])
+#------------------------
 
 start_time <- Sys.time()
 set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=T, J=31,
-                                                    thresh=1e-6, lambda=31, H=H,
+                                                    thresh=1e-6, lambda=31, H=NULL,svdH=NULL,
                                    final.svd = T,maxit = 300, patience=1)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
-H = X %*% solve(t(X) %*% X) %*% t(X)
 M = fits$u %*% (fits$d * t(fits$v))
-
+sqrt(mean( (M[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
 
 ytmp = y 
@@ -284,14 +290,15 @@ sum(ys!=0)
 indices_list <- split(indices, seq(nrow(indices)))
 ###########################################################
 
-n = 100
-m = 500
+n = 800
+m = 900
 
 
 H = matrix(rnorm(n*n), n,n)
 mask = Matrix( rbinom(n*m,1,0.1),n,m )
 S = matrix(rnorm(n*m), n,m) * mask
 S = Matrix(S, sparse = TRUE)
+mask = matrix(1, n, n)   
 
 sp = S@p
 si = S@i
@@ -299,7 +306,7 @@ sx = S@x
 r = length(sx)
 
 sparse_prod_R = function(H, sp, si, sx, n, m, r){
-   
+
 
 index = 1
 result = numeric(r)
@@ -333,29 +340,89 @@ return(result)
 
 
 system.time({
-   for(i in 1:1000) 
+   for(i in 1:30) 
          result = sparse_prod_R(H, sp, si, sx, n, m, r)
       
       })
 
+length(sx)
+sp[1:10]
 
 system.time({
-   for(i in 1:1000) 
+   for(i in 1:30) 
       
 result2 = sparse_prod(n, m, r, H, sp, si, sx)
 })
 
-   
+
 system.time({
-   for(i in 1:1000) 
-      
-result0 = (H %*% S)[S!=0]
+   for(i in 1:30) 
+      results0 = (svd_result$u %*% ((svd_result$d * t(svd_result$v)) %*% S) )[ss]
+   #result0 = (H %*% S)[ss]
 })
+
+
+
+
+
+
+
+
+
+sparse_multiply <- function(H, Y) {
+   result <- matrix(0, nrow = nrow(H), ncol = ncol(Y))
+   for (i in 1:nrow(Y)) {
+      non_zero_indices <- which(Y[i, ] != 0)
+      if (length(non_zero_indices) > 0) {
+         result[i, non_zero_indices] <- H[i, ] %*% Y[i, non_zero_indices]
+      }
+   }
+   return(result)
+}
+
+# Perform the sparse multiplication
+result <- sparse_multiply(H, S)
+
+
+
+
+
+
+
+storage.mode(H) = "double"
+storage.mode(sx) = "double"
+storage.mode(si) = "integer"
+storage.mode(sp) = "integer"
+storage.mode(n) = "integer"
+storage.mode(m) = "integer"
+storage.mode(r) = "integer"
+
+# Preallocate the result vector
+result = double(r)
+system.time(
+   {
+   for(i in 1:30)
+# Call the Fortran subroutine
+result2 = .Fortran("sparse_prod",
+         as.integer(n), as.integer(m), as.integer(r),
+         as.double(H), as.integer(sp), as.integer(si),
+         as.double(sx), result = as.double(result)
+)$result
+
+   }
+)
+
+
+ss = S!=0
+S2 <- as(S, "Incomplete")
+
 
 result0[1:4]
 result[1:4]
 result2[1:4]
 
+
+all(round(result0,5) == round(result2,5))
 
 h_sub[hrow,]
 sx_sub
@@ -373,3 +440,11 @@ library(geometry)
 install.packages("geometry")
 
 
+k <- 10  # Choose a suitable rank
+svd_result <- irlba(H, nv = k)
+
+# Reconstruct lower-rank approximation of H
+H_approx <- svd_result$u %*% (svd_result$d * t(svd_result$v))
+
+
+dim(H_approx)

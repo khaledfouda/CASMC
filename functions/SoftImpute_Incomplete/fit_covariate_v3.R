@@ -2,7 +2,7 @@ require(corpcor)
 simpute.als.fit_splr <-
 function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0, 
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE,
-          patience=3) {
+          patience=3, svdH=NULL) {
 
   start_time <- Sys.time() #<<<<<<<<<<<<<
   if(!inherits(y,"dgCMatrix")) y=as(y,"dgCMatrix")
@@ -19,6 +19,12 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     Q <- qr.Q(Matrix::qr(X)) #[,1:p]
     H <- Q %*% t(Q)
     Q <- NULL
+    svdH <- fast.svd(H, thresh)
+    J_H <- sum(svdH$d > 1e-3)
+    print(J_H)
+    svdH$d = NULL
+    svdH$u = svdH$u[,1:J_H]
+    svdH$v = t(svdH$v[,1:J_H])
     #H = X %*% solve(t(X) %*% X) %*% t(X)
   }
   I_H <- Diagonal(n) - H
@@ -93,10 +99,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     part1 <- numeric(length(yobs))
     start_time <- Sys.time() #<<<<<<<<<<<<
     
-    for (j in 1:ncol(S)) {
-      col_product <- H %*% S[, j]
-      part1[which(S[, j] != 0)] <- col_product[yobs[, j]]
-    }
+    part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
     # part1 = suvC(H) (H %*% (S))[yobs] 
     time2 = time2 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
     start_time <- Sys.time() #<<<<
@@ -128,7 +131,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     
     
     #-----------------------------------------------------------------------------------
-    if(trace.it)  obj=2#(.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
+    if(trace.it)  obj= (.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
     #valid_preds = yvalid@x - suvC(UDsq, V, yvalid@i, yvalid@p)
     valid_error = Inf#sqrt(mean(valid_preds^2))
     if(valid_error < best_score){
@@ -143,7 +146,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     V = V %*% (Asvd$v)
     
     #------------------------------------------------------------------------------
-    ratio= 2# Frob(U.old,Dsq.old,V.old,U,Dsq,V)
+    ratio=  Frob(U.old,Dsq.old,V.old,U,Dsq,V)
     if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, 
                     #"training RMSE",sqrt(mean((S@x)^2)),
                     "valid RMSE", valid_error, "\n")
