@@ -4,7 +4,6 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE,
           patience=3, svdH=NULL) {
 
-  start_time <- Sys.time() #<<<<<<<<<<<<<
   if(!inherits(y,"dgCMatrix")) y=as(y,"dgCMatrix")
   irow=y@i
   pcol=y@p
@@ -14,7 +13,7 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   nz=nnzero(y)
   yobs = y != 0
   #-------------------------------
-  if(is.null(H)){
+  if(is.null(svdH)){
     stopifnot(!is.null(X))
     Q <- qr.Q(Matrix::qr(X)) #[,1:p]
     H <- Q %*% t(Q)
@@ -26,10 +25,9 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     svdH$u = svdH$u[,1:J_H]
     svdH$v = t(svdH$v[,1:J_H])
     #H = X %*% solve(t(X) %*% X) %*% t(X)
+    H <- NULL
   }
-  I_H <- Diagonal(n) - H
-  
-  #H #<- NULL
+
   
   #---------------------------------------------------
   warm=FALSE
@@ -62,19 +60,18 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       U=fast.svd(U)$u
       Dsq=rep(1,J)# we call it Dsq because A=UD and B=VDsq and AB'=U Dsq V^T
   }
-  # initial beta estimates using yfill - yplus = yfill - xbeta
+  
   ratio <- 1
   iter <- 0
   S=y
-  xbeta.obs =  (H %*% y)[yobs]
+  xbeta.obs = suvC(svdH$u, t(as.matrix(svdH$v %*% y)),irow,pcol)
   #----------------------------------------
   counter = 0
   best_score = Inf
   best_iter = NA
-  print(paste("Execution time 1 is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+  valid_error = Inf
   #----------------------------------------
-  time2 = 0
-  time3 = time4 = 0
+  #time3 = time4 = 0
   #&(counter < patience)
   while ((ratio > thresh)&(iter<maxit)) {
     iter <- iter + 1
@@ -97,18 +94,17 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     # 6
     
     
-    #HU = H %*% U
+    
     HU = svdH$u %*% (svdH$v %*% U)
     part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
-    # part1 = suvC(H) (H %*% (S))[yobs] 
     part2 = suvC(HU,VDsq, irow, pcol)
-    xbeta.obs = part1+part2 +xbeta.obs
-    # xbeta.obs = (H %*% (S))[yobs] + suvC(HU,VDsq, irow, pcol) + xbeta.obs
+    xbeta.obs = part1 + part2 + xbeta.obs
     
-    start_time <- Sys.time() #<<<<<<<<<<<<
+    
+    #start_time <- Sys.time() #<<<<<<<<<<<<
     IHU =  U - HU
     B = as.matrix(t(S) %*% IHU) + (VDsq %*% (t(U) %*% IHU))  
-    time2 = time2 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
+    #time2 = time2 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
     if(lambda>0) B = t(t(B) *(Dsq/(Dsq+lambda))) 
     
     Bsvd=fast.svd(B)
@@ -117,8 +113,11 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     U = U%*% (Bsvd$v)
     #------------------------------------
     ## V step
-    start_time <- Sys.time() #<<<<
-    
+    #start_time <- Sys.time() #<<<<
+    HU = svdH$u %*% (svdH$v %*% U)
+    part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
+    part2 = suvC(HU,VDsq, irow, pcol)
+    xbeta.obs = part1 + part2 + xbeta.obs
     
     UDsq = UD(U,Dsq,n)
     M_obs = suvC(UDsq,V,irow,pcol)
@@ -131,41 +130,37 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     
     #-----------------------------------------------------------------------------------
     if(trace.it)  obj= (.5*sum(S@x^2)+lambda*sum(Dsq))/nz # update later
+    #-- trace validation error --------------------------------
     #valid_preds = yvalid@x - suvC(UDsq, V, yvalid@i, yvalid@p)
-    valid_error = Inf#sqrt(mean(valid_preds^2))
-    if(valid_error < best_score){
-      counter = 0
-      best_score = valid_error
-      best_iter = iter
-    }else
-      counter = counter + 1
+    #valid_error = Inf#sqrt(mean(valid_preds^2))
+    #if(valid_error < best_score){
+    #  counter = 0
+    #  best_score = valid_error
+    #  best_iter = iter
+    #}else
+    #  counter = counter + 1
     #-----------------------------------------------------------------------------------
     U = Asvd$u
     Dsq = Asvd$d
     V = V %*% (Asvd$v)
-    time3 = time3 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
+    #time3 = time3 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
     
     #------------------------------------------------------------------------------
-    ratio=  2#Frob(U.old,Dsq.old,V.old,U,Dsq,V)
+    ratio=  Frob(U.old,Dsq.old,V.old,U,Dsq,V)
     if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, 
                     #"training RMSE",sqrt(mean((S@x)^2)),
                     "valid RMSE", valid_error, "\n")
   
   }
-    start_time <- Sys.time() #<<<<
+    #start_time <- Sys.time() #<<<<
   if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
   if(lambda>0&final.svd){
     
     UDsq = UD(U,Dsq,n)
     M_obs = suvC(UDsq,V,irow,pcol)
     S@x = y@x - M_obs - xbeta.obs  
-    A = I_H %*% ( (S%*%V) + UDsq )
-    
-    # UDsq=UD(U,Dsq,n)
-    # M_obs=suvC(UDsq,V,irow,pcol)
-    # S@x=y@x-M_obs #- HM_obs_sum_A
-    # A= S%*%V+UDsq
-    
+    A.partial = ( (S%*%V) + UDsq )
+    A = A.partial - svdH$u %*% (svdH$v %*% A.partial)
     
     Asvd=fast.svd(as.matrix(A))
     U=Asvd$u
@@ -180,11 +175,11 @@ function (y, yvalid, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       cat("final SVD:", "obj",format(round(obj,5)),"\n")
     }
   }
-    time4 = time4 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
-  print(paste("Execution time 2 is",time2, "seconds"))
-  print(paste("Execution time 3 is",time3, "seconds"))
-  print(paste("Execution time 4 is",time4, "seconds"))
-  return(c(time2,time3,time4))
+    #time4 = time4 + round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2)
+  #print(paste("Execution time 2 is",time2, "seconds"))
+  #print(paste("Execution time 3 is",time3, "seconds"))
+  #print(paste("Execution time 4 is",time4, "seconds"))
+  #return(c(time2,time3,time4))
   
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))

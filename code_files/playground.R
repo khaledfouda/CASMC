@@ -84,16 +84,13 @@ svdH$u = svdH$u[,1:J_H]
 svdH$v = svdH$d[1:J_H] * t(svdH$v[,1:J_H])
 svdH$d = NULL
 
-# Reconstruct the matrix (full reconstruction)
-H_reconstructed <- Q %*% Lambda %*% t(Q)
-
 #------------------------
-
 start_time <- Sys.time()
-set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=T, J=31,
-                                                    thresh=1e-6, lambda=31, H=H,svdH=svdH,
+set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=F, J=31,
+                                                    thresh=1e-6, lambda=31, H=NULL,svdH=svdH,
                                    final.svd = T,maxit = 300, patience=1)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
 
 M = fits$u %*% (fits$d * t(fits$v))
 sqrt(mean( (M[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
@@ -175,7 +172,7 @@ sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
 print(paste("Test error =", round(test_error(M, gen.dat$B),5)))
 print(paste("Test error =", round(test_error(sout$u %*% (sout$d * t(sout$v)), gen.dat$B),5)))
-
+#----------------------
 #-------------------------------
 timespent = rep(0,2)
 start_time <- Sys.time()
