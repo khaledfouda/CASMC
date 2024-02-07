@@ -40,7 +40,7 @@ system.time({fitss <- simpute.als.fit_Incomplete(ys, J = 3, lambda=1.9)})
 
 #---------------------------------
 # old model 
-gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=FALSE)
+gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
@@ -48,6 +48,7 @@ X <- gen.dat$X
 lambda2 = 31
 max.rank = 15
 start_time <- Sys.time()
+
 beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
 set.seed(2023);sout <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.rank, thresh =  1e-6,
                         lambda= lambda2,trace.it = T,warm.start = NULL, maxit=100)
@@ -84,7 +85,7 @@ yvalid <- as(yvalid, "Incomplete")
 #--H
 H = X %*% solve(t(X) %*% X) %*% t(X)
 svdH <- fast.svd(H, thresh)
-J_H <- sum(svdH$d > 1e-6)
+J_H <- sum(svdH$d > 1e-2)
 print(J_H)
 svdH$u = svdH$u[,1:J_H]
 svdH$v = svdH$d[1:J_H] * t(svdH$v[,1:J_H])
@@ -93,8 +94,8 @@ svdH$d = NULL
 #------------------------
 start_time <- Sys.time()
 set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=F, J=31,
-                                                    thresh=1e-6, lambda=31, H=NULL,svdH=svdH,
-                                   final.svd = T,maxit = 300, patience=1)
+                                                    thresh=1e-6, lambda=31, H=NULL,svdH=NULL,
+                                   final.svd = T,maxit = 300, patience=1,warm.start = NULL)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 
@@ -120,11 +121,16 @@ sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
 
 #------- new model to old model
+yfill = Y_train 
+yfill[Y_train==0] = (M)[Y_train==0]
+
 start_time <- Sys.time()
 fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=beta_partial %*% yfill)
+X_svd = fast.svd(X,1e-2)
+X_svd = X_svd$u %*% (X_svd$d * t(X_svd$v))
 
-set.seed(2023);fits2 <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.rank, thresh =  1e-6,
-                                       lambda= lambda2,trace.it = T,warm.start = fits.out, maxit=100)
+set.seed(2023);fits2 <- simpute.als.cov(Y_train, X_svd, beta_partial,J = max.rank, thresh =  1e-6,
+                                       lambda= lambda2,trace.it = F,warm.start = fits.out, maxit=100)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fits2$M = fits2$u %*% (fits2$d * t(fits2$v))
@@ -136,9 +142,7 @@ print(paste("Test error =", round(test_error(fits2$M, gen.dat$B),5)))
 #-------------------------------------------------
 
 
-ytmp = Y_train 
-ytmp[Y_train==0] = (M)[Y_train==0]
-fits$beta_estim = H %*% (ytmp)
+fits$beta_estim = H %*% (yfill)
 fits$beta_estim = H %*% (Y_train-M)
 
 xbeta.L = as.matrix(xbeta.S); xbeta.L[is.na(xbeta.L)] <- 0
@@ -191,7 +195,7 @@ preds = best_preds + M
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
-ytmp[is.na(y)] = (M - H %*% M)[is.na(y)]
+yfill[is.na(y)] = (M - H %*% M)[is.na(y)]
 
 fits$beta_estims = H %*% (gen.dat$Y -  fits$u %*% (fits$d * t(fits$v)))
 all(round(fits$beta_estims,10) == 0)
