@@ -56,14 +56,20 @@ sout$A_hat = sout$u %*% (sout$d * t(sout$v))
 fiti <- sout
 v=as.matrix(fiti$v)
 vd=v*outer(rep(1,nrow(v)),fiti$d)
+
+fiti=fits2
+
 sout$A_hat = fiti$u %*% t(vd)  + X %*% fiti$beta.estim
 
 print(paste("Test error =", round(test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 sqrt(mean( (sout$A_hat[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+print(paste("Test error =", round(test_error(sout$u %*% (sout$d * t(sout$v)), gen.dat$B),5)))
 
+xbeta.orig = X %*% fiti$beta.estim
 #-----------------------
 # new model
 y = Y_train
+thresh=1e-6
 y[y==0] = NA
 ys <- as(y, "Incomplete")
 yvalid = gen.dat$Y
@@ -93,12 +99,35 @@ print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time
 
 
 M = fits$u %*% (fits$d * t(fits$v))
+xbeta.S = ys; xbeta.S@x = fits$xbeta.obs
+M.S = M; M.S[Y_train==0] = 0
+
+print(paste("Test error =", round(test_error(M, gen.dat$B),6)))
+
+sum(round(xbeta.orig[Y_train!=0],2) == round(xbeta.S[xbeta.S!=0],2))/sum(Y_train!=0)
+
+preds = H %*% (Y_train - M.S) + M
+
 sqrt(mean( (M[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
+preds =  H%*% (-M) +M
+print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
-ytmp = y 
-ytmp[is.na(y)] = (M)[is.na(y)]
-fits$beta_estim = H %*% ytmp
+preds = (xbeta.S + M)[ys!=0]
+print(paste("Test error =", round(test_error(preds, gen.dat$A[Y_train!=0]),5)))
+sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+
+set.seed(2023);fits2 <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.rank, thresh =  1e-6,
+                                       lambda= lambda2,trace.it = T,warm.start = fits.out, maxit=100)
+
+fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=fits$beta_estim)
+ytmp = Y_train 
+ytmp[Y_train==0] = (M)[Y_train==0]
+fits$beta_estim = beta_partial %*% (ytmp)
+fits$beta_estim = H %*% (Y_train-M)
+dim(y)
+dim(fits$beta_estim)
 
 preds <- predsa <- M + fits$beta_estim
 
@@ -138,7 +167,7 @@ preds = M +  H %*% fits$M_sum #best_preds + M
 preds = M + (H %*% ( 1 *ys + 10 *M))
 preds = M + H %*% (ys - M)
 
-preds =  M +  H %*% fits$M_sum 
+
 
 
 preds = M + best_preds
@@ -170,8 +199,6 @@ sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
 
 
-print(paste("Test error =", round(test_error(M, gen.dat$B),5)))
-print(paste("Test error =", round(test_error(sout$u %*% (sout$d * t(sout$v)), gen.dat$B),5)))
 #----------------------
 xb =fits$xbeta.obs
 

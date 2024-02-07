@@ -203,7 +203,6 @@ Using that and using $\hat{M} = UDV^T$ we have:
 $$
   P_{\Omega}(H \hat{M}) = P_{\Omega}(H UDV^T) = suv(HU,DV^T)   \\
   P_{\Omega}(H(S-P_{\Omega}(C)) =P_{\Omega}(HS^*) =suv( u^H, S^* v^H)
-
 $$
 
 
@@ -223,6 +222,13 @@ The term $H^*UD = (I_n-H)A$ corresponds to the residuals from fitting the covari
 
 Similarly
 ---------------------------------------------
+
+
+$$
+Y*W \approx (X\beta)*W 
+$$
+
+
 
 Let's expand $C$:
 
