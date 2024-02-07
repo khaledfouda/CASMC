@@ -118,41 +118,74 @@ preds = (xbeta.S + M)[ys!=0]
 print(paste("Test error =", round(test_error(preds, gen.dat$A[Y_train!=0]),5)))
 sqrt(mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 
+
+#------- new model to old model
+start_time <- Sys.time()
+fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=beta_partial %*% yfill)
+
 set.seed(2023);fits2 <- simpute.als.cov(Y_train, gen.dat$X, beta_partial,J = max.rank, thresh =  1e-6,
                                        lambda= lambda2,trace.it = T,warm.start = fits.out, maxit=100)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
-fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=fits$beta_estim)
+fits2$M = fits2$u %*% (fits2$d * t(fits2$v))
+fits2$A_hat = fits2$M  + X %*% fits2$beta.estim
+
+print(paste("Test error =", round(test_error(fits2$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+sqrt(mean( (fits2$A_hat[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+print(paste("Test error =", round(test_error(fits2$M, gen.dat$B),5)))
+#-------------------------------------------------
+
+
 ytmp = Y_train 
 ytmp[Y_train==0] = (M)[Y_train==0]
-fits$beta_estim = beta_partial %*% (ytmp)
+fits$beta_estim = H %*% (ytmp)
 fits$beta_estim = H %*% (Y_train-M)
+
+xbeta.L = as.matrix(xbeta.S); xbeta.L[is.na(xbeta.L)] <- 0
+xbeta.F = xbeta.L
+good_predictions_mean <- apply(xbeta.L , 2,
+                               function(column) mean(column[column != 0]))
+
+for (j in 1:ncol(xbeta.L)) {
+   xbeta.F[(Y_train==0)[, j], j] <- good_predictions_mean[j]
+}
+fits$beta_estim = xbeta.F
+
 dim(y)
 dim(fits$beta_estim)
-
-preds <- predsa <- M + fits$beta_estim
-
+yfill = Y_train
+ynas = yfill==0
+yval = W_valid ==0
+val_set =gen.dat$A[yval]
+#yfill[ynas] = M[ynas]
+start_time <- Sys.time()
 best_score = Inf
-patience = 3
+patience = 1
 counter = 0
 alpha = 0.1
 H_part = (Diagonal(800) + alpha *  H )
-for(i in 1:400){
-   if(i == 1) preds <- predsa <-  fits$beta_estim
-preds <- H_part %*% (preds)
-RMSE = round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)
-#mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 )
-if(RMSE < best_score){
-   best_score = RMSE
-   best_i = i
-   best_preds = preds
-   counter = 0
-   #print(paste(i,RMSE))
-}else counter = counter + 1
-if(counter > patience){
-   print(paste("Exit on",i))
-   break
+preds <- predsa <- H %*% yfill  #fits$beta_estim
+for(i in 1:300){
+   old_preds <- yfill
+   yfill[ynas] <- M[ynas] + preds[ynas]
+   preds <-H %*% yfill
+   #preds <- H_part %*% (preds)
+   #diff = sqrt(sum( (yfill-old_preds)^2 ))
+   RMSE = test_error((yfill)[yval],val_set)
+   #mean( (preds[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 )
+   if(RMSE < best_score){
+      best_score = RMSE
+      best_i = i
+      best_preds = preds
+      counter = 0
+      #print(paste(i,RMSE,diff))
+   }else counter = counter + 1
+   if(counter > patience){
+      print(paste("Exit on",i))
+      break
+   }
 }
-}
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 print(paste(best_i, best_score))
 preds = best_preds + M
 print(paste("Test error =", round(test_error(preds[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
