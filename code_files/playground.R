@@ -58,7 +58,6 @@ fiti <- sout
 v=as.matrix(fiti$v)
 vd=v*outer(rep(1,nrow(v)),fiti$d)
 
-fiti=fits2
 
 sout$A_hat = fiti$u %*% t(vd)  + X %*% fiti$beta.estim
 
@@ -92,6 +91,10 @@ svdH$v = svdH$d[1:J_H] * t(svdH$v[,1:J_H])
 svdH$d = NULL
 
 #------------------------
+best_fit = simpute.cov.cv_splr(Y_train, gen.dat$X, trace = T)
+
+
+#-------------------------------
 start_time <- Sys.time()
 set.seed(2023);fits <- simpute.als.fit_splr(y=ys, yvalid=yvalid, X=gen.dat$X,  trace=F, J=31,
                                                     thresh=1e-6, lambda=31, H=NULL,svdH=NULL,

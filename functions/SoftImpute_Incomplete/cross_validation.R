@@ -1,67 +1,51 @@
-simpute.cov.cv_splr <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+simpute.cov.cv_splr <- function(Y, svdH, Y.valid, W_valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                            trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
                            rank.init=10, rank.limit=50, rank.step=2, patience=2,
-                           lambda1=0, n1n2=1, warm=NULL, quiet=FALSE){
+                            warm=NULL, quiet=FALSE){
    
-   
-   stopifnot(n1n2 %in% 1:3)
-   # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
-   #Y[Y==0] = NA
-   #xs <- as(Y, "Incomplete")
    
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov(Y, X) * lambda.factor, lambda.init) 
-   #lam0 <- 40 
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
-   
-   fits <- as.list(lamseq)
-   ranks <- as.integer(lamseq)
-   
-   
+   #----------------------------------------------------
+   Y[Y==0] = NA
+   m = dim(Y)[2]
+   W_valid[W_valid ==1] = NA
+   #W_valid[W_valid==0] =  1
+   ys <- as(Y, "Incomplete")
+   W_valid <- as(W_valid, "Incomplete")
+   irow = W_valid@i
+   pcol = W_valid@p
+   W_valid = NULL
+   #-----------------------------------------------------------------------
    rank.max <- rank.init
-   #warm <- NULL
-   best_estimates = NA
    best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
    counter <- 1
-   X.X = t(X) %*% X
-   if(n1n2 == 2){
-      n1n2 = svd(X)$d[1]
-   }else if(n1n2 == 3){
-      n1n2 = nrow(Y) * ncol(Y)
-   }
-   if(lambda1 !=0) print("Setting lambda 1 to 0 to preseve the idempotent property of the Hat matrix")
-   #H = solve(X.X +  diag(n1n2*lambda1, ncol(X))) %*% t(X)
-   Q <- qr.Q(Matrix::qr(X)) #[,1:p]
-   H <- Q %*% t(Q)
-   
-   
+   #---------------------------------------------------------------------
    for(i in seq(along=lamseq)) {
-      fiti <- simpute.als.fit_splr(y = Y, yvalid = Y.valid, X = X, H = H,
+      fiti <- simpute.als.fit_splr(y = ys, svdH = svdH,
                                    trace=F, J=rank.max, thresh=thresh, lambda=lamseq[i],
                                    warm.start = warm, patience=patience, maxit=100)
                                    
-      
       # get test estimates and test error
-      v=as.matrix(fiti$v)
-      vd=v*outer(rep(1,nrow(v)),fiti$d)
-      soft_estim = fiti$u %*% t(vd)  + X %*% fiti$beta.estim
-      err = test_error(soft_estim[W==0], Y.valid)
+      M_valid = suvC(as.matrix(fiti$u),as.matrix(UD(fiti$v,fiti$d,m)),irow,pcol)
+      #M_valid = (fiti$u %*% (fiti$d * t(fiti$v)))[W_valid==0]
+      err = test_error(M_valid, Y_valid)
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
       #----------------------------
       warm <- fiti # warm start for next 
       if(trace==TRUE)
-         print(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
+         print(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error on M = %.5f\n",
                        i, lamseq[i], rank.max, rank, err))
       #-------------------------
       # register best fir
       if(err < best_fit$error){
          best_fit$error = err
-         best_fit$rank_A = qr(soft_estim)$rank
          best_fit$rank_B = rank
          best_fit$lambda = lamseq[i]
          best_fit$rank.max = rank.max
-         best_estimates = soft_estim
-         best_beta = fiti$beta.estim
-         best_B = fiti$u %*% t(vd)
+         best_fit$B_hat = M
+         best_fit$best_fit = fiti
+         best_fit$iter = i
          counter=1
       }else counter = counter + 1
       if(counter >= tol){
@@ -72,11 +56,63 @@ simpute.cov.cv_splr <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init
       # compute rank.max for next iteration
       rank.max <- min(rank+rank.step, rank.limit)
    }
-   if(print.best==TRUE) print(best_fit)
-   best_fit$A_hat = best_estimates
-   best_fit$B_hat = best_B
-   best_fit$beta_hat = best_beta
-   best_fit$last.fit = fiti
+   #if(print.best==TRUE) print(best_fit)
    return(best_fit)
 }
 #---
+simpute.cov.cv_splr_no_patience <- function(Y, svdH, Y.valid, W_valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+                                trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
+                                rank.init=10, rank.limit=50, rank.step=2,
+                                warm=NULL, quiet=FALSE,patience=2){
+   
+   
+   lam0 <- ifelse(is.na(lambda.init), lambda0.cov(Y, X) * lambda.factor, lambda.init) 
+   lamseq <- seq(from=lam0, to=0, length=n.lambda)
+   #----------------------------------------------------
+   Y[Y==0] = NA
+   m = dim(Y)[2]
+   W_valid[W_valid ==1] = NA
+   Y <- as(Y, "Incomplete")
+   W_valid <- as(W_valid, "Incomplete")
+   irow = W_valid@i
+   pcol = W_valid@p
+   W_valid = NULL
+   #-----------------------------------------------------------------------
+   rank.max <- rank.init
+   best_fit <- list()
+   old_error = Inf
+   old_fit = NULL
+   #---------------------------------------------------------------------
+   for(i in seq(along=lamseq)) {
+      new_fit <- simpute.als.fit_splr(y = U, svdH = svdH,
+                                   trace=F, J=rank.max, thresh=thresh, lambda=lamseq[i],
+                                   warm.start = old_fit, patience=patience, maxit=100)
+      
+      M_valid = suvC(as.matrix(new_fit$u),as.matrix(UD(new_fit$v,new_fit$d,m)),irow,pcol)
+      err = test_error(M_valid, Y_valid)
+      #----------------------------
+      if(err > old_error){
+         best_fit$error = old_error
+         best_fit$rank_B = rank
+         best_fit$rank.max = rank.max
+         best_fit$lambda = lamseq[i-1]
+         best_fit$best_fit = old_fit
+         best_fit$iter = i-1
+         break
+      }
+      #-----------------------------------------
+      rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
+      old_fit <- new_fit # warm start for next 
+      old_error = err
+      #-------------------------------------------------------------------
+      if(trace==TRUE)
+         print(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error on M = %.5f\n",
+                       i, lamseq[i], rank.max, rank, err))
+      #-------------------------
+      rank.max <- min(rank+rank.step, rank.limit)
+      #----------------------------------------------------------------
+      
+   }
+   #if(print.best==TRUE) print(best_fit)
+   return(best_fit)
+}
