@@ -11,6 +11,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   m <- n[2]
   n <- n[1]
   nz=nnzero(y)
+  initialize_beta = FALSE
   #-------------------------------
   if(is.null(svdH)){
     stopifnot(!is.null(X))
@@ -35,6 +36,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     warm=TRUE
     D=warm.start$d
     JD=sum(D>0)
+    #J = JD
     xbeta.obs = warm.start$xbeta.obs
     if(JD >= J){
       U=warm.start$u[,seq(J),drop=FALSE]
@@ -50,7 +52,20 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       U=cbind(U,Ua)
       V=cbind(warm.start$v,matrix(0,m,Ja))
     }
+    if(any(is.na(warm.start$xbeta.obs))){
+      initialize_beta = TRUE
+      #xbeta.obs = suvC(svdH$u, t(as.matrix(svdH$v %*% y)),irow,pcol)
+    }else{
+      xbeta.obs = warm.start$xbeta.obs
+    }
   }else{
+      # xbeta = svdH$u %*% (svdH$v %*% y)
+      # resid = y - xbeta
+      # resid =  fast.svd(resid, 1e-2)
+      # U = resid$u[,1:J]
+      # Dsq = resid$d[1:J]
+      # V = resid$v[,1:J]
+      # print(J)
       V=matrix(0,m,J)
       U=matrix(rnorm(n*J),n,J)
       U=fast.svd(U)$u
@@ -66,6 +81,14 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   counter = 0
   best_score = Inf
   best_iter = NA
+  #-----------------------------------------------------------
+  if(initialize_beta){
+    VDsq=UD(V,Dsq,m)
+    S@x = y@x - suvC(U,VDsq,irow,pcol)
+    part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
+    part2 = suvC(HU,VDsq, irow, pcol)
+    xbeta.obs = part1 + part2 + suvC(svdH$u, t(as.matrix(svdH$v %*% y)),irow,pcol)
+  }
   #----------------------------------------
   while ((ratio > thresh)&(iter < maxit)) {
     iter <- iter + 1
@@ -151,7 +174,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   }
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))
-  out=list(u=U[, seq(J)], d=Dsq[seq(J)], v=V[,seq(J)], lambda=lambda, J=J,
+  out=list(u=U[, seq(J), drop=FALSE], d=Dsq[seq(J)], v=V[,seq(J), drop=FALSE], lambda=lambda, J=J,
            n_iter=iter, xbeta.obs=xbeta.obs)
   
   out

@@ -12,26 +12,30 @@ lambda2 = 31
 max.rank = 15
 beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
 
+
+# folds <- k_fold_cells(nrow(gen.dat$Y), ncol(gen.dat$Y), 3, gen.dat$W)[[1]]
+
 X_reduced = reduced_hat_decomp(gen.dat$X, 1e-2)
 
+# best_fit = simpute.cov.cv_splr_no_patience(Y_train, X_reduced$svdH, Y_valid, W_valid,warm = best_fit$best_fit,
+#                                            trace = T, rank.limit=30,rank.step=4,patience = 3)
+
+
 start_time = Sys.time()
-# best_fit = simpute.cov.cv_splr_no_patience(Y_train, X_reduced$svdH, Y_valid, W_valid,warm = NULL,
-#                                            trace = F, rank.limit=30,rank.step=4,patience = 3)
-
-best_fit = simpute.cov.Kf_splr_no_patience(gen.dat$Y, X_reduced$svdH, gen.dat$W, n_folds=3,
-                                            trace = T, rank.limit=30,rank.step=4,patience = 1)
+best_fit = simpute.cov.Kf_splr_no_patience_v2(gen.dat$Y, X_reduced$svdH, gen.dat$W, n_folds=10,
+                                            trace = F, rank.limit=30,rank.step=4,patience = 1)
 
 
-yfill = Y_train 
+yfill = gen.dat$Y
 fits = best_fit$best_fit
 best_fit$B_hat = fits$u %*% (fits$d * t(fits$v))
-yfill[Y_train==0] = (best_fit$B_hat)[Y_train==0]
+yfill[gen.dat$Y==0] = (best_fit$B_hat)[gen.dat$Y==0]
 fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=beta_partial %*% yfill)
 X_svd = X_reduced$X
 beta_partial = MASS::ginv(t(X_svd) %*% X_svd) %*% t(X_svd)
 
 
-set.seed(2023);fits2 <- simpute.als.cov(Y_train, X_svd, beta_partial,J = best_fit$rank.max, thresh =  1e-6,
+set.seed(2023);fits2 <- simpute.als.cov(gen.dat$Y, X_svd, beta_partial,J = best_fit$rank_B, thresh =  1e-6,
                                         lambda= best_fit$lambda,trace.it = F,warm.start = fits.out, maxit=100)
 
 fits2$M = fits2$u %*% (fits2$d * t(fits2$v))

@@ -55,7 +55,7 @@ simpute.cov.Kf_splr_no_patience <- function(Y, svdH, W, n_folds=5, lambda.factor
          data = fold_data[[fold]]
          #   fiti$xbeta.obs = data$xbeta.obs
          #if(i > 1){
-            fiti$xbeta.obs = (xbeta.obs * data$train_mask)@x
+            fiti$xbeta.obs = NA#(xbeta.obs * data$train_mask)@x
          #}else
          #   fiti = NULL
          #print(range(fiti$xbeta.obs))

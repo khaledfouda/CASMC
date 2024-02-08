@@ -1,4 +1,4 @@
-simpute.cov.cv_splr <- function(Y, svdH, Y.valid, W_valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+simpute.cov.cv_splr <- function(Y, svdH, Y_valid, W_valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                            trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
                            rank.init=10, rank.limit=50, rank.step=2, patience=2,
                             warm=NULL, quiet=FALSE){
@@ -60,7 +60,7 @@ simpute.cov.cv_splr <- function(Y, svdH, Y.valid, W_valid, lambda.factor=1/4, la
    return(best_fit)
 }
 #---
-simpute.cov.cv_splr_no_patience <- function(Y, svdH, Y.valid, W_valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+simpute.cov.cv_splr_no_patience <- function(Y, svdH, Y_valid, W_valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                                 trace=FALSE, thresh=1e-5,
                                 rank.init=10, rank.limit=50, rank.step=2,
                                 warm=NULL, patience=2){
@@ -91,7 +91,7 @@ simpute.cov.cv_splr_no_patience <- function(Y, svdH, Y.valid, W_valid, lambda.fa
       M_valid = suvC(as.matrix(new_fit$u),as.matrix(UD(new_fit$v,new_fit$d,m)),irow,pcol)
       err = test_error(M_valid, Y_valid)
       #------------------------------------------------
-      if(err >= old_error){
+      if(err >= old_error & i > 2){
          best_fit$error = old_error
          best_fit$rank_B = rank
          best_fit$rank.max = rank.max
