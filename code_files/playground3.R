@@ -15,11 +15,17 @@ beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
 X_reduced = reduced_hat_decomp(gen.dat$X, 1e-2)
 
 start_time = Sys.time()
-best_fit = simpute.cov.cv_splr_no_patience(Y_train, X_reduced$svdH, Y_valid, W_valid, trace = F, rank.limit=30,rank.step=4,tol=2)
+# best_fit = simpute.cov.cv_splr_no_patience(Y_train, X_reduced$svdH, Y_valid, W_valid,warm = NULL,
+#                                            trace = F, rank.limit=30,rank.step=4,patience = 3)
+
+best_fit = simpute.cov.Kf_splr_no_patience(gen.dat$Y, X_reduced$svdH, gen.dat$W, n_folds=3,
+                                            trace = T, rank.limit=30,rank.step=4,patience = 1)
+
 
 yfill = Y_train 
-yfill[Y_train==0] = (best_fit$B_hat)[Y_train==0]
 fits = best_fit$best_fit
+best_fit$B_hat = fits$u %*% (fits$d * t(fits$v))
+yfill[Y_train==0] = (best_fit$B_hat)[Y_train==0]
 fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=beta_partial %*% yfill)
 X_svd = X_reduced$X
 beta_partial = MASS::ginv(t(X_svd) %*% X_svd) %*% t(X_svd)
@@ -51,3 +57,14 @@ test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
 test_error(sout$beta_hat, gen.dat$beta)
 test_error(sout$B_hat, gen.dat$B)
 #################################################################
+
+start_time = Sys.time()
+soutk <- simpute.cov.kfold(gen.dat$Y, gen.dat$X, gen.dat$W, n_folds = 3, print.best = FALSE,
+                         trace=FALSE, rank.limit = 30, lambda1=0,n1n2 = 1, warm=NULL,tol = 2)
+soutk <- simpute.cov.kfold.lambda1(gen.dat$Y, gen.dat$X, gen.dat$W, soutk$lambda2, n_folds = 3, print.best = FALSE, 
+                                  trace=FALSE,lambda1.grid = seq(0,20,length.out=20) ,n1n2 = 1, warm=NULL,
+                                  J=c(soutk$J))
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+test_error(soutk$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+test_error(soutk$beta_hat, gen.dat$beta)
+test_error(soutk$B_hat, gen.dat$B)
