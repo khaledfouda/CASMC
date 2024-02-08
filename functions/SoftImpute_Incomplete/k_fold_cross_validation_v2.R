@@ -17,9 +17,9 @@ simpute.cov.Kf_splr_no_patience_v2 <- function(Y, svdH, W, n_folds=5, lambda.fac
       #ymiss = W_fold==0
       
       #Y_train[Y_train==0] = NA
-      #train_mask = Y_train
-      #train_mask[!is.na(train_mask)] = 1
-      #train_mask = as(train_mask, "Incomplete")
+      # train_mask = Y_train
+      # train_mask[train_mask != 0] = 1
+      # train_mask = as(train_mask, "Incomplete")
       #Y_train = as(Y_train, "Incomplete")
       
       #W_fold[!ymiss] = NA
@@ -27,7 +27,7 @@ simpute.cov.Kf_splr_no_patience_v2 <- function(Y, svdH, W, n_folds=5, lambda.fac
       #print(sum(W_fold==0))
       #print(length(Y[W_fold==0]))
       list(Y_train = Y_train, Y_valid = Y[W_fold==0], #irow=W_fold@i, pcol=W_fold@p,
-           W_fold=W_fold)#, xbeta.obs=train_mask, train_mask=train_mask, ymiss=ymiss)
+           W_fold=W_fold)#, xbeta.obs=train_mask)# train_mask=train_mask, ymiss=ymiss)
    })
    #---------------------------------------------------------------------------
    # m = dim(Y)[2]
@@ -52,7 +52,15 @@ simpute.cov.Kf_splr_no_patience_v2 <- function(Y, svdH, W, n_folds=5, lambda.fac
       best_fit = simpute.cov.cv_splr_no_patience(d$Y_train, svdH, d$Y_valid,
                                                  d$W_fold, 
                                                  warm = best_fit$best_fit,
-                                                 trace = trace, rank.limit=30,rank.step=4,patience = 3)
+                                                 rank.init = rank.init,
+                                                 trace = trace, rank.limit=rank.limit,
+                                                 rank.step=rank.step,patience = patience)
+      
+      # d$xbeta.obs@x = best_fit$best_fit$xbeta.obs
+      # if(fold>1){
+      #    xbeta.obs.new = merge_sparse_mat(as.matrix(d$xbeta.obs), as.matrix(xbeta.obs.new))
+      # }else
+      #    xbeta.obs.new = as.matrix(d$xbeta.obs)
       
       lambda = lambda + best_fit$lambda
       rank.max = rank.max + best_fit$rank.max
@@ -63,10 +71,14 @@ simpute.cov.Kf_splr_no_patience_v2 <- function(Y, svdH, W, n_folds=5, lambda.fac
    best_fit$rank_B = as.integer(rank / n_folds)
    best_fit$rank.max = as.integer(rank.max / n_folds)
    
-   #print("Hi8")
-   #print(best_fit)
+   # xbeta.obs.new[ymiss] = NA
+   # xbeta.obs.new <- as(xbeta.obs.new, "Incomplete")
+   # best_fit$best_fit$xbeta.obs <- xbeta.obs.new@x
+   # best_fit$xbeta.obs = xbeta.obs.new
+   # #print("Hi8")
+   # #print(best_fit)
    # best_fit$best_fit <- simpute.als.fit_splr(y = Y, svdH = svdH,
-   #                                    trace=trace, J=best_fit$rank.max, thresh=thresh, lambda=best_fit$lambda,
+   #                                    trace=trace, J=best_fit$rank_B, thresh=thresh, lambda=best_fit$lambda,
    #                                    warm.start = best_fit$best_fit, patience=patience, maxit=100)
    return(best_fit)
 }
