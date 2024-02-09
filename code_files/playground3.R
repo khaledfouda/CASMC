@@ -20,9 +20,9 @@ X_reduced = reduced_hat_decomp(gen.dat$X, 1e-2)
 
 
 start_time = Sys.time()
-# best_fit = simpute.cov.cv_splr_no_patience(Y_train, X_reduced$svdH, Y_valid, W_valid,warm = best_fit$best_fit,
-#                                             trace = F, rank.limit=30,rank.step=4,patience = 1,
-#                                            rank.init = 2, lambda.factor = 1/2, n.lambda = 30)
+best_fit = simpute.cov.cv_splr_no_patience(Y_train, X_reduced$svdH, Y_valid, W_valid,warm = best_fit$best_fit,
+                                            trace = F, rank.limit=30,rank.step=4,patience = 1,
+                                           rank.init = 2, lambda.factor = 1/2, n.lambda = 30)
 best_fit = simpute.cov.Kf_splr_no_patience_v2(gen.dat$Y, X_reduced$svdH, gen.dat$W, n_folds=10,
                                             trace = F, rank.init=2, lambda.factor = 1/4,n.lambda = 30,
                                             rank.limit=30,rank.step=4,patience = 1)
