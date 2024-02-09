@@ -19,6 +19,8 @@ path_to_data = paste0(path_to_proj, "saved_data/")
 file_list <- list.files(path = path_to_code, pattern = "\\.R$", full.names = TRUE,recursive =T)
 . = lapply(file_list, source)
 
+select = dplyr::select
+
 # source(paste0(path_to_code,"Mao_fit.R"))
 # source(paste0(path_to_code,"Mao_cv.R"))
 # source(paste0(path_to_code,"Mao_sim.R")) 
