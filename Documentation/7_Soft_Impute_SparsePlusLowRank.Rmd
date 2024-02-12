@@ -31,10 +31,14 @@ source("./code_files/import_lib.R")
 
 [2] [SoftImpute Github Implementation](https://github.com/cran/softImpute/tree/b497771beea6c466266082524a9b0c91b98126a7)
 
+--------------------------------------------
 
 # Notation:
 
 [1] When a matrix is called Sparse below that means it has a sparse class from the package Matrix in R which saves the matrix as 3 lists: list of non-missing values, list of row locations and a list of column locations.
+
+
+-------------------------------------------
 
 Building on the model in 3 - Alternating Least Squares, we have defined and implemented the ALS method with covariates where we compute the full $\hat{M}=S_\lambda(Y)=UD_\lambda V'$ at each iteration and where we have $\hat{Y}$ the filled response matrix where the missing values are filled with predictions from $\hat{M}$. 
 

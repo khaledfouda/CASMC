@@ -1,0 +1,131 @@
+---
+title: "Comparing Mao Implementations"
+author: "Khaled Fouda"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = F, cache = TRUE)
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+#source("./Mao/SMC_functions6.R")
+```
+
+
+```{r include=TRUE, message=FALSE, warning=FALSE}
+source("./code_files/import_lib.R")
+#path_to_data = "./Mao/saved_data/"
+library(data.table)
+```
+
+### Read the results
+
+
+```{r}
+file_list <- list.files(path = path_to_data, pattern = "Compare_MC_Models.*\\.csv$",
+                        full.names = TRUE,recursive =F)
+
+results = data.frame()
+for(f in file_list)
+   results = rbind(results, read.csv(f))
+
+results %<>%
+   mutate(simulation = case_when(missinginess == 0 ~ "Mao",
+                                 missinginess == 0.8 & collinearity == TRUE ~ "80% Missing with Coll",
+                                 missinginess == 0.8 & collinearity == FALSE ~ "80% Missing",
+                                 missinginess == 0.9 & collinearity == TRUE ~ "90% Missing with Coll",
+                                 missinginess == 0.9 & collinearity == FALSE ~ "90% Missing"))
+
+```
+
+
+
+```{r}
+# Function to color minimum values in green
+
+
+
+color_min_values <- function(data, columns) {
+  data <- as.data.frame(data)
+  for (col_name in columns) {
+    col_min <- min(as.numeric(data[[col_name]]), na.rm = TRUE)
+    colrounded <- round(as.numeric(data[[col_name]]),4)
+    data[[col_name]] <- cell_spec(ifelse(as.numeric((is.na(data[[col_name]]))),'',colrounded),
+                                  "html", color = ifelse(as.numeric((is.na(data[[col_name]]))), "grey98", "black"),
+                              background = fifelse((data[[col_name]]) == col_min, "lightgreen", "grey98","grey98"))
+  }
+    col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
+    data[["rank"]] <- cell_spec(data[["rank"]], "html", 
+                                  background = ifelse(abs(data[["rank_diff"]]) == col_min, "lightgreen", "grey98"))
+  return(data)
+}
+# results <- results_MaoSim
+print_table <- function(results, missingness=NULL, coll=TRUE, prob=NA, caption=""){
+   
+   
+   #$$
+   names(results) = gsub("error\\.", "", names(results))
+   results %>% 
+   filter(missinginess == missingness, collinearity==coll) %>%
+   dplyr::rename(A = all, A_test = test, Method=model, missing_prob = missinginess,
+                                       seconds = time) %>%
+   mutate(rank_diff = rank - true_rank) %>% 
+   select(Method, true_rank, missing_prob, alpha, lambda.1, lambda.2,  A_test, A, B, beta,
+             rank, rank_diff, seconds)   -> combined_results
+   #$$
+   
+   if(missingness == 0){
+      combined_results %<>% select(-missing_prob)
+      nfixed=2
+   }else
+      nfixed=3
+    
+   
+   # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
+   error_columns <- c("A_test", "B", "beta", "A","seconds")
+   for(i in seq(1,28,7))
+      combined_results[i:(i+6), ] <- color_min_values(combined_results[i:(i+6), ], error_columns)
+   
+   combined_results %>%
+      mutate_if(is.numeric, function(x) replace_na(as.character(round(x,4)), '')) %>% 
+      
+   kable("html", escape=FALSE, align = 'c', caption=caption) %>%
+     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
+     pack_rows("400x400", 1, 7) %>%
+     pack_rows("600x600", (7*1)+1, 7*2 ) %>% 
+     pack_rows("800x800", (7*2)+1, 7*3) %>% 
+     pack_rows("1000x1000", (7*3)+1, 7*4)
+  
+}
+```
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0,F, caption = "Data was simulated using Mao with m=10 and r=10")
+```
+
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.8,F, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and without collinearity")
+```
+
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.8,T, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
+```
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.9,F, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and without collinearity")
+```
+
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.9,T, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")
+```

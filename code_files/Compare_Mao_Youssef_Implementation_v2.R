@@ -282,7 +282,7 @@ compare_and_save <- function(missingness,coll=TRUE,  n_folds=5,
 }
 
 alpha_grid = c(1)
-ncores = 6
+ncores = 1
 lambda.1_grid = seq(0,2,length=20)
 lambda.2_grid = seq(.9, 0, length=20) 
 
