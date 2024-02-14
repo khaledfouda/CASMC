@@ -1,5 +1,5 @@
 ---
-title: "Comparing Mao Implementations"
+title: "Comparing Model Implementations (1) - Tables"
 author: "Khaled Fouda"
 date: "`r Sys.Date()`"
 output:
@@ -9,8 +9,8 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=TRUE, message=FALSE, warning=FALSE}
-knitr::opts_chunk$set(echo = F, cache = TRUE)
+```{r setup, include=TRUE, echo=F, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = F, cache = FALSE)
 library(kableExtra)
 library(magrittr)
 library(tidyverse)
@@ -25,7 +25,38 @@ source("./code_files/import_lib.R")
 library(data.table)
 ```
 
-### Read the results
+### Model Summary
+
+```{r}
+Models <- c("Mao", "SoftImpute_Orig", "SoftImpute_Cov", "SoftImpute_L2",
+            "SoftImpute_KFold", "SoftImpute_splr", "SoftImpute_splr_Kfold")
+
+Note <- c("Mao's original model", "Original Soft-Impute from the library",
+          "Soft-Impute with Covariates", "Soft-Impute with covariates and ridge",
+          "Same as above but with K-fold", "Same as SoftImpute_L2 but with the Sparse-plus-low-rank representation", "Same as above but with K-fold")
+
+
+include_cov <- rep("Yes",7)
+include_cov[2] <- "No"
+Cross_validation_type <- rep("Validation Set",7)
+Cross_validation_type[c(1)] <- "K-fold (5)"
+Cross_validation_type[c(5)] <- "K-fold (3)"
+Cross_validation_type[c(7)] <- "K-fold (10)"
+Regular_cov <- rep("Ridge", 7)
+Regular_cov[2:3] <- "None"
+Regular_cov[6:7] <- "Dimension Reduction"
+New_Model <- rep("Yes",7)
+New_Model[1:2] <- "No"
+
+data.frame(Model=Models, Note=Note, `Has Covariates?`=include_cov,
+           `Cross-Validation Type`=Cross_validation_type, 
+           `Regularization on the Covariates?`=Regular_cov,
+           `New Model`=New_Model) %>%
+   kable("html", escape=FALSE, align = 'c', caption="Model Summary Table") %>%
+     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center")
+
+```
+
 
 
 ```{r}
@@ -77,11 +108,12 @@ print_table <- function(results, missingness=NULL, coll=TRUE, prob=NA, caption="
    dplyr::rename(A = all, A_test = test, Method=model, missing_prob = missinginess,
                                        seconds = time) %>%
    mutate(rank_diff = rank - true_rank) %>% 
-   select(Method, true_rank, missing_prob, alpha, lambda.1, lambda.2,  A_test, A, B, beta,
+   select(Method, true_rank, missing_prob, lambda.1, lambda.2,  A_test, A, B, beta,
              rank, rank_diff, seconds)   -> combined_results
    #$$
-   
+   test_col=6
    if(missingness == 0){
+      test_col=5
       combined_results %<>% select(-missing_prob)
       nfixed=2
    }else
@@ -98,33 +130,43 @@ print_table <- function(results, missingness=NULL, coll=TRUE, prob=NA, caption="
       
    kable("html", escape=FALSE, align = 'c', caption=caption) %>%
      kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
-     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 3, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
+     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 2, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
      pack_rows("400x400", 1, 7) %>%
      pack_rows("600x600", (7*1)+1, 7*2 ) %>% 
      pack_rows("800x800", (7*2)+1, 7*3) %>% 
-     pack_rows("1000x1000", (7*3)+1, 7*4)
+     pack_rows("1000x1000", (7*3)+1, 7*4) %>%
+        column_spec(test_col, bold = T, background =grDevices::adjustcolor( "red", alpha.f = 0.1))
+
   
 }
 ```
+
+
+## Simulation 1:   Mao's Simulation; 10 Covariates; 90% Missing; No Collinearity 
 
 ```{r fig.height=15, fig.width=15}
 print_table(results,0,F, caption = "Data was simulated using Mao with m=10 and r=10")
 ```
 
+## Simulation 2:   Yousef's Simulation; 10 Covariates; 80% Missing; No Collinearity
 
 ```{r fig.height=15, fig.width=15}
 print_table(results,0.8,F, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and without collinearity")
 ```
 
+## Simulation 3:   Yousef's Simulation; 10 Covariates; 80% Missing; With Collinearity
 
 ```{r fig.height=15, fig.width=15}
 print_table(results,0.8,T, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
 ```
 
+## Simulation 4:   Yousef's Simulation; 10 Covariates; 90% Missing; No Collinearity
+
 ```{r fig.height=15, fig.width=15}
 print_table(results,0.9,F, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and without collinearity")
 ```
 
+## Simulation 5:   Yousef's Simulation; 10 Covariates; 90% Missing; With Collinearity
 
 ```{r fig.height=15, fig.width=15}
 print_table(results,0.9,T, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")

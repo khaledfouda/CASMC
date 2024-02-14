@@ -222,30 +222,6 @@ $$
 $$
 --------------------------------------------------------------
 
-The term $H^*UD = (I_n-H)A$ corresponds to the residuals from fitting the covariates $X$ to $A$. That is, they are the residuals of the model $A = \beta_A X + \epsilon_A$
-
-Similarly
----------------------------------------------
-
-
-$$
-Y*W \approx (X\beta)*W 
-$$
-
-
-
-Let's expand $C$:
-
-$$
-\begin{aligned}
-C &= HY^* = HS + H\hat{M} + HC'\\ &= HS + HU{V^*}^T + HC' \\
-C' &= HS + HU{V^*}^T + HC''
-\end{aligned}
-$$
-
-An interesting 
-
-
 
 
 

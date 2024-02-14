@@ -11,9 +11,9 @@
 
 <meta name="author" content="Khaled Fouda" />
 
-<meta name="date" content="2024-02-12" />
+<meta name="date" content="2024-02-14" />
 
-<title>Comparing Mao Implementations</title>
+<title>Comparing Model Implementations</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -574,21 +574,188 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Comparing Mao Implementations</h1>
+<h1 class="title toc-ignore">Comparing Model Implementations</h1>
 <h4 class="author">Khaled Fouda</h4>
-<h4 class="date">2024-02-12</h4>
+<h4 class="date">2024-02-14</h4>
 
 </div>
 
 
-<pre class="r"><code>knitr::opts_chunk$set(echo = F, cache = TRUE)
-library(kableExtra)
-library(magrittr)
-library(tidyverse)
-knitr::opts_knit$set(root.dir=&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/&quot;)
-#source(&quot;./Mao/SMC_functions6.R&quot;)</code></pre>
-<div id="read-the-results" class="section level3">
-<h3>Read the results</h3>
+<div id="model-summary" class="section level3">
+<h3>Model Summary</h3>
+<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Model Summary Table
+</caption>
+<thead>
+<tr>
+<th style="text-align:center;">
+Model
+</th>
+<th style="text-align:center;">
+Note
+</th>
+<th style="text-align:center;">
+Has.Covariates.
+</th>
+<th style="text-align:center;">
+Cross.Validation.Type
+</th>
+<th style="text-align:center;">
+Regularization.on.the.Covariates.
+</th>
+<th style="text-align:center;">
+New.Model
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+Mao
+</td>
+<td style="text-align:center;">
+Mao’s original model
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+<td style="text-align:center;">
+K-fold (5)
+</td>
+<td style="text-align:center;">
+Ridge
+</td>
+<td style="text-align:center;">
+No
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SoftImpute_Orig
+</td>
+<td style="text-align:center;">
+Original Soft-Impute from the library
+</td>
+<td style="text-align:center;">
+No
+</td>
+<td style="text-align:center;">
+Validation Set
+</td>
+<td style="text-align:center;">
+None
+</td>
+<td style="text-align:center;">
+No
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SoftImpute_Cov
+</td>
+<td style="text-align:center;">
+Soft-Impute with Covariates
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+<td style="text-align:center;">
+Validation Set
+</td>
+<td style="text-align:center;">
+None
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SoftImpute_L2
+</td>
+<td style="text-align:center;">
+Soft-Impute with covariates and ridge
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+<td style="text-align:center;">
+Validation Set
+</td>
+<td style="text-align:center;">
+Ridge
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SoftImpute_KFold
+</td>
+<td style="text-align:center;">
+Same as above but with K-fold
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+<td style="text-align:center;">
+K-fold (3)
+</td>
+<td style="text-align:center;">
+Ridge
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SoftImpute_splr
+</td>
+<td style="text-align:center;">
+Same as SoftImpute_L2 but with the Sparse-plus-low-rank representation
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+<td style="text-align:center;">
+Validation Set
+</td>
+<td style="text-align:center;">
+Dimension Reduction
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SoftImpute_splr_Kfold
+</td>
+<td style="text-align:center;">
+Same as above but with K-fold
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+<td style="text-align:center;">
+K-fold (10)
+</td>
+<td style="text-align:center;">
+Dimension Reduction
+</td>
+<td style="text-align:center;">
+Yes
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="simulation-1-maos-simulation-10-covariates-90-missing-no-collinearity" class="section level2">
+<h2>Simulation 1: Mao’s Simulation; 10 Covariates; 90% Missing; No
+Collinearity</h2>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Data was simulated using Mao with m=10 and r=10
@@ -600,7 +767,7 @@ Data was simulated using Mao with m=10 and r=10
 Fixed
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Hyperparameters
 </div>
@@ -627,9 +794,6 @@ Method
 </th>
 <th style="text-align:center;">
 true_rank
-</th>
-<th style="text-align:center;">
-alpha
 </th>
 <th style="text-align:center;">
 lambda.1
@@ -662,7 +826,7 @@ seconds
 </thead>
 <tbody>
 <tr grouplength="7">
-<td colspan="12" style="border-bottom: 1px solid;">
+<td colspan="11" style="border-bottom: 1px solid;">
 <strong>400x400</strong>
 </td>
 </tr>
@@ -674,15 +838,12 @@ Mao
 20
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 0.0474
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.9144</span>
 </td>
 <td style="text-align:center;">
@@ -701,7 +862,7 @@ Mao
 338
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">52</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr>
@@ -714,11 +875,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 53.9563
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.8406</span>
 </td>
 <td style="text-align:center;">
@@ -737,7 +896,7 @@ SoftImpute_Orig
 10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">52</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">9</span>
 </td>
 </tr>
 <tr>
@@ -748,14 +907,12 @@ SoftImpute_Cov
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 29.7373
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7593</span>
 </td>
 <td style="text-align:center;">
@@ -774,7 +931,7 @@ SoftImpute_Cov
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">27</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -785,14 +942,12 @@ SoftImpute_L2
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 29.7373
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7431</span>
 </td>
 <td style="text-align:center;">
@@ -811,7 +966,7 @@ SoftImpute_L2
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">42</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -822,14 +977,12 @@ SoftImpute_Kfold
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 28.0575
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.5685</span>
 </td>
 <td style="text-align:center;">
@@ -848,7 +1001,7 @@ SoftImpute_Kfold
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">785</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">150</span>
 </td>
 </tr>
 <tr>
@@ -861,11 +1014,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 24.3799
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6267</span>
 </td>
 <td style="text-align:center;">
@@ -884,7 +1035,7 @@ SoftImpute_splr
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">33</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4</span>
 </td>
 </tr>
 <tr>
@@ -897,11 +1048,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 20.6727
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6699</span>
 </td>
 <td style="text-align:center;">
@@ -920,11 +1069,11 @@ SoftImpute_splr_Kfold
 -4
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">112</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">16</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="12" style="border-bottom: 1px solid;">
+<td colspan="11" style="border-bottom: 1px solid;">
 <strong>600x600</strong>
 </td>
 </tr>
@@ -936,15 +1085,12 @@ Mao
 20
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.4211
 </td>
 <td style="text-align:center;">
 0.4263
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.7262</span>
 </td>
 <td style="text-align:center;">
@@ -963,7 +1109,7 @@ Mao
 70
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">121</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">17</span>
 </td>
 </tr>
 <tr>
@@ -976,11 +1122,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 60.1435
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.641</span>
 </td>
 <td style="text-align:center;">
@@ -999,7 +1143,7 @@ SoftImpute_Orig
 10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">147</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">18</span>
 </td>
 </tr>
 <tr>
@@ -1010,14 +1154,12 @@ SoftImpute_Cov
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 47.0197
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4116</span>
 </td>
 <td style="text-align:center;">
@@ -1036,7 +1178,7 @@ SoftImpute_Cov
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">30</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -1047,14 +1189,12 @@ SoftImpute_L2
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 47.0197
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.403</span>
 </td>
 <td style="text-align:center;">
@@ -1073,7 +1213,7 @@ SoftImpute_L2
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">44</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -1084,14 +1224,12 @@ SoftImpute_Kfold
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 43.9265
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.3266</span>
 </td>
 <td style="text-align:center;">
@@ -1110,7 +1248,7 @@ SoftImpute_Kfold
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">826</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">168</span>
 </td>
 </tr>
 <tr>
@@ -1123,11 +1261,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 -36.1632
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5897</span>
 </td>
 <td style="text-align:center;">
@@ -1146,7 +1282,7 @@ SoftImpute_splr
 -4
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">34</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6</span>
 </td>
 </tr>
 <tr>
@@ -1159,11 +1295,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 -21.7709
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5712</span>
 </td>
 <td style="text-align:center;">
@@ -1182,11 +1316,11 @@ SoftImpute_splr_Kfold
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">209</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">31</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="12" style="border-bottom: 1px solid;">
+<td colspan="11" style="border-bottom: 1px solid;">
 <strong>800x800</strong>
 </td>
 </tr>
@@ -1198,15 +1332,12 @@ Mao
 20
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.3158
 </td>
 <td style="text-align:center;">
 0.4737
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5992</span>
 </td>
 <td style="text-align:center;">
@@ -1225,7 +1356,7 @@ Mao
 43
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">182</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">27</span>
 </td>
 </tr>
 <tr>
@@ -1238,11 +1369,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 63.7102
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5514</span>
 </td>
 <td style="text-align:center;">
@@ -1261,7 +1390,7 @@ SoftImpute_Orig
 10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">224</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">31</span>
 </td>
 </tr>
 <tr>
@@ -1272,14 +1401,12 @@ SoftImpute_Cov
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 53.1615
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3348</span>
 </td>
 <td style="text-align:center;">
@@ -1298,7 +1425,7 @@ SoftImpute_Cov
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">62</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -1309,14 +1436,12 @@ SoftImpute_L2
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 53.1615
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3299</span>
 </td>
 <td style="text-align:center;">
@@ -1335,7 +1460,7 @@ SoftImpute_L2
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">59</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
 </td>
 </tr>
 <tr>
@@ -1346,14 +1471,12 @@ SoftImpute_Kfold
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 50.4864
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2651</span>
 </td>
 <td style="text-align:center;">
@@ -1372,7 +1495,7 @@ SoftImpute_Kfold
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1007</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">229</span>
 </td>
 </tr>
 <tr>
@@ -1385,11 +1508,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 40.2833
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.2507</span>
 </td>
 <td style="text-align:center;">
@@ -1408,7 +1529,7 @@ SoftImpute_splr
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -1421,11 +1542,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 -8.3282
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3491</span>
 </td>
 <td style="text-align:center;">
@@ -1444,11 +1563,11 @@ SoftImpute_splr_Kfold
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">140</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">41</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="12" style="border-bottom: 1px solid;">
+<td colspan="11" style="border-bottom: 1px solid;">
 <strong>1000x1000</strong>
 </td>
 </tr>
@@ -1460,15 +1579,12 @@ Mao
 20
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.2105
 </td>
 <td style="text-align:center;">
 0.6158
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4634</span>
 </td>
 <td style="text-align:center;">
@@ -1487,7 +1603,7 @@ Mao
 68
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">379</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">69</span>
 </td>
 </tr>
 <tr>
@@ -1500,11 +1616,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 57.5404
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4379</span>
 </td>
 <td style="text-align:center;">
@@ -1523,7 +1637,7 @@ SoftImpute_Orig
 10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">469</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">66</span>
 </td>
 </tr>
 <tr>
@@ -1534,14 +1648,12 @@ SoftImpute_Cov
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 55.7656
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2587</span>
 </td>
 <td style="text-align:center;">
@@ -1560,7 +1672,7 @@ SoftImpute_Cov
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">79</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
 </td>
 </tr>
 <tr>
@@ -1571,14 +1683,12 @@ SoftImpute_L2
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 55.7656
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2546</span>
 </td>
 <td style="text-align:center;">
@@ -1597,7 +1707,7 @@ SoftImpute_L2
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">115</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">20</span>
 </td>
 </tr>
 <tr>
@@ -1608,14 +1718,12 @@ SoftImpute_Kfold
 20
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 1.8947
 </td>
 <td style="text-align:center;">
 53.1406
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2024</span>
 </td>
 <td style="text-align:center;">
@@ -1634,7 +1742,7 @@ SoftImpute_Kfold
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">833</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">347</span>
 </td>
 </tr>
 <tr>
@@ -1647,11 +1755,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 42.9559
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1906</span>
 </td>
 <td style="text-align:center;">
@@ -1670,7 +1776,7 @@ SoftImpute_splr
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">10</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -1683,11 +1789,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 35.1911
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.1892</span>
 </td>
 <td style="text-align:center;">
@@ -1706,11 +1810,15 @@ SoftImpute_splr_Kfold
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">58</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">46</span>
 </td>
 </tr>
 </tbody>
 </table>
+</div>
+<div id="simulation-2-yousefs-simulation-10-covariates-80-missing-no-collinearity" class="section level2">
+<h2>Simulation 2: Yousef’s Simulation; 10 Covariates; 80% Missing; No
+Collinearity</h2>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 </caption>
@@ -1721,7 +1829,7 @@ SoftImpute_splr_Kfold
 Fixed
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Hyperparameters
 </div>
@@ -1751,9 +1859,6 @@ true_rank
 </th>
 <th style="text-align:center;">
 missing_prob
-</th>
-<th style="text-align:center;">
-alpha
 </th>
 <th style="text-align:center;">
 lambda.1
@@ -1786,7 +1891,7 @@ seconds
 </thead>
 <tbody>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>400x400</strong>
 </td>
 </tr>
@@ -1801,15 +1906,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.2105
 </td>
 <td style="text-align:center;">
 0.3316
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4005</span>
 </td>
 <td style="text-align:center;">
@@ -1828,7 +1930,7 @@ Mao
 -6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">56</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr>
@@ -1844,11 +1946,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 10.3616
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.179</span>
 </td>
 <td style="text-align:center;">
@@ -1867,7 +1967,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">46</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -1881,14 +1981,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 11.2292
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0983</span>
 </td>
 <td style="text-align:center;">
@@ -1907,7 +2005,7 @@ SoftImpute_Cov
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">36</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -1921,14 +2019,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 11.2292
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0965</span>
 </td>
 <td style="text-align:center;">
@@ -1947,7 +2043,7 @@ SoftImpute_L2
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">41</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -1961,14 +2057,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 8.3861
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0819</span>
 </td>
 <td style="text-align:center;">
@@ -1987,7 +2081,7 @@ SoftImpute_Kfold
 -4
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">223</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">39</span>
 </td>
 </tr>
 <tr>
@@ -2003,11 +2097,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 11.7116
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0818</span>
 </td>
 <td style="text-align:center;">
@@ -2026,7 +2118,7 @@ SoftImpute_splr
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">7</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">2</span>
 </td>
 </tr>
 <tr>
@@ -2042,11 +2134,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 12.4952
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.079</span>
 </td>
 <td style="text-align:center;">
@@ -2065,11 +2155,11 @@ SoftImpute_splr_Kfold
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">36</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>600x600</strong>
 </td>
 </tr>
@@ -2084,15 +2174,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.2842
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2544</span>
 </td>
 <td style="text-align:center;">
@@ -2111,7 +2198,7 @@ Mao
 -5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">94</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">17</span>
 </td>
 </tr>
 <tr>
@@ -2127,11 +2214,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 15.2848
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1304</span>
 </td>
 <td style="text-align:center;">
@@ -2150,7 +2235,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">105</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">12</span>
 </td>
 </tr>
 <tr>
@@ -2164,14 +2249,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 12.9408
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0606</span>
 </td>
 <td style="text-align:center;">
@@ -2190,7 +2273,7 @@ SoftImpute_Cov
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">64</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -2204,14 +2287,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 12.9408
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0613</span>
 </td>
 <td style="text-align:center;">
@@ -2230,7 +2311,7 @@ SoftImpute_L2
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">65</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
 </td>
 </tr>
 <tr>
@@ -2244,14 +2325,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 12.1089
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0496</span>
 </td>
 <td style="text-align:center;">
@@ -2270,7 +2349,7 @@ SoftImpute_Kfold
 -5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">205</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">59</span>
 </td>
 </tr>
 <tr>
@@ -2286,11 +2365,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 14.6658
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0511</span>
 </td>
 <td style="text-align:center;">
@@ -2309,7 +2386,7 @@ SoftImpute_splr
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">10</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3</span>
 </td>
 </tr>
 <tr>
@@ -2325,11 +2402,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 14.3297
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0513</span>
 </td>
 <td style="text-align:center;">
@@ -2348,11 +2423,11 @@ SoftImpute_splr_Kfold
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">39</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>800x800</strong>
 </td>
 </tr>
@@ -2367,15 +2442,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.2368
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1902</span>
 </td>
 <td style="text-align:center;">
@@ -2394,7 +2466,7 @@ Mao
 -3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">178</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">25</span>
 </td>
 </tr>
 <tr>
@@ -2410,11 +2482,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0966</span>
 </td>
 <td style="text-align:center;">
@@ -2433,7 +2503,7 @@ SoftImpute_Orig
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">167</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">24</span>
 </td>
 </tr>
 <tr>
@@ -2447,14 +2517,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 17.8146
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0478</span>
 </td>
 <td style="text-align:center;">
@@ -2473,7 +2541,7 @@ SoftImpute_Cov
 -3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">89</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
 </td>
 </tr>
 <tr>
@@ -2487,14 +2555,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 17.8146
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0465</span>
 </td>
 <td style="text-align:center;">
@@ -2513,7 +2579,7 @@ SoftImpute_L2
 -3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">68</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">21</span>
 </td>
 </tr>
 <tr>
@@ -2527,14 +2593,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 16.6127
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0384</span>
 </td>
 <td style="text-align:center;">
@@ -2553,7 +2617,7 @@ SoftImpute_Kfold
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">181</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">81</span>
 </td>
 </tr>
 <tr>
@@ -2569,11 +2633,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 17.2183
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0405</span>
 </td>
 <td style="text-align:center;">
@@ -2592,7 +2654,7 @@ SoftImpute_splr
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4</span>
 </td>
 </tr>
 <tr>
@@ -2608,11 +2670,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 16.7286
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0401</span>
 </td>
 <td style="text-align:center;">
@@ -2631,11 +2691,11 @@ SoftImpute_splr_Kfold
 -3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">54</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">17</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>1000x1000</strong>
 </td>
 </tr>
@@ -2650,15 +2710,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.2368
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1708</span>
 </td>
 <td style="text-align:center;">
@@ -2677,7 +2734,7 @@ Mao
 -9
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">338</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">65</span>
 </td>
 </tr>
 <tr>
@@ -2693,11 +2750,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0724</span>
 </td>
 <td style="text-align:center;">
@@ -2716,7 +2771,7 @@ SoftImpute_Orig
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">187</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">39</span>
 </td>
 </tr>
 <tr>
@@ -2730,14 +2785,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 16.2397
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0406</span>
 </td>
 <td style="text-align:center;">
@@ -2756,7 +2809,7 @@ SoftImpute_Cov
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">96</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">26</span>
 </td>
 </tr>
 <tr>
@@ -2770,14 +2823,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 16.2397
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0415</span>
 </td>
 <td style="text-align:center;">
@@ -2796,7 +2847,7 @@ SoftImpute_L2
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">83</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">34</span>
 </td>
 </tr>
 <tr>
@@ -2810,14 +2861,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 20.2584
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0336</span>
 </td>
 <td style="text-align:center;">
@@ -2836,7 +2885,7 @@ SoftImpute_Kfold
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">188</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">110</span>
 </td>
 </tr>
 <tr>
@@ -2852,11 +2901,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 17.4677
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0356</span>
 </td>
 <td style="text-align:center;">
@@ -2875,7 +2922,7 @@ SoftImpute_splr
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">8</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -2891,11 +2938,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 17.9654
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0348</span>
 </td>
 <td style="text-align:center;">
@@ -2914,11 +2959,15 @@ SoftImpute_splr_Kfold
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">30</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">23</span>
 </td>
 </tr>
 </tbody>
 </table>
+</div>
+<div id="simulation-3-yousefs-simulation-10-covariates-80-missing-with-collinearity" class="section level2">
+<h2>Simulation 3: Yousef’s Simulation; 10 Covariates; 80% Missing; With
+Collinearity</h2>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 </caption>
@@ -2929,7 +2978,7 @@ SoftImpute_splr_Kfold
 Fixed
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Hyperparameters
 </div>
@@ -2959,9 +3008,6 @@ true_rank
 </th>
 <th style="text-align:center;">
 missing_prob
-</th>
-<th style="text-align:center;">
-alpha
 </th>
 <th style="text-align:center;">
 lambda.1
@@ -2994,7 +3040,7 @@ seconds
 </thead>
 <tbody>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>400x400</strong>
 </td>
 </tr>
@@ -3009,15 +3055,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.3316
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3647</span>
 </td>
 <td style="text-align:center;">
@@ -3036,7 +3079,7 @@ Mao
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">47</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr>
@@ -3052,11 +3095,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 10.7368
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1531</span>
 </td>
 <td style="text-align:center;">
@@ -3075,7 +3116,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">46</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -3089,14 +3130,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 11.3613
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0937</span>
 </td>
 <td style="text-align:center;">
@@ -3115,7 +3154,7 @@ SoftImpute_Cov
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">22</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">4</span>
 </td>
 </tr>
 <tr>
@@ -3129,14 +3168,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 11.3613
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.086</span>
 </td>
 <td style="text-align:center;">
@@ -3155,7 +3192,7 @@ SoftImpute_L2
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">37</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6</span>
 </td>
 </tr>
 <tr>
@@ -3169,14 +3206,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 8.5102
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0729</span>
 </td>
 <td style="text-align:center;">
@@ -3195,7 +3230,7 @@ SoftImpute_Kfold
 -4
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">198</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">43</span>
 </td>
 </tr>
 <tr>
@@ -3211,11 +3246,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 11.6729
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0725</span>
 </td>
 <td style="text-align:center;">
@@ -3234,7 +3267,7 @@ SoftImpute_splr
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">11</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">2</span>
 </td>
 </tr>
 <tr>
@@ -3250,11 +3283,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 12.5117
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0707</span>
 </td>
 <td style="text-align:center;">
@@ -3273,11 +3304,11 @@ SoftImpute_splr_Kfold
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">32</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>600x600</strong>
 </td>
 </tr>
@@ -3292,15 +3323,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.2842
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2422</span>
 </td>
 <td style="text-align:center;">
@@ -3319,7 +3347,7 @@ Mao
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">98</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">20</span>
 </td>
 </tr>
 <tr>
@@ -3335,11 +3363,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 15.7314
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1088</span>
 </td>
 <td style="text-align:center;">
@@ -3358,7 +3384,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">106</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">12</span>
 </td>
 </tr>
 <tr>
@@ -3372,14 +3398,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 13.0316
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0584</span>
 </td>
 <td style="text-align:center;">
@@ -3398,7 +3422,7 @@ SoftImpute_Cov
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">59</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -3412,14 +3436,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 13.0316
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0563</span>
 </td>
 <td style="text-align:center;">
@@ -3438,7 +3460,7 @@ SoftImpute_L2
 2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">77</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
 </td>
 </tr>
 <tr>
@@ -3452,14 +3474,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 12.1249
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.044</span>
 </td>
 <td style="text-align:center;">
@@ -3478,7 +3498,7 @@ SoftImpute_Kfold
 -5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">175</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">65</span>
 </td>
 </tr>
 <tr>
@@ -3494,11 +3514,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 14.6531
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0453</span>
 </td>
 <td style="text-align:center;">
@@ -3517,7 +3535,7 @@ SoftImpute_splr
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">9</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">2</span>
 </td>
 </tr>
 <tr>
@@ -3533,11 +3551,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 14.2969
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0462</span>
 </td>
 <td style="text-align:center;">
@@ -3556,11 +3572,11 @@ SoftImpute_splr_Kfold
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">49</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>800x800</strong>
 </td>
 </tr>
@@ -3575,15 +3591,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.2368
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1798</span>
 </td>
 <td style="text-align:center;">
@@ -3602,7 +3615,7 @@ Mao
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">204</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">26</span>
 </td>
 </tr>
 <tr>
@@ -3618,11 +3631,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0802</span>
 </td>
 <td style="text-align:center;">
@@ -3641,7 +3652,7 @@ SoftImpute_Orig
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">148</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">23</span>
 </td>
 </tr>
 <tr>
@@ -3655,14 +3666,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 17.7229
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0428</span>
 </td>
 <td style="text-align:center;">
@@ -3681,7 +3690,7 @@ SoftImpute_Cov
 -3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">69</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">16</span>
 </td>
 </tr>
 <tr>
@@ -3695,14 +3704,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 17.7229
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0398</span>
 </td>
 <td style="text-align:center;">
@@ -3721,7 +3728,7 @@ SoftImpute_L2
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">71</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">19</span>
 </td>
 </tr>
 <tr>
@@ -3735,14 +3742,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 16.5361
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0326</span>
 </td>
 <td style="text-align:center;">
@@ -3761,7 +3766,7 @@ SoftImpute_Kfold
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">180</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">78</span>
 </td>
 </tr>
 <tr>
@@ -3777,11 +3782,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 17.2663
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0348</span>
 </td>
 <td style="text-align:center;">
@@ -3800,7 +3803,7 @@ SoftImpute_splr
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">6</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3</span>
 </td>
 </tr>
 <tr>
@@ -3816,11 +3819,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 17.7116
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.034</span>
 </td>
 <td style="text-align:center;">
@@ -3839,11 +3840,11 @@ SoftImpute_splr_Kfold
 -5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">47</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>1000x1000</strong>
 </td>
 </tr>
@@ -3858,15 +3859,12 @@ Mao
 0.8
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.2368
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.156</span>
 </td>
 <td style="text-align:center;">
@@ -3885,7 +3883,7 @@ Mao
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">305</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">68</span>
 </td>
 </tr>
 <tr>
@@ -3901,11 +3899,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0616</span>
 </td>
 <td style="text-align:center;">
@@ -3924,7 +3920,7 @@ SoftImpute_Orig
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">166</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">38</span>
 </td>
 </tr>
 <tr>
@@ -3938,14 +3934,12 @@ SoftImpute_Cov
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 16.2256
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0352</span>
 </td>
 <td style="text-align:center;">
@@ -3964,7 +3958,7 @@ SoftImpute_Cov
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">103</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">25</span>
 </td>
 </tr>
 <tr>
@@ -3978,14 +3972,12 @@ SoftImpute_L2
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 16.2256
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0342</span>
 </td>
 <td style="text-align:center;">
@@ -4004,7 +3996,7 @@ SoftImpute_L2
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">98</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">34</span>
 </td>
 </tr>
 <tr>
@@ -4018,14 +4010,12 @@ SoftImpute_Kfold
 0.8
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 20.2351
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0278</span>
 </td>
 <td style="text-align:center;">
@@ -4044,7 +4034,7 @@ SoftImpute_Kfold
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">188</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">113</span>
 </td>
 </tr>
 <tr>
@@ -4060,11 +4050,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 17.4291
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0305</span>
 </td>
 <td style="text-align:center;">
@@ -4083,7 +4071,7 @@ SoftImpute_splr
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">8</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -4099,11 +4087,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 17.9544
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0293</span>
 </td>
 <td style="text-align:center;">
@@ -4122,11 +4108,15 @@ SoftImpute_splr_Kfold
 -2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">31</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">23</span>
 </td>
 </tr>
 </tbody>
 </table>
+</div>
+<div id="simulation-4-yousefs-simulation-10-covariates-90-missing-no-collinearity" class="section level2">
+<h2>Simulation 4: Yousef’s Simulation; 10 Covariates; 90% Missing; No
+Collinearity</h2>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 </caption>
@@ -4137,7 +4127,7 @@ SoftImpute_splr_Kfold
 Fixed
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Hyperparameters
 </div>
@@ -4167,9 +4157,6 @@ true_rank
 </th>
 <th style="text-align:center;">
 missing_prob
-</th>
-<th style="text-align:center;">
-alpha
 </th>
 <th style="text-align:center;">
 lambda.1
@@ -4202,7 +4189,7 @@ seconds
 </thead>
 <tbody>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>400x400</strong>
 </td>
 </tr>
@@ -4217,15 +4204,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.5263
 </td>
 <td style="text-align:center;">
 0.4737
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.8321</span>
 </td>
 <td style="text-align:center;">
@@ -4244,7 +4228,7 @@ Mao
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">50</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr>
@@ -4260,11 +4244,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 10.8153
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.301</span>
 </td>
 <td style="text-align:center;">
@@ -4283,7 +4265,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">41</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -4297,14 +4279,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 5.8373
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3224</span>
 </td>
 <td style="text-align:center;">
@@ -4323,7 +4303,7 @@ SoftImpute_Cov
 9
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">14</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -4337,14 +4317,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 5.8373
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2689</span>
 </td>
 <td style="text-align:center;">
@@ -4363,7 +4341,7 @@ SoftImpute_L2
 10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">53</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr>
@@ -4377,14 +4355,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 1.7895
 </td>
 <td style="text-align:center;">
 0
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.2215</span>
 </td>
 <td style="text-align:center;">
@@ -4403,7 +4379,7 @@ SoftImpute_Kfold
 6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">247</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">55</span>
 </td>
 </tr>
 <tr>
@@ -4419,11 +4395,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 6.0819
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1885</span>
 </td>
 <td style="text-align:center;">
@@ -4442,7 +4416,7 @@ SoftImpute_splr
 14
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">2</span>
 </td>
 </tr>
 <tr>
@@ -4458,11 +4432,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 7.0185
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.1827</span>
 </td>
 <td style="text-align:center;">
@@ -4481,11 +4453,11 @@ SoftImpute_splr_Kfold
 6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">36</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">7</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>600x600</strong>
 </td>
 </tr>
@@ -4500,15 +4472,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.4211
 </td>
 <td style="text-align:center;">
 0.4263
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5575</span>
 </td>
 <td style="text-align:center;">
@@ -4527,7 +4496,7 @@ Mao
 -3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">106</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">18</span>
 </td>
 </tr>
 <tr>
@@ -4543,11 +4512,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 7.8093
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2164</span>
 </td>
 <td style="text-align:center;">
@@ -4566,7 +4533,7 @@ SoftImpute_Orig
 -10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">100</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">14</span>
 </td>
 </tr>
 <tr>
@@ -4580,14 +4547,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 8.2932
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1441</span>
 </td>
 <td style="text-align:center;">
@@ -4606,7 +4571,7 @@ SoftImpute_Cov
 7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">67</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -4620,14 +4585,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 8.2932
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1393</span>
 </td>
 <td style="text-align:center;">
@@ -4646,7 +4609,7 @@ SoftImpute_L2
 7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">74</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">12</span>
 </td>
 </tr>
 <tr>
@@ -4660,14 +4623,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 0
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.6968</span>
 </td>
 <td style="text-align:center;">
@@ -4686,7 +4647,7 @@ SoftImpute_Kfold
 4
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">417</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">111</span>
 </td>
 </tr>
 <tr>
@@ -4702,11 +4663,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 8.5502
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1088</span>
 </td>
 <td style="text-align:center;">
@@ -4725,7 +4684,7 @@ SoftImpute_splr
 8
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">12</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3</span>
 </td>
 </tr>
 <tr>
@@ -4741,11 +4700,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 9.565
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.1032</span>
 </td>
 <td style="text-align:center;">
@@ -4764,11 +4721,11 @@ SoftImpute_splr_Kfold
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">35</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">10</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>800x800</strong>
 </td>
 </tr>
@@ -4783,15 +4740,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.2105
 </td>
 <td style="text-align:center;">
 0.3789
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.4217</span>
 </td>
 <td style="text-align:center;">
@@ -4810,7 +4764,7 @@ Mao
 -6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">190</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">28</span>
 </td>
 </tr>
 <tr>
@@ -4826,11 +4780,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 10.563
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.181</span>
 </td>
 <td style="text-align:center;">
@@ -4849,7 +4801,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">188</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">25</span>
 </td>
 </tr>
 <tr>
@@ -4863,14 +4815,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 11.2412
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0978</span>
 </td>
 <td style="text-align:center;">
@@ -4889,7 +4839,7 @@ SoftImpute_Cov
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">92</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
 </td>
 </tr>
 <tr>
@@ -4903,14 +4853,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 11.2412
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0943</span>
 </td>
 <td style="text-align:center;">
@@ -4929,7 +4877,7 @@ SoftImpute_L2
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">90</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">21</span>
 </td>
 </tr>
 <tr>
@@ -4943,14 +4891,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 1.4737
 </td>
 <td style="text-align:center;">
 11.1885
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0712</span>
 </td>
 <td style="text-align:center;">
@@ -4969,7 +4915,7 @@ SoftImpute_Kfold
 -5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">301</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">99</span>
 </td>
 </tr>
 <tr>
@@ -4985,11 +4931,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 10.1593
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0823</span>
 </td>
 <td style="text-align:center;">
@@ -5008,7 +4952,7 @@ SoftImpute_splr
 5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">9</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">4</span>
 </td>
 </tr>
 <tr>
@@ -5024,11 +4968,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 11.2202
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0765</span>
 </td>
 <td style="text-align:center;">
@@ -5047,11 +4989,11 @@ SoftImpute_splr_Kfold
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">42</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>1000x1000</strong>
 </td>
 </tr>
@@ -5066,15 +5008,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.2105
 </td>
 <td style="text-align:center;">
 0.3316
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3401</span>
 </td>
 <td style="text-align:center;">
@@ -5093,7 +5032,7 @@ Mao
 -5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">383</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">69</span>
 </td>
 </tr>
 <tr>
@@ -5109,11 +5048,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 12.8085
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1637</span>
 </td>
 <td style="text-align:center;">
@@ -5132,7 +5069,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">183</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">39</span>
 </td>
 </tr>
 <tr>
@@ -5146,14 +5083,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 10.8642
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0768</span>
 </td>
 <td style="text-align:center;">
@@ -5172,7 +5107,7 @@ SoftImpute_Cov
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">174</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">26</span>
 </td>
 </tr>
 <tr>
@@ -5186,14 +5121,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 10.8642
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0786</span>
 </td>
 <td style="text-align:center;">
@@ -5212,7 +5145,7 @@ SoftImpute_L2
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">119</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">34</span>
 </td>
 </tr>
 <tr>
@@ -5226,14 +5159,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 1.2632
 </td>
 <td style="text-align:center;">
 13.5174
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0578</span>
 </td>
 <td style="text-align:center;">
@@ -5252,7 +5183,7 @@ SoftImpute_Kfold
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">203</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">119</span>
 </td>
 </tr>
 <tr>
@@ -5268,11 +5199,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 12.2053
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0656</span>
 </td>
 <td style="text-align:center;">
@@ -5291,7 +5220,7 @@ SoftImpute_splr
 4
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">9</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">6</span>
 </td>
 </tr>
 <tr>
@@ -5307,11 +5236,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 12.2673
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0646</span>
 </td>
 <td style="text-align:center;">
@@ -5330,11 +5257,15 @@ SoftImpute_splr_Kfold
 2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">29</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">23</span>
 </td>
 </tr>
 </tbody>
 </table>
+</div>
+<div id="simulation-5-yousefs-simulation-10-covariates-90-missing-with-collinearity" class="section level2">
+<h2>Simulation 5: Yousef’s Simulation; 10 Covariates; 90% Missing; With
+Collinearity</h2>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 </caption>
@@ -5345,7 +5276,7 @@ SoftImpute_splr_Kfold
 Fixed
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Hyperparameters
 </div>
@@ -5375,9 +5306,6 @@ true_rank
 </th>
 <th style="text-align:center;">
 missing_prob
-</th>
-<th style="text-align:center;">
-alpha
 </th>
 <th style="text-align:center;">
 lambda.1
@@ -5410,7 +5338,7 @@ seconds
 </thead>
 <tbody>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>400x400</strong>
 </td>
 </tr>
@@ -5425,15 +5353,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.3158
 </td>
 <td style="text-align:center;">
 0.4737
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.798</span>
 </td>
 <td style="text-align:center;">
@@ -5452,7 +5377,7 @@ Mao
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">45</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">13</span>
 </td>
 </tr>
 <tr>
@@ -5468,11 +5393,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 5.5853
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2695</span>
 </td>
 <td style="text-align:center;">
@@ -5491,7 +5414,7 @@ SoftImpute_Orig
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">45</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -5505,14 +5428,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 4.7435
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2784</span>
 </td>
 <td style="text-align:center;">
@@ -5531,7 +5452,7 @@ SoftImpute_Cov
 15
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">37</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -5545,14 +5466,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 4.7435
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2325</span>
 </td>
 <td style="text-align:center;">
@@ -5571,7 +5490,7 @@ SoftImpute_L2
 14
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">61</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -5585,14 +5504,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 0
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">1.0852</span>
 </td>
 <td style="text-align:center;">
@@ -5611,7 +5528,7 @@ SoftImpute_Kfold
 5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">285</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">58</span>
 </td>
 </tr>
 <tr>
@@ -5627,11 +5544,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 5.2951
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1643</span>
 </td>
 <td style="text-align:center;">
@@ -5650,7 +5565,7 @@ SoftImpute_splr
 18
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">12</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3</span>
 </td>
 </tr>
 <tr>
@@ -5666,11 +5581,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 7.1996
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.155</span>
 </td>
 <td style="text-align:center;">
@@ -5689,11 +5602,11 @@ SoftImpute_splr_Kfold
 6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">31</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">6</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>600x600</strong>
 </td>
 </tr>
@@ -5708,15 +5621,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.2105
 </td>
 <td style="text-align:center;">
 0.4263
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.5129</span>
 </td>
 <td style="text-align:center;">
@@ -5735,7 +5645,7 @@ Mao
 -1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">95</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">18</span>
 </td>
 </tr>
 <tr>
@@ -5751,11 +5661,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 8.0938
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1831</span>
 </td>
 <td style="text-align:center;">
@@ -5774,7 +5682,7 @@ SoftImpute_Orig
 -10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">112</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">14</span>
 </td>
 </tr>
 <tr>
@@ -5788,14 +5696,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 8.3799
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1314</span>
 </td>
 <td style="text-align:center;">
@@ -5814,7 +5720,7 @@ SoftImpute_Cov
 7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">72</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">8</span>
 </td>
 </tr>
 <tr>
@@ -5828,14 +5734,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 8.3799
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1132</span>
 </td>
 <td style="text-align:center;">
@@ -5854,7 +5758,7 @@ SoftImpute_L2
 6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">76</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">12</span>
 </td>
 </tr>
 <tr>
@@ -5868,14 +5772,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 1.4737
 </td>
 <td style="text-align:center;">
 10.3518
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0797</span>
 </td>
 <td style="text-align:center;">
@@ -5894,7 +5796,7 @@ SoftImpute_Kfold
 -6
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">257</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">67</span>
 </td>
 </tr>
 <tr>
@@ -5910,11 +5812,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 9.7419
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.087</span>
 </td>
 <td style="text-align:center;">
@@ -5933,7 +5833,7 @@ SoftImpute_splr
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">7</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">3</span>
 </td>
 </tr>
 <tr>
@@ -5949,11 +5849,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 9.6054
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0874</span>
 </td>
 <td style="text-align:center;">
@@ -5972,11 +5870,11 @@ SoftImpute_splr_Kfold
 2
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">40</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">11</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>800x800</strong>
 </td>
 </tr>
@@ -5991,15 +5889,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.3789
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.3881</span>
 </td>
 <td style="text-align:center;">
@@ -6018,7 +5913,7 @@ Mao
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">180</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">27</span>
 </td>
 </tr>
 <tr>
@@ -6034,11 +5929,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 10.8263
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1451</span>
 </td>
 <td style="text-align:center;">
@@ -6057,7 +5950,7 @@ SoftImpute_Orig
 -10
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">167</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">26</span>
 </td>
 </tr>
 <tr>
@@ -6071,14 +5964,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 11.2246
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0869</span>
 </td>
 <td style="text-align:center;">
@@ -6097,7 +5988,7 @@ SoftImpute_Cov
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">117</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">15</span>
 </td>
 </tr>
 <tr>
@@ -6111,14 +6002,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 11.2246
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0774</span>
 </td>
 <td style="text-align:center;">
@@ -6137,7 +6026,7 @@ SoftImpute_L2
 1
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">92</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">28</span>
 </td>
 </tr>
 <tr>
@@ -6151,14 +6040,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 1.0526
 </td>
 <td style="text-align:center;">
 11.165
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0601</span>
 </td>
 <td style="text-align:center;">
@@ -6177,7 +6064,7 @@ SoftImpute_Kfold
 -5
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">239</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">104</span>
 </td>
 </tr>
 <tr>
@@ -6193,11 +6080,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 10.2171
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0689</span>
 </td>
 <td style="text-align:center;">
@@ -6216,7 +6101,7 @@ SoftImpute_splr
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">10</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">5</span>
 </td>
 </tr>
 <tr>
@@ -6232,11 +6117,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 11.2536
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0645</span>
 </td>
 <td style="text-align:center;">
@@ -6255,11 +6138,11 @@ SoftImpute_splr_Kfold
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">42</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">14</span>
 </td>
 </tr>
 <tr grouplength="7">
-<td colspan="13" style="border-bottom: 1px solid;">
+<td colspan="12" style="border-bottom: 1px solid;">
 <strong>1000x1000</strong>
 </td>
 </tr>
@@ -6274,15 +6157,12 @@ Mao
 0.9
 </td>
 <td style="text-align:center;">
-1
-</td>
-<td style="text-align:center;">
 0.1053
 </td>
 <td style="text-align:center;">
 0.3316
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.2952</span>
 </td>
 <td style="text-align:center;">
@@ -6301,7 +6181,7 @@ Mao
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">339</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">79</span>
 </td>
 </tr>
 <tr>
@@ -6317,11 +6197,9 @@ SoftImpute_Orig
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 13.3023
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.1268</span>
 </td>
 <td style="text-align:center;">
@@ -6340,7 +6218,7 @@ SoftImpute_Orig
 -11
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">234</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">40</span>
 </td>
 </tr>
 <tr>
@@ -6354,14 +6232,12 @@ SoftImpute_Cov
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 0
 </td>
 <td style="text-align:center;">
 10.9243
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.066</span>
 </td>
 <td style="text-align:center;">
@@ -6380,7 +6256,7 @@ SoftImpute_Cov
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">109</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">26</span>
 </td>
 </tr>
 <tr>
@@ -6394,14 +6270,12 @@ SoftImpute_L2
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 2
 </td>
 <td style="text-align:center;">
 10.9243
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0639</span>
 </td>
 <td style="text-align:center;">
@@ -6420,7 +6294,7 @@ SoftImpute_L2
 3
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">111</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">34</span>
 </td>
 </tr>
 <tr>
@@ -6434,14 +6308,12 @@ SoftImpute_Kfold
 0.9
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 1.1579
 </td>
 <td style="text-align:center;">
 13.531
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">0.0471</span>
 </td>
 <td style="text-align:center;">
@@ -6460,7 +6332,7 @@ SoftImpute_Kfold
 -7
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">211</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">127</span>
 </td>
 </tr>
 <tr>
@@ -6476,11 +6348,9 @@ SoftImpute_splr
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 12.3405
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0536</span>
 </td>
 <td style="text-align:center;">
@@ -6499,7 +6369,7 @@ SoftImpute_splr
 4
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">9</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: lightgreen !important;">6</span>
 </td>
 </tr>
 <tr>
@@ -6515,11 +6385,9 @@ SoftImpute_splr_Kfold
 <td style="text-align:center;">
 </td>
 <td style="text-align:center;">
-</td>
-<td style="text-align:center;">
 12.8906
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 0, 0, 0.1) !important;">
 <span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">0.0516</span>
 </td>
 <td style="text-align:center;">
@@ -6538,7 +6406,7 @@ SoftImpute_splr_Kfold
 0
 </td>
 <td style="text-align:center;">
-<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">28</span>
+<span style="     color: black !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: grey98 !important;">21</span>
 </td>
 </tr>
 </tbody>

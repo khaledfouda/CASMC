@@ -1,0 +1,235 @@
+---
+title: "Comparing Model Implementations (2) - Plots"
+author: "Khaled Fouda"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=TRUE, echo=F, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = F, cache = F)
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+#source("./Mao/SMC_functions6.R")
+```
+
+
+```{r include=TRUE, message=FALSE, warning=FALSE}
+source("./code_files/import_lib.R")
+#path_to_data = "./Mao/saved_data/"
+```
+
+
+
+
+
+```{r fig.height=8, fig.width=10}
+file_list <- list.files(path = path_to_data, pattern = "Compare_MC_Models.*\\.csv$",
+                        full.names = TRUE,recursive =F)
+
+results = data.frame()
+for(f in file_list)
+   results = rbind(results, read.csv(f))
+
+results %<>%
+   mutate(simulation = case_when(missinginess == 0 ~ "Mao",
+                                 missinginess == 0.8 & collinearity == TRUE ~ "80% Missing with Coll",
+                                 missinginess == 0.8 & collinearity == FALSE ~ "80% Missing",
+                                 missinginess == 0.9 & collinearity == TRUE ~ "90% Missing with Coll",
+                                 missinginess == 0.9 & collinearity == FALSE ~ "90% Missing")) %>%
+   filter(simulation != "90% Missing with Coll") #%>%
+   #filter(model != "Mao", model != "SoftImpute_Orig")
+
+model_colors <- c(
+  "Mao" = "#1f77b4",  # Blue
+  "SoftImpute_Orig" = "#aec7e8",  # Lighter Blue
+  "SoftImpute_Cov" = "#7f7f7f",  # Grey
+  "SoftImpute_L2" = "#d62728",  # Red
+  "SoftImpute_Kfold" = "#ff9896",  # Lighter Red
+  "SoftImpute_splr" = "#2ca02c",  # Green
+  "SoftImpute_splr_Kfold" = "#98df8a"   # Lighter Green
+)
+
+
+```
+
+
+```{r fig.height=8, fig.width=10}
+# 1. plot time
+results %>%
+   group_by(simulation, dim) %>%
+   mutate(time = time / time[model=="SoftImpute_Kfold"]) %>%
+   ungroup() %>%
+   filter(model != "SoftImpute_Kfold") %>%
+   select(time, dim, model, simulation) %>%
+   ggplot(aes(x = dim, y = time, color = model, group = model)) +
+   geom_line(linewidth = 1.2) + 
+   geom_point(size = 3, shape = 21, fill = "white") +  
+   #scale_color_brewer(palette = "Dark2") +  
+   scale_color_manual(values=model_colors) +
+   facet_wrap(~simulation, scales="free_y") +
+   #theme_minimal(base_size = 14) + 
+   labs(
+      x = "Dimension", 
+      y = "Time (Relevant to the K-Fold ALS Model)", 
+      color = "Model",  
+      title = "Model Running Time Relative to the Best Performing and Slowest Model",
+      subtitle = "Comparing time used for fitting and computing predictions across different models\n by Dimension and Simulation Scenario"
+   ) +
+   theme(
+      legend.position = "bottom", 
+      panel.spacing = unit(1, "lines"),  
+      strip.text.x = element_text(face = "bold")  
+   ) +
+   ggthemes::theme_stata()
+```
+
+
+```{r fig.height=8, fig.width=10}
+# 2. plot A hat
+results %>%
+   select(error.test, dim, model, simulation) %>%
+   ggplot(aes(x = dim, y = error.test, color = model, group = model)) +
+   geom_line(linewidth = 1.2) + 
+   geom_point(size = 3, shape = 21, fill = "white") +  
+   # scale_color_brewer(palette = "Dark2") +  
+   scale_color_manual(values=model_colors) +
+   facet_wrap(~simulation, scales="free_y") +
+   #theme_minimal(base_size = 14) + 
+   labs(
+      x = "Dimension", 
+      y = "1 - R^2", 
+      color = "Model",  
+      title = "Model Performance on the Test Dataset (A) by Dimension and Simulation Scenario",
+      subtitle = "Comparing 1 - goodness of fit  across different models"
+   ) +
+   theme(
+      legend.position = "bottom", 
+      panel.spacing = unit(1, "lines"),  
+      strip.text.x = element_text(face = "bold")  
+   ) +
+   ggthemes::theme_stata()
+```
+
+
+```{r fig.height=8, fig.width=10}
+# 3. plot A hat
+results %>%
+   filter(!(model=='SoftImpute_Cov' & collinearity==TRUE)) %>%
+   select(error.beta, dim, model, simulation) %>%
+   filter(! is.na(error.beta), model != 'Mao') %>%
+   ggplot(aes(x = dim, y = error.beta, color = model, group = model)) +
+   geom_line(linewidth = 1.2, alpha=0.8) + 
+   geom_point(size = 3, shape = 21, fill = "white") +  
+   # scale_color_brewer(palette = "Dark2") +  
+   scale_color_manual(values=model_colors) +
+   facet_wrap(~simulation, scales="free_y") +
+   #theme_minimal(base_size = 14) + 
+   labs(
+      x = "Dimension", 
+      y = "1 - R^2", 
+      color = "Model",  
+      title = "Model Performance on the Covariate Coefficients (Beta) by Dimension and Simulation Scenario",
+      subtitle = paste0("Comparing 1 - goodness of fit  across different models.\n",
+                        "Mao was removed due to bad performance.\n",
+                        "Models not accounting for collinearity were removed from the second plot.")
+   ) +
+   theme(
+      legend.position = "bottom", 
+      panel.spacing = unit(1, "lines"),  
+      strip.text.x = element_text(face = "bold")  
+   ) +
+   ggthemes::theme_stata()
+```
+
+
+```{r fig.height=8, fig.width=10}
+# 4. plot B hat
+results %>%
+   select(error.B, dim, model, simulation) %>%
+   filter(model != "Mao") %>%
+   filter(! is.na(error.B)) %>% 
+   ggplot(aes(x = dim, y = error.B, color = model, group = model)) +
+   geom_line(linewidth = 1.2) + 
+   geom_point(size = 3, shape = 21, fill = "white") +  
+   # scale_color_brewer(palette = "Dark2") + 
+   scale_color_manual(values=model_colors) +
+   facet_wrap(~simulation, scales="free_y") +
+   #theme_minimal(base_size = 14) + 
+   labs(
+      x = "Dimension", 
+      y = "1 - R^2", 
+      color = "Model",  
+      title = "Model Performance on the Low Rank Matrix (B) by Dimension and Simulation Scenario",
+      subtitle = "Comparing 1 - goodness of fit  across different models.\nMao was removed due to bad performance."
+   ) +
+   theme(
+      legend.position = "bottom", 
+      panel.spacing = unit(1, "lines"),  
+      strip.text.x = element_text(face = "bold")  
+   ) +
+   ggthemes::theme_stata()
+```
+
+
+```{r fig.height=8, fig.width=10}
+# 5. plot Rank
+results %>%
+   select(rank, true_rank, dim, model, simulation) %>%
+   ggplot(aes(x = dim, y = rank, color = model, group = model)) +
+   geom_line(linewidth = 1.2) + 
+   geom_line(aes(y=true_rank), color="black", linewidth=1, linetype="dashed") +
+   geom_point(size = 3, shape = 21, fill = "white") +  
+   # scale_color_brewer(palette = "Dark2") + 
+   scale_color_manual(values=model_colors) +
+   facet_wrap(~simulation, scales="free_y") +
+   #theme_minimal(base_size = 14) + 
+   labs(
+      x = "Dimension", 
+      y = "Rank", 
+      color = "Model",  
+      title = "Rank of Estimated Matrix by Dimension and Simulation Scenario",
+      subtitle = "Dashed lines indicate the true rank"
+   ) +
+   theme(
+      legend.position = "bottom", 
+      panel.spacing = unit(1, "lines"),  
+      strip.text.x = element_text(face = "bold")  
+   ) +
+   ggthemes::theme_stata()
+```
+
+
+```{r fig.height=8, fig.width=10}
+# 6. plot lambda 2
+results %>%
+   select(lambda.2, dim, model, simulation) %>% 
+   filter(!is.na(lambda.2), model != "Mao", model != "SoftImpute_Orig") %>% 
+   ggplot(aes(x = dim, y = lambda.2, color = model, group = model)) +
+   geom_line(linewidth = 1.2) + 
+   geom_point(size = 3, shape = 21, fill = "white") +  
+   # scale_color_brewer(palette = "Dark2") +  
+   scale_color_manual(values=model_colors) +
+   facet_wrap(~simulation, scales="free_y") +
+   #theme_minimal(base_size = 14) + 
+   labs(
+      x = "Dimension", 
+      y = "Parameter Value", 
+      color = "Model",  
+      title = " Rank Restriction Regularization Parameter (lambda_2) by Dimension and Simulation Scenario",
+      subtitle = "Only the 4 soft-Impute with covariate models are considered"
+   ) +
+   theme(
+      legend.position = "bottom", 
+      panel.spacing = unit(1, "lines"),  
+      strip.text.x = element_text(face = "bold")  
+   ) +
+   ggthemes::theme_stata()
+
+
+```
+
+
