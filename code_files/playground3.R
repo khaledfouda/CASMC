@@ -7,19 +7,73 @@ gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
-X <- gen.dat$X
+#X <- gen.dat$X
+X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
+beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
+#--
+y = Y_train
+y[y==0] = NA
+ys <- as(y, "Incomplete")
+# yvalid = gen.dat$Y
+# yvalid[W_valid==1] = NA
+# yvalid[yvalid==0] = NA
+# yvalid <- as(yvalid, "Incomplete")
+#---
 lambda2 = 31
 max.rank = 15
-beta_partial = solve(t(gen.dat$X) %*% gen.dat$X) %*% t(gen.dat$X)
+#---
+start_time <- Sys.time()
+set.seed(2023);fits <- simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=T, J=max.rank,
+                                            thresh=1e-6, lambda=lambda2,
+                                            final.svd = T,maxit = 300, patience=1,warm.start = NULL)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+fits$M = fits$u %*% (fits$d * t(fits$v))
+print(paste("Test error =", round(test_error(fits$M, gen.dat$B),5)))
+
+sum(round(sout$M,3)==round(fits$M,3)) / length(sout$M)
+
+fits$xbeta.sparse = ys
+fits$xbeta.sparse@x = fits$xbeta.obs
+fits$xbeta.sparse = as.matrix(fits$xbeta.sparse)
+
+all(fits$xbeta.sparse[!is.na(fits$xbeta.sparse)] == fits$xbeta.obs)
+sum(round(sout$Xbeta[Y_train!=0],2) == round(fits$xbeta.obs,2)) / length(fits$xbeta.obs)
+
+dim(MASS::ginv(gen.dat$X))
+
+#---
+
+Y = Y_train
+
+sum(round(sout$beta.estim,2) == round(beta,2)) / length(beta)
+
+sqrt(mean( ((fits$A)[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+
+#------
+
+start_time <- Sys.time()
+
+set.seed(2023);sout <- simpute.als.cov(Y_train, X_r$X, beta_partial,J = max.rank, thresh =  1e-6,
+                                       lambda= lambda2,trace.it = T,warm.start = NULL, maxit=100)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+sout$M = sout$u %*% (sout$d * t(sout$v))
+sout$Xbeta = X %*% sout$beta.estim
+sout$A = sout$M  + sout$Xbeta
+
+print(paste("Test error =", round(test_error(sout$A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+sqrt(mean( (sout$A[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+print(paste("Test error =", round(test_error(sout$M, gen.dat$B),5)))
 
 
-# folds <- k_fold_cells(nrow(gen.dat$Y), ncol(gen.dat$Y), 3, gen.dat$W)[[1]]
-
-X_reduced = reduced_hat_decomp(gen.dat$X, 1e-2)
 
 
 
-start_time = Sys.time()
+#---------------------------------------------------------------------------------------------------------
+
+
+# Cross-validation
+
 best_fit = simpute.cov.cv_splr_no_patience(Y_train, X_reduced$svdH, Y_valid, W_valid,warm = best_fit$best_fit,
                                             trace = F, rank.limit=30,rank.step=4,patience = 1,
                                            rank.init = 2, lambda.factor = 1/2, n.lambda = 30)

@@ -15,16 +15,10 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   #-------------------------------
   if(is.null(svdH)){
     stopifnot(!is.null(X))
-    Q <- qr.Q(Matrix::qr(X)) #[,1:p]
-    H <- Q %*% t(Q)
-    Q <- NULL
-    svdH <- fast.svd(H, thresh)
-    J_H <- sum(svdH$d > 1e-3)
+    svdH = reduced_hat_decomp(X, 1e-2)
+    J_H = svdH$rank
+    svdH = svdH$svdH
     if(trace.it) print(paste("Rank of H is ", J_H))
-    svdH$v = svdH$d[1:J_H] * t(svdH$v[,1:J_H])
-    svdH$u = svdH$u[,1:J_H]
-    svdH$d = NULL
-    H <- NULL
   }
   #---------------------------------------------------
   warm=FALSE
@@ -123,10 +117,10 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     #------------------------------------
     # V step
     ## Compute beta estimates again
-    #HU = svdH$u %*% (svdH$v %*% U)
-    # part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
-    # part2 = suvC(HU,VDsq, irow, pcol)
-    # xbeta.obs = part1 + part2 + xbeta.obs
+    HU = svdH$u %*% (svdH$v %*% U)
+    part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
+    part2 = suvC(HU,VDsq, irow, pcol)
+    xbeta.obs = part1 + part2 + xbeta.obs
     # update A
     UDsq = UD(U,Dsq,n)
     M_obs = suvC(UDsq,V,irow,pcol)
