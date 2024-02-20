@@ -36,6 +36,7 @@ sum(round(sout$M,3)==round(fits$M,3)) / length(sout$M)
 fits$xbeta.sparse = ys
 fits$xbeta.sparse@x = fits$xbeta.obs
 fits$xbeta.sparse = as.matrix(fits$xbeta.sparse)
+fits$xbeta.sparse[is.na(fits$xbeta.sparse)] = 0
 
 all(fits$xbeta.sparse[!is.na(fits$xbeta.sparse)] == fits$xbeta.obs)
 sum(round(sout$Xbeta[Y_train!=0],2) == round(fits$xbeta.obs,2)) / length(fits$xbeta.obs)
@@ -44,14 +45,39 @@ dim(MASS::ginv(gen.dat$X))
 
 #---
 
-Y = Y_train
+yfill = Y_train
+yfill[Y_train==0] = fits$M[Y_train==0]
+init_xbeta = X_r$svdH$u %*% X_r$svdH$v %*% yfill
+warm.start = propack.svd(init_xbeta, X_r$rank)
+#fits2 = restore.beta(Y_train, fits$M, fits$xbeta.sparse, X_r$rank, thresh=1e-6, maxit=300, trace.it=T)
+start_time <- Sys.time()
+fits3 = simpute.als.splr.fit.nocov.fixedJ(fits$xbeta.sparse, X_r$rank, maxit=300, final.trim = T,
+                                          warm.start = warm.start, trace.it=F, return_obj = T)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+fits$A = fits$M + fits3$xbeta
 
 sum(round(sout$beta.estim,2) == round(beta,2)) / length(beta)
 
 sqrt(mean( ((fits$A)[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
-
+fits3$J
 #------
+# analyze obj
+objs = list()
+plot(1:300, fits3$obj, pch=4, col="blue")
+for(i in 1:15){
+   fitss = simpute.als.splr.fit.nocov.fixedJ(fits$xbeta.sparse, X_r$rank, maxit=300, final.trim = T,
+                                             warm.start = NULL, trace.it=F, return_obj = T)
+   
+   points(1:300, fitss$obj, pch=".")
+   
+}
+fits3$obj[1:fits3$iter]
 
+
+points(1:300, fits3$obj, pch=".")
+
+#----------------
 start_time <- Sys.time()
 
 set.seed(2023);sout <- simpute.als.cov(Y_train, X_r$X, beta_partial,J = max.rank, thresh =  1e-6,
