@@ -7,19 +7,19 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov_splr(Y, X_r$svdH) * lambda.factor, lambda.init) 
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
    #----------------------------------------------------
-   yfill = ytmp = Y
+   yfill =  Y
    ynas = Y == 0
-   Y[Y==0] = NA
+   Y[ynas] = NA
    m = dim(Y)[2]
    Y <- as(Y, "Incomplete")
    xbeta.sparse = Y
    
    valid_ind = W_valid == 0
-   W_valid[W_valid == 1] = NA
-   W_valid[W_valid == 0] =  1
-   W_valid <- as(W_valid, "Incomplete")
-   irow = W_valid@i
-   pcol = W_valid@p
+   #W_valid[W_valid == 1] = NA
+   #W_valid[W_valid == 0] =  1
+   #W_valid <- as(W_valid, "Incomplete")
+   #irow = W_valid@i
+   #pcol = W_valid@p
    W_valid = NULL
    #-----------------------------------------------------------------------
    rank.max <- rank.init
@@ -37,9 +37,8 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
       M = fiti$u %*% (fiti$d * t(fiti$v))
       xbeta.sparse@x <- fiti$xbeta.obs
       yfill[ynas] <- M[ynas]
-      #yfill = ytmp - M
       warm_xbeta = X_r$svdH$u %*% (X_r$svdH$v %*% yfill) 
-      if(i>1) warm_xbeta = (warm_xbeta +  fitx$u %*% (fitx$d * t(fitx$v))) / 2
+      if(i>1) warm_xbeta = (warm_xbeta +  xbeta.estim) / 2
       #warm_xbeta = naive_MC(as.matrix(xbeta.sparse))
       warm_xbeta = propack.svd(warm_xbeta, X_r$rank)
       #if(i>1) warm_xbeta = fitx
@@ -50,8 +49,9 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
                                                 warm.start = warm_xbeta, trace.it=F, return_obj = F)
       time_it[3] = time_it[3] + as.numeric(difftime(Sys.time(), start_time,units = "secs"))
       start_time <- Sys.time()
-      xbeta.valid = suvC(as.matrix(fitx$u),as.matrix(UD(fitx$v,fitx$d,m)),irow,pcol)
-      A_valid = M[valid_ind] + xbeta.valid
+      xbeta.estim = fitx$u %*% (fitx$d * t(fitx$v))
+      #xbeta.valid = suvC(as.matrix(fitx$u),as.matrix(UD(fitx$v,fitx$d,m)),irow,pcol)
+      A_valid = M[valid_ind] + xbeta.estim[valid_ind]
       err = test_error(A_valid, Y_valid)
       time_it[4] = time_it[4] + as.numeric(difftime(Sys.time(), start_time,units = "secs"))                            
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values

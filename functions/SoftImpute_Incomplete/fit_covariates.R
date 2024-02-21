@@ -2,7 +2,7 @@
 simpute.als.fit_splr <-
 function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0, 
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE,
-          svdH=NULL, return_obj=FALSE, init="naive") {
+          svdH=NULL, return_obj=FALSE, init="naive", Px=NULL) {
 
   if(!inherits(y,"dgCMatrix")) y=as(y,"dgCMatrix")
   irow=y@i
@@ -12,6 +12,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   n <- n[1]
   nz=nnzero(y)
   initialize_beta = FALSE
+  beta.obs = NULL
   #-------------------------------
   if(is.null(svdH)){
     stopifnot(!is.null(X))
@@ -66,6 +67,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
       yobs = ! is.na(Y_naive)
       Y_naive = naive_MC(Y_naive)
       naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
+      beta.obs <- Px %*% Y_naive
       xbeta.obs <- naive_fit[yobs]
       naive_fit <- Y_naive - naive_fit
       naive_fit <- propack.svd(as.matrix(naive_fit), J)
@@ -92,6 +94,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     part2 = suvC(HU,VDsq, irow, pcol)
     xbeta.obs = part1 + part2 + suvC(svdH$u, t(as.matrix(svdH$v %*% y)),irow,pcol)
   }
+  
   #----------------------------------------
   while ((ratio > thresh)&(iter < maxit)) {
     iter <- iter + 1
@@ -116,6 +119,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
     part2 = suvC(HU,VDsq, irow, pcol)
     xbeta.obs = part1 + part2 + xbeta.obs
+    beta.obs = beta.obs + Px %*% S + (Px %*% U) %*% t(VDsq)
     # update B
     B = as.matrix(t(S) %*% IHU) + (VDsq %*% (t(U) %*% IHU))  
     if(lambda>0) B = t(t(B) *(Dsq/(Dsq+lambda))) 
@@ -124,14 +128,15 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
     Dsq = Bsvd$d
     U = U%*% (Bsvd$v)
     #------------------------------------
+    UDsq = UD(U,Dsq,n)
     # V step
     ## Compute beta estimates again
-    HU = svdH$u %*% (svdH$v %*% U)
+    HU = svdH$u %*% (svdH$v %*% UDsq)
     part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
-    part2 = suvC(HU,VDsq, irow, pcol)
+    part2 = suvC(HU,V, irow, pcol)
     xbeta.obs = part1 + part2 + xbeta.obs
+    beta.obs = beta.obs + Px %*% S + (Px %*% UDsq) %*% t(V)
     # update A
-    UDsq = UD(U,Dsq,n)
     M_obs = suvC(UDsq,V,irow,pcol)
     S@x = y@x - M_obs - xbeta.obs  
     A.partial = ((S%*%V) + UDsq)
@@ -180,7 +185,7 @@ function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0,
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))
   out=list(u=U[, seq(J), drop=FALSE], d=Dsq[seq(J)], v=V[,seq(J), drop=FALSE], lambda=lambda, J=J,
-           n_iter=iter, xbeta.obs=xbeta.obs)
+           n_iter=iter, xbeta.obs=xbeta.obs, beta.obs=beta.obs)
   if(return_obj) out$obj = obj.l 
   out
 }

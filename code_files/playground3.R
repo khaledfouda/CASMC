@@ -23,36 +23,30 @@ xbeta.sparse = ys
 lambda2 = 11.3
 max.rank = 7
 #---
-# Y_naive: need Y_train; svdH; max.rank
-Y_naive = as.matrix(ys)#Y_train
-#Y_naive[Y_naive==0] = NA
-yobs = ! is.na(Y_naive)
-Y_naive = naive_MC(as.matrix(Y_naive))
-warm_fit <-  X_r$svdH$u %*% (X_r$svdH$v  %*% Y_naive)
-xbeta.obs <- warm_fit[yobs]
-warm_fit <- Y_naive - warm_fit
-warm_fit <- propack.svd(as.matrix(warm_fit), max.rank)
-warm_fit$xbeta.obs = xbeta.obs
 
 start_time <- Sys.time()
 set.seed(2023);fits <- simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=F, J=max.rank,
                                             thresh=1e-6, lambda=lambda2, return_obj = F, init = "naive",
-                                            final.svd = T,maxit = 100, patience=1,warm.start = warm_fit)
+                                            final.svd = T,maxit = 100, warm.start = NULL,Px = beta_partial)
+
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fits$M = fits$u %*% (fits$d * t(fits$v))
 
+
+fits$A = fits$M + X_r$X %*% fits$beta.obs
 #---
 #xbeta.sparse = as.matrix(xbeta.sparse)
 #xbeta.sparse[is.na(xbeta.sparse)] = 0
 
 xbeta.sparse@x = fits$xbeta.obs
 yfill[Y_train==0] = fits$M[Y_train==0]
-init_xbeta = X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
+init_xbeta =  X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
+init_xbeta =  as.matrix(X_r$X %*% fits$beta.obs)#X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
 warm.start = propack.svd(init_xbeta, X_r$rank)
 #start_time <- Sys.time()
 fits3 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, final.trim = F,
-                                          warm.start = warm.start, trace.it=F, return_obj = F)
+                                          warm.start = warm.start, trace.it=T, return_obj = F)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fits$A = fits$M + fits3$u %*% (fits3$d * t(fits3$v))
@@ -95,6 +89,20 @@ print(paste("Test error =", round(test_error(fitcv$beta, gen.dat$beta.x),5)))
 fitcv$lambda
 qr(fitcv$A)$rank
 #------
+####################################
+# K- Fold
+start_time <- Sys.time()
+fitkf = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, beta_partial, trace=T)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+print(paste("Test error =", round(test_error((fitkf$A_hat)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+print(paste("Test error =", round(test_error(fitkf$B_hat, gen.dat$B),5)))
+print(paste("Test error =", round(test_error(MASS::ginv(X_r$X)%*%fitkf$beta_hat, gen.dat$beta.x),5)))
+fitkf$lambda2
+fitkf$rank_A
+
+###################################################
+
 # analyze obj
 # plot(1:200, fits3$obj, pch=4, col="blue")
 
