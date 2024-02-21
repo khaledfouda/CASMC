@@ -2,7 +2,7 @@
 simpute.als.fit_splr <-
 function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0, 
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE,
-          patience=3, svdH=NULL, return_obj=FALSE, init="naive") {
+          svdH=NULL, return_obj=FALSE, init="naive") {
 
   if(!inherits(y,"dgCMatrix")) y=as(y,"dgCMatrix")
   irow=y@i

@@ -7,7 +7,7 @@ simpute.als.splr.fit.nocov.fixedJ <- function(X, J, thresh=1e-5, maxit=100, trac
    n <- dim(X)
    m <- n[2]
    n <- n[1]
-   nz = nnzero(X)
+   if(trace.it | return_obj) nz = nnzero(X)
    
    if(is.null(warm.start)){
       V=matrix(0,m,J)
@@ -34,7 +34,7 @@ simpute.als.splr.fit.nocov.fixedJ <- function(X, J, thresh=1e-5, maxit=100, trac
       #--------------------------
       VDsq <- UD(V, Dsq, m)
       S@x = X@x - suvC(U, VDsq, irow, pcol)
-      BD = as.matrix(t(S)%*%U) + (VDsq)
+      BD = as.matrix(t(S)%*%U + VDsq)
       #--------------------
       Bsvd=fast.svd(BD)
       V = Bsvd$u      
@@ -50,12 +50,12 @@ simpute.als.splr.fit.nocov.fixedJ <- function(X, J, thresh=1e-5, maxit=100, trac
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
       #-----------------------------------------------------------------------------------
-      if(trace.it | return_obj)  obj= (.5*sum(S@x^2))/nz 
-      if(return_obj) obj.l[iter] = obj
-      #------------------------------------------------------------------------------
       ratio=  Frob(U.old,Dsq.old,V.old,U,Dsq,V)
       #------------------------------------------------------------------------------
+      if(trace.it | return_obj)  obj= (.5*sum(S@x^2))/nz 
+      if(return_obj) obj.l[iter] = obj
       if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio,"\n")
+      #------------------------------------------------------------------------------
    }
    if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
    
@@ -67,7 +67,7 @@ simpute.als.splr.fit.nocov.fixedJ <- function(X, J, thresh=1e-5, maxit=100, trac
       Dsq = Dsq[seq(J)]
    }
    
-   out = list(u=U, v=V, d=Dsq, xbeta =  U %*% (Dsq * t(V)), J=J, iter=iter )
+   out = list(u=U, v=V, d=Dsq, J=J, iter=iter )
    if(return_obj) out$obj = obj.l
    out
 }

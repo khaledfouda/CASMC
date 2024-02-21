@@ -20,8 +20,8 @@ xbeta.sparse = ys
 # yvalid[yvalid==0] = NA
 # yvalid <- as(yvalid, "Incomplete")
 #---
-lambda2 = 31
-max.rank = 15
+lambda2 = 11.3
+max.rank = 7
 #---
 # Y_naive: need Y_train; svdH; max.rank
 Y_naive = as.matrix(ys)#Y_train
@@ -55,9 +55,12 @@ fits3 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, fin
                                           warm.start = warm.start, trace.it=F, return_obj = F)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
-fits$A = fits$M + fits3$xbeta
+fits$A = fits$M + fits3$u %*% (fits3$d * t(fits3$v))
+fits$beta_hat = MASS::ginv(X_r$X) %*% fits3$u %*% (fits3$d * t(fits3$v))
+print(paste("Test error =", round(test_error(fits$beta_hat, gen.dat$beta.x),5)))
 
 sqrt(mean( ((fits$A)[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+print(paste("Test error =", round(test_error((fits$A)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 print(paste("Test error =", round(test_error(fits$M, gen.dat$B),5)))
 
 #fits2 = restore.beta(Y_train, fits$M, xbeta.sparse, X_r$rank, thresh=1e-6, maxit=300, trace.it=T)
@@ -71,6 +74,26 @@ dim(MASS::ginv(gen.dat$X))
 
 sum(round(sout$beta.estim,2) == round(beta,2)) / length(beta)
 fits3$J
+###################################################
+# cross-validation
+set.seed(2023)
+gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
+W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
+Y_train = (gen.dat$Y * W_valid)
+Y_valid = gen.dat$Y[W_valid==0]
+X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
+start_time <- Sys.time()
+fitcv = simpute.cov.cv_splr(Y_train, X_r, Y_valid, W_valid, trace=T)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+fitcv$A = fitcv$B_hat + fitcv$xbeta$u %*% (fitcv$xbeta$d * t(fitcv$xbeta$v))
+fitcv$beta = (MASS::ginv(X_r$X) %*% fitcv$xbeta$u) %*% (fitcv$xbeta$d * t(fitcv$xbeta$v))
+sqrt(mean( ((fitcv$A)[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+print(paste("Test error =", round(test_error((fitcv$A)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+print(paste("Test error =", round(test_error(fitcv$B_hat, gen.dat$B),5)))
+print(paste("Test error =", round(test_error(fitcv$beta, gen.dat$beta.x),5)))
+fitcv$lambda
+qr(fitcv$A)$rank
 #------
 # analyze obj
 # plot(1:200, fits3$obj, pch=4, col="blue")
