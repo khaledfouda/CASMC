@@ -11,9 +11,10 @@ Y_valid = gen.dat$Y[W_valid==0]
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
 #--
-y = Y_train
+y = yfill = Y_train
 y[y==0] = NA
 ys <- as(y, "Incomplete")
+xbeta.sparse = ys
 # yvalid = gen.dat$Y
 # yvalid[W_valid==1] = NA
 # yvalid[yvalid==0] = NA
@@ -22,56 +23,100 @@ ys <- as(y, "Incomplete")
 lambda2 = 31
 max.rank = 15
 #---
+# Y_naive: need Y_train; svdH; max.rank
+Y_naive = as.matrix(ys)#Y_train
+#Y_naive[Y_naive==0] = NA
+yobs = ! is.na(Y_naive)
+Y_naive = naive_MC(as.matrix(Y_naive))
+warm_fit <-  X_r$svdH$u %*% (X_r$svdH$v  %*% Y_naive)
+xbeta.obs <- warm_fit[yobs]
+warm_fit <- Y_naive - warm_fit
+warm_fit <- propack.svd(as.matrix(warm_fit), max.rank)
+warm_fit$xbeta.obs = xbeta.obs
+
 start_time <- Sys.time()
-set.seed(2023);fits <- simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=T, J=max.rank,
-                                            thresh=1e-6, lambda=lambda2,
-                                            final.svd = T,maxit = 300, patience=1,warm.start = NULL)
+set.seed(2023);fits <- simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=F, J=max.rank,
+                                            thresh=1e-6, lambda=lambda2, return_obj = F, init = "naive",
+                                            final.svd = T,maxit = 100, patience=1,warm.start = warm_fit)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fits$M = fits$u %*% (fits$d * t(fits$v))
-print(paste("Test error =", round(test_error(fits$M, gen.dat$B),5)))
-
-sum(round(sout$M,3)==round(fits$M,3)) / length(sout$M)
-
-fits$xbeta.sparse = ys
-fits$xbeta.sparse@x = fits$xbeta.obs
-fits$xbeta.sparse = as.matrix(fits$xbeta.sparse)
-fits$xbeta.sparse[is.na(fits$xbeta.sparse)] = 0
-
-all(fits$xbeta.sparse[!is.na(fits$xbeta.sparse)] == fits$xbeta.obs)
-sum(round(sout$Xbeta[Y_train!=0],2) == round(fits$xbeta.obs,2)) / length(fits$xbeta.obs)
-
-dim(MASS::ginv(gen.dat$X))
 
 #---
+#xbeta.sparse = as.matrix(xbeta.sparse)
+#xbeta.sparse[is.na(xbeta.sparse)] = 0
 
-yfill = Y_train
+xbeta.sparse@x = fits$xbeta.obs
 yfill[Y_train==0] = fits$M[Y_train==0]
-init_xbeta = X_r$svdH$u %*% X_r$svdH$v %*% yfill
+init_xbeta = X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
 warm.start = propack.svd(init_xbeta, X_r$rank)
-#fits2 = restore.beta(Y_train, fits$M, fits$xbeta.sparse, X_r$rank, thresh=1e-6, maxit=300, trace.it=T)
-start_time <- Sys.time()
-fits3 = simpute.als.splr.fit.nocov.fixedJ(fits$xbeta.sparse, X_r$rank, maxit=300, final.trim = T,
-                                          warm.start = warm.start, trace.it=F, return_obj = T)
+#start_time <- Sys.time()
+fits3 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, final.trim = F,
+                                          warm.start = warm.start, trace.it=F, return_obj = F)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fits$A = fits$M + fits3$xbeta
 
-sum(round(sout$beta.estim,2) == round(beta,2)) / length(beta)
-
 sqrt(mean( ((fits$A)[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
+print(paste("Test error =", round(test_error(fits$M, gen.dat$B),5)))
+
+#fits2 = restore.beta(Y_train, fits$M, xbeta.sparse, X_r$rank, thresh=1e-6, maxit=300, trace.it=T)
+sum(round(sout$M,3)==round(fits$M,3)) / length(sout$M)
+
+
+all(xbeta.sparse[!is.na(xbeta.sparse)] == fits$xbeta.obs)
+sum(round(sout$Xbeta[Y_train!=0],2) == round(fits$xbeta.obs,2)) / length(fits$xbeta.obs)
+
+dim(MASS::ginv(gen.dat$X))
+
+sum(round(sout$beta.estim,2) == round(beta,2)) / length(beta)
 fits3$J
 #------
 # analyze obj
-objs = list()
-plot(1:300, fits3$obj, pch=4, col="blue")
+# plot(1:200, fits3$obj, pch=4, col="blue")
+
+fits_obj = c()
 for(i in 1:15){
-   fitss = simpute.als.splr.fit.nocov.fixedJ(fits$xbeta.sparse, X_r$rank, maxit=300, final.trim = T,
+   fitss = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, final.trim = T,
                                              warm.start = NULL, trace.it=F, return_obj = T)
-   
-   points(1:300, fitss$obj, pch=".")
-   
+   fits_obj = c(fits_obj, fitss$obj)
+   #points(1:200, fitss$obj, pch=".")
 }
+
+data <- data.frame(iterations = rep(1:200, 15),
+                   objective = fits_obj,
+                   fit_i = rep(1:15, each=200))
+
+
+
+
+
+lowest_points <- data %>%
+   group_by(fit_i) %>%
+   summarise(iterations = which.min(objective), min_objective = min(objective,na.rm = T)) %>%
+   ungroup()
+
+ggplot(data, aes(x = iterations, y = objective, color = fit_i)) +
+   geom_line() +  
+   geom_point(data = lowest_points, aes(x = iterations, y = min_objective, color = fit_i),
+              size = 3, shape = 23, fill = "white") +
+
+   geom_line(data=data.frame(x=1:200,y=fits3$obj, fit_i=0),aes(x,y)) +
+   #  geom_text(data = lowest_points, 
+#             aes(x = iterations, y = min_objective, label = paste("Min:", round(min_objective, 2))),
+#             nudge_y = -5, color = "black", size = 3) +
+   theme_minimal() +
+   labs(title = "Convergence of Fitting Methods",
+        subtitle = "Each line represents a fitting method's convergence over iterations.\nThe lowest points are highlighted.",
+        x = "Iteration",
+        y = "Objective Value",
+        color = "Method") +
+   theme(legend.position = "bottom",
+         plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         legend.title.align = 0.5)
+
+
 fits3$obj[1:fits3$iter]
 
 
