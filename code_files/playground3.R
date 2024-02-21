@@ -77,7 +77,7 @@ fits3$J
 ###################################################
 # cross-validation
 set.seed(2023)
-gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
+gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.8,coll=F)
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]

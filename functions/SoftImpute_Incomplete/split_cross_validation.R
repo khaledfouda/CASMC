@@ -1,6 +1,6 @@
 simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
-                           trace=FALSE, print.best=TRUE, tol=5, thresh=1e-6,
-                           rank.init=10, rank.limit=50, rank.step=2, patience=2,
+                           trace=FALSE, print.best=TRUE, tol=1, thresh=1e-6,
+                           rank.init=10, rank.limit=50, rank.step=2,
                             warm=NULL, quiet=FALSE){
    
    
@@ -24,7 +24,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
    #-----------------------------------------------------------------------
    rank.max <- rank.init
    best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
-   counter <- 1
+   counter <- 0
    time_it <- rep(0,4)
    #---------------------------------------------------------------------
    for(i in seq(along=lamseq)) {
@@ -36,10 +36,13 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
       start_time <- Sys.time()
       M = fiti$u %*% (fiti$d * t(fiti$v))
       xbeta.sparse@x <- fiti$xbeta.obs
-      #yfill[ynas] <- M[ynas]
-      yfill = ytmp - M
-      warm_xbeta = yfill#X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
+      yfill[ynas] <- M[ynas]
+      #yfill = ytmp - M
+      warm_xbeta = X_r$svdH$u %*% (X_r$svdH$v %*% yfill) 
+      if(i>1) warm_xbeta = (warm_xbeta +  fitx$u %*% (fitx$d * t(fitx$v))) / 2
+      #warm_xbeta = naive_MC(as.matrix(xbeta.sparse))
       warm_xbeta = propack.svd(warm_xbeta, X_r$rank)
+      #if(i>1) warm_xbeta = fitx
       
       time_it[2] = time_it[2] + as.numeric(difftime(Sys.time(), start_time,units = "secs"))
       start_time <- Sys.time()
@@ -68,7 +71,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
          #best_fit$best_fit = fiti
          best_fit$xbeta = fitx
          best_fit$iter = i
-         counter=1
+         counter=0
       }else counter = counter + 1
       if(counter >= tol){
          if(quiet == FALSE)
