@@ -45,16 +45,17 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,Px, n_folds=5, lambda.factor=1/4, lamb
                                     thresh=thresh, lambda=lamseq[i], return_obj = F, init = "naive",
                                     final.svd = T,maxit = maxit, warm.start = warm, Px=Px)
       M = fiti$u %*% (fiti$d * t(fiti$v))
-      xbeta.sparse@x <- fiti$xbeta.obs
+      #xbeta.sparse@x <- fiti$xbeta.obs
       # yfill[ynas] <- M[ynas]
       warm_xbeta =  as.matrix(X_r$X %*% fiti$beta.obs)
       # warm_xbeta = X_r$svdH$u %*% (X_r$svdH$v %*% yfill) 
-      if(! is.null(xbeta.estim)) warm_xbeta = (warm_xbeta +  xbeta.estim) / 2
-      warm_xbeta = propack.svd(warm_xbeta, X_r$rank)
+      #if(! is.null(xbeta.estim)) warm_xbeta = (warm_xbeta +  xbeta.estim) / 2
+      #warm_xbeta = propack.svd(warm_xbeta, X_r$rank)
       
-      fitx <- simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=maxit, final.trim = F,
-                                                warm.start = warm_xbeta, trace.it=F, return_obj = F)
-      xbeta.estim = fitx$u %*% (fitx$d * t(fitx$v))
+      #fitx <- simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=maxit, final.trim = F,
+      #                                          warm.start = warm_xbeta, trace.it=F, return_obj = F)
+      #xbeta.estim = fitx$u %*% (fitx$d * t(fitx$v))
+      xbeta.estim = warm_xbeta
       #-----------------------------------------------
       
       err <- rank <- 0
@@ -65,17 +66,18 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,Px, n_folds=5, lambda.factor=1/4, lamb
                                        thresh=thresh, lambda=lamseq[i], return_obj = F, init = "naive",
                                        final.svd = T,maxit = maxit, warm.start = warm, Px=Px)
          M = fiti$u %*% (fiti$d * t(fiti$v))
-         data$xbeta.sparse@x <- fiti$xbeta.obs
+         #data$xbeta.sparse@x <- fiti$xbeta.obs
          #data$yfill[data$ynas] <- M[data$ynas]
          
          #warm_xbeta = X_r$svdH$u %*% (X_r$svdH$v %*% data$yfill)
          warm_xbeta =  as.matrix(X_r$X %*% fiti$beta.obs)
-         warm_xbeta = (warm_xbeta +  xbeta.estim) / 2
-         warm_xbeta = propack.svd(warm_xbeta, X_r$rank)
+         #warm_xbeta = (warm_xbeta +  xbeta.estim) / 2
+         #warm_xbeta = propack.svd(warm_xbeta, X_r$rank)
          
-         fitx <- simpute.als.splr.fit.nocov.fixedJ(data$xbeta.sparse, X_r$rank, maxit=maxit, final.trim = F,
-                                                   warm.start = warm_xbeta, trace.it=F, return_obj = F)
-         xbeta.estim = fitx$u %*% (fitx$d * t(fitx$v))
+         #fitx <- simpute.als.splr.fit.nocov.fixedJ(data$xbeta.sparse, X_r$rank, maxit=maxit, final.trim = F,
+         #                                          warm.start = warm_xbeta, trace.it=F, return_obj = F)
+         xbeta.estim = warm_xbeta
+         #xbeta.estim = fitx$u %*% (fitx$d * t(fitx$v))
          A_valid = M[data$valid_ind] + xbeta.estim[data$valid_ind]
          err = err + test_error(A_valid, data$Y_valid)
          rank <- rank + sum(round(fiti$d, 4) > 0) # number of positive sing.values

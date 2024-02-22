@@ -20,8 +20,8 @@ xbeta.sparse = ys
 # yvalid[yvalid==0] = NA
 # yvalid <- as(yvalid, "Incomplete")
 #---
-lambda2 = 11.3
-max.rank = 7
+lambda2 = 11.08761
+max.rank = 5
 #---
 
 start_time <- Sys.time()
@@ -33,6 +33,36 @@ print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time
 
 fits$M = fits$u %*% (fits$d * t(fits$v))
 
+xbeta =  X_r$X %*% fits$beta.obs
+xbeta.orig = gen.dat$X %*% gen.dat$beta.x
+
+fits$xbeta.obs[1:8] %>% round(4)
+xbeta[Y_train==0][1:8]  %>% round(4)
+init_xbeta[Y_train==0][1:8]%>% round(4)
+xbeta.orig[Y_train==0][1:8]%>% round(4)
+new.xbeta[Y_train==0][1:8]%>% round(4)
+(gen.dat$X %*% soutl$beta_hat)[Y_train==0][1:8]%>% round(4)
+
+fits$beta.obs[1:5,1:5]
+soutl$beta_hat[1:5,1:5]
+
+test_error(fits$beta.obs, gen.dat$beta.x)
+test_error(X_r$X %*%fits$beta.obs, gen.dat$X %*%soutl$beta_hat)
+test_error(fits$xbeta.obs, (gen.dat$X %*% soutl$beta_hat)[Y_train!=0] ) # better than new.xbeta
+test_error(new.xbeta[Y_train!=0], (gen.dat$X %*% soutl$beta_hat)[Y_train!=0] )
+
+
+
+test_error(fits$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] ) # better than new.xbeta and soutl
+test_error(new.xbeta[Y_train==0], (gen.dat$X %*% gen.dat$beta.x)[Y_train==0] )
+test_error((gen.dat$X %*% soutl$beta_hat)[Y_train==0], (gen.dat$X %*% gen.dat$beta.x)[Y_train==0] )
+test_error(init_xbeta[Y_train==0], (gen.dat$X %*% gen.dat$beta.x)[Y_train==0] )
+
+
+test_error(soutl$beta_hat, gen.dat$beta.x)
+test_error(ginv(X_r$X) %*% init_xbeta, gen.dat$beta.x)
+test_error(ginv(X_r$X) %*% new.xbeta, gen.dat$beta.x)
+test_error(ginv(X_r$X) %*% new.xbeta, soutl$beta_hat)
 
 fits$A = fits$M + X_r$X %*% fits$beta.obs
 #---
@@ -40,15 +70,17 @@ fits$A = fits$M + X_r$X %*% fits$beta.obs
 #xbeta.sparse[is.na(xbeta.sparse)] = 0
 
 xbeta.sparse@x = fits$xbeta.obs
-yfill[Y_train==0] = fits$M[Y_train==0]
-init_xbeta =  X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
-init_xbeta =  as.matrix(X_r$X %*% fits$beta.obs)#X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
+init_xbeta = naive_MC(as.matrix(xbeta.sparse))
+#yfill[Y_train==0] = fits$M[Y_train==0]
+#init_xbeta =  X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
+#init_xbeta =  as.matrix(X_r$X %*% fits$beta.obs)#X_r$svdH$u %*% (X_r$svdH$v %*% yfill)
 warm.start = propack.svd(init_xbeta, X_r$rank)
-#start_time <- Sys.time()
-fits3 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, final.trim = F,
+start_time <- Sys.time()
+fits3 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, final.trim = F,thresh=1e-5,
                                           warm.start = warm.start, trace.it=T, return_obj = F)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
+new.xbeta = fits3$u %*% (fits3$d * t(fits3$v))
 fits$A = fits$M + fits3$u %*% (fits3$d * t(fits3$v))
 fits$beta_hat = MASS::ginv(X_r$X) %*% fits3$u %*% (fits3$d * t(fits3$v))
 print(paste("Test error =", round(test_error(fits$beta_hat, gen.dat$beta.x),5)))
@@ -56,7 +88,17 @@ print(paste("Test error =", round(test_error(fits$beta_hat, gen.dat$beta.x),5)))
 sqrt(mean( ((fits$A)[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 print(paste("Test error =", round(test_error((fits$A)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 print(paste("Test error =", round(test_error(fits$M, gen.dat$B),5)))
+#----------
+# New fit function
+start_time <- Sys.time()
+fit4 = simpute.als.splr.fit.beta(as.matrix(xbeta.sparse), X_r$X, ginv(X_r$X), X_r$J,
+                                 trace.it = F,final.trim = F)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+beta_hat4 = ginv(X_r$X) %*% fit4$K
+print(paste("Test error =", round(test_error(beta_hat4, gen.dat$beta.x),5)))
 
+
+#---------
 #fits2 = restore.beta(Y_train, fits$M, xbeta.sparse, X_r$rank, thresh=1e-6, maxit=300, trace.it=T)
 sum(round(sout$M,3)==round(fits$M,3)) / length(sout$M)
 
@@ -92,7 +134,7 @@ qr(fitcv$A)$rank
 ####################################
 # K- Fold
 start_time <- Sys.time()
-fitkf = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, beta_partial, trace=T)
+fitkf = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, beta_partial, 3, trace=T)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 print(paste("Test error =", round(test_error((fitkf$A_hat)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
@@ -102,7 +144,24 @@ fitkf$lambda2
 fitkf$rank_A
 
 ###################################################
+#' Best case scenario
+#' K-fold with ALS
+sout <- simpute.cov.kfold(gen.dat$Y, gen.dat$X, gen.dat$W, n_folds = 3, print.best = FALSE,
+                          trace=TRUE, rank.limit = 30, lambda1=0,n1n2 = 1, warm=NULL,tol = 2)
+soutl <- simpute.cov.kfold.lambda1(gen.dat$Y, gen.dat$X, gen.dat$W, sout$lambda2, n_folds = 3, print.best = FALSE, 
+                                  trace=TRUE,lambda1.grid = seq(0,20,length.out=20) ,n1n2 = 1, warm=NULL,
+                                  J=c(sout$J))
 
+
+print(paste("Test error =", round(test_error((soutl$A_hat)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+print(paste("Test error =", round(test_error(soutl$B_hat, gen.dat$B),5)))
+print(paste("Test error =", round(test_error(soutl$beta_hat, gen.dat$beta.x),5)))
+soutl$lambda1
+soutl$lambda2
+
+
+
+######################################################
 # analyze obj
 # plot(1:200, fits3$obj, pch=4, col="blue")
 
@@ -158,6 +217,7 @@ start_time <- Sys.time()
 
 set.seed(2023);sout <- simpute.als.cov(Y_train, X_r$X, beta_partial,J = max.rank, thresh =  1e-6,
                                        lambda= lambda2,trace.it = T,warm.start = NULL, maxit=100)
+
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 sout$M = sout$u %*% (sout$d * t(sout$v))
 sout$Xbeta = X %*% sout$beta.estim
@@ -166,7 +226,7 @@ sout$A = sout$M  + sout$Xbeta
 print(paste("Test error =", round(test_error(sout$A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 sqrt(mean( (sout$A[gen.dat$W==0]-gen.dat$A[gen.dat$W==0])^2 ))
 print(paste("Test error =", round(test_error(sout$M, gen.dat$B),5)))
-
+print(paste("Test error =", round(test_error(sout$beta.estim, gen.dat$beta.x),5)))
 
 
 

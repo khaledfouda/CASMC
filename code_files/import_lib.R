@@ -10,6 +10,8 @@ library(patchwork)
 library(softImpute)
 library(irlba) #propack
 library(Matrix)
+library(MASS) #ginv
+library(svd) # propack 
 
 path_to_proj = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
 # setwed(path_to_proj)
