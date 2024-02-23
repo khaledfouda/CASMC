@@ -91,11 +91,14 @@ print(paste("Test error =", round(test_error(fits$M, gen.dat$B),5)))
 #----------
 # New fit function
 start_time <- Sys.time()
-fit4 = simpute.als.splr.fit.beta(as.matrix(xbeta.sparse), X_r$X, ginv(X_r$X), X_r$J,
-                                 trace.it = F,final.trim = F)
+as.matrix(xbeta.sparse) %>% dim()
+dim(X_r$X)
+fit4 = simpute.als.splr.fit.beta(as.matrix(xbeta.sparse), X_r$X,  X_r$rank,
+                                 trace.it = T,final.trim = F)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
-beta_hat4 = ginv(X_r$X) %*% fit4$K
+beta_hat4 = ginv(X_r$X) %*% fit4$Yhat
 print(paste("Test error =", round(test_error(beta_hat4, gen.dat$beta.x),5)))
+
 
 
 #---------
