@@ -250,3 +250,16 @@ print(paste("Test error Beta (Naive) =", round(test_error(ginv(X_r$X)%*%naive_MC
 print(paste("Test error Beta (Model 1) =", round(test_error(ginv(X_r$X)%*%xbeta_estim, gen.dat$beta.x),5)))
 print(paste("Test error Beta (Model 2) =", round(test_error(t(beta_estim2), gen.dat$beta.x),5)))
 ```
+
+
+Pros: 
+
+- Similar performance to Model 1
+- 3.6 times faster than model 1
+
+Cons:
+
+- Better performance than model 1 was expected
+- Need to consider better ways of Initialization
+
+----------------------------------------------------------------------------

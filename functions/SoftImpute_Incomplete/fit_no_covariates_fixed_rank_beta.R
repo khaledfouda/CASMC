@@ -1,6 +1,6 @@
 simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=TRUE,
                                               warm.start=NULL,
-                                      final.trim=TRUE, return_obj=FALSE){
+                                      final.trim=TRUE){
    # Input: X = Ux Vx, B = D V;  ||Y-XB^T||;  Y: Partially observed mxn; 
    # X is nxk and B is mxk; X is given.
    if(!inherits(X, "dgCMatrix")) Y = as(Y, "dgCMatrix")
@@ -28,7 +28,6 @@ simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=T
       X1 = warm.start$X1
       X2 = warm.start$X2
       Bsvd = warm.start$Bsvd
-      # complete later
    }
    
    ratio <- Inf
@@ -40,36 +39,29 @@ simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=T
       U.old = Bsvd$u
       V.old = Bsvd$v
       D.old = Bsvd$d
-      # print("hi")
-      #print(dim(V.old))
-      # print(dim(Bsvd$u))
-      # print(dim(Bsvd$v))
-      # print(dim(B))
       UD = UD(Bsvd$u, Bsvd$d, n)
-      # print("hi2")
       S@x = Y@x - suvC(X %*% Bsvd$v, UD, irow, pcol)
       #--------------------------------
       B = t(X1 %*% S + X2 %*% Bsvd$v %*% t(UD))
-      Bsvd = fast.svd(as.matrix(B)) #fast.svd(t(B))
+      Bsvd = fast.svd(as.matrix(B)) 
       #-----------------------------------------------------------------
-      # print(dim(Bsvd$u))
-      # print(dim(Bsvd$v))
-      # print(dim(B))
       ratio=  Frob(U.old,D.old,V.old,Bsvd$u,Bsvd$d,Bsvd$v)
       #------------------------------------------------------------------------------
-      if(trace.it)  obj= (.5*sum(S@x^2))/nz 
-      if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio,"\n")
+      if(trace.it){
+         obj= (.5*sum(S@x^2))/nz 
+         cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio,"\n")
+      }   
       
       #------------------------------------------------------------------------------
    }
    if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
    
    if(final.trim){
-      J=min(sum(Dsq>0)+1,J)
-      J = min(J, length(Dsq))
-      U = U[,seq(J), drop=FALSE]
-      V = V[,seq(J), drop=FALSE]
-      Dsq = Dsq[seq(J)]
+      J=min(sum(Bsvd$d>0)+1,k)
+      J = min(J, length(Bsvd$d))
+      Bsvd$u = Bsvd$u[,seq(J), drop=FALSE]
+      Bsvd$v = Bsvd$v[,seq(J), drop=FALSE]
+      Bsvd$d = Bsvd$d[seq(J)]
    }
    
    out = list(Bsvd=Bsvd)

@@ -1724,7 +1724,7 @@ matrix. The code for the model above can be found under
 <pre class="r"><code># first we generate simulation data and estimating the low-rank M and the observed Xbeta
 setwd(&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP&quot;)
 source(&quot;./code_files/import_lib.R&quot;)
-gen.dat &lt;- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
+gen.dat &lt;- generate_simulation_data_ysf(2,800,700,10,10, missing_prob = 0.9,coll=T)
 W_valid &lt;- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
@@ -1748,17 +1748,17 @@ fit2 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, fina
                                           warm.start = warm.start, trace.it=F, return_obj = F)
 }
 print(paste(&quot;Execution time is&quot;,round(as.numeric(difftime(Sys.time(), start_time,units = &quot;secs&quot;)),2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 60 seconds&quot;</code></pre>
+<pre><code>## [1] &quot;Execution time is 61.64 seconds&quot;</code></pre>
 <pre class="r"><code>xbeta_estim =  fit2$u %*% (fit2$d * t(fit2$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A_hat = M + xbeta_estim
 
 print(paste(&quot;Test error Beta =&quot;, round(test_error(ginv(X_r$X)%*%xbeta_estim, gen.dat$beta.x),5)))</code></pre>
-<pre><code>## [1] &quot;Test error Beta = 0.33876&quot;</code></pre>
+<pre><code>## [1] &quot;Test error Beta = 0.32629&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error M =&quot;, round(test_error(M, gen.dat$B),5)))</code></pre>
-<pre><code>## [1] &quot;Test error M = 0.56334&quot;</code></pre>
+<pre><code>## [1] &quot;Test error M = 0.62044&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error A =&quot;, round(test_error((A_hat)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))</code></pre>
-<pre><code>## [1] &quot;Test error A = 0.08845&quot;</code></pre>
+<pre><code>## [1] &quot;Test error A = 0.08957&quot;</code></pre>
 <div id="pros" class="section level3">
 <h3>Pros</h3>
 <ul>
@@ -1859,6 +1859,17 @@ print(paste(&quot;Test error A =&quot;, round(test_error((A_hat2)[gen.dat$W==0],
 <pre><code>## [1] &quot;Test error Beta (Model 1) = 0.33918&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error Beta (Model 2) =&quot;, round(test_error(t(beta_estim2), gen.dat$beta.x),5)))</code></pre>
 <pre><code>## [1] &quot;Test error Beta (Model 2) = 0.33585&quot;</code></pre>
+<p>Pros:</p>
+<ul>
+<li>Similar performance to Model 1</li>
+<li>3.6 times faster than model 1</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Better performance than model 1 was expected</li>
+<li>Need to consider better ways of Initialization</li>
+</ul>
+<hr />
 </div>
 </div>
 
