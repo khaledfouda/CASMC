@@ -1,61 +1,63 @@
-simpute.als.splr.fit.beta <- function(Y,X, J, thresh=1e-5, maxit=100, trace.it=TRUE,
+simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=TRUE,
                                               warm.start=NULL,
                                       final.trim=TRUE, return_obj=FALSE){
    # Input: X = Ux Vx, B = D V;  ||Y-XB^T||;  Y: Partially observed mxn; 
    # X is nxk and B is mxk; X is given.
+   if(!inherits(X, "dgCMatrix")) Y = as(Y, "dgCMatrix")
    
-   ynas = is.na(Y)
+   irow = Y@i
+   pcol = Y@p
+   #ynas = is.na(Y)
    n <- dim(Y)
    m <- n[2]
    n <- n[1]
-   k <- J
    
-   if(trace.it) nz = length(ynas)#nnzero(X)
+   if(trace.it) nz = nnzero(Y)
    
    if(is.null(warm.start)){
-      Y = naive_MC(Y)
-      svdX = propack.svd(X,9)#fast.svd(X)
+      svdX = fast.svd(X)#fast.svd(X)
       Ux = svdX$u
       Vx = svdX$d * t(svdX$v)
-      B = (ginv(t(Vx) %*% Vx) %*% t(Vx)) %*% t(Ux) %*% Y
-      #B = t(ginv(X) %*% Y)
-      #svdB = fast.svd(B)
-      print(dim(B))
-      svdB = propack.svd(t(B), 10)
-      Vx = Vx %*% svdB$v
-      D = svdB$d
-      V = svdB$u
+      X0 = ginv(t(Vx)%*%Vx) %*% t(Vx)
+      X1 = X0 %*% t(Ux)
+      X2 = X0 %*% Vx
+      B = t( ginv(X) %*% naive_MC(as.matrix(Y))) # B = (X^-1 Y)'
+      Bsvd = fast.svd(B)
       
    }else{
-      Ux = warm.start$Ux
+      X1 = warm.start$X1
+      X2 = warm.start$X2
+      Bsvd = warm.start$Bsvd
       # complete later
    }
    
    ratio <- Inf
    iter <- 0
-
+   S <- Y
    while((ratio > thresh)&(iter < maxit)){
          
       iter <- iter + 1
-      U.old = Ux %*% Vx
-      V.old = V
-      D.old = D
-      
+      U.old = Bsvd$u
+      V.old = Bsvd$v
+      D.old = Bsvd$d
+      # print("hi")
       #print(dim(V.old))
+      # print(dim(Bsvd$u))
+      # print(dim(Bsvd$v))
+      # print(dim(B))
+      UD = UD(Bsvd$u, Bsvd$d, n)
+      # print("hi2")
+      S@x = Y@x - suvC(X %*% Bsvd$v, UD, irow, pcol)
       #--------------------------------
-      B = (ginv(t(Vx) %*% Vx) %*% t(Vx)) %*% t(Ux) %*% Y
-      #print(dim(B))
-      svdB = propack.svd(t(B), 10) #fast.svd(t(B))
-      Vx = Vx %*% svdB$v
-      D = svdB$d
-      V = svdB$u
-      Yhat =   Ux %*% Vx %*% (D * t(V))
-      Y[ynas] = Yhat[ynas]
-      #print(dim(svdB$v))
+      B = t(X1 %*% S + X2 %*% Bsvd$v %*% t(UD))
+      Bsvd = fast.svd(as.matrix(B)) #fast.svd(t(B))
       #-----------------------------------------------------------------
-      ratio=  Frob(U.old,D.old,V.old,Ux %*% Vx,D,V)
+      # print(dim(Bsvd$u))
+      # print(dim(Bsvd$v))
+      # print(dim(B))
+      ratio=  Frob(U.old,D.old,V.old,Bsvd$u,Bsvd$d,Bsvd$v)
       #------------------------------------------------------------------------------
-      if(trace.it)  obj= 2#(.5*sum(S@x^2))/nz 
+      if(trace.it)  obj= (.5*sum(S@x^2))/nz 
       if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio,"\n")
       
       #------------------------------------------------------------------------------
@@ -70,6 +72,6 @@ simpute.als.splr.fit.beta <- function(Y,X, J, thresh=1e-5, maxit=100, trace.it=T
       Dsq = Dsq[seq(J)]
    }
    
-   out = list(ux=Ux, vx=Vx, d=D, v=V, Yhat=Y)
+   out = list(Bsvd=Bsvd)
    out
 }

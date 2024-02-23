@@ -1,0 +1,252 @@
+---
+title: "8 - Matrix Completition When the True Rank is Known in Advance"
+author: "Khaled Fouda"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+```{r setup, include=TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE)
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+library(softImpute)
+
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+```
+
+
+```{r include=TRUE, warning=FALSE, message=FALSE, eval=TRUE}
+source("./code_files/import_lib.R")
+```
+
+# References
+
+
+
+# Notation Remark
+
+We will fix the notation as set in the Overleaf summary document. 
+
+
+
+# Motivation
+
+After Estimating the Low-rank matrix $M$ and obtaining a good estimates for $P_\Omega(X\beta)$, we are now interesting in obtaining the rest of the matrix (i.e., $P_{\overline\Omega}(X\beta)$).
+
+We will treat $X \beta$ is a partially observed matrix with rank $k$ ($k$ is at most, equal to the number of covariates). Since the rank is know in advance, we no longer need the nuclear norm and our model should be more simple and faster to converge.
+
+We will consider two models. The first model attempts to directly complete $X \beta$ based only on the observed part. The second model will separate $X$ and $\beta$, make use of the covariate matrix $X$, and will attempt to predict $\beta$.
+
+# Problem Set-up
+
+For the first Model, assume that we have a partially observed matrix $Y$ of rank $k$. We want to predict a low-rank matrix $M$ such that 
+
+$$
+\| P_\Omega(Y)-P_\Omega(M) \|^2_F < \epsilon,
+$$
+
+and
+
+$$
+\| M\|_0 = \sum_i I(\sigma_i>0) = k.
+$$
+
+We will consider the Alternating-Least-Squares model and therefore $M=AB^T=UD^2V^T$ where $A=UD$ and $B=VD$.
+
+The loss function is similar to the original soft-impute but without the regularization.
+
+$$
+\text{minimize     } \| Y-AB^T\|^2_F\\ \text{      subject to } \|A\|_0=\|B\|_0=k
+$$
+
+Since the $L_0$ is non-convex we cannot use it in the loss function. However, the constraint can be easily applied while projecting $A$ into its svd decomposition.  Generally, if $A$ and $B$ were initialized with rank $k$, no extra steps are required since the rank won't changed (unless we want to trim).
+
+We still consider the sparse + low-rank representation of $Y^*$ (observed are untouched and missing are filled with predictions) as:
+
+$$
+\begin{aligned}
+Y^* &= P_\Omega(Y-AB^T) + AB^T \\
+&= Y - SPROD(U,D^2V^T) + UD^2V^T \\
+& = S+ UD^2V^T.
+\end{aligned}
+$$
+
+The least squares update functions are:
+
+$$
+\begin{aligned}
+BD = (Y^*)^TU  = S^TU + VD^2\\
+AD = Y^* V = SV + UD^2
+\end{aligned}
+$$
+
+We compute the svd decomposition of $BD$ and $AD$ at every step and update $U$, $V$, $D$, and $S$ accordingly.
+
+# Naive MC (For Initialization)
+
+Replacing the random initialization of $U$, $D$, and $V$ by the decomposition of a naive matrix completition cuts the number of iterations needed for convergence by half. For a partially observed matrix Y, the naive MC is defined as:
+
+$$
+\begin{aligned}
+&P_\Omega(Y_{naive}) = P_\Omega(Y),\\
+&P_{\overline\Omega}(Y_{naive})[i,j] = (\overline{Y[i,]}+\overline{Y[,j]})/2.
+\end{aligned}
+$$
+
+In other words, the missing values are filled with the average of the mean row and column values (considering only observed cells).
+
+The code for the Naive MC can be found under /functions/utils/naive_MC.R. The function expects a partially observed matrix where the missing values are filled with NAs. It returns a filled matrix.
+The code for the model above can be found under /functions/SoftImpute_Incomplete/fit_no_covariates_fixed_rank.R.
+
+
+We now illustrate our model above:
+
+
+```{r eval=TRUE}
+
+# first we generate simulation data and estimating the low-rank M and the observed Xbeta
+setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
+source("./code_files/import_lib.R")
+gen.dat <- generate_simulation_data_ysf(2,800,700,10,10, missing_prob = 0.9,coll=T)
+W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
+Y_train = (gen.dat$Y * W_valid)
+Y_valid = gen.dat$Y[W_valid==0]
+y = yfill = Y_train
+y[y==0] = NA
+ys <- as(y, "Incomplete")
+X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
+beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
+fit1 = simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=F, J=7,
+                                            thresh=1e-5, lambda=11.1, init = "naive",
+                                            final.svd = T,maxit = 100, warm.start = NULL,Px = beta_partial)
+xbeta.sparse <- ys
+xbeta.sparse@x = fit1$xbeta.obs
+warm.start = propack.svd(naive_MC(as.matrix(xbeta.sparse)), X_r$rank)
+start_time <- Sys.time()
+for(i in 1:100){
+fit2 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, final.trim = F,thresh=1e-5,
+                                          warm.start = warm.start, trace.it=F, return_obj = F)
+}
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+xbeta_estim =  fit2$u %*% (fit2$d * t(fit2$v))
+M = fit1$u %*% (fit1$d * t(fit1$v))
+A_hat = M + xbeta_estim
+
+print(paste("Test error Beta =", round(test_error(ginv(X_r$X)%*%xbeta_estim, gen.dat$beta.x),5)))
+print(paste("Test error M =", round(test_error(M, gen.dat$B),5)))
+print(paste("Test error A =", round(test_error((A_hat)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+```
+
+### Pros
+
+- Steps are faster since less calculations are required
+- Provide a good solution (not the best)
+
+### Cons
+
+- It always take the same number of iterations no matter what the initial matrix is. This leads to slow run in cross-validation.
+- Does not consider the covariate matrix $X$.
+- Imputes the large matrix $X\beta$ of dimensions $(n\times m)$ instead of the low-rank matrix of interest $\beta$ of dimensions $(k \times m)$.
+
+
+-------------------------------------
+
+# Model 2
+
+
+## Problem Set-up
+
+We also assume that we have a partially observed matrix $Y$ of dimension $(n \times m)$ and rank $k$. We also fully observe matrix $X$ of dimension $(n\times k)$ and rank $k$. We seek a rank-k matrix $B$ suck that
+
+$$
+\| P_\Omega(Y) - P_\Omega(XB^T)\|^2_F < \epsilon,
+$$
+
+and 
+
+$$
+\|B\|_0 = k.
+$$
+
+Let the SVD decomposition of $B$ be $B=U_BD_BV_B^T$.
+
+
+Define $U_x = \tilde{U}$ and $V_x = \tilde{D} \tilde{V}^T$ such that $X = \tilde{U}\tilde{D}\tilde{V}^T$.
+
+Define $U = U_X V_X V_B$, $D=D_B$, and $V = U_B$ such that $XB^T = U D V^T$.
+
+The sparse + low-rank decomposition is
+
+$$
+\begin{aligned}
+Y^* &= P_\Omega(Y-AB^T) + U D V^T \\
+ &= S + U_XV_XV_BD_BU_B^T  
+\end{aligned}
+$$
+
+The least squares solution for $B$ is
+
+$$
+\begin{aligned}
+B &= (X^TX)^{-1}X^TY^* \\
+&=(V_X^TU_X^TU_XV_X)^{-1}V_X^TU_X^T Y^* \\
+&=(V_X^TV_X)^{-1}V_X^TU_X^T Y^* \\
+&=(V_X^TV_X)^{-1}V_X^TU_X^T S + 
+(V_X^TV_X)^{-1}V_X^TU_X^T U_XV_XV_BD_BU_B^T  \\
+&=(V_X^TV_X)^{-1}V_X^TU_X^T S + 
+(V_X^TV_X)^{-1}V_X^TV_XV_BD_BU_B^T  \\
+\end{aligned}
+$$
+
+Since we don't update $X$ as it's fully observed, let $X_1=(V_X^TV_X)^{-1}V_X^TU_X^T$ and $X_2=(V_X^TV_X)^{-1}V_X^TV_X$. Then the LS solutions becomes:
+
+
+
+$$
+\begin{aligned}
+B &=X_1 S + X_2V_BD_BU_B^T  \\
+&=X_1 (Y-SPROD(XV_B,U_BD_B)) + X_2V_BD_BU_B^T  \\
+\end{aligned}
+$$
+
+
+
+
+Illustration:
+
+
+```{r eval=TRUE}
+# optional initialization. (if warm.start= NULL, the function will do this)
+X = X_r$X
+svdX = fast.svd(X)#fast.svd(X)
+Ux = svdX$u
+Vx = svdX$d * t(svdX$v)
+X0 = ginv(t(Vx)%*%Vx) %*% t(Vx)
+warm.start = list()
+warm.start$X1 = X0 %*% t(Ux)
+warm.start$X2 = X0 %*% Vx
+B = t( ginv(X) %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
+warm.start$Bsvd = fast.svd(B)
+#-----------------------------------------
+start_time <- Sys.time()
+for(i in 1:100){
+fit3 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F,warm.start = warm.start,
+                                 trace.it = F)
+}
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+beta_estim2 =  fit3$Bsvd$u %*% (fit3$Bsvd$d * t(fit3$Bsvd$v))
+A_hat2 = M + X_r$X %*% t(beta_estim2)
+print(paste("Test error A =", round(test_error((A_hat2)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+
+print(paste("Test error Beta (Naive) =", round(test_error(ginv(X_r$X)%*%naive_MC(as.matrix(xbeta.sparse)),
+                                                  gen.dat$beta.x),5)))
+print(paste("Test error Beta (Model 1) =", round(test_error(ginv(X_r$X)%*%xbeta_estim, gen.dat$beta.x),5)))
+print(paste("Test error Beta (Model 2) =", round(test_error(t(beta_estim2), gen.dat$beta.x),5)))
+```
