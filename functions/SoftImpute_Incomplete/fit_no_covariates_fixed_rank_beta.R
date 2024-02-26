@@ -64,6 +64,6 @@ simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=T
       Bsvd$d = Bsvd$d[seq(J)]
    }
    
-   out = list(Bsvd=Bsvd)
-   out
+   #out = #list(Bsvd=Bsvd)
+   Bsvd
 }

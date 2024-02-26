@@ -21,6 +21,17 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
    #irow = W_valid@i
    #pcol = W_valid@p
    W_valid = NULL
+   #-------------
+   # Initialize warm.start for the second model
+   svdX = fast.svd(X_r$X)
+   Ux = svdX$u
+   Vx = svdX$d * t(svdX$v)
+   X0 = ginv(t(Vx)%*%Vx) %*% t(Vx)
+   warm.start.beta = list()
+   warm.start.beta$X1 = X0 %*% t(Ux)
+   warm.start.beta$X2 = X0 %*% Vx
+   Xinv = ginv(X_r$X)
+   
    #-----------------------------------------------------------------------
    rank.max <- rank.init
    best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
@@ -30,12 +41,28 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, lambda.factor=1/4, lam
    for(i in seq(along=lamseq)) {
       start_time <- Sys.time()
       fiti <-  simpute.als.fit_splr(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,
-                                    thresh=thresh, lambda=lamseq[i], return_obj = F, init = "naive",
+                                    thresh=thresh, lambda=lamseq[i], init = "naive",
                                     final.svd = T,maxit = 300, warm.start = warm)
       time_it[1] = time_it[1] + as.numeric(difftime(Sys.time(), start_time,units = "secs"))
       start_time <- Sys.time()
-      M = fiti$u %*% (fiti$d * t(fiti$v))
       xbeta.sparse@x <- fiti$xbeta.obs
+      #---------
+      # prepare warm.start.beta:
+      B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
+      warm.start.beta$Bsvd = fast.svd(B)
+      #---------------------------
+      # fit second model:
+      fitx = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F,
+                                       warm.start = warm.start.beta, trace.it = F)
+      #--------------------------------------------
+      # updating fiti$xbeta.obs for the next fit
+      fiti$xbeta.obs <- suvC(X_r$X %*% fitx$v, t(fitx$d * t(fitx$u)), xbeta.sparse@i, xbeta.sparse@p)
+      #--------------------------------------------------------------
+      # predicting validation set:
+      Mvalid = suvC(fiti$u, UD(fiti$d * t(fiti$v))
+      
+      
+      #---------------------------------------------------------------------
       yfill[ynas] <- M[ynas]
       warm_xbeta = X_r$svdH$u %*% (X_r$svdH$v %*% yfill) 
       if(i>1) warm_xbeta = (warm_xbeta +  xbeta.estim) / 2

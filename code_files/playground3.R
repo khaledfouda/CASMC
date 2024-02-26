@@ -26,12 +26,13 @@ max.rank = 5
 
 start_time <- Sys.time()
 set.seed(2023);fits <- simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=F, J=max.rank,
-                                            thresh=1e-6, lambda=lambda2, return_obj = F, init = "naive",
-                                            final.svd = T,maxit = 100, warm.start = NULL,Px = beta_partial)
+                                            thresh=1e-6, lambda=lambda2, init = "naive",
+                                            final.svd = T,maxit = 100, warm.start = fits)
 
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fits$M = fits$u %*% (fits$d * t(fits$v))
+test_error(fits$M, gen.dat$B)
 
 xbeta =  X_r$X %*% fits$beta.obs
 xbeta.orig = gen.dat$X %*% gen.dat$beta.x
@@ -51,9 +52,13 @@ test_error(X_r$X %*%fits$beta.obs, gen.dat$X %*%soutl$beta_hat)
 test_error(fits$xbeta.obs, (gen.dat$X %*% soutl$beta_hat)[Y_train!=0] ) # better than new.xbeta
 test_error(new.xbeta[Y_train!=0], (gen.dat$X %*% soutl$beta_hat)[Y_train!=0] )
 
+test_error(fits$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] ) # better than new.xbeta
+test_error(fits$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] ) # better than new.xbeta
 
 
-test_error(fits$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] ) # better than new.xbeta and soutl
+test_error((X_r$X %*% sout$beta.estim)[Y_train!=0], (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] ) # better than new.xbeta and soutl
+
+
 test_error(new.xbeta[Y_train==0], (gen.dat$X %*% gen.dat$beta.x)[Y_train==0] )
 test_error((gen.dat$X %*% soutl$beta_hat)[Y_train==0], (gen.dat$X %*% gen.dat$beta.x)[Y_train==0] )
 test_error(init_xbeta[Y_train==0], (gen.dat$X %*% gen.dat$beta.x)[Y_train==0] )
@@ -93,14 +98,40 @@ print(paste("Test error =", round(test_error(fits$M, gen.dat$B),5)))
 start_time <- Sys.time()
 as.matrix(xbeta.sparse) %>% dim()
 dim(X_r$X)
-fit4 = simpute.als.splr.fit.beta(as.matrix(xbeta.sparse), X_r$X,  X_r$rank,
+fit4 = simpute.als.splr.fit.beta((xbeta.sparse), X_r$X,  X_r$rank,
                                  trace.it = T,final.trim = F)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
-beta_hat4 = ginv(X_r$X) %*% fit4$Yhat
-print(paste("Test error =", round(test_error(beta_hat4, gen.dat$beta.x),5)))
+beta_hat4 =  fit4$Bsvd$u %*% (fit4$Bsvd$d * t(fit4$Bsvd$v))
+print(paste("Test error =", round(test_error(t(beta_hat4), gen.dat$beta.x),5)))
+#---------------
+# fit using linear model
 
 
 
+
+
+#----------------
+# original
+yfill = gen.dat$Y
+best_fit$B_hat = fits$u %*% (fits$d * t(fits$v))
+yfill[gen.dat$Y==0] = (best_fit$B_hat)[gen.dat$Y==0]
+beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
+fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=ginv(X_r$X) %*%init_xbeta)
+
+start_time <- Sys.time()
+sout <- simpute.als.cov(gen.dat$Y, X_r$X, beta_partial,J = max.rank, thresh =  1e-6,
+                        lambda= lambda2,
+                        trace.it = T,warm.start = fits.out, maxit=2)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+print(paste("Test error =", round(test_error(sout$beta.estim, gen.dat$beta.x),5)))
+print(paste("Test error =", round(test_error(sout$u %*% (sout$d * t(sout$v)), gen.dat$B),5)))
+
+# naive
+
+beta.estim.naive=ginv(X_r$X) %*%init_xbeta
+beta.estim.yfill = beta_partial %*% yfill
+print(paste("Test error =", round(test_error(beta.estim.naive, gen.dat$beta.x),5)))
+print(paste("Test error =", round(test_error(beta.estim.yfill, gen.dat$beta.x),5)))
 #---------
 #fits2 = restore.beta(Y_train, fits$M, xbeta.sparse, X_r$rank, thresh=1e-6, maxit=300, trace.it=T)
 sum(round(sout$M,3)==round(fits$M,3)) / length(sout$M)

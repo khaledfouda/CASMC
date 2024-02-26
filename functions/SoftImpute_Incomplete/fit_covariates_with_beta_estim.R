@@ -1,8 +1,8 @@
 
-simpute.als.fit_splr <-
-function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0, 
+simpute.als.fit_splr_with_beta_estim <-
+function (y, X=NULL, H=NULL, J = 2, thresh = 1e-05, lambda=0, 
           maxit=100,trace.it=FALSE,warm.start=NULL,final.svd=TRUE,
-          init="naive") {
+          svdH=NULL, return_obj=FALSE, init="naive", Px=NULL) {
 
   if(!inherits(y,"dgCMatrix")) y=as(y,"dgCMatrix")
   irow=y@i
@@ -49,6 +49,7 @@ function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0,
     }
     if(any(is.na(warm.start$xbeta.obs))){
       initialize_beta = TRUE
+      #xbeta.obs = suvC(svdH$u, t(as.matrix(svdH$v %*% y)),irow,pcol)
     }else{
       xbeta.obs = warm.start$xbeta.obs
     }
@@ -66,6 +67,7 @@ function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0,
       yobs = ! is.na(Y_naive)
       Y_naive = naive_MC(Y_naive)
       naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
+      beta.obs <- Px %*% Y_naive
       xbeta.obs <- naive_fit[yobs]
       naive_fit <- Y_naive - naive_fit
       naive_fit <- propack.svd(as.matrix(naive_fit), J)
@@ -83,6 +85,7 @@ function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0,
   counter = 0
   best_score = Inf
   best_iter = NA
+  if(return_obj) obj.l <- rep(NA, maxit)
   #-----------------------------------------------------------
   if(initialize_beta){
     VDsq=UD(V,Dsq,m)
@@ -116,6 +119,7 @@ function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0,
     part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
     part2 = suvC(HU,VDsq, irow, pcol)
     xbeta.obs = part1 + part2 + xbeta.obs
+    beta.obs = beta.obs + Px %*% S + (Px %*% U) %*% t(VDsq)
     # update B
     B = as.matrix(t(S) %*% IHU) + (VDsq %*% (t(U) %*% IHU))  
     if(lambda>0) B = t(t(B) *(Dsq/(Dsq+lambda))) 
@@ -127,10 +131,11 @@ function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0,
     UDsq = UD(U,Dsq,n)
     # V step
     ## Compute beta estimates again
-    #HU = svdH$u %*% (svdH$v %*% UDsq)
-    #part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
-    #part2 = suvC(HU,V, irow, pcol)
-    #xbeta.obs = part1 + part2 + xbeta.obs
+    HU = svdH$u %*% (svdH$v %*% UDsq)
+    part1 = suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol)
+    part2 = suvC(HU,V, irow, pcol)
+    xbeta.obs = part1 + part2 + xbeta.obs
+    beta.obs = beta.obs + Px %*% S + (Px %*% UDsq) %*% t(V)
     # update A
     M_obs = suvC(UDsq,V,irow,pcol)
     S@x = y@x - M_obs - xbeta.obs  
@@ -142,14 +147,13 @@ function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0,
     Dsq = Asvd$d
     V = V %*% (Asvd$v)
     HU = svdH$u %*% (svdH$v %*% U)
+    #-----------------------------------------------------------------------------------
+    if(trace.it | return_obj)  obj= (.5*sum(S@x^2)+lambda*sum(Dsq))/nz 
+    if(return_obj) obj.l[iter] = obj
     #------------------------------------------------------------------------------
     ratio=  Frob(U.old,Dsq.old,V.old,U,Dsq,V)
     #------------------------------------------------------------------------------
-    if(trace.it){
-      obj= (.5*sum(S@x^2)+lambda*sum(Dsq))/nz 
-      if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio,"\n")
-    }  
-    #-----------------------------------------------------------------------------------
+    if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio,"\n")
   
   }
   if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
@@ -181,6 +185,7 @@ function (y, X=NULL, svdH=NULL, J = 2, thresh = 1e-05, lambda=0,
   J=min(sum(Dsq>0)+1,J)
   J = min(J, length(Dsq))
   out=list(u=U[, seq(J), drop=FALSE], d=Dsq[seq(J)], v=V[,seq(J), drop=FALSE], lambda=lambda, J=J,
-           n_iter=iter, xbeta.obs=xbeta.obs)
+           n_iter=iter, xbeta.obs=xbeta.obs, beta.obs=beta.obs)
+  if(return_obj) out$obj = obj.l 
   out
 }
