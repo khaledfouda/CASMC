@@ -15,7 +15,7 @@ simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=T
    if(trace.it) nz = nnzero(Y)
    
    if(is.null(warm.start)){
-      svdX = fast.svd(X)#fast.svd(X)
+      svdX = fast.svd(X)
       Ux = svdX$u
       Vx = svdX$d * t(svdX$v)
       X0 = ginv(t(Vx)%*%Vx) %*% t(Vx)
@@ -39,7 +39,7 @@ simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=T
       U.old = Bsvd$u
       V.old = Bsvd$v
       D.old = Bsvd$d
-      UD = UD(Bsvd$u, Bsvd$d, n)
+      UD = t(Bsvd$d * t(Bsvd$u))
       S@x = Y@x - suvC(X %*% Bsvd$v, UD, irow, pcol)
       #--------------------------------
       B = t(X1 %*% S + X2 %*% Bsvd$v %*% t(UD))
