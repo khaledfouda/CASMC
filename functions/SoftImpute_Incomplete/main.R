@@ -78,3 +78,22 @@ print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$
 best_fit$rank.max
 best_fit$lambda
 #------------------------------------------------------------------------------------
+# K-fold cross-validation
+
+start_time <- Sys.time()
+best_fit2 = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, trace=TRUE,print.best = TRUE)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+fit1 = best_fit2$fit1
+fit2 = best_fit2$fit2
+# get estimates and validate
+beta =  fit2$u %*% (fit2$d * t(fit2$v))
+M = fit1$u %*% (fit1$d * t(fit1$v))
+A = M + X_r$X %*% t(beta)
+test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta.x)[gen.dat$Y!=0] )
+# test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )
+print(paste("Test error =", round(test_error(t(beta), gen.dat$beta.x),5)))
+test_error(M, gen.dat$B)
+print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+best_fit$rank.max
+best_fit$lambda

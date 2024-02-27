@@ -111,14 +111,23 @@ print(paste("Test error =", round(test_error(t(beta_hat4), gen.dat$beta.x),5)))
 # fit using linear model
 # Y = X beta (where Y is the partially observed)
 #xbeta.sparse@x =  (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0]
-Y.xb = naive_MC(as.matrix(xbeta.sparse))
+start_time <- Sys.time()
 
+Y.xb = naive_MC(as.matrix(xbeta.sparse))
+beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
+best_err = Inf
 for(i in 1:50){
    beta.preds = beta_partial %*% Y.xb
-   print(paste("Test error =", round(test_error(beta.preds, gen.dat$beta.x),5)))
+   err = round(test_error(beta.preds, gen.dat$beta.x),6)
+   if(err < best_err){
+      best_preds = beta.preds
+      best_i = i
+      best_err = err
+      #print(paste("Test error =", round(err,5)))
+   }
    Y.xb[Y_train ==0] = (X_r$X %*% beta.preds)[Y_train==0]
 }
-
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 ### tmp:::
 ..Y_naive = as.matrix(y)

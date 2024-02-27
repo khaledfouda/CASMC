@@ -12,16 +12,14 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov_splr(Y, X_r$svdH) * lambda.factor, lambda.init) 
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
    #----------------------------------------------------
-   yfill =  Y
-   ynas = Y == 0
-   Y[ynas] = NA
-   m = dim(Y)[2]
+   Y[Y == 0] = NA
+   #m = dim(Y)[2]
    Y <- as(Y, "Incomplete")
    xbeta.sparse = Y
    irow = Y@i
    pcol = Y@p
    
-   valid_ind = W_valid == 0
+   #valid_ind = W_valid == 0
    W_valid[W_valid == 1] = NA
    W_valid[W_valid == 0] =  1
    W_valid <- as(W_valid, "Incomplete")
@@ -43,7 +41,6 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
    rank.max <- rank.init
    best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
    counter <- 0
-   time_it <- rep(0,4)
    #---------------------------------------------------------------------
    for(i in seq(along=lamseq)) {
       fiti <-  simpute.als.fit_splr(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,
@@ -52,8 +49,10 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
       xbeta.sparse@x <- fiti$xbeta.obs
       #---------
       # prepare warm.start.beta:
-      B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
-      warm.start.beta$Bsvd = fast.svd(B)
+      if(i == 1){
+         B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
+         warm.start.beta$Bsvd = fast.svd(B)
+      }else warm.start.beta$Bsvd = fitx
       #---------------------------
       # fit second model:
       fitx = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
@@ -105,8 +104,9 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
                                     final.svd = T,maxit = maxit, warm.start = best_fit$fit1)
       xbeta.sparse = y
       xbeta.sparse@x <- best_fit$fit1$xbeta.obs
-      B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
-      warm.start.beta$Bsvd = fast.svd(B)
+      #B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
+      #warm.start.beta$Bsvd = fast.svd(B)
+      warm.start.beta$Bsvd = fitx
       best_fit$fit2 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
                                        warm.start = warm.start.beta, trace.it = F,maxit=maxit)
 
