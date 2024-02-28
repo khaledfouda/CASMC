@@ -2,14 +2,14 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
                            trace=FALSE, print.best=TRUE, tol=1, thresh=1e-6, maxit=100,
                            rank.init=3, rank.limit=50, rank.step=2,
                             warm=NULL, quiet=FALSE){
-   
+
    #' Input: Y training partially observed with missing set to 0
    #' X_r list
    #' Y_valid  vector of validation values
    #' W_valid matrix where W_valid = 0 for validation and 1 for train/test
    #' y (optional) whole training set including the validation for one last fit at the end.
    #' --------------------------------------------------------------------
-   lam0 <- ifelse(is.na(lambda.init), lambda0.cov_splr(Y, X_r$svdH) * lambda.factor, lambda.init) 
+   lam0 <- ifelse(is.na(lambda.init), lambda0.cov_splr(Y, X_r$svdH) * lambda.factor, lambda.init)
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
    #----------------------------------------------------
    Y[Y == 0] = NA
@@ -18,7 +18,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
    xbeta.sparse = Y
    irow = Y@i
    pcol = Y@p
-   
+
    #valid_ind = W_valid == 0
    W_valid[W_valid == 1] = NA
    W_valid[W_valid == 0] =  1
@@ -36,7 +36,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
    warm.start.beta$X1 = X0 %*% t(Ux)
    warm.start.beta$X2 = X0 %*% Vx
    Xinv = ginv(X_r$X)
-   
+
    #-----------------------------------------------------------------------
    rank.max <- rank.init
    best_fit <- list(error=Inf, rank_A=NA, rank_B=NA, lambda=NA, rank.max=NA)
@@ -66,14 +66,15 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
       #--------------------------------------------
       err = test_error(Mvalid+Xbvalid, Y_valid)
       rank <- sum(round(fiti$d, 4) > 0) # number of positive sing.values
-      
-      
+
+
       #---------------------------------------------------------------------
       #----------------------------
-      warm <- fiti # warm start for next 
+      warm <- fiti # warm start for next
       if(trace==TRUE)
-         print(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d,%d, valid error = %.5f",
-                       i, lamseq[i], rank.max, rank, fiti$n_iter, err))
+       print(sprintf(paste0("%2d lambda=%9.5g, rank.max = %d  ==>",
+                            " rank = %d, error = %.5f, niter/fit = %d + %d"),
+                     i, lamseq[i], rank.max, rank, err, fiti$n_iter, fitx$n_iter))
       #-------------------------
       # register best fir
       if(err < best_fit$error){
@@ -96,7 +97,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
    }
    # fit one last time full model, if the train/valid is provided
    if(! is.null(y)){
-      best_fit$fit1$xbeta.obs <- suvC(X_r$X %*% best_fit$fit2$v, 
+      best_fit$fit1$xbeta.obs <- suvC(X_r$X %*% best_fit$fit2$v,
                                       t(best_fit$fit2$d * t(best_fit$fit2$u)),
                                       y@i, y@p)
       best_fit$fit1 <-  simpute.als.fit_splr(y=y, svdH=X_r$svdH,  trace=F, J=best_fit$rank.max,

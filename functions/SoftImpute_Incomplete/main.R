@@ -5,21 +5,21 @@ source("./code_files/import_lib.R")
 
 # 0. prepare the data
 
-gen.dat <- generate_simulation_data_ysf(2,800,700,10,10, missing_prob = 0.5,coll=F)
+gen.dat <- generate_simulation_data_ysf(2,800,700,10,10, missing_prob = 0.8,coll=T)
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
 y[y==0] = NA
 y <- as(y, "Incomplete")
 xbeta.sparse = y
-lambda2 = 11.08761
-max.rank = 5
+lambda2 =  16.43287
+max.rank = 6
 
 #-----------------------------------------------------------------------
 # 1. Fit the model without cross validation:
 # files: fit_covariates.R; fit_n_covariates_fixed_rank_beta.R
 
 start_time <- Sys.time()
-set.seed(2020);fits <- simpute.als.fit_splr(y=y, svdH=X_r$svdH,  trace=F, J=max.rank,
+set.seed(2020);fits <- simpute.als.fit_splr(y=y, svdH=X_r$svdH,  trace=T, J=max.rank,
                                             thresh=1e-6, lambda=lambda2, init = "naive",
                                             final.svd = T,maxit = 500, warm.start = NULL)
 xbeta.sparse@x = fits$xbeta.obs
@@ -61,7 +61,7 @@ Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
 # fit
 start_time <- Sys.time()
-best_fit = simpute.cov.cv_splr(Y_train, X_r, Y_valid, W_valid, y, trace=FALSE, thresh=1e-6)
+best_fit = simpute.cov.cv_splr(Y_train, X_r, Y_valid, W_valid, y, trace=TRUE, thresh=1e-6,n.lambda = 30)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fit1 = best_fit$fit1
@@ -81,7 +81,8 @@ best_fit$lambda
 # K-fold cross-validation
 
 start_time <- Sys.time()
-best_fit2 = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, trace=TRUE,print.best = TRUE)
+best_fit2 = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, trace=TRUE,print.best = TRUE,
+                                n.lambda = 30, n_folds = 5 )
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fit1 = best_fit2$fit1
@@ -95,5 +96,5 @@ test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta.x)[gen
 print(paste("Test error =", round(test_error(t(beta), gen.dat$beta.x),5)))
 test_error(M, gen.dat$B)
 print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
-best_fit$rank.max
-best_fit$lambda
+best_fit2$rank.max
+best_fit2$lambda
