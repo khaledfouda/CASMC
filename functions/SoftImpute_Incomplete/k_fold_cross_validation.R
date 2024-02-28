@@ -1,9 +1,9 @@
 simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                                             trace=FALSE, thresh=1e-6, maxit=100,
                                             rank.init=3, rank.limit=50, rank.step=2,
-                                            warm=NULL, tol=1, print.best=TRUE){
+                                            warm=NULL, tol=1, print.best=TRUE, seed=2024){
 
-
+   set.seed(seed)
    #----------------------------------------------------
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov_splr(Y, X_r$svdH) * lambda.factor, lambda.init)
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
@@ -17,15 +17,20 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
    warm.start.beta$X1 = X0 %*% t(Ux)
    warm.start.beta$X2 = X0 %*% Vx
    Xinv = ginv(X_r$X)
+   #---------------------------------------------------------
+   observed_indices = which(W==1)
+   xbeta.observed = numeric(length(observed_indices))
    #-----------------------------------------------------------------------
    # prepare the folds
    folds <- k_fold_cells(nrow(Y), ncol(Y), n_folds, W)
    fold_data <- lapply(1:n_folds, function(i) {
       W_fold = folds[[i]]
       valid_ind = W_fold==0 & W==1
-
+      
+      obs_ind = which(observed_indices %in% which(valid_ind))
+      
       Y_train = Y * W_fold
-      Y_train[Y_train == 0] = NA
+      Y_train[W_fold==0] = NA
       Y_train = as(Y_train, "Incomplete")
 
       xbeta.sparse = Y_train
@@ -42,6 +47,9 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
            virow = virow, vpcol=vpcol)
    })
    #---------------------------------------------------------------------------
+   n <- dim(Y)
+   m <- n[2]
+   n <- n[1]
    Y[Y == 0] = NA
    Y <- as(Y, "Incomplete")
    xbeta.sparse = Y
@@ -57,14 +65,14 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
    for(i in seq(along=lamseq)) {
       # initial fit to whole data
       if(i != 1)
-         fiti$xbeta.obs <- suvC(Xv, t(fitx$d * t(fitx$u)), Y@i, Y@p)
+         fiti$xbeta.obs <- xbeta.observed #suvC(Xv, t(fitx$d * t(fitx$u)), Y@i, Y@p)
       fiti <-  simpute.als.fit_splr(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,
                                     thresh=thresh, lambda=lamseq[i], init = "naive",
                                     final.svd = T,maxit = maxit, warm.start = fiti)
       xbeta.sparse@x <- fiti$xbeta.obs
       #---------
       # prepare warm.start.beta:
-      if(i == 1){
+      if(i >= 1){
          B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
          warm.start.beta$Bsvd = fast.svd(B)
       }else warm.start.beta$Bsvd = fitx
@@ -79,15 +87,18 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
          niter2 <- niter2 + fitx$n_iter
       }
       #-----------------------------------------------
-      warm = fiti
+      #warm = fiti
       err <- rank <- 0
+      #average_M <- matrix(0, n, m)
       for(fold in 1:n_folds){
          data = fold_data[[fold]]
          #-----
-         warm$xbeta.obs <- suvC(Xv, t(fitx$d * t(fitx$u)), data$Y_train@i, data$Y_train@p)
+         fiti$xbeta.obs <- suvC(Xv, t(fitx$d * t(fitx$u)), data$Y_train@i, data$Y_train@p)
          fiti <-  simpute.als.fit_splr(y=data$Y_train, svdH=X_r$svdH,  trace=F, J=rank.max,
                                        thresh=thresh, lambda=lamseq[i], init = "naive",
-                                       final.svd = T,maxit = maxit, warm.start = warm)
+                                       final.svd = T,maxit = maxit, warm.start = fiti)
+         xbeta.observed[data$obs_ind] <- fiti$xbeta.obs
+         #average_M <- average_M + fiti$u %*% (fiti$d * t(fiti$v))
          #data$xbeta.sparse@x <- fiti$xbeta.obs
          #---------
          # prepare warm.start.beta:
@@ -117,6 +128,10 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
       }
       err = err / n_folds
       rank = as.integer(rank / n_folds)
+      # M_svd = propack.svd(average_M/n_folds, rank)
+      # fiti$u <- M_svd$u
+      # fiti$v <- M_svd$v
+      # fiti$d <- M_svd$d
       #------------------------------------------------
       if(trace){
          print(sprintf(paste0("%2d lambda=%9.5g, rank.max = %d  ==>",
@@ -130,7 +145,7 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
          best_fit$lambda = lamseq[i]
          best_fit$rank.max = rank.max
          best_fit$rank = rank
-         best_fit$fit1 = warm
+         best_fit$fit1 = fiti
          best_fit$fit2 = fitx
          best_fit$iter = i
          counter = 0
@@ -156,9 +171,9 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
                                           thresh=thresh, lambda=best_fit$lambda, init = "naive",
                                           final.svd = T,maxit = maxit, warm.start = best_fit$fit1)
    xbeta.sparse@x <- best_fit$fit1$xbeta.obs
-   #B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
-   #warm.start.beta$Bsvd = fast.svd(B)
-   warm.start.beta$Bsvd = fitx
+   B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
+   warm.start.beta$Bsvd = fast.svd(B)
+   #warm.start.beta$Bsvd = best_fit$fit2
    best_fit$fit2 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
                                              warm.start = warm.start.beta, trace.it = F,maxit=maxit)
 

@@ -213,7 +213,7 @@ fitkf$rank_A
 ###################################################
 #' Best case scenario
 #' K-fold with ALS
-sout <- simpute.cov.kfold(gen.dat$Y, gen.dat$X, gen.dat$W, n_folds = 3, print.best = FALSE,
+sout <- simpute.cov.kfold(gen.dat$Y, gen.dat$X, gen.dat$W, n_folds = 3, print.best =TRUE,
                           trace=TRUE, rank.limit = 30, lambda1=0,n1n2 = 1, warm=NULL,tol = 2)
 soutl <- simpute.cov.kfold.lambda1(gen.dat$Y, gen.dat$X, gen.dat$W, sout$lambda2, n_folds = 3, print.best = FALSE, 
                                   trace=TRUE,lambda1.grid = seq(0,20,length.out=20) ,n1n2 = 1, warm=NULL,
@@ -225,9 +225,16 @@ print(paste("Test error =", round(test_error(soutl$B_hat, gen.dat$B),5)))
 print(paste("Test error =", round(test_error(soutl$beta_hat, gen.dat$beta.x),5)))
 soutl$lambda1
 soutl$lambda2
+soutl$J
+sout$rank_A
+#-------------------------
+#
+which(gen.dat$W==1) -> WWW
+which(W_valid==0&gen.dat$W==1) -> WW2
+WWW[1:12]
+WW2[1:10]
 
-
-
+which(WWW %in% WW2)[1:5]
 ######################################################
 # analyze obj
 # plot(1:200, fits3$obj, pch=4, col="blue")
