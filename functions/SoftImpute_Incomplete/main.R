@@ -5,7 +5,7 @@ source("./code_files/import_lib.R")
 
 # 0. prepare the data
 
-gen.dat <- generate_simulation_data_ysf(2,800,700,10,10, missing_prob = 0.8,coll=T)
+gen.dat <- generate_simulation_data_ysf(2,800,700,10,10, missing_prob = 0.9,coll=T)
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
 y[y==0] = NA
@@ -79,7 +79,7 @@ best_fit$rank.max
 best_fit$lambda
 #------------------------------------------------------------------------------------
 # K-fold cross-validation
-
+test_error <- RMSE
 start_time <- Sys.time()
 best_fit2 = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, trace=T,print.best = TRUE,
                                 n.lambda = 20, n_folds = 3)
