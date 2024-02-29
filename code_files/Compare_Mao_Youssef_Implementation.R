@@ -2,7 +2,7 @@
 
 missingness = 0.9
 
-compare_and_save <- function(missingness,coll=TRUE, 
+compare_and_save_old <- function(missingness,coll=TRUE, 
                              lambda.1_grid = seq(0,3,length=20),
                              lambda.2_grid = seq(.9, 0, length=20),
                              alpha_grid = seq(0.992, 1, length=10), plot=FALSE, tofile=FALSE, graph_label="",ncores=2){

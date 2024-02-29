@@ -61,12 +61,14 @@ compare_softImpute_cov <- function(gen.dat, valid.dat){
    results
 }
 
-compare_softImpute_L2 <- function(gen.dat, valid.dat, lambda.1_grid){
+compare_softImpute_L2 <- function(gen.dat, valid.dat, lambda.1_grid, rank.step, rank.limit,
+                                  n.lambda){
    
    start_time = Sys.time()
    sout <- simpute.cov.cv(valid.dat$Y_train, gen.dat$X, valid.dat$W_valid,
-                          valid.dat$Y_valid, trace=FALSE, rank.limit = 30, 
-                          print.best=FALSE, rank.step=4, type="als", lambda1=0, tol=2)
+                          valid.dat$Y_valid, trace=FALSE, rank.limit = rank.limit, 
+                          print.best=FALSE, rank.step=rank.step, type="als", lambda1=0,
+                          tol=2, n.lambda = n.lambda)
    sout <- simpute.cov.cv.lambda1(valid.dat$Y_train, gen.dat$X,valid.dat$W_valid,
                                   valid.dat$Y_valid, sout$lambda, sout$rank.max, print.best = FALSE,
                                   trace=FALSE, lambda1.grid =lambda.1_grid ,n1n2 = 1, warm=NULL)
@@ -84,11 +86,13 @@ compare_softImpute_L2 <- function(gen.dat, valid.dat, lambda.1_grid){
    results
 }
 
-compare_softImpute_Kfold <- function(gen.dat, lambda.1_grid){
+compare_softImpute_Kfold <- function(gen.dat, lambda.1_grid, n_folds, rank.step, rank.limit,
+                                     n.lambda){
    
    start_time = Sys.time()
-   sout <- simpute.cov.kfold(gen.dat$Y, gen.dat$X, gen.dat$W, n_folds = 3, print.best = FALSE,
-                             trace=FALSE, rank.limit = 30, lambda1=0,n1n2 = 1, warm=NULL,tol = 2)
+   sout <- simpute.cov.kfold(gen.dat$Y, gen.dat$X, gen.dat$W, n_folds = n_folds, print.best = FALSE,
+                             trace=FALSE, rank.limit = rank.limit, lambda1=0,n1n2 = 1,
+                             warm=NULL,tol = 2, rank.step = rank.step, n.lambda = n.lambda)
    sout <- simpute.cov.kfold.lambda1(gen.dat$Y, gen.dat$X, gen.dat$W, sout$lambda2, n_folds = 3, print.best = FALSE, 
                                      trace=FALSE,lambda1.grid = lambda.1_grid ,n1n2 = 1, warm=NULL,
                                      J=c(sout$J))
@@ -108,31 +112,24 @@ compare_softImpute_Kfold <- function(gen.dat, lambda.1_grid){
 
 
 
-compare_softImpute_splr <- function(gen.dat, valid.dat, splr.dat){
+compare_softImpute_splr <- function(gen.dat, valid.dat, splr.dat, rank.step, rank.limit, n.lambda){
    
    start_time = Sys.time()
    
-   best_fit = simpute.cov.cv_splr_no_patience(valid.dat$Y_train,
-                                              splr.dat$svdH, valid.dat$Y_valid,
-                                              valid.dat$W_valid,warm = NULL,
-                                              trace = F, rank.limit=30,rank.step=4,patience = 1,
-                                              rank.init = 2, lambda.factor = 1/4, n.lambda = 30)
-   yfill = gen.dat$Y
-   fits = best_fit$best_fit
-   best_fit$B_hat = fits$u %*% (fits$d * t(fits$v))
-   yfill[gen.dat$Y==0] = (best_fit$B_hat)[gen.dat$Y==0]
-   beta_partial = MASS::ginv(t(splr.dat$X) %*% splr.dat$X) %*% t(splr.dat$X)
-   fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=beta_partial %*% yfill)
+   
+   best_fit = simpute.cov.cv_splr(valid.dat$Y_train, splr.dat, valid.dat$Y_valid,
+                                  valid.dat$W_valid, gen.dat$Y, trace=F, thresh=1e-6,
+                                  n.lambda = n.lambda, rank.limit=rank.limit,
+                                  rank.step = rank.step, print.best = FALSE)
    
    
-   sout <- simpute.als.cov(gen.dat$Y, splr.dat$X, beta_partial,J = best_fit$rank_B, thresh =  1e-6,
-                           lambda= best_fit$lambda,
-                           trace.it = F,warm.start = fits.out, maxit=100)
-   
-   sout$B_hat = sout$u %*% (sout$d * t(sout$v))
-   sout$A_hat = sout$B_hat  + splr.dat$X %*% sout$beta.estim
-   sout$beta_hat = sout$beta.estim
-   
+   fit1 = best_fit$fit1
+   fit2 = best_fit$fit2
+   sout = best_fit
+   # get estimates and validate
+   sout$B_hat = fit1$u %*% (fit1$d * t(fit1$v))
+   sout$beta_hat =  fit2$u %*% (fit2$d * t(fit2$v))
+   sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)
    
    results = list(model = "SoftImpute_splr")
    results$time =round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
@@ -147,30 +144,24 @@ compare_softImpute_splr <- function(gen.dat, valid.dat, splr.dat){
    results
 }
 
-compare_softImpute_splr_Kfold <- function(gen.dat, valid.dat, splr.dat, n_folds=10){
+compare_softImpute_splr_Kfold <- function(gen.dat, valid.dat, splr.dat, n_folds,
+                                          rank.step, rank.limit, n.lambda){
    
    start_time = Sys.time()
    
-   best_fit = simpute.cov.Kf_splr_no_patience_v2(gen.dat$Y, splr.dat$svdH, gen.dat$W, n_folds=n_folds,
-                                                 trace = F, rank.init=2, lambda.factor = 1/4,n.lambda = 30,
-                                                 rank.limit=30,rank.step=4,patience = 1)
+   best_fit = simpute.cov.Kf_splr(gen.dat$Y, splr.dat, gen.dat$W, trace = F,
+                                  print.best = FALSE, rank.limit=rank.limit,
+                                  n.lambda = n.lambda,
+                                  n_folds = n_folds, rank.step=rank.step)
    
    
-   yfill = gen.dat$Y
-   fits = best_fit$best_fit
-   best_fit$B_hat = fits$u %*% (fits$d * t(fits$v))
-   yfill[gen.dat$Y==0] = (best_fit$B_hat)[gen.dat$Y==0]
-   beta_partial = MASS::ginv(t(splr.dat$X) %*% splr.dat$X) %*% t(splr.dat$X)
-   fits.out = list(u=fits$u, d=fits$d, v=fits$v, beta.estim=beta_partial %*% yfill)
-   
-   
-   sout <- simpute.als.cov(gen.dat$Y, splr.dat$X, beta_partial,J = best_fit$rank_B, thresh =  1e-6,
-                           lambda= best_fit$lambda,
-                           trace.it = F,warm.start = fits.out, maxit=100)
-   
-   sout$B_hat = sout$u %*% (sout$d * t(sout$v))
-   sout$A_hat = sout$B_hat  + splr.dat$X %*% sout$beta.estim
-   sout$beta_hat = sout$beta.estim
+   fit1 = best_fit$fit1
+   fit2 = best_fit$fit2
+   sout = best_fit
+   # get estimates and validate
+   sout$B_hat = fit1$u %*% (fit1$d * t(fit1$v))
+   sout$beta_hat =  fit2$u %*% (fit2$d * t(fit2$v))
+   sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)   
    
    
    results = list(model = "SoftImpute_splr_Kfold")
@@ -188,11 +179,14 @@ compare_softImpute_splr_Kfold <- function(gen.dat, valid.dat, splr.dat, n_folds=
 
 
 
-compare_and_save <- function(missingness,coll=TRUE,  n_folds=5,
+compare_and_save <- function(missingness,coll=TRUE,  n_folds=3,
                              dim = seq(400,1000,200), ncovariates=10,
                              lambda.1_grid = seq(0,3,length=20),
                              lambda.2_grid = seq(.9, 0, length=20),
-                             alpha_grid = seq(0.992, 1, length=10),ncores=1){
+                             alpha_grid = seq(0.992, 1, length=10),ncores=1,
+                             n.lambda=30, rank.limit=20, rank.step=2,
+                             error_function = RMSE){
+   
    
    ncores = min(ncores, length(dim))
    if(ncores > 1)
@@ -201,6 +195,7 @@ compare_and_save <- function(missingness,coll=TRUE,  n_folds=5,
    print(paste("Running on",ncores,"cores."))
    setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
    source("./code_files/import_lib.R")
+   test_error = error_function
    data_dir = "./saved_data/"
    stopifnot(missingness %in% c(0,0.8, 0.9))
    final.results = data.frame()
@@ -241,17 +236,23 @@ compare_and_save <- function(missingness,coll=TRUE,  n_folds=5,
       print("...")
       #-------------------------------------------------------------------------------------
       # Soft Impute with Covariates and With L2 regularization on the covariates
-      results = rbind(results, compare_softImpute_L2(gen.dat, valid.dat, lambda.1_grid))
+      results = rbind(results, compare_softImpute_L2(gen.dat, valid.dat, lambda.1_grid,
+                                                     rank.step,rank.limit,n.lambda))
       print("....")
       #-------------------------------------------------------------------------------------
       # Soft Impute with Covariates and With L2 regularization on the covariates and K-fold cross-validation
-      results = rbind(results, compare_softImpute_Kfold(gen.dat, lambda.1_grid))
+      results = rbind(results, compare_softImpute_Kfold(gen.dat, lambda.1_grid, n_folds,
+                                                        rank.step, rank.limit,
+                                                        n.lambda))
       print(".....")
       #--------------------------------------------------------------------------------
-      results = rbind(results, compare_softImpute_splr(gen.dat, valid.dat, splr.dat))
+      results = rbind(results, compare_softImpute_splr(gen.dat, valid.dat, splr.dat,
+                                                       rank.step,rank.limit,n.lambda))
       print("......")
       #--------------------------------------------------------------------------------
-      results = rbind(results, compare_softImpute_splr_Kfold(gen.dat, valid.dat, splr.dat))
+      results = rbind(results, compare_softImpute_splr_Kfold(gen.dat, valid.dat, splr.dat,
+                                                             n_folds,rank.step, rank.limit,
+                                                             n.lambda))
       print(".......")
       #--------------------------------------------------------------------------------
       results$true_rank = gen.dat$rank

@@ -26,8 +26,8 @@ RMSE <- function(predicted, actual) {
 
 # watch out! functions send predicted, then actual
 # Last line is run last
-test_error <- adjusted_unexplained_variance
+#test_error <- adjusted_unexplained_variance
 test_error <- RMSE
-test_error <- normalized_RMSE
+#test_error <- normalized_RMSE
 #test_error <- MAPE
 

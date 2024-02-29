@@ -1,9 +1,10 @@
-simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.init=NA, 
+                                n.lambda=30,
                                             trace=FALSE, thresh=1e-6, maxit=100,
-                                            rank.init=3, rank.limit=50, rank.step=2,
-                                            warm=NULL, tol=1, print.best=TRUE, seed=2024){
+                                            rank.init=3, rank.limit=20, rank.step=2,
+                                            warm=NULL, tol=1, print.best=TRUE, seed=NULL){
 
-   set.seed(seed)
+   if(!is.null(seed)) set.seed(seed)
    #----------------------------------------------------
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov_splr(Y, X_r$svdH) * lambda.factor, lambda.init)
    lamseq <- seq(from=lam0, to=0, length=n.lambda)
@@ -62,8 +63,7 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
    #---------------------------------------------------------------------
    for(i in seq(along=lamseq)) {
       # initial fit to whole data
-      if(i != 1)
-         fiti$xbeta.obs <- xbeta.observed 
+      if(i != 1) fiti$xbeta.obs <- xbeta.observed 
          # or, initialize it using the secondmodel
          #fiti$xbeta.obs <- suvC(Xv, t(fitx$d * t(fitx$u)), Y@i, Y@p)
       fiti <-  simpute.als.fit_splr(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,

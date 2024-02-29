@@ -61,7 +61,8 @@ Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
 # fit
 start_time <- Sys.time()
-best_fit = simpute.cov.cv_splr(Y_train, X_r, Y_valid, W_valid, y, trace=F, thresh=1e-6,n.lambda = 30)
+best_fit = simpute.cov.cv_splr(Y_train, X_r, Y_valid, W_valid, gen.dat$Y,
+                               trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fit1 = best_fit$fit1
@@ -82,7 +83,7 @@ best_fit$lambda
 test_error <- RMSE
 start_time <- Sys.time()
 best_fit2 = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, trace=T,print.best = TRUE,
-                                n.lambda = 20, n_folds = 3)
+                                n.lambda = 30, n_folds = 3, rank.limit=30, rank.step=2)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fit1 = best_fit2$fit1
@@ -92,7 +93,7 @@ beta =  fit2$u %*% (fit2$d * t(fit2$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + X_r$X %*% t(beta)
 
-test_error <- adjusted_unexplained_variance
+#test_error <- adjusted_unexplained_variance
 
 test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta.x)[gen.dat$Y!=0] )
 # test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )

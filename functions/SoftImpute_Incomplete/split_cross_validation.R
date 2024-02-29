@@ -1,6 +1,7 @@
-simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=1/4,
+                                lambda.init=NA, n.lambda=20,
                            trace=FALSE, print.best=TRUE, tol=1, thresh=1e-6, maxit=100,
-                           rank.init=3, rank.limit=50, rank.step=2,
+                           rank.init=2, rank.limit=30, rank.step=2,
                             warm=NULL, quiet=FALSE){
 
    #' Input: Y training partially observed with missing set to 0
@@ -97,6 +98,8 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
    }
    # fit one last time full model, if the train/valid is provided
    if(! is.null(y)){
+      y[y == 0] = NA
+      y <- as(y, "Incomplete")
       best_fit$fit1$xbeta.obs <- suvC(X_r$X %*% best_fit$fit2$v,
                                       t(best_fit$fit2$d * t(best_fit$fit2$u)),
                                       y@i, y@p)
