@@ -57,7 +57,7 @@ simpute.als.splr.fit.nocov.fixedJ <- function(X, J, thresh=1e-5, maxit=100, trac
       if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio,"\n")
       #------------------------------------------------------------------------------
    }
-   if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
+   if(trace.it & iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
    
    if(final.trim){
       J=min(sum(Dsq>0)+1,J)

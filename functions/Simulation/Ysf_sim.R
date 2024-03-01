@@ -1,7 +1,7 @@
 # This functions generates either model M1 or M2 from Yousef's simulation. Set model=1 for M1 or model=2 for M2.
 generate_simulation_data_ysf <- function(model=1, n1 =300,  n2 = 300, m1 = 5, m2 = 10, missing_prob = 0.7,coll=FALSE,
-                                         seed=2023){
-   set.seed(seed=seed)
+                                         seed=NULL){
+   if(!is.null(seed)) set.seed(seed=seed)
    X <- matrix(rnorm(n1*m1), ncol = m1)
    Z <- matrix(rnorm(n2*m2), ncol = m2)
    E <- matrix(rnorm(n1*n2), ncol = n2)

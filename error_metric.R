@@ -4,7 +4,7 @@ unexplained_variance <- function(predicted, actual){
 }
 
 
-MAPE <- function(predicted, actual) {
+MAPE_error <- function(predicted, actual) {
     mean(abs((actual - predicted) / actual), na.rm = TRUE) * 100
 }
 
@@ -18,7 +18,7 @@ normalized_RMSE <- function(predicted, actual) {
    sqrt(mean((actual - predicted)^2, na.rm = TRUE)) / sd(actual, na.rm = TRUE)
 }
 
-RMSE <- function(predicted, actual) {
+RMSE_error <- function(predicted, actual) {
    sqrt(mean((actual - predicted)^2, na.rm = TRUE))
 }
 
@@ -27,7 +27,7 @@ RMSE <- function(predicted, actual) {
 # watch out! functions send predicted, then actual
 # Last line is run last
 #test_error <- adjusted_unexplained_variance
-test_error <- RMSE
+test_error <<- RMSE_error
 #test_error <- normalized_RMSE
 #test_error <- MAPE
 

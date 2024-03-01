@@ -7,7 +7,7 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
    if(!is.null(seed)) set.seed(seed)
    #----------------------------------------------------
    lam0 <- ifelse(is.na(lambda.init), lambda0.cov_splr(Y, X_r$svdH) * lambda.factor, lambda.init)
-   lamseq <- seq(from=lam0, to=0, length=n.lambda)
+   lamseq <- seq(from=lam0, to=1, length=n.lambda)
    #-------------
    # Initialize warm.start for the second model
    svdX = fast.svd(X_r$X)
@@ -135,7 +135,8 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
       }else
          counter = counter + 1
       if(counter >= tol){
-         print(sprintf("Performance didn't improve for the last %d iterations.", counter))
+         if(trace | print.best)
+            print(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }
       #-------------------------------------------------------------------

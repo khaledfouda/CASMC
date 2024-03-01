@@ -151,6 +151,7 @@ simpute.orig <- function(Y, W, A, n.lambda=20,
          counter=1
       }else counter = counter + 1
       if(counter >= tol){
+         if(trace | print.best)
          cat(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }

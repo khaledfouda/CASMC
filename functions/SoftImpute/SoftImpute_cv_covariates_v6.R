@@ -160,6 +160,7 @@ simpute.cov.kfold <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lamb
          #best_B = fiti$u %*% t(vd)
       }else counter = counter + 1
       if(counter >= tol){
+         if(trace | print.best)
          print(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }

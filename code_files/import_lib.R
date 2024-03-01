@@ -13,6 +13,8 @@ library(Matrix)
 library(MASS) #ginv
 library(svd) # propack 
 library(corpcor) # fast.svd
+library(RSpectra)
+
 
 path_to_proj = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
 # setwed(path_to_proj)
@@ -26,7 +28,9 @@ file_list <- file_list[!grepl("main\\.R$", file_list)]
 
 
 
-select = dplyr::select
+select <- dplyr::select
+solve <- MASS::ginv
+
 
 # source(paste0(path_to_code,"Mao_fit.R"))
 # source(paste0(path_to_code,"Mao_cv.R"))

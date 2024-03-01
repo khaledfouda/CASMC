@@ -84,6 +84,6 @@ simpute.svd.cov <-
       d=pmax(svd.yfill$d[seq(J)]-lambda,0)
       J=min(sum(d>0)+1,J)
       svd.yfill=list(u=svd.yfill$u[, seq(J)], d=d[seq(J)], v=svd.yfill$v[,seq(J)], lambda=lambda, beta.estim=beta.estim)
-      if(iter==maxit) warning(paste("Convergence not achieved by",maxit,"iterations"))
+      if(iter==maxit & trace.it) warning(paste("Convergence not achieved by",maxit,"iterations"))
       svd.yfill
    }

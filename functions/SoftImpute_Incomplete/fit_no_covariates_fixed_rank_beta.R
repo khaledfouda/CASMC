@@ -54,7 +54,7 @@ simpute.als.splr.fit.beta <- function(Y,X, k, thresh=1e-5, maxit=100, trace.it=T
 
       #------------------------------------------------------------------------------
    }
-   if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
+   if(iter==maxit & trace.it)warning(paste("Convergence not achieved by",maxit,"iterations"))
 
    if(final.trim){
       J=min(sum(Bsvd$d>0)+1,k)

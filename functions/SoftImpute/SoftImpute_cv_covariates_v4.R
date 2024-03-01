@@ -114,7 +114,7 @@ simpute.cov.cv.L2 <- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=N
       #    counter=1
       # }else counter = counter + 1
       if(counter >= tol){
-         if(quiet == FALSE)
+         if(quiet == FALSE | trace )
             print(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }

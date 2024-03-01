@@ -14,14 +14,14 @@ normalize_matrix <- function(X) { # NOT USED FOR NOW
 
 
 # This function generates Mao's simulation as defined in (M0) above. Dimensions, missing probability are given as parameters. 
-generate_simulation_data_mao <- function(n1 =400,  n2 = 400, m = 20, r = 10, MAR=TRUE, seed=2023){
+generate_simulation_data_mao <- function(n1 =400,  n2 = 400, m = 20, r = 10, MAR=TRUE, seed=NULL){
    #' Input: 
    #'      n1, n2: are the dimensions of the A, Y, and B matrices
    #'      m: number of covariates
    #'      r: Second dimension of U and V where  B = P_bar_X U V^T
    #'      MAR: If True, missing at random method is employed to compute the missing probability and W
    #'      seed: random seed  
-   set.seed(seed=seed)
+   if(!is.null(seed)) set.seed(seed=seed)
    X <- matrix(rnorm(n1*m), ncol = m) #%>% normalize_matrix()
    beta <- matrix(rnorm(m*n2), ncol=n2)
    U <- matrix(rnorm(n1*r),ncol=r)

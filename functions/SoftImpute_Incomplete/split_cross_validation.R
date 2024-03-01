@@ -89,7 +89,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
          counter=0
       }else counter = counter + 1
       if(counter >= tol){
-         if(quiet == FALSE)
+         if(trace)
             print(sprintf("Performance didn't improve for the last %d iterations.", counter))
          break
       }

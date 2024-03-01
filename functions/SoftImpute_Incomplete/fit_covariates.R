@@ -105,7 +105,7 @@ simpute.als.fit_splr <-
       Bsvd=fast.svd(B)
       V = Bsvd$u      
       Dsq = Bsvd$d
-      U = U%*% (Bsvd$v)
+      U = U %*% (Bsvd$v)
       #-------------------------------------------------------------
       # part 2: Update A
       UDsq = t(Dsq * t(U))
@@ -137,7 +137,7 @@ simpute.als.fit_splr <-
       #-----------------------------------------------------------------------------------
       
     }
-    if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
+    if(iter==maxit & trace.it)warning(paste("Convergence not achieved by",maxit,"iterations"))
     if(lambda>0&final.svd){
       #---- update A
       UDsq = t(Dsq * t(U))

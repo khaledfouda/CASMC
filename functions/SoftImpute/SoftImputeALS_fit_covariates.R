@@ -117,7 +117,7 @@ simpute.als.cov <-
       if(trace.it) cat(iter, ":", "obj",format(round(obj,5)),"ratio", ratio, "\n")
       ##########################################################
    }
-   if(iter==maxit) warning(paste("Convergence not achieved by",maxit,"iterations"))
+   if(iter==maxit & trace.it) warning(paste("Convergence not achieved by",maxit,"iterations"))
    
    U=yplus%*%V
    sU=svd(U)
