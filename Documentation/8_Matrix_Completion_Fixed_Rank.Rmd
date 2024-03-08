@@ -124,7 +124,7 @@ X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
 fit1 = simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=F, J=7,
                                             thresh=1e-5, lambda=11.1, init = "naive",
-                                            final.svd = T,maxit = 100, warm.start = NULL,Px = beta_partial)
+                                            final.svd = T,maxit = 100, warm.start = NULL)
 xbeta.sparse <- ys
 xbeta.sparse@x = fit1$xbeta.obs
 warm.start = propack.svd(naive_MC(as.matrix(xbeta.sparse)), X_r$rank)
@@ -241,7 +241,7 @@ fit3 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F,w
                                  trace.it = F)
 }
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
-beta_estim2 =  fit3$Bsvd$u %*% (fit3$Bsvd$d * t(fit3$Bsvd$v))
+beta_estim2 =  fit3$u %*% (fit3$d * t(fit3$v))
 A_hat2 = M + X_r$X %*% t(beta_estim2)
 print(paste("Test error A =", round(test_error((A_hat2)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 
@@ -263,3 +263,55 @@ Cons:
 - Need to consider better ways of Initialization
 
 ----------------------------------------------------------------------------
+
+## NEW: Comparing the performance of the second model (call it Beta-Impute) compared to the original Soft-Impute model.
+
+Model:  $Y = X \beta + \epsilon$ ,
+where $X$ is a given covariate matrix, $\epsilon$ is a white noise that we're not interested in. 
+Goal: Compute $\beta$
+Input: A partially observed $Y$ (90% missing) and fully-observed $X$.
+Assumption: No intercept. $X$ and $\beta$ have the same low rank $k$ which equals at most the number of covariates.
+Replication: We will simulate the data and run the model 50 times
+
+```{r comparison,  eval=TRUE}
+B <- 50
+with_noise = TRUE
+error1 <- error2 <- numeric(B)
+time1 <- time2 <- 0
+for(b in 1:B){
+   
+   #if(b%%10==0) print(b)
+   gen.dat <- generate_simulation_data_ysf(2,400,300,10,10, missing_prob = 0.9,coll=T,seed=b)
+   X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
+   Y = A = X_r$X %*% gen.dat$beta
+   if(with_noise) Y <- Y + matrix(rnorm(dim(Y)[1]*dim(Y)[2]),dim(Y)[1],dim(Y)[2])
+   Y[gen.dat$W == 0] = NA 
+   Y <- as(Y, "Incomplete")
+   
+   start_time <- Sys.time()
+   fit = simpute.als.splr.fit.beta(Y, X_r$X,  X_r$rank, maxit=500,
+                                    trace.it = F,final.trim = F,thresh = 1e-6)
+   
+   beta.estim <- fit$u %*% (fit$d * t(fit$v))
+   A.estim <- X_r$X %*% t(beta.estim)
+   error1[b] <- RMSE_error(A.estim[gen.dat$W==0], A[gen.dat$W==0])
+   
+   time1 <- time1 + as.numeric(difftime(Sys.time(), start_time,units = "secs"))
+   
+   start_time <- Sys.time()
+   fit2 <- softImpute(Y, rank.max=X_r$rank, type="als", thresh=1e-6, trace.it=F,maxit = 500) 
+   A.estim2 <- fit2$u %*% (fit2$d * t(fit2$v))
+   error2[b] <- RMSE_error(A.estim2[gen.dat$W==0], A[gen.dat$W==0])
+   
+   time2 <- time2 + as.numeric(difftime(Sys.time(), start_time,units = "secs"))
+
+}
+
+print(paste0("The BetaImpute model has on average (with sd) rmse of ",round(mean(error1),4),
+             "(",round(sd(error1),4),") and took ", round(time1),
+             " seconds to run ", B, " simulations"))
+print(paste0("The SoftImpute model has on average (with sd) rmse of ",round(mean(error2),4),
+             "(",round(sd(error2),4),") and took ", round(time2),
+             " seconds to run ", B, " simulations"))
+```
+

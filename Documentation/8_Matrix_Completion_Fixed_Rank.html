@@ -1735,7 +1735,7 @@ X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
 fit1 = simpute.als.fit_splr(y=ys, svdH=X_r$svdH,  trace=F, J=7,
                                             thresh=1e-5, lambda=11.1, init = &quot;naive&quot;,
-                                            final.svd = T,maxit = 100, warm.start = NULL,Px = beta_partial)</code></pre>
+                                            final.svd = T,maxit = 100, warm.start = NULL)</code></pre>
 <pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
 ## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
 ## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
@@ -1748,17 +1748,17 @@ fit2 = simpute.als.splr.fit.nocov.fixedJ(xbeta.sparse, X_r$rank, maxit=200, fina
                                           warm.start = warm.start, trace.it=F, return_obj = F)
 }
 print(paste(&quot;Execution time is&quot;,round(as.numeric(difftime(Sys.time(), start_time,units = &quot;secs&quot;)),2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 61.64 seconds&quot;</code></pre>
+<pre><code>## [1] &quot;Execution time is 42.11 seconds&quot;</code></pre>
 <pre class="r"><code>xbeta_estim =  fit2$u %*% (fit2$d * t(fit2$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A_hat = M + xbeta_estim
 
 print(paste(&quot;Test error Beta =&quot;, round(test_error(ginv(X_r$X)%*%xbeta_estim, gen.dat$beta.x),5)))</code></pre>
-<pre><code>## [1] &quot;Test error Beta = 0.32629&quot;</code></pre>
+<pre><code>## [1] &quot;Test error Beta = 0.17027&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error M =&quot;, round(test_error(M, gen.dat$B),5)))</code></pre>
-<pre><code>## [1] &quot;Test error M = 0.62044&quot;</code></pre>
+<pre><code>## [1] &quot;Test error M = 0.45196&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error A =&quot;, round(test_error((A_hat)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))</code></pre>
-<pre><code>## [1] &quot;Test error A = 0.08957&quot;</code></pre>
+<pre><code>## [1] &quot;Test error A = 0.63731&quot;</code></pre>
 <div id="pros" class="section level3">
 <h3>Pros</h3>
 <ul>
@@ -1838,8 +1838,11 @@ X0 = ginv(t(Vx)%*%Vx) %*% t(Vx)
 warm.start = list()
 warm.start$X1 = X0 %*% t(Ux)
 warm.start$X2 = X0 %*% Vx
-B = t( ginv(X) %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)&#39;
-warm.start$Bsvd = fast.svd(B)
+B = t( ginv(X) %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)&#39;</code></pre>
+<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
+## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
+## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
+<pre class="r"><code>warm.start$Bsvd = fast.svd(B)
 #-----------------------------------------
 start_time &lt;- Sys.time()
 for(i in 1:100){
@@ -1847,18 +1850,18 @@ fit3 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F,w
                                  trace.it = F)
 }
 print(paste(&quot;Execution time is&quot;,round(as.numeric(difftime(Sys.time(), start_time,units = &quot;secs&quot;)),2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 16.47 seconds&quot;</code></pre>
-<pre class="r"><code>beta_estim2 =  fit3$Bsvd$u %*% (fit3$Bsvd$d * t(fit3$Bsvd$v))
+<pre><code>## [1] &quot;Execution time is 8.76 seconds&quot;</code></pre>
+<pre class="r"><code>beta_estim2 =  fit3$u %*% (fit3$d * t(fit3$v))
 A_hat2 = M + X_r$X %*% t(beta_estim2)
 print(paste(&quot;Test error A =&quot;, round(test_error((A_hat2)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))</code></pre>
-<pre><code>## [1] &quot;Test error A = 0.08684&quot;</code></pre>
+<pre><code>## [1] &quot;Test error A = 0.64107&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error Beta (Naive) =&quot;, round(test_error(ginv(X_r$X)%*%naive_MC(as.matrix(xbeta.sparse)),
                                                   gen.dat$beta.x),5)))</code></pre>
-<pre><code>## [1] &quot;Test error Beta (Naive) = 1.53395&quot;</code></pre>
+<pre><code>## [1] &quot;Test error Beta (Naive) = 0.36669&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error Beta (Model 1) =&quot;, round(test_error(ginv(X_r$X)%*%xbeta_estim, gen.dat$beta.x),5)))</code></pre>
-<pre><code>## [1] &quot;Test error Beta (Model 1) = 0.33918&quot;</code></pre>
+<pre><code>## [1] &quot;Test error Beta (Model 1) = 0.17027&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Test error Beta (Model 2) =&quot;, round(test_error(t(beta_estim2), gen.dat$beta.x),5)))</code></pre>
-<pre><code>## [1] &quot;Test error Beta (Model 2) = 0.33585&quot;</code></pre>
+<pre><code>## [1] &quot;Test error Beta (Model 2) = 0.17456&quot;</code></pre>
 <p>Pros:</p>
 <ul>
 <li>Similar performance to Model 1</li>
@@ -1870,6 +1873,85 @@ print(paste(&quot;Test error A =&quot;, round(test_error((A_hat2)[gen.dat$W==0],
 <li>Need to consider better ways of Initialization</li>
 </ul>
 <hr />
+</div>
+<div id="new-comparing-the-performance-of-the-second-model-call-it-beta-impute-compared-to-the-original-soft-impute-model." class="section level2">
+<h2>NEW: Comparing the performance of the second model (call it
+Beta-Impute) compared to the original Soft-Impute model.</h2>
+<p>Model: <span class="math inline">\(Y = X \beta + \epsilon\)</span> ,
+where <span class="math inline">\(X\)</span> is a given covariate
+matrix, <span class="math inline">\(\epsilon\)</span> is a white noise
+that we’re not interested in. Goal: Compute <span class="math inline">\(\beta\)</span> Input: A partially observed <span class="math inline">\(Y\)</span> (90% missing) and fully-observed <span class="math inline">\(X\)</span>. Assumption: No intercept. <span class="math inline">\(X\)</span> and <span class="math inline">\(\beta\)</span> have the same low rank <span class="math inline">\(k\)</span> which equals at most the number of
+covariates. Replication: We will simulate the data and run the model 50
+times</p>
+<pre class="r"><code>B &lt;- 50
+with_noise = TRUE
+error1 &lt;- error2 &lt;- numeric(B)
+time1 &lt;- time2 &lt;- 0
+for(b in 1:B){
+   
+   #if(b%%10==0) print(b)
+   gen.dat &lt;- generate_simulation_data_ysf(2,400,300,10,10, missing_prob = 0.9,coll=T,seed=b)
+   X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
+   Y = A = X_r$X %*% gen.dat$beta
+   if(with_noise) Y &lt;- Y + matrix(rnorm(dim(Y)[1]*dim(Y)[2]),dim(Y)[1],dim(Y)[2])
+   Y[gen.dat$W == 0] = NA 
+   Y &lt;- as(Y, &quot;Incomplete&quot;)
+   
+   start_time &lt;- Sys.time()
+   fit = simpute.als.splr.fit.beta(Y, X_r$X,  X_r$rank, maxit=500,
+                                    trace.it = F,final.trim = F,thresh = 1e-6)
+   
+   beta.estim &lt;- fit$u %*% (fit$d * t(fit$v))
+   A.estim &lt;- X_r$X %*% t(beta.estim)
+   error1[b] &lt;- RMSE_error(A.estim[gen.dat$W==0], A[gen.dat$W==0])
+   
+   time1 &lt;- time1 + as.numeric(difftime(Sys.time(), start_time,units = &quot;secs&quot;))
+   
+   start_time &lt;- Sys.time()
+   fit2 &lt;- softImpute(Y, rank.max=X_r$rank, type=&quot;als&quot;, thresh=1e-6, trace.it=F,maxit = 500) 
+   A.estim2 &lt;- fit2$u %*% (fit2$d * t(fit2$v))
+   error2[b] &lt;- RMSE_error(A.estim2[gen.dat$W==0], A[gen.dat$W==0])
+   
+   time2 &lt;- time2 + as.numeric(difftime(Sys.time(), start_time,units = &quot;secs&quot;))
+
+}</code></pre>
+<pre><code>## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations
+
+## Warning in Ssimpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 500 iterations</code></pre>
+<pre class="r"><code>print(paste0(&quot;The BetaImpute model has on average (with sd) rmse of &quot;,round(mean(error1),4),
+             &quot;(&quot;,round(sd(error1),4),&quot;) and took &quot;, round(time1),
+             &quot; seconds to run &quot;, B, &quot; simulations&quot;))</code></pre>
+<pre><code>## [1] &quot;The BetaImpute model has on average (with sd) rmse of 0.5486(0.0082) and took 11 seconds to run 50 simulations&quot;</code></pre>
+<pre class="r"><code>print(paste0(&quot;The SoftImpute model has on average (with sd) rmse of &quot;,round(mean(error2),4),
+             &quot;(&quot;,round(sd(error2),4),&quot;) and took &quot;, round(time2),
+             &quot; seconds to run &quot;, B, &quot; simulations&quot;))</code></pre>
+<pre><code>## [1] &quot;The SoftImpute model has on average (with sd) rmse of 2.0207(0.0471) and took 71 seconds to run 50 simulations&quot;</code></pre>
 </div>
 </div>
 
