@@ -1,25 +1,25 @@
-Frob=function(Uold,Dsqold,Vold,U,Dsq,V){
-   denom=sum(Dsqold^2)
-   utu=Dsq* (t(U)%*%Uold)
-   vtv=Dsqold* (t(Vold)%*%V)
-   uvprod= sum(diag(utu%*%vtv))
-   num=denom+sum(Dsq^2) -2*uvprod
-   num/max(denom,1e-9)
-}
-
-clean.warm.start=function(a){
-   if(is.null(a))return(NULL)
-   d=a$d
-   if(is.null(d))return(NULL)
-   if(any(d>0)){
-      if(length(d)==1){
-         a$u=matrix(a$u,ncol=1)
-         a$v=matrix(a$v,ncol=1)
-      }
-      a
-   }
-   else NULL
-}
+# Frob=function(Uold,Dsqold,Vold,U,Dsq,V){
+#    denom=sum(Dsqold^2)
+#    utu=Dsq* (t(U)%*%Uold)
+#    vtv=Dsqold* (t(Vold)%*%V)
+#    uvprod= sum(diag(utu%*%vtv))
+#    num=denom+sum(Dsq^2) -2*uvprod
+#    num/max(denom,1e-9)
+# }
+# 
+# clean.warm.start=function(a){
+#    if(is.null(a))return(NULL)
+#    d=a$d
+#    if(is.null(d))return(NULL)
+#    if(any(d>0)){
+#       if(length(d)==1){
+#          a$u=matrix(a$u,ncol=1)
+#          a$v=matrix(a$v,ncol=1)
+#       }
+#       a
+#    }
+#    else NULL
+# }
 
 simpute.als.cov <-
    function (Y, X, beta_partial, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=NULL){
@@ -88,7 +88,7 @@ simpute.als.cov <-
       B=t(U)%*%yplus
       if(lambda>0)B=B*(Dsq/(Dsq+lambda))
       #print(yfill)
-      Bsvd=svd(t(B))
+      Bsvd=fast.svd(t(B))
       V=Bsvd$u
       Dsq=(Bsvd$d)
       U=U%*%Bsvd$v
@@ -103,7 +103,7 @@ simpute.als.cov <-
       ## V step
       A=t(yplus%*%V)
       if(lambda>0)A=A*(Dsq/(Dsq+lambda))
-      Asvd=svd(t(A))
+      Asvd=fast.svd(t(A))
       U=Asvd$u
       Dsq=Asvd$d
       V=V %*% Asvd$v
@@ -120,7 +120,7 @@ simpute.als.cov <-
    if(iter==maxit & trace.it) warning(paste("Convergence not achieved by",maxit,"iterations"))
    
    U=yplus%*%V
-   sU=svd(U)
+   sU=fast.svd(U)
    U=sU$u
    Dsq=sU$d
    V=V%*%sU$v
@@ -130,7 +130,7 @@ simpute.als.cov <-
       obj=(.5*sum( (yplus-yhat)[!ynas]^2)+lambda*sum(Dsq))/nz
       cat("final SVD:", "obj",format(round(obj,5)),"\n")
    }
-   J=min(sum(Dsq>0)+1,J)
+   J=min(sum(Dsq>0),J) #** +1
    out=list(u=U[,seq(J)],d=Dsq[seq(J)],v=V[,seq(J)],J=J, lambda=lambda, beta.estim=beta.estim)
    out
 }

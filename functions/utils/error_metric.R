@@ -11,7 +11,7 @@ MAPE_error <- function(predicted, actual) {
 
 adjusted_unexplained_variance <- function(predicted, actual, p=1, n=length(actual)) {
    
-   ((sum( (actual-predicted)^2 )/ sum((actual-mean(actual))^2)) * (n - 1) / (n - p - 1))
+      ((sum( (actual-predicted)^2 )/ sum((actual-mean(actual))^2)) * (n - 1) / (n - p - 1))
 }
 
 normalized_RMSE <- function(predicted, actual) {
@@ -22,6 +22,10 @@ RMSE_error <- function(predicted, actual) {
    sqrt(mean((actual - predicted)^2, na.rm = TRUE))
 }
 
+mao_error <- function(predicted, actual){
+   # the test error defined by Mao in the simulation section
+   sqrt( sum((predicted-actual)^2) / sum(actual^2))
+}
 
 
 # watch out! functions send predicted, then actual

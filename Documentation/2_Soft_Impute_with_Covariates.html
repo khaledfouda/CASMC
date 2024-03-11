@@ -11,7 +11,7 @@
 
 <meta name="author" content="Khaled Fouda" />
 
-<meta name="date" content="2024-01-19" />
+<meta name="date" content="2024-03-08" />
 
 <title>Soft Impute With Covariates</title>
 
@@ -352,18 +352,18 @@ display: none;
 
 <h1 class="title toc-ignore">Soft Impute With Covariates</h1>
 <h4 class="author">Khaled Fouda</h4>
-<h4 class="date">2024-01-19</h4>
+<h4 class="date">2024-03-08</h4>
 
 </div>
 
 
-<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE)
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE, cache = F, eval = FALSE)
 library(kableExtra)
 library(magrittr)
 library(tidyverse)
 library(softImpute)
 
-knitr::opts_knit$set(root.dir=&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/&quot;)</code></pre>
+knitr::opts_knit$set(root.dir=&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP&quot;)</code></pre>
 <pre class="r"><code>source(&quot;./code_files/import_lib.R&quot;)
 #path_to_data = &quot;./Mao/saved_data/&quot;
 #path_to_code = &quot;./code_files/&quot; </code></pre>
@@ -546,93 +546,99 @@ X&#39;\hat\beta_{\lambda_k} \hat{B}_{\lambda_k}\)</span>.</p></li>
 <hr />
 <p>Below is the implementation of algorithm <strong>1.A</strong> based
 on the author’s github page.</p>
-<pre class="r"><code>Frob=function(Uold,Dsqold,Vold,U,Dsq,V){
-   denom=sum(Dsqold^2)
-   utu=Dsq* (t(U)%*%Uold)
-   vtv=Dsqold* (t(Vold)%*%V)
-   uvprod= sum(diag(utu%*%vtv))
-   num=denom+sum(Dsq^2) -2*uvprod
-   num/max(denom,1e-9)
-}
-
-clean.warm.start=function(a){
-   if(is.null(a))return(NULL)
-   d=a$d
-   if(is.null(d))return(NULL)
-   if(any(d&gt;0)){
-      if(length(d)==1){
-         a$u=matrix(a$u,ncol=1)
-         a$v=matrix(a$v,ncol=1)
-      }
-      a
-   }
-   else NULL
-}
-
+<pre class="r"><code># Soft Impute with Covariates fit. Fixed Lambda2. beta_partial is input.
 simpute.svd.cov &lt;-
-   function (Y, X, beta_partial, J = 2, thresh = 1e-05,lambda=0,maxit=100,trace.it=FALSE,warm.start=NULL){
-      
+   function (Y,
+             X,
+             beta_partial,
+             J = 2,
+             thresh = 1e-05,
+             lambda = 0,
+             maxit = 100,
+             trace.it = FALSE,
+             warm.start = NULL,
+             min_rank = 2,
+             svd_maxit = 100) {
       # are you scaling???
       
       n1 &lt;- dim(Y)[1]
       n2 &lt;- dim(Y)[2]
       m1 &lt;- dim(X)[2]
-      ynas &lt;- Y==0
-      nz=n1*n2-sum(ynas)
-      
+      ynas &lt;- Y == 0
+      nz = n1 * n2 - sum(ynas)
+      J = max(J, min_rank)
       yfill &lt;- Y
       yfill[ynas] &lt;- 0
       beta.estim &lt;- beta_partial %*% yfill
       Xbeta &lt;- X %*% beta.estim
-      yplus &lt;- yfill - Xbeta 
+      yplus &lt;- yfill - Xbeta
       
-      if(!is.null(warm.start)){
+      if (!is.null(warm.start)) {
          ###must have u,d and v components
          warm.start = clean.warm.start(warm.start)
-         if(!all(match(c(&quot;u&quot;,&quot;d&quot;,&quot;v&quot;, &quot;beta.estim&quot;),names(warm.start),0)&gt;0))stop(&quot;warm.start does not have components u, d and v&quot;)
-         D=warm.start$d
-         nzD=sum(D&gt;0)
-         JD=min(nzD,J)
-         U=warm.start$u[,seq(JD),drop=FALSE]
-         V=warm.start$v[,seq(JD),drop=FALSE]
-         D=D[seq(JD)]
-         yhat=U%*%(D*t(V))
+         if (!all(match(c(&quot;u&quot;, &quot;d&quot;, &quot;v&quot;, &quot;beta.estim&quot;), names(warm.start), 0) &gt;
+                  0))
+            stop(&quot;warm.start does not have components u, d and v&quot;)
+         D = warm.start$d
+         nzD = sum(D &gt; 0)
+         JD = min(nzD, J)
+         U = warm.start$u[, seq(JD), drop = FALSE]
+         V = warm.start$v[, seq(JD), drop = FALSE]
+         D = D[seq(JD)]
+         yhat = U %*% (D * t(V))
          Xbeta &lt;- X %*% warm.start$beta.estim
          yfill[ynas] &lt;- yhat[ynas] + Xbeta[ynas]
          beta.estim &lt;- beta_partial %*% yfill
-         Xbeta &lt;- X %*% beta.estim 
-         yplus &lt;- yfill - Xbeta 
+         Xbeta &lt;- X %*% beta.estim
+         yplus &lt;- yfill - Xbeta
       }
       
-      svd.yfill=svd(yplus)
+      svd.yfill = propack.svd(yplus, J, opts = list(kmax = svd_maxit)) #svd(yplus) **
       ratio &lt;- 1
       iter &lt;- 0
-      while ((ratio &gt; thresh)&amp;(iter&lt;maxit)) {
+      while ((ratio &gt; thresh) &amp; (iter &lt; maxit)) {
          iter &lt;- iter + 1
-         svd.old=svd.yfill
-         d=svd.yfill$d
-         d=pmax(d-lambda,0)
+         svd.old = svd.yfill
+         d = svd.yfill$d
+         d = pmax(d - lambda, 0)
          # update
-         yhat &lt;- svd.yfill$u[, seq(J)] %*% (d[seq(J)] * t(svd.yfill$v[,seq(J)]))
+         yhat &lt;-
+            svd.yfill$u %*% (d * t(svd.yfill$v))
+         # ** svd.yfill$u[, seq(J)] %*% (d[seq(J)] * t(svd.yfill$v[, seq(J)]))
          yfill[ynas] &lt;- yhat[ynas] + Xbeta[ynas]
          # new svd
          beta.estim &lt;- beta_partial %*% yfill
          Xbeta &lt;- X %*% beta.estim
-         yplus &lt;- yfill - Xbeta 
-         svd.yfill=svd(yplus)
+         yplus &lt;- yfill - Xbeta
+         svd.yfill = propack.svd(yplus, J, opts = list(kmax = svd_maxit)) #svd(yplus)
          
          #-- performance check
-         ratio=Frob(svd.old$u[, seq(J)],d[seq(J)],svd.old$v[, seq(J)],
-                    svd.yfill$u[, seq(J)],pmax(svd.yfill$d-lambda,0)[seq(J)],svd.yfill$v[, seq(J)])
-         if(trace.it){
-            obj=(.5*sum( (yfill-yhat)[!ynas]^2)+lambda*sum(d))/nz
-            cat(iter, &quot;:&quot;, &quot;obj&quot;,format(round(obj,5)),&quot;ratio&quot;, ratio, &quot;\n&quot;)
+         ratio = Frob(
+            svd.old$u[, seq(J)],
+            d[seq(J)],
+            svd.old$v[, seq(J)],
+            svd.yfill$u[, seq(J)],
+            pmax(svd.yfill$d - lambda, 0)[seq(J)],
+            svd.yfill$v[, seq(J)]
+         )
+         if (trace.it) {
+            obj = (.5 * sum((yfill - yhat)[!ynas] ^ 2) + lambda * sum(d)) / nz
+            cat(iter, &quot;:&quot;, &quot;obj&quot;, format(round(obj, 5)), &quot;ratio&quot;, ratio, &quot;\n&quot;)
          }
       }
-      d=pmax(svd.yfill$d[seq(J)]-lambda,0)
-      J=min(sum(d&gt;0)+1,J)
-      svd.yfill=list(u=svd.yfill$u[, seq(J)], d=d[seq(J)], v=svd.yfill$v[,seq(J)], lambda=lambda, beta.estim=beta.estim)
-      if(iter==maxit) warning(paste(&quot;Convergence not achieved by&quot;,maxit,&quot;iterations&quot;))
+      # ** d = pmax(svd.yfill$d[seq(J)] - lambda, 0)
+      d = pmax(svd.yfill$d - lambda, 0)
+      J = min(sum(d &gt; 0) + 1, J)
+      svd.yfill = list(
+         u = svd.yfill$u[, seq(J)],
+         d = d[seq(J)],
+         v = svd.yfill$v[, seq(J)],
+         lambda = lambda,
+         beta.estim = beta.estim
+      )
+      if (iter == maxit &amp;
+          trace.it)
+         warning(paste(&quot;Convergence not achieved by&quot;, maxit, &quot;iterations&quot;))
       svd.yfill
    }</code></pre>
 <p>An example of using this function and to show the steps to
@@ -645,36 +651,37 @@ gen.dat &lt;- generate_simulation_data_ysf(2,600,600,10,10, missing_prob = 0.9,c
 #gen.dat$Y[gen.dat$W==0] = NA
 # apply the original soft impute from the softImpute package by the authors (does not employ covariates)
 sout &lt;- softImpute(gen.dat$Y, lambda=30, rank.max=10, trace.it = TRUE, thresh=1e-3)</code></pre>
-<pre><code>## 1 : obj 0.54624 ratio 3.744223 
-## 2 : obj 0.53692 ratio 207.4592 
-## 3 : obj 0.51063 ratio 0.9228651 
-## 4 : obj 0.50613 ratio 0.03515563 
-## 5 : obj 0.50273 ratio 0.02687705 
-## 6 : obj 0.50128 ratio 0.0101683 
-## 7 : obj 0.50076 ratio 0.004036447 
-## 8 : obj 0.5005 ratio 0.002172405 
-## 9 : obj 0.50035 ratio 0.001362896 
-## 10 : obj 0.50025 ratio 0.0009259796 
-## final SVD: obj 0.50021</code></pre>
+<pre><code>## 1 : obj 0.54973 ratio 4.260111 
+## 2 : obj 0.53921 ratio 200.7773 
+## 3 : obj 0.51389 ratio 0.6856606 
+## 4 : obj 0.5095 ratio 0.03505417 
+## 5 : obj 0.50606 ratio 0.02713944 
+## 6 : obj 0.50462 ratio 0.01002783 
+## 7 : obj 0.50408 ratio 0.004157826 
+## 8 : obj 0.5038 ratio 0.002396874 
+## 9 : obj 0.50363 ratio 0.001589308 
+## 10 : obj 0.5035 ratio 0.001103546 
+## 11 : obj 0.50342 ratio 0.0007839441 
+## final SVD: obj 0.50338</code></pre>
 <pre class="r"><code># apply the adjusted soft impute that incorporates the covariates
 X = gen.dat$X
 beta_partial = solve(t(X) %*% X) %*% t(X)
 sout &lt;- simpute.svd.cov(gen.dat$Y, gen.dat$X, beta_partial, thresh=1e-3, lambda = 30, J=10, trace.it = TRUE)</code></pre>
-<pre><code>## 1 : obj 5.92738 ratio 0.519044 
-## 2 : obj 5.08341 ratio 0.1225719 
-## 3 : obj 4.54665 ratio 0.04962936 
-## 4 : obj 4.20351 ratio 0.02573174 
-## 5 : obj 3.98639 ratio 0.01545962 
-## 6 : obj 3.85011 ratio 0.01025077 
-## 7 : obj 3.76528 ratio 0.007285854 
-## 8 : obj 3.70471 ratio 0.005443382 
-## 9 : obj 3.65699 ratio 0.004215416 
-## 10 : obj 3.61889 ratio 0.003348671 
-## 11 : obj 3.58828 ratio 0.002706891 
-## 12 : obj 3.56354 ratio 0.002206432 
-## 13 : obj 3.54332 ratio 0.001671186 
-## 14 : obj 3.52403 ratio 0.001256306 
-## 15 : obj 3.50469 ratio 0.0009422638</code></pre>
+<pre><code>## 1 : obj 4.90789 ratio 0.5228138 
+## 2 : obj 4.55087 ratio 0.1239201 
+## 3 : obj 4.30288 ratio 0.05015223 
+## 4 : obj 4.12325 ratio 0.02602247 
+## 5 : obj 3.98922 ratio 0.01565729 
+## 6 : obj 3.88696 ratio 0.01039714 
+## 7 : obj 3.8076 ratio 0.007398969 
+## 8 : obj 3.74519 ratio 0.005533748 
+## 9 : obj 3.69566 ratio 0.004290047 
+## 10 : obj 3.65606 ratio 0.003412402 
+## 11 : obj 3.62424 ratio 0.002762906 
+## 12 : obj 3.59851 ratio 0.002238327 
+## 13 : obj 3.57727 ratio 0.001710097 
+## 14 : obj 3.55706 ratio 0.001320849 
+## 15 : obj 3.53773 ratio 0.0009767753</code></pre>
 <hr />
 </div>
 <div id="choosing-lambda-and-j" class="section level2">
@@ -768,7 +775,7 @@ convergence are lower.</p>
 simpute.cov.cv &lt;- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                               trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5,
                            rank.init=10, rank.limit=50, rank.step=2,
-                           type=&quot;als&quot;, lambda1=0, n1n2=1, warm=NULL){
+                           type=&quot;als&quot;, lambda1=0, n1n2=1, warm=NULL, quiet=FALSE){
    
    stopifnot(type %in% c(&quot;svd&quot;, &quot;als&quot;))
    if(type == &quot;svd&quot;){
@@ -814,7 +821,7 @@ simpute.cov.cv &lt;- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=N
       #----------------------------
       warm &lt;- fiti # warm start for next 
       if(trace==TRUE)
-         cat(sprintf(&quot;%2d lambda=%9.5g, rank.max = %d  ==&gt; rank = %d, error = %.5f\n&quot;,
+         print(sprintf(&quot;%2d lambda=%9.5g, rank.max = %d  ==&gt; rank = %d, error = %.5f\n&quot;,
                      i, lamseq[i], rank.max, rank, err))
       #-------------------------
       # register best fir
@@ -830,7 +837,8 @@ simpute.cov.cv &lt;- function(Y, X, W, Y.valid, lambda.factor=1/4, lambda.init=N
          counter=1
       }else counter = counter + 1
       if(counter &gt;= tol){
-         cat(sprintf(&quot;Performance didn&#39;t improve for the last %d iterations.&quot;, counter))
+         if(quiet == FALSE)
+            print(sprintf(&quot;Performance didn&#39;t improve for the last %d iterations.&quot;, counter))
          break
       }
       # compute rank.max for next iteration
@@ -874,7 +882,8 @@ simpute.orig &lt;- function(Y, W, A, n.lambda=20,
       rank.max &lt;- min(rank+rank.step, rank.limit)
       
       # get test estimates and test error
-      soft_estim = complete(Y, fiti)
+      #soft_estim = complete(Y, fiti)
+      soft_estim = fiti$u %*% (fiti$d * t(fiti$v))
       err = test_error(soft_estim[W==0], A[W==0])
       #----------------------------
       warm &lt;- fiti # warm start for next 
@@ -893,6 +902,7 @@ simpute.orig &lt;- function(Y, W, A, n.lambda=20,
          counter=1
       }else counter = counter + 1
       if(counter &gt;= tol){
+         if(trace | print.best)
          cat(sprintf(&quot;Performance didn&#39;t improve for the last %d iterations.&quot;, counter))
          break
       }
@@ -944,73 +954,74 @@ Y_valid &lt;- gen.dat$Y[W_valid==0]
 
 # fiting Alogirthm 1
 sout &lt;- simpute.orig(Y_train, W_valid, gen.dat$Y, trace=TRUE, rank.limit = 30)</code></pre>
-<pre><code>##  1 lambda=   148.38, rank.max = 3  ==&gt; rank = 1, error = 2.06087</code></pre>
+<pre><code>##  1 lambda=   148.75, rank.max = 3  ==&gt; rank = 1, error = 3.36983</code></pre>
 <pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
 ## Convergence not achieved by 100 iterations</code></pre>
-<pre><code>##  2 lambda=   140.57, rank.max = 3  ==&gt; rank = 1, error = 1.91432
-##  3 lambda=   132.76, rank.max = 3  ==&gt; rank = 1, error = 1.76481
-##  4 lambda=   124.95, rank.max = 3  ==&gt; rank = 1, error = 1.62245
-##  5 lambda=   117.14, rank.max = 3  ==&gt; rank = 1, error = 1.48653
-##  6 lambda=   109.33, rank.max = 3  ==&gt; rank = 1, error = 1.35638
-##  7 lambda=   101.52, rank.max = 3  ==&gt; rank = 1, error = 1.23400
-##  8 lambda=   93.711, rank.max = 3  ==&gt; rank = 1, error = 1.11778
-##  9 lambda=   85.902, rank.max = 3  ==&gt; rank = 1, error = 1.00924
-## 10 lambda=   78.093, rank.max = 3  ==&gt; rank = 1, error = 0.90871
-## 11 lambda=   70.283, rank.max = 3  ==&gt; rank = 1, error = 0.81425
-## 12 lambda=   62.474, rank.max = 3  ==&gt; rank = 1, error = 0.72993
-## 13 lambda=   54.665, rank.max = 3  ==&gt; rank = 1, error = 0.65238
-## 14 lambda=   46.856, rank.max = 3  ==&gt; rank = 1, error = 0.58534
-## 15 lambda=   39.046, rank.max = 3  ==&gt; rank = 1, error = 0.52569
-## 16 lambda=   31.237, rank.max = 3  ==&gt; rank = 1, error = 0.47683
-## 17 lambda=   23.428, rank.max = 4  ==&gt; rank = 2, error = 0.43608
-## 18 lambda=   15.619, rank.max = 6  ==&gt; rank = 4, error = 0.38826
-## 19 lambda=   7.8093, rank.max = 8  ==&gt; rank = 6, error = 0.36366
-## 20 lambda=        0, rank.max = 10  ==&gt; rank = 8, error = 0.43435
+<pre><code>##  2 lambda=   140.92, rank.max = 3  ==&gt; rank = 1, error = 3.25073
+##  3 lambda=    133.1, rank.max = 3  ==&gt; rank = 1, error = 3.12534
+##  4 lambda=   125.27, rank.max = 3  ==&gt; rank = 1, error = 2.99983
+##  5 lambda=   117.44, rank.max = 3  ==&gt; rank = 1, error = 2.87428
+##  6 lambda=   109.61, rank.max = 3  ==&gt; rank = 1, error = 2.74817
+##  7 lambda=   101.78, rank.max = 3  ==&gt; rank = 1, error = 2.62360
+##  8 lambda=    93.95, rank.max = 3  ==&gt; rank = 1, error = 2.49907
+##  9 lambda=   86.121, rank.max = 3  ==&gt; rank = 1, error = 2.37643
+## 10 lambda=   78.292, rank.max = 3  ==&gt; rank = 1, error = 2.25646
+## 11 lambda=   70.462, rank.max = 3  ==&gt; rank = 1, error = 2.13709
+## 12 lambda=   62.633, rank.max = 3  ==&gt; rank = 1, error = 2.02420
+## 13 lambda=   54.804, rank.max = 3  ==&gt; rank = 1, error = 1.91396
+## 14 lambda=   46.975, rank.max = 3  ==&gt; rank = 1, error = 1.81282
+## 15 lambda=   39.146, rank.max = 3  ==&gt; rank = 1, error = 1.71724
+## 16 lambda=   31.317, rank.max = 3  ==&gt; rank = 1, error = 1.63135
+## 17 lambda=   23.487, rank.max = 4  ==&gt; rank = 2, error = 1.56034
+## 18 lambda=   15.658, rank.max = 6  ==&gt; rank = 4, error = 1.46515
+## 19 lambda=   7.8292, rank.max = 8  ==&gt; rank = 6, error = 1.41898
+## 20 lambda=        0, rank.max = 10  ==&gt; rank = 8, error = 1.53804
 ## $error
-## [1] 0.3636578
+## [1] 1.418981
 ## 
 ## $rank_A
-## [1] 600
+## [1] 6
 ## 
 ## $rank_B
 ## [1] 6
 ## 
 ## $lambda
-## [1] 7.809253
+## [1] 7.829161
 ## 
 ## $rank.max
 ## [1] 8</code></pre>
 <pre class="r"><code># Test error
 test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])</code></pre>
-<pre><code>## [1] 0.2183391</code></pre>
+<pre><code>## [1] 0.9685266</code></pre>
 <pre class="r"><code># rank of A 
 qr(sout$A_hat)$rank</code></pre>
-<pre><code>## [1] 600</code></pre>
+<pre><code>## [1] 6</code></pre>
 <pre class="r"><code># fitting Algorithm 1.A</code></pre>
-<pre class="r"><code>sout1 &lt;- simpute.cov.cv(Y_train, gen.dat$X, W_valid, Y_valid,
+<pre class="r"><code>sout1 &lt;- simpute.cov.cv(Y_train, gen.dat$X, W_valid, Y_valid,rank.init = 2,
                         trace=TRUE, rank.limit = 30, type=&quot;svd&quot;)</code></pre>
-<pre><code>##  1 lambda=   31.514, rank.max = 10  ==&gt; rank = 1, error = 0.49280
-##  2 lambda=   29.856, rank.max = 3  ==&gt; rank = 1, error = 0.47677
-##  3 lambda=   28.197, rank.max = 3  ==&gt; rank = 1, error = 0.45924
-##  4 lambda=   26.538, rank.max = 3  ==&gt; rank = 1, error = 0.44485
-##  5 lambda=    24.88, rank.max = 3  ==&gt; rank = 1, error = 0.43066
-##  6 lambda=   23.221, rank.max = 3  ==&gt; rank = 1, error = 0.41675
-##  7 lambda=   21.562, rank.max = 3  ==&gt; rank = 1, error = 0.40320
-##  8 lambda=   19.904, rank.max = 3  ==&gt; rank = 1, error = 0.39008
-##  9 lambda=   18.245, rank.max = 3  ==&gt; rank = 1, error = 0.37744
-## 10 lambda=   16.586, rank.max = 3  ==&gt; rank = 1, error = 0.36535
-## 11 lambda=   14.928, rank.max = 3  ==&gt; rank = 1, error = 0.35384
-## 12 lambda=   13.269, rank.max = 3  ==&gt; rank = 3, error = 0.34306
-## 13 lambda=   11.611, rank.max = 5  ==&gt; rank = 5, error = 0.33209
-## 14 lambda=   9.9519, rank.max = 7  ==&gt; rank = 7, error = 0.32245
-## 15 lambda=   8.2932, rank.max = 9  ==&gt; rank = 9, error = 0.31611
-## 16 lambda=   6.6346, rank.max = 11  ==&gt; rank = 11, error = 0.31339
-## 17 lambda=   4.9759, rank.max = 13  ==&gt; rank = 13, error = 0.31706
-## 18 lambda=   3.3173, rank.max = 15  ==&gt; rank = 15, error = 0.32896
-## 19 lambda=   1.6586, rank.max = 17  ==&gt; rank = 17, error = 0.35397
-## 20 lambda=        0, rank.max = 19  ==&gt; rank = 19, error = 0.40069
-## Performance didn&#39;t improve for the last 5 iterations.$error
-## [1] 0.3133895
+<pre><code>## [1] &quot; 1 lambda=   31.508, rank.max = 2  ==&gt; rank = 1, error = 1.64343\n&quot;
+## [1] &quot; 2 lambda=    29.85, rank.max = 3  ==&gt; rank = 1, error = 1.61587\n&quot;
+## [1] &quot; 3 lambda=   28.192, rank.max = 3  ==&gt; rank = 1, error = 1.58508\n&quot;
+## [1] &quot; 4 lambda=   26.533, rank.max = 3  ==&gt; rank = 1, error = 1.55926\n&quot;
+## [1] &quot; 5 lambda=   24.875, rank.max = 3  ==&gt; rank = 1, error = 1.53332\n&quot;
+## [1] &quot; 6 lambda=   23.217, rank.max = 3  ==&gt; rank = 1, error = 1.50740\n&quot;
+## [1] &quot; 7 lambda=   21.558, rank.max = 3  ==&gt; rank = 1, error = 1.48165\n&quot;
+## [1] &quot; 8 lambda=     19.9, rank.max = 3  ==&gt; rank = 1, error = 1.45621\n&quot;
+## [1] &quot; 9 lambda=   18.242, rank.max = 3  ==&gt; rank = 1, error = 1.43123\n&quot;
+## [1] &quot;10 lambda=   16.583, rank.max = 3  ==&gt; rank = 1, error = 1.40686\n&quot;
+## [1] &quot;11 lambda=   14.925, rank.max = 3  ==&gt; rank = 1, error = 1.38324\n&quot;
+## [1] &quot;12 lambda=   13.267, rank.max = 3  ==&gt; rank = 3, error = 1.36055\n&quot;
+## [1] &quot;13 lambda=   11.608, rank.max = 5  ==&gt; rank = 5, error = 1.33674\n&quot;
+## [1] &quot;14 lambda=     9.95, rank.max = 7  ==&gt; rank = 7, error = 1.31533\n&quot;
+## [1] &quot;15 lambda=   8.2917, rank.max = 9  ==&gt; rank = 9, error = 1.29933\n&quot;
+## [1] &quot;16 lambda=   6.6334, rank.max = 11  ==&gt; rank = 11, error = 1.29387\n&quot;
+## [1] &quot;17 lambda=    4.975, rank.max = 13  ==&gt; rank = 13, error = 1.30091\n&quot;
+## [1] &quot;18 lambda=   3.3167, rank.max = 15  ==&gt; rank = 15, error = 1.32664\n&quot;
+## [1] &quot;19 lambda=   1.6583, rank.max = 17  ==&gt; rank = 17, error = 1.37679\n&quot;
+## [1] &quot;20 lambda=        0, rank.max = 19  ==&gt; rank = 19, error = 1.46865\n&quot;
+## [1] &quot;Performance didn&#39;t improve for the last 5 iterations.&quot;
+## $error
+## [1] 1.29387
 ## 
 ## $rank_A
 ## [1] 21
@@ -1019,19 +1030,19 @@ qr(sout$A_hat)$rank</code></pre>
 ## [1] 11
 ## 
 ## $lambda
-## [1] 6.634581
+## [1] 6.633353
 ## 
 ## $rank.max
 ## [1] 11</code></pre>
 <pre class="r"><code># test error
 test_error(sout1$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])</code></pre>
-<pre><code>## [1] 0.1569059</code></pre>
+<pre><code>## [1] 0.8205713</code></pre>
 <pre class="r"><code># error on beta estimates
 test_error(sout1$beta_hat, gen.dat$beta)</code></pre>
-<pre><code>## [1] 0.467453</code></pre>
+<pre><code>## [1] 0.1958656</code></pre>
 <pre class="r"><code># error on B estimates
 test_error(sout1$B_hat, gen.dat$B)</code></pre>
-<pre><code>## [1] 0.947182</code></pre>
+<pre><code>## [1] 0.5868773</code></pre>
 <pre class="r"><code># rank of A, B, and beta
 cat(sprintf(&quot;rank of A=%d, B=%d, beta=%d&quot;,qr(sout1$A_hat)$rank,qr(sout1$B_hat)$rank,qr(sout1$beta_hat)$rank))</code></pre>
 <pre><code>## rank of A=21, B=11, beta=10</code></pre>

@@ -11,14 +11,14 @@ compare_Mao <- function(gen.dat, lambda.1_grid, lambda.2_grid, alpha_grid, numCo
                     numCores = ncores,n1n2_optimized = TRUE,theta_estimator = theta_default)
    mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, cv.out$best_parameters$lambda.1, 
                       cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha, 
-                      theta_estimator = theta_default)
+                      theta_estimator = theta_default, n1n2_optimized = TRUE)
    
    results = list(model = "Mao")
    results$time = round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
    results$alpha = cv.out$best_parameters$alpha
    results$lambda.1 = cv.out$best_parameters$lambda.1
    results$lambda.2 = cv.out$best_parameters$lambda.2
-   results$error.test = test_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = mao_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(mao.out$A_hat, gen.dat$A)
    results$error.B = test_error(mao.out$B_hat, gen.dat$B)
    results$error.beta = test_error(mao.out$beta_hat, gen.dat$beta)
@@ -35,7 +35,7 @@ compare_softImpute_orig <- function(gen.dat, valid.dat){
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
-   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.B = NA
    results$error.beta =NA
@@ -53,7 +53,7 @@ compare_softImpute_cov <- function(gen.dat, valid.dat){
    results$alpha = NA
    results$lambda.1 = 0
    results$lambda.2 = sout$lambda
-   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
@@ -78,7 +78,7 @@ compare_softImpute_L2 <- function(gen.dat, valid.dat, lambda.1_grid, rank.step, 
    results$alpha = NA
    results$lambda.1 = sout$lambda1
    results$lambda.2 = sout$lambda2
-   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -101,7 +101,7 @@ compare_softImpute_Kfold <- function(gen.dat, lambda.1_grid, n_folds, rank.step,
    results$alpha = NA
    results$lambda.1 = sout$lambda1
    results$lambda.2 = sout$lambda2
-   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -136,7 +136,7 @@ compare_softImpute_splr <- function(gen.dat, valid.dat, splr.dat, rank.step, ran
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
-   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(t(sout$beta_hat), gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -169,7 +169,7 @@ compare_softImpute_splr_Kfold <- function(gen.dat, splr.dat, n_folds,
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
-   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(t(sout$beta_hat), gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -185,7 +185,9 @@ compare_and_save <- function(missingness,coll=TRUE,  n_folds=3,
                              lambda.2_grid = seq(.9, 0, length=20),
                              alpha_grid = seq(0.992, 1, length=10),ncores=1,
                              n.lambda=30, rank.limit=20, rank.step=2,
-                             error_function = RMSE, seed=2024){
+                             error_function = RMSE_error, seed=2024,
+                             model_mask = rep(TRUE,7),
+                             mao_r = ncovariates){
    
    
    ncores = min(ncores, length(dim))
@@ -208,7 +210,7 @@ compare_and_save <- function(missingness,coll=TRUE,  n_folds=3,
       set.seed(seed)
       results <- data.frame()
       if(missingness == 0){
-         gen.dat <- generate_simulation_data_mao(n1=dim[i],n2=dim[i],m=ncovariates,r=ncovariates, seed=seed)
+         gen.dat <- generate_simulation_data_mao(n1=dim[i],n2=dim[i],m=ncovariates,r=mao_r, seed=seed)
       }else
          gen.dat <- generate_simulation_data_ysf(2,dim[i],dim[i],ncovariates,ncovariates, 
                                                  missing_prob = missingness,coll=coll,seed=seed)
@@ -222,40 +224,48 @@ compare_and_save <- function(missingness,coll=TRUE,  n_folds=3,
       # SPLR data
       splr.dat = reduced_hat_decomp(gen.dat$X, 1e-2)
       gen.dat$X <- splr.dat$X
+      print(i)
       #----------------------------------------------------------------------
       # fit 1. Mao
-      print(i)
+      cat(" - M1 - ")
+      if(model_mask[1])
       results = rbind(results, compare_Mao(gen.dat, lambda.1_grid, lambda.2_grid,
                                            alpha_grid,1,n_folds))
-      cat(" - M1 - ")
       #----------------------------------------------------------
       # soft Impute model without covariates
+      cat("M2 - ")
+      if(model_mask[2])
       results = rbind(results, compare_softImpute_orig(gen.dat, valid.dat))
-      cat(" - M2 - ")
       #----------------------------------------------------------------------------
       # soft Impute model with covariates
+      cat("M3 - ")
+      if(model_mask[3])
       results = rbind(results, compare_softImpute_cov(gen.dat, valid.dat)) 
-      cat(" - M3 - ")
       #-------------------------------------------------------------------------------------
       # Soft Impute with Covariates and With L2 regularization on the covariates
+      cat("M4 - ")
+      if(model_mask[4])
       results = rbind(results, compare_softImpute_L2(gen.dat, valid.dat, lambda.1_grid,
                                                      rank.step,rank.limit,n.lambda))
-      cat(" - M4 -")
       #-------------------------------------------------------------------------------------
       # Soft Impute with Covariates and With L2 regularization on the covariates and K-fold cross-validation
+      cat("M5 - ")
+      if(model_mask[5])
       results = rbind(results, compare_softImpute_Kfold(gen.dat, lambda.1_grid, n_folds,
                                                        rank.step, rank.limit,
                                                        n.lambda))
-      cat(" - M5 - ")
       #--------------------------------------------------------------------------------
+      cat("M6 - ")
+      if(model_mask[6])
       results = rbind(results, compare_softImpute_splr(gen.dat, valid.dat, splr.dat,
                                                        rank.step,rank.limit,n.lambda))
-      cat(" - M6 - ")
       #--------------------------------------------------------------------------------
+      cat("M7 - ")
+      if(model_mask[7])
       results = rbind(results, compare_softImpute_splr_Kfold(gen.dat, splr.dat,
                                                              n_folds,rank.step, rank.limit,
                                                              n.lambda))
-      cat(" - M7 -\n")
+      cat("Done.\n")
       #--------------------------------------------------------------------------------
       results$true_rank = gen.dat$rank
       results$dim = dim[i]
@@ -289,27 +299,36 @@ compare_and_save <- function(missingness,coll=TRUE,  n_folds=3,
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local=FALSE)
 
-alpha_grid = c(1)
+alpha_grid = seq(0.992, 1, length=10)
 ncores = 1
 lambda.1_grid = seq(0,2,length=20)
 lambda.2_grid = seq(.9, 0, length=20) 
+error_function <- RMSE_error
+model_mask <- rep(F,7)
+model_mask[c(1,6)] <- TRUE
+mao_r <- 10
+ncovariates <- 20
 
-
-compare_and_save(0.9, TRUE,
-                 lambda.1_grid = lambda.1_grid,lambda.2_grid = lambda.2_grid,
-                 alpha_grid = alpha_grid, ncores=ncores)
-
-compare_and_save(0.9, FALSE,
-                 lambda.1_grid = lambda.1_grid, lambda.2_grid = lambda.2_grid,
-                 alpha_grid = alpha_grid, ncores=ncores)
-compare_and_save(0.8, TRUE,
-                 lambda.1_grid = lambda.1_grid, lambda.2_grid = lambda.2_grid,
-                 alpha_grid = alpha_grid, ncores=ncores)
-compare_and_save(0.8, FALSE,
-                  lambda.1_grid = lambda.1_grid,lambda.2_grid = lambda.2_grid,
-                  alpha_grid = alpha_grid, ncores=ncores)
 compare_and_save(0,  FALSE,
                  lambda.1_grid = lambda.1_grid, lambda.2_grid = lambda.2_grid,
-                 alpha_grid = alpha_grid, ncores=ncores)
+                 alpha_grid = alpha_grid, ncores=ncores, model_mask = model_mask,
+                 ncovariates = ncovariates, mao_r = mao_r, error_function = error_function)
+compare_and_save(0.8, FALSE,
+                  lambda.1_grid = lambda.1_grid,lambda.2_grid = lambda.2_grid,
+                  alpha_grid = alpha_grid, ncores=ncores, model_mask = model_mask,
+                 ncovariates = ncovariates, mao_r = mao_r, error_function = error_function)
+compare_and_save(0.8, TRUE,
+                 lambda.1_grid = lambda.1_grid, lambda.2_grid = lambda.2_grid,
+                 alpha_grid = alpha_grid, ncores=ncores, model_mask = model_mask,
+                 ncovariates = ncovariates, mao_r = mao_r, error_function = error_function)
+compare_and_save(0.9, FALSE,
+                 lambda.1_grid = lambda.1_grid, lambda.2_grid = lambda.2_grid,
+                 alpha_grid = alpha_grid, ncores=ncores, model_mask = model_mask,
+                 ncovariates = ncovariates, mao_r = mao_r, error_function = error_function)
+compare_and_save(0.9, TRUE,
+                 lambda.1_grid = lambda.1_grid,lambda.2_grid = lambda.2_grid,
+                 alpha_grid = alpha_grid, ncores=ncores, model_mask = model_mask,
+                 ncovariates = ncovariates, mao_r = mao_r, error_function = error_function)
 
 #------------------------------------------------------------------------------------   
+

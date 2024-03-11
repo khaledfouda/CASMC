@@ -8,13 +8,13 @@ editor_options:
 ---
 
 ```{r setup, include=TRUE, warning=FALSE, message=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE)
+knitr::opts_chunk$set(echo = TRUE, cache = F, eval = FALSE)
 library(kableExtra)
 library(magrittr)
 library(tidyverse)
 library(softImpute)
 
-knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 ```
 
 
@@ -192,7 +192,7 @@ In terms of computations, the update inside the loop is as follows:
 
 Below is the implementation of algorithm **1.A** based on the author's github page.
 
-```{r code=readLines(paste0(path_to_code, "SoftImpute_fit_covariates.R"))}
+```{r code=readLines(paste0(path_to_code, "softImpute/SoftImpute_fit_covariates.R"))}
 
 ```
 
@@ -218,7 +218,7 @@ sout <- simpute.svd.cov(gen.dat$Y, gen.dat$X, beta_partial, thresh=1e-3, lambda 
 
 The hyperparameter $\lambda$ of the nuclear term regularization and $J$, the maximum number of Eigen values (max rank) to retain are picked through cross validation. We start by splitting the training data set into training and validations set using a new mask $W^{v}$, where $W^{v}_{ij}=0$ if $Y_{ij}\in Y_{valid}$ and $W^{v}_{ij}=1$ if $Y_{ij} \notin Y_{valid}$. The function for generating the new mask is illustrated below. We chose the proportion of validation cells to be $20\%$ of the non-missing part of the data.
 
-```{r code=readLines(paste0(path_to_code, "matrix_split_train_valid.R"))}
+```{r code=readLines(paste0(path_to_code, "utils/matrix_split_train_valid.R"))}
 
 ```
 
@@ -236,7 +236,7 @@ Instead of initializing the missing values to 0 at the beigining of every fit, t
 Below we show two cross validation functions. One uses Algorithm **1** and the other uses the new Algorithm **1.A**.
 
 
-```{r code=readLines(paste0(path_to_code, "SoftImpute_cv_covariates.R"))}
+```{r code=readLines(paste0(path_to_code, "softImpute/SoftImpute_cv_covariates.R"))}
 
 ```
 
@@ -266,7 +266,7 @@ qr(sout$A_hat)$rank
 
 
 ```{r fit simpute, eval=TRUE}
-sout1 <- simpute.cov.cv(Y_train, gen.dat$X, W_valid, Y_valid,
+sout1 <- simpute.cov.cv(Y_train, gen.dat$X, W_valid, Y_valid,rank.init = 2,
                         trace=TRUE, rank.limit = 30, type="svd")
 
 ```
