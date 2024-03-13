@@ -27,7 +27,8 @@ source("./code_files/import_lib.R")
 
 
 ```{r fig.height=8, fig.width=10}
-file_list <- list.files(path = path_to_data, pattern = "Compare_MC_Models.*\\.csv$",
+file_list <- list.files(path = path_to_data, pattern =
+                           "((Compare_MC_Models_Youssef_Simulation_.*)|(Compare_MC_Models_Mao_Simulation))\\.csv$",
                         full.names = TRUE,recursive =F)
 
 results = data.frame()

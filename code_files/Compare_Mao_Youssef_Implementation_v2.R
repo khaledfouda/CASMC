@@ -4,21 +4,21 @@ require(doParallel)
 compare_Mao <- function(gen.dat, lambda.1_grid, lambda.2_grid, alpha_grid, numCores=1, n_folds=5){
    start_time = Sys.time()
    cv.out <- Mao.cv(gen.dat$A, gen.dat$X, gen.dat$Y, gen.dat$W,
-                    n_folds=5, 
+                    n_folds=n_folds, 
                     lambda.1_grid = lambda.1_grid,
                     lambda.2_grid = lambda.2_grid,
                     alpha_grid = alpha_grid,
-                    numCores = ncores,n1n2_optimized = TRUE,theta_estimator = theta_default)
+                    numCores = ncores,n1n2_optimized = FALSE,theta_estimator = theta_default)
    mao.out <- Mao.fit(gen.dat$Y, gen.dat$X, gen.dat$W, cv.out$best_parameters$lambda.1, 
                       cv.out$best_parameters$lambda.2, cv.out$best_parameters$alpha, 
-                      theta_estimator = theta_default, n1n2_optimized = TRUE)
+                      theta_estimator = theta_default, n1n2_optimized = FALSE)
    
    results = list(model = "Mao")
    results$time = round(as.numeric(difftime(Sys.time(), start_time,units = "secs")))
    results$alpha = cv.out$best_parameters$alpha
    results$lambda.1 = cv.out$best_parameters$lambda.1
    results$lambda.2 = cv.out$best_parameters$lambda.2
-   results$error.test = mao_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = test_error(mao.out$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(mao.out$A_hat, gen.dat$A)
    results$error.B = test_error(mao.out$B_hat, gen.dat$B)
    results$error.beta = test_error(mao.out$beta_hat, gen.dat$beta)
@@ -35,7 +35,7 @@ compare_softImpute_orig <- function(gen.dat, valid.dat){
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
-   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.B = NA
    results$error.beta =NA
@@ -53,7 +53,7 @@ compare_softImpute_cov <- function(gen.dat, valid.dat){
    results$alpha = NA
    results$lambda.1 = 0
    results$lambda.2 = sout$lambda
-   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
@@ -78,7 +78,7 @@ compare_softImpute_L2 <- function(gen.dat, valid.dat, lambda.1_grid, rank.step, 
    results$alpha = NA
    results$lambda.1 = sout$lambda1
    results$lambda.2 = sout$lambda2
-   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -101,7 +101,7 @@ compare_softImpute_Kfold <- function(gen.dat, lambda.1_grid, n_folds, rank.step,
    results$alpha = NA
    results$lambda.1 = sout$lambda1
    results$lambda.2 = sout$lambda2
-   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -136,7 +136,7 @@ compare_softImpute_splr <- function(gen.dat, valid.dat, splr.dat, rank.step, ran
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
-   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(t(sout$beta_hat), gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -169,7 +169,7 @@ compare_softImpute_splr_Kfold <- function(gen.dat, splr.dat, n_folds,
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
-   results$error.test = mao_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
+   results$error.test = test_error(sout$A_hat[gen.dat$W==0], gen.dat$A[gen.dat$W==0])
    results$error.all = test_error(sout$A_hat, gen.dat$A)
    results$error.beta = test_error(t(sout$beta_hat), gen.dat$beta)
    results$error.B = test_error(sout$B_hat, gen.dat$B)
@@ -304,7 +304,7 @@ ncores = 1
 lambda.1_grid = seq(0,2,length=20)
 lambda.2_grid = seq(.9, 0, length=20) 
 error_function <- RMSE_error
-model_mask <- rep(F,7)
+model_mask <- rep(T,7)
 model_mask[c(1,6)] <- TRUE
 mao_r <- 10
 ncovariates <- 20

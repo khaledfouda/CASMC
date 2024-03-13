@@ -29,7 +29,7 @@ prepare_fold_data <-
          # this one is for equation 8, the product n1n2 is replace with the Eigen value
          n1n2Im = svd(X.X)$d[1]  * diag(1, m) 
       } else{
-         n1n2Im = n1 * n2  * diag(1, m) / 2
+         n1n2Im = n1 * n2  * diag(1, m) * 0.5
       }
       # the following is the product of W * theta_hat * Y
       W_theta_Y = Y_train * theta_hat
@@ -37,7 +37,7 @@ prepare_fold_data <-
       svdd = svd(P_bar_X %*% W_theta_Y)
       if (n1n2_optimized == TRUE) {
          # this one is for equation 11, the product is also replace with the Eigen value of the SVD
-         n1n2 = svdd$d[1] / 2
+         n1n2 = svdd$d[1] 
       } else{
          n1n2 = n1 * n2 / 2
       }

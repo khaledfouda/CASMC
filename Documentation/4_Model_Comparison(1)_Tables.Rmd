@@ -60,7 +60,8 @@ data.frame(Model=Models, Note=Note, `Has Covariates?`=include_cov,
 
 
 ```{r}
-file_list <- list.files(path = path_to_data, pattern = "Compare_MC_Models.*\\.csv$",
+file_list <- list.files(path = path_to_data, pattern =
+                           "((Compare_MC_Models_Youssef_Simulation_.*)|(Compare_MC_Models_Mao_Simulation))\\.csv$",
                         full.names = TRUE,recursive =F)
 
 results = data.frame()

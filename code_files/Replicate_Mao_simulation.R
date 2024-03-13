@@ -16,7 +16,7 @@ compare_Mao_mod <-
       lambda.2_grid = lambda.2_grid,
       alpha_grid = alpha_grid,
       numCores = ncores,
-      n1n2_optimized = TRUE,
+      n1n2_optimized = FALSE,
       theta_estimator = theta_default
     )
     mao.out <-
@@ -28,7 +28,7 @@ compare_Mao_mod <-
         cv.out$best_parameters$lambda.2,
         cv.out$best_parameters$alpha,
         theta_estimator = theta_default,
-        n1n2_optimized = TRUE
+        n1n2_optimized = FALSE
       )
     results = list()
     results$error.beta = RMSE_error(mao.out$beta_hat, gen.dat$beta)
@@ -281,5 +281,6 @@ results = replicate_mao_sim(
   n_reps = 200,
   dim = dim,
   save_to_disk = TRUE,
-  print_every = 10
+  print_every = 10,
+  error_function = RMSE_error 
 )

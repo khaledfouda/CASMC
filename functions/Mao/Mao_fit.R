@@ -11,7 +11,7 @@ theta_default <- function(X, W, ...) {
    for (j in 1:n2) {
       model_data = data.frame(cbind(W[, j], X))
       model_fit = glm(X1 ~ ., family = binomial(), data = model_data)
-      theta_hat[, j] = 1 / predict(model_fit, type = "response")
+      theta_hat[, j] = predict(model_fit, type = "response")
    }
    return(theta_hat)
 }
@@ -22,7 +22,7 @@ theta_random <- function(W, ...) {
    n2 = dim(W)[2]
    theta_hat = matrix(NA, n1, n2)
    for (j in 1:n2) {
-      theta_hat[, j] = n1 / sum(W[, j] == 1)
+      theta_hat[, j] = sum(W[, j] == 1) / n1
    }
    return(theta_hat)
 }
@@ -31,7 +31,7 @@ theta_simple <- function(W, ...) {
    # using formula (a3)
    n1 = dim(W)[1]
    n2 = dim(W)[2]
-   theta_hat = matrix((n1 * n2) / sum(W == 1), n1, n2)
+   theta_hat = matrix(sum(W == 1)/(n1 * n2), n1, n2)
    return(theta_hat)
 }
 
@@ -57,6 +57,7 @@ Mao.fit <-
       n1 = dim(Y)[1]
       n2 = dim(Y)[2]
       m  = dim(X)[2]
+      yobs = W==1
       # The following two lines are as shown in (c) and (d)
       X.X = t(X) %*% X
       P_X = X %*% solve(X.X) %*% t(X)
@@ -66,7 +67,7 @@ Mao.fit <-
          # we define the factor that will be used later:
          n1n2 = svd(X.X)$d[1] 
       } else{
-         n1n2 = n1 * n2 
+         n1n2 = n1 * n2 / 2
       }
       
       # The following part estimates theta (missingness probabilities)
@@ -82,7 +83,7 @@ Mao.fit <-
          # evaluation of  (b)
          n1n2 = svdd$d[1] 
       } else{
-         n1n2 = n1 * n2 
+         n1n2 = n1 * n2 / 2
       }
       T_c_D = svdd$u %*% (pmax(svdd$d - alpha * n1n2 * lambda.2, 0) * t(svdd$v))
       # B hat as in (11)
@@ -94,6 +95,7 @@ Mao.fit <-
       
       # Estimate the matrix as given in the model at the top
       A_hat = X %*% beta_hat + B_hat
+      A_hat[yobs] <- Y[yobs]
       
       return(list(
          A_hat = A_hat,
