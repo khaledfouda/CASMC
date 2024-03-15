@@ -61,3 +61,8 @@ saved_data/*
 *_cache/
 *_cache/html/*
 *_cache/*
+
+# remove movieLens data files
+
+ml-100k/*
+*ml-*/*
