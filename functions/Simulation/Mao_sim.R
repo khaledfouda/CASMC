@@ -22,7 +22,8 @@ generate_simulation_data_mao <-
             r = 10,
             method = "MAR",
             seed = NULL,
-            miss.prob = 0.8) {
+            miss.prob = 0.8,
+            cov_eff = TRUE) {
       #' Input:
       #'      n1, n2: are the dimensions of the A, Y, and B matrices
       #'      m: number of covariates
@@ -39,7 +40,13 @@ generate_simulation_data_mao <-
       P_X = X %*% solve(t(X) %*% X) %*% t(X)
       P_bar_X = diag(1, n1) - P_X
       B = P_bar_X %*% U %*% t(V)
-      A <- X %*% beta + B
+      if (cov_eff) {
+         A <- X %*% beta + B
+      } else{
+         beta <- matrix(0, m, n2)
+         A <- B
+      }
+      
       rank <- qr(A)$rank # = m + r
       #-----------------------------------------------------------------------------
       stopifnot(method %in% c("MAR", "UNI"))
@@ -55,7 +62,7 @@ generate_simulation_data_mao <-
          W <- matrix(rbinom(n1 * n2, 1, inclusion_prob) , nrow = n1)
          # sum(W==0)/(n1*n2) should be equal to 0.8
       } else{
-         W <- matrix( rbinom(n1*n2, 1, (1 - miss.prob) ) , nrow = n1)
+         W <- matrix(rbinom(n1 * n2, 1, (1 - miss.prob)) , nrow = n1)
       }
       #----------------------------------------------------------
       # Does fully observed Y = A (ie,  without noise?)? In that case ignore the code below.
@@ -69,18 +76,16 @@ generate_simulation_data_mao <-
       # Y is a corrupted, partially-observed version of A. Yij=0 for missing data [maybe consider making it NA]
       Y <- (A + epsilon) * W
       #---------------------------------------------------------------------
-      return(
-         list(
-            A = A,
-            W = W,
-            X = X,
-            Y = Y,
-            beta = beta,
-            B = B,
-            #theta = theta,
-            #gamma = gamma,
-            #inclusion_prob = inclusion_prob,
-            rank = rank
-         )
-      )
+      return(list(
+         A = A,
+         W = W,
+         X = X,
+         Y = Y,
+         beta = beta,
+         B = B,
+         #theta = theta,
+         #gamma = gamma,
+         #inclusion_prob = inclusion_prob,
+         rank = rank
+      ))
    }

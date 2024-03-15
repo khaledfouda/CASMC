@@ -54,6 +54,7 @@ saved_data/*
 # remove csv files
 *.csv
 *.tsv
+*.zip
 
 # remove rmd cache folders
 

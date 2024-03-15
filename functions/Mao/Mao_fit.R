@@ -11,7 +11,7 @@ theta_default <- function(X, W, ...) {
    for (j in 1:n2) {
       model_data = data.frame(cbind(W[, j], X))
       model_fit = glm(X1 ~ ., family = binomial(), data = model_data)
-      theta_hat[, j] = predict(model_fit, type = "response")
+      theta_hat[, j] = 1/ predict(model_fit, type = "response")
    }
    return(theta_hat)
 }
@@ -57,7 +57,7 @@ Mao.fit <-
       n1 = dim(Y)[1]
       n2 = dim(Y)[2]
       m  = dim(X)[2]
-      yobs = W==1
+      #yobs = W==1
       # The following two lines are as shown in (c) and (d)
       X.X = t(X) %*% X
       P_X = X %*% solve(X.X) %*% t(X)
@@ -91,11 +91,12 @@ Mao.fit <-
       # computing the rank of B [Copied from Mao's code; Don't understand how it works.]
       # EQUIVALENT to  qr(B_hat)$rank + m   or   qr(A_hat)$rank
       # B is a low rank matrix
-      rank = sum(pmax(svdd$d - n1n2 * lambda.2 * alpha, 0) > 0) + m
+      #rank = sum(pmax(svdd$d - n1n2 * lambda.2 * alpha, 0) > 0) + m
       
       # Estimate the matrix as given in the model at the top
       A_hat = X %*% beta_hat + B_hat
-      A_hat[yobs] <- Y[yobs]
+      #A_hat[yobs] <- Y[yobs]
+      rank = qr(A_hat)$rank
       
       return(list(
          A_hat = A_hat,

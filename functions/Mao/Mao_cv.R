@@ -79,7 +79,7 @@ Mao.cv <-
             lambda.1_grid = seq(0, 1, length = 30),
             lambda.2_grid = seq(0.9, 0.1, length = 30),
             alpha_grid = seq(0.992, 1, length = 20),
-            seed = 2023,
+            seed = NULL,
             numCores = 16,
             n1n2_optimized = FALSE,
             theta_estimator = theta_default) {
@@ -94,7 +94,7 @@ Mao.cv <-
       #' list of best parameters and best score (minimum average MSE across folds)
       #' --------------------------------------------------------------------
       
-      set.seed(seed = seed)
+      if(! is.null(seed)) set.seed(seed = seed)
       #indices = sample(cut(seq(1, nrow(A)), breaks=n_folds, labels=FALSE))
       best_score = Inf
       best_params = list(alpha = NA,

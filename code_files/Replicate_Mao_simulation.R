@@ -3,7 +3,7 @@ compare_Mao_mod <-
            lambda.1_grid,
            lambda.2_grid,
            alpha_grid,
-           numCores = 1,
+           ncores = 1,
            n_folds = 5) {
     start_time = Sys.time()
     cv.out <- Mao.cv(
@@ -78,7 +78,7 @@ compare_softImpute_cov_mod <- function(gen.dat, valid.dat) {
       rank.limit = 30,
       quiet = TRUE,
       print.best = FALSE,
-      rank.step = 4,
+      rank.step = 2,
       type = "als",
       lambda1 = 0,
       tol = 2
@@ -156,7 +156,7 @@ replicate_mao_sim <- function(n_folds = 3,
                               rank.step = 2,
                               error_function = RMSE_error,
                               save_to_disk = FALSE,
-                              seed = NULL,
+                              start.seed = 1,
                               print_every = 10) {
   print(paste("Running on", ncores, "core(s)."))
   test_error <<- error_function
@@ -170,7 +170,7 @@ replicate_mao_sim <- function(n_folds = 3,
     time = NA
   )
   
-  seed = ifelse(is.null(seed), 0, seed)
+  seed = start.seed
   for (i in 1:n_reps) {
     seed = seed + i
     #final.results <- foreach(i = 1:length(dim), .combine='rbind') %do%  {
@@ -181,13 +181,13 @@ replicate_mao_sim <- function(n_folds = 3,
         n2 = dim,
         m = ncovariates,
         r = mao_r,
-        seed = seed
+        seed = NULL
       )
     #-------------------------------------------------------------------------------------
     # validation set to be used for the next two models
     valid.dat = list()
     valid.dat$W_valid <-
-      matrix.split.train.test(gen.dat$W, testp = 0.2, seed = seed)
+      matrix.split.train.test(gen.dat$W, testp = 0.2, seed = NULL)
     valid.dat$Y_train <- gen.dat$Y * valid.dat$W_valid
     valid.dat$Y_valid <- gen.dat$Y[valid.dat$W_valid == 0]
     #---------------------------------------------------------
@@ -275,12 +275,12 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 
-for(dim in c(400,600,800))
+for(dim in c(400,600,800,1000))
 results = replicate_mao_sim(
   n_folds = 3,
   n_reps = 200,
   dim = dim,
-  save_to_disk = TRUE,
+  save_to_disk = FALSE,
   print_every = 10,
   error_function = RMSE_error 
 )
