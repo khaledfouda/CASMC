@@ -534,7 +534,7 @@ model_mask[c(1, 2,6,8)] <- TRUE
 mao_r <- 10
 ncovariates <- 20
 cov_eff = F
-note = "_no_cov_"
+note = ""
 
 compare_and_save(
    0,

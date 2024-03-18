@@ -61,7 +61,7 @@ data.frame(Model=Models, Note=Note, `Has Covariates?`=include_cov,
 
 ```{r}
 file_list <- list.files(path = path_to_data, pattern =
-                           "((Compare_MC_Models_Youssef_Simulation_.*)|(Compare_MC_Models_Mao_Simulation))\\.csv$",
+                           "((Compare_MC_Models_Youssef_Simulation_[0-9]+.*)|(Compare_MC_Models_Mao_Simulation))\\.csv$",
                         full.names = TRUE,recursive =F)
 
 results = data.frame()
@@ -123,8 +123,8 @@ print_table <- function(results, missingness=NULL, coll=TRUE, prob=NA, caption="
    
    # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
    error_columns <- c("A_test", "B", "beta", "A","seconds")
-   for(i in seq(1,28,7))
-      combined_results[i:(i+6), ] <- color_min_values(combined_results[i:(i+6), ], error_columns)
+   for(i in seq(1,32,8))
+      combined_results[i:(i+7), ] <- color_min_values(combined_results[i:(i+7), ], error_columns)
    
    combined_results %>%
       mutate_if(is.numeric, function(x) replace_na(as.character(round(x,4)), '')) %>% 
@@ -132,10 +132,10 @@ print_table <- function(results, missingness=NULL, coll=TRUE, prob=NA, caption="
    kable("html", escape=FALSE, align = 'c', caption=caption) %>%
      kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
      add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 2, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
-     pack_rows("400x400", 1, 7) %>%
-     pack_rows("600x600", (7*1)+1, 7*2 ) %>% 
-     pack_rows("800x800", (7*2)+1, 7*3) %>% 
-     pack_rows("1000x1000", (7*3)+1, 7*4) %>%
+     pack_rows("400x400", 1, 8) %>%
+     pack_rows("600x600", (8*1)+1, 8*2 ) %>% 
+     pack_rows("800x800", (8*2)+1, 8*3) %>% 
+     pack_rows("1000x1000", (8*3)+1, 8*4) %>%
         column_spec(test_col, bold = T, background =grDevices::adjustcolor( "red", alpha.f = 0.1))
 
   
