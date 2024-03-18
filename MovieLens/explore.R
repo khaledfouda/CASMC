@@ -1,5 +1,5 @@
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
-source("./code_files/import_lib.R", local = FALSE)
+suppressMessages(suppressWarnings(source("./code_files/import_lib.R", local = FALSE)))
 #https://paperswithcode.com/sota/collaborative-filtering-on-movielens-100k
 
 # ratings <-
@@ -148,7 +148,7 @@ lambda.1_grid = seq(0, 2, length = 20)
 lambda.2_grid = seq(.9, 0, length = 20)
 alpha_grid = seq(0.992, 1, length = 10)
 start_time = Sys.time()
-cv.out <- Mao.cv(
+cv.out <-suppressMessages(suppressWarnings( Mao.cv(
  dtrain.Y,
  X_r$X,
  dtrain.Y,
@@ -160,8 +160,8 @@ cv.out <- Mao.cv(
  numCores = 1,
  n1n2_optimized = FALSE,
  theta_estimator = theta_default
-)
-mao.out <-
+)))
+mao.out <- suppressMessages(suppressWarnings(
  Mao.fit(
   dtrain.Y,
   X_r$X,
@@ -171,7 +171,10 @@ mao.out <-
   cv.out$best_parameters$alpha,
   theta_estimator = theta_default,
   n1n2_optimized = FALSE
- )
+ )))
+print(paste("Execution time is", round(as.numeric(
+  difftime(Sys.time(), start_time, units = "secs")
+), 2), "seconds"))
 dtest$preds_mao <-
  mao.out$A_hat[cbind(dtest$user_id, dtest$movie_id)]
 RMSE_error(dtest$preds_mao, dtest$rating)
@@ -180,6 +183,7 @@ mao.out$rank
 # applying the K-fold method
 # 
 # 
+start_time = Sys.time()
 soutl2 <-
 simpute.cov.kfold(
  dtrain.Y,
@@ -210,8 +214,11 @@ soutl2. <-
   warm = NULL,
   J = c(soutl2$J)
  )
-
+print(paste("Execution time is", round(as.numeric(
+  difftime(Sys.time(), start_time, units = "secs")
+), 2), "seconds"))
 dtest$preds_l2 <-
  soutl2.$A_hat[cbind(dtest$user_id, dtest$movie_id)]
 RMSE_error(dtest$preds_l2, dtest$rating)
 soutl2.$rank
+
