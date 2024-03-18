@@ -11,7 +11,7 @@ theta_default <- function(X, W, ...) {
    for (j in 1:n2) {
       model_data = data.frame(cbind(W[, j], X))
       model_fit = glm(X1 ~ ., family = binomial(), data = model_data)
-      theta_hat[, j] = 1/ predict(model_fit, type = "response")
+      theta_hat[, j] = predict(model_fit, type = "response")
    }
    return(theta_hat)
 }

@@ -529,12 +529,12 @@ lambda.1_grid = seq(0, 2, length = 20)
 lambda.2_grid = seq(.9, 0, length = 20)
 ncores = 1
 error_function <- RMSE_error
-model_mask <- rep(F, 8)
+model_mask <- rep(T, 8)
 model_mask[c(1, 2,6,8)] <- TRUE
 mao_r <- 10
 ncovariates <- 20
-cov_eff = T
-note = "_test_"
+cov_eff = F
+note = "_no_cov_"
 
 compare_and_save(
    0,
