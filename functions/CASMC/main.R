@@ -5,7 +5,7 @@ source("./code_files/import_lib.R")
 
 # 0. prepare the data
 
-gen.dat <-  generate_simulation_data_mao(400,400,10,10,2024)
+gen.dat <-  generate_simulation_data_mao(400,400,10,10, "MAR", 2024)
 gen.dat <- generate_simulation_data_ysf(2,400,400,10,10, missing_prob = 0.9,coll=T)
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
@@ -20,12 +20,12 @@ max.rank = 3
 # files: fit_covariates.R; fit_n_covariates_fixed_rank_beta.R
 
 start_time <- Sys.time()
-set.seed(2020);fits <- simpute.als.fit_splr(y=y, svdH=X_r$svdH,  trace=T, J=max.rank,
+set.seed(2020);fits <- CASMC_fit(y=y, svdH=X_r$svdH,  trace=T, J=max.rank,
                                             thresh=1e-6, lambda=lambda2, init = "naive",
                                             final.svd = T,maxit = 500, warm.start = NULL)
 xbeta.sparse@x = fits$xbeta.obs
 #warm.start above expects u,d,v,xbeta.obs
-fit4 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X,  X_r$rank, maxit=300,
+fit4 = SZIRCI(xbeta.sparse, X_r$X,  X_r$rank, maxit=300,
                                  trace.it = F,final.trim = F,thresh = 1e-6)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
@@ -50,7 +50,7 @@ warm.start$X1 = X0 %*% t(Ux)
 warm.start$X2 = X0 %*% Vx
 B = t( ginv(X_r$X) %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
 warm.start$Bsvd = fast.svd(B)
-fit4 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X,  X_r$rank, maxit=300, warm.start = warm.start,
+fit4 = SZIRCI(xbeta.sparse, X_r$X,  X_r$rank, maxit=300, warm.start = warm.start,
                                  trace.it = T,final.trim = F,thresh = 1e-6)
 #----------------------------------------------------------------------------------------------------------
 # 2. cross-validation with train/test split
@@ -62,7 +62,7 @@ Y_train = (gen.dat$Y * W_valid)
 Y_valid = gen.dat$Y[W_valid==0]
 # fit
 start_time <- Sys.time()
-best_fit = simpute.cov.cv_splr(Y_train, X_r, Y_valid, W_valid, gen.dat$Y,
+best_fit = CASMC_cv_holdout(Y_train, X_r, Y_valid, W_valid, gen.dat$Y,
                                trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
@@ -81,10 +81,10 @@ best_fit$rank.max
 best_fit$lambda
 #------------------------------------------------------------------------------------
 # K-fold cross-validation
-test_error <- RMSE
+test_error <- RMSE_error
 start_time <- Sys.time()
 set.seed(2023)
-best_fit2 = simpute.cov.Kf_splr(gen.dat$Y, X_r, gen.dat$W, trace=T,print.best = TRUE,
+best_fit2 = CASMC_cv_kfold(gen.dat$Y, X_r, gen.dat$W, trace=T,print.best = TRUE,
                                 n.lambda = 20, n_folds = 3, rank.limit=30, rank.step=2)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 

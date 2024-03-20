@@ -1,4 +1,4 @@
-simpute.orig <- function(Y,
+simpute.cv <- function(Y,
                          W,
                          A,
                          n.lambda = 20,

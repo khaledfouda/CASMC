@@ -1,4 +1,4 @@
-simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.init=NA, 
+CASMC_cv_kfold <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.init=NA, 
                                 n.lambda=30,
                                             trace=FALSE, thresh=1e-6, maxit=100,
                                             rank.init=3, rank.limit=20, rank.step=2,
@@ -66,7 +66,7 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
       if(i != 1) fiti$xbeta.obs <- xbeta.observed 
          # or, initialize it using the secondmodel
          #fiti$xbeta.obs <- suvC(Xv, t(fitx$d * t(fitx$u)), Y@i, Y@p)
-      fiti <-  simpute.als.fit_splr(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,
+      fiti <-  CASMC_fit(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,
                                     thresh=thresh, lambda=lamseq[i], init = "naive",
                                     final.svd = T,maxit = maxit, warm.start = fiti)
       xbeta.sparse@x <- fiti$xbeta.obs
@@ -79,7 +79,7 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
       }else warm.start.beta$Bsvd = fitx
       #---------------------------
       # fit second model:
-      fitx = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
+      fitx = SZIRCI(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
                                        warm.start = warm.start.beta, trace.it = F,maxit=maxit)
       Xv = X_r$X %*% fitx$v
       #-------------------------------------------------------------------
@@ -97,7 +97,7 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
          data = fold_data[[fold]]
          #-----
          fiti$xbeta.obs <- suvC(Xv, t(fitx$d * t(fitx$u)), data$Y_train@i, data$Y_train@p)
-         fiti <-  simpute.als.fit_splr(y=data$Y_train, svdH=X_r$svdH,  trace=F, J=rank.max,
+         fiti <-  CASMC_fit(y=data$Y_train, svdH=X_r$svdH,  trace=F, J=rank.max,
                                        thresh=thresh, lambda=lamseq[i], init = "naive",
                                        final.svd = T,maxit = maxit, warm.start = fiti)
          xbeta.observed[data$obs_ind] <- (xbeta.observed[data$obs_ind] + fiti$xbeta.obs)/2
@@ -151,13 +151,13 @@ simpute.cov.Kf_splr <- function(Y, X_r, W,n_folds=5, lambda.factor=1/4, lambda.i
    best_fit$fit1$xbeta.obs <-xbeta.observed
    # or, initiate with model 2 as:
    # suvC(X_r$X %*% best_fit$fit2$v,t(best_fit$fit2$d * t(best_fit$fit2$u)), Y@i, Y@p)
-   best_fit$fit1 <-  simpute.als.fit_splr(y=Y, svdH=X_r$svdH,  trace=F, J=best_fit$rank.max,
+   best_fit$fit1 <-  CASMC_fit(y=Y, svdH=X_r$svdH,  trace=F, J=best_fit$rank.max,
                                           thresh=thresh, lambda=best_fit$lambda, init = "naive",
                                           final.svd = T,maxit = maxit, warm.start = best_fit$fit1)
    xbeta.sparse@x <- best_fit$fit1$xbeta.obs
    B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
    warm.start.beta$Bsvd = fast.svd(B)
-   best_fit$fit2 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
+   best_fit$fit2 = SZIRCI(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
                                              warm.start = warm.start.beta, trace.it = F,maxit=maxit)
 
 

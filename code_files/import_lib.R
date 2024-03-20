@@ -23,6 +23,8 @@ path_to_data = paste0(path_to_proj, "saved_data/")
 
 file_list <- list.files(path = path_to_code, pattern = "\\.R$", full.names = TRUE,recursive =T)
 file_list <- file_list[!grepl("main\\.R$", file_list)]
+file_list <- file_list[!grepl("/old/", file_list)]
+
 . = lapply(file_list, source)
 
 

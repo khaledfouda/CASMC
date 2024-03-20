@@ -1,4 +1,4 @@
-simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=1/4,
+CASMC_cv_holdout <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=1/4,
                                 lambda.init=NA, n.lambda=20,
                            trace=FALSE, print.best=TRUE, tol=1, thresh=1e-6, maxit=100,
                            rank.init=2, rank.limit=30, rank.step=2,
@@ -44,7 +44,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
    counter <- 0
    #---------------------------------------------------------------------
    for(i in seq(along=lamseq)) {
-      fiti <-  simpute.als.fit_splr(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,
+      fiti <-  CASMC_fit(y=Y, svdH=X_r$svdH,  trace=F, J=rank.max,
                                     thresh=thresh, lambda=lamseq[i], init = "naive",
                                     final.svd = T,maxit = maxit, warm.start = warm)
       xbeta.sparse@x <- fiti$xbeta.obs
@@ -56,7 +56,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
       }else warm.start.beta$Bsvd = fitx
       #---------------------------
       # fit second model:
-      fitx = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
+      fitx = SZIRCI(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
                                        warm.start = warm.start.beta, trace.it = F,maxit=maxit)
       #--------------------------------------------------------------
       # predicting validation set and xbetas for next fit:
@@ -103,7 +103,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
       best_fit$fit1$xbeta.obs <- suvC(X_r$X %*% best_fit$fit2$v,
                                       t(best_fit$fit2$d * t(best_fit$fit2$u)),
                                       y@i, y@p)
-      best_fit$fit1 <-  simpute.als.fit_splr(y=y, svdH=X_r$svdH,  trace=F, J=best_fit$rank.max,
+      best_fit$fit1 <-  CASMC_fit(y=y, svdH=X_r$svdH,  trace=F, J=best_fit$rank.max,
                                     thresh=thresh, lambda=best_fit$lambda, init = "naive",
                                     final.svd = T,maxit = maxit, warm.start = best_fit$fit1)
       xbeta.sparse = y
@@ -111,7 +111,7 @@ simpute.cov.cv_splr <- function(Y, X_r, Y_valid, W_valid, y=NULL, lambda.factor=
       #B = t( Xinv %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
       #warm.start.beta$Bsvd = fast.svd(B)
       warm.start.beta$Bsvd = fitx
-      best_fit$fit2 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
+      best_fit$fit2 = SZIRCI(xbeta.sparse, X_r$X, X_r$rank, final.trim = F, thresh=thresh,
                                        warm.start = warm.start.beta, trace.it = F,maxit=maxit)
 
    }

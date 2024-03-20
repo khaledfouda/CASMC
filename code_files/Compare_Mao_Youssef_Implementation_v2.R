@@ -7,7 +7,8 @@ compare_Mao <-
             lambda.2_grid,
             alpha_grid,
             ncores = 1,
-            n_folds = 5) {
+            n_folds = 5,
+            weight_function = MaoBinomalWeights) {
       start_time = Sys.time()
       cv.out <- Mao.cv(
          gen.dat$A,
@@ -20,7 +21,7 @@ compare_Mao <-
          alpha_grid = alpha_grid,
          numCores = ncores,
          n1n2_optimized = FALSE,
-         theta_estimator = theta_simple
+         theta_estimator = weight_function
       )
       mao.out <-
          Mao.fit(
@@ -30,7 +31,7 @@ compare_Mao <-
             cv.out$best_parameters$lambda.1,
             cv.out$best_parameters$lambda.2,
             cv.out$best_parameters$alpha,
-            theta_estimator = theta_simple,
+            theta_estimator = weight_function,
             n1n2_optimized = FALSE
          )
       
@@ -48,9 +49,9 @@ compare_Mao <-
       results
    }
 
-compare_softImpute_orig <- function(gen.dat, valid.dat) {
+compare_softImpute <- function(gen.dat, valid.dat) {
    start_time = Sys.time()
-   sout <- simpute.orig(
+   sout <- simpute.cv(
       valid.dat$Y_train,
       valid.dat$W_valid,
       gen.dat$Y,
@@ -59,7 +60,7 @@ compare_softImpute_orig <- function(gen.dat, valid.dat) {
       print.best = FALSE,
       rank.step = 4
    )
-   results = list(model = "SoftImpute_Orig")
+   results = list(model = "SoftImpute")
    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
    results$alpha = NA
    results$lambda.1 = NA
@@ -73,38 +74,38 @@ compare_softImpute_orig <- function(gen.dat, valid.dat) {
    results
 }
 
-compare_softImpute_cov <- function(gen.dat, valid.dat) {
-   start_time = Sys.time()
-   sout <-
-      simpute.cov.cv(
-         valid.dat$Y_train,
-         gen.dat$X,
-         valid.dat$W_valid,
-         valid.dat$Y_valid,
-         trace = F,
-         rank.limit = 30,
-         quiet = TRUE,
-         print.best = FALSE,
-         rank.step = 4,
-         type = "als",
-         lambda1 = 0,
-         tol = 2
-      )
-   results = list(model = "SoftImpute_Cov")
-   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-   results$alpha = NA
-   results$lambda.1 = 0
-   results$lambda.2 = sout$lambda
-   results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
-                                                                            0])
-   results$error.all = test_error(sout$A_hat, gen.dat$A)
-   results$error.B = test_error(sout$B_hat, gen.dat$B)
-   results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
-   results$rank = sout$rank_A
-   results
-}
+# compare_softImpute_cov <- function(gen.dat, valid.dat) {
+#    start_time = Sys.time()
+#    sout <-
+#       simpute.cov.cv(
+#          valid.dat$Y_train,
+#          gen.dat$X,
+#          valid.dat$W_valid,
+#          valid.dat$Y_valid,
+#          trace = F,
+#          rank.limit = 30,
+#          quiet = TRUE,
+#          print.best = FALSE,
+#          rank.step = 4,
+#          type = "als",
+#          lambda1 = 0,
+#          tol = 2
+#       )
+#    results = list(model = "SoftImpute_Cov")
+#    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
+#    results$alpha = NA
+#    results$lambda.1 = 0
+#    results$lambda.2 = sout$lambda
+#    results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
+#                                                                             0])
+#    results$error.all = test_error(sout$A_hat, gen.dat$A)
+#    results$error.B = test_error(sout$B_hat, gen.dat$B)
+#    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
+#    results$rank = sout$rank_A
+#    results
+# }
 
-compare_softImpute_L2 <-
+compare_CAMC_holdout <-
    function(gen.dat,
             valid.dat,
             lambda.1_grid,
@@ -112,38 +113,15 @@ compare_softImpute_L2 <-
             rank.limit,
             n.lambda) {
       start_time = Sys.time()
-      sout <-
-         simpute.cov.cv(
-            valid.dat$Y_train,
-            gen.dat$X,
-            valid.dat$W_valid,
-            valid.dat$Y_valid,
-            trace = FALSE,
-            rank.limit = rank.limit,
-            print.best = FALSE,
-            rank.step = rank.step,
-            type = "als",
-            lambda1 = 0,
-            tol = 2,
-            n.lambda = n.lambda,
-            quiet = TRUE
-         )
-      sout <-
-         simpute.cov.cv.lambda1(
-            valid.dat$Y_train,
-            gen.dat$X,
-            valid.dat$W_valid,
-            valid.dat$Y_valid,
-            sout$lambda,
-            sout$rank.max,
-            print.best = FALSE,
-            trace = FALSE,
-            lambda1.grid = lambda.1_grid ,
-            n1n2 = 1,
-            warm = NULL
-         )
       
-      results = list(model = "SoftImpute_L2")
+      fiti <- CAMC_cv_holdout(valid.dat$Y_train, gen.dat$X, valid.dat$W_valid,
+                              valid.dat$Y_valid, trace = FALSE, rank.limit = rank.limit,
+                              print.best = FALSE, rank.step  = rank.step, n.lambda = n.lambda,
+                              type = "als", quiet = TRUE, tol = 2, lambda.1_grid = lambda.1_grid)
+      sout <- fiti$fit2
+         
+      
+      results = list(model = "CAMC_holdout")
       results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
       results$alpha = NA
       results$lambda.1 = sout$lambda1
@@ -157,7 +135,7 @@ compare_softImpute_L2 <-
       results
    }
 
-compare_softImpute_Kfold <-
+compare_CAMC_kfold <-
    function(gen.dat,
             lambda.1_grid,
             n_folds,
@@ -165,37 +143,20 @@ compare_softImpute_Kfold <-
             rank.limit,
             n.lambda) {
       start_time = Sys.time()
-      sout <-
-         simpute.cov.kfold(
-            gen.dat$Y,
-            gen.dat$X,
-            gen.dat$W,
-            n_folds = n_folds,
-            print.best = FALSE,
-            trace = FALSE,
-            rank.limit = rank.limit,
-            lambda1 = 0,
-            n1n2 = 1,
-            warm = NULL,
-            tol = 2,
-            rank.step = rank.step,
-            n.lambda = n.lambda
-         )
-      sout <-
-         simpute.cov.kfold.lambda1(
-            gen.dat$Y,
-            gen.dat$X,
-            gen.dat$W,
-            sout$lambda2,
-            n_folds = 3,
-            print.best = FALSE,
-            trace = FALSE,
-            lambda1.grid = lambda.1_grid ,
-            n1n2 = 1,
-            warm = NULL,
-            J = c(sout$J)
-         )
-      results = list(model = "SoftImpute_Kfold")
+      fiti <- CAMC_cv_kfold(gen.dat$Y,
+                            gen.dat$X,
+                            gen.dat$W,
+                            n_folds = n_folds,
+                            trace = FALSE,
+                            rank.limit = rank.limit,
+                            print.best = FALSE,
+                            lambda.1_grid = lambda.1_grid,
+                            rank.step = rank.step,
+                            n.lambda = n.lambda,
+                            type = "als",
+                            tol = 2)
+      sout <- fiti$fit2
+      results = list(model = "CAMC_kfold")
       results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
       results$alpha = NA
       results$lambda.1 = sout$lambda1
@@ -212,7 +173,7 @@ compare_softImpute_Kfold <-
 
 
 
-compare_softImpute_splr <-
+compare_CASMC_holdout <-
    function(gen.dat,
             valid.dat,
             splr.dat,
@@ -222,7 +183,7 @@ compare_softImpute_splr <-
       start_time = Sys.time()
       
       
-      best_fit = simpute.cov.cv_splr(
+      best_fit = CASMC_cv_holdout(
          valid.dat$Y_train,
          splr.dat,
          valid.dat$Y_valid,
@@ -246,7 +207,7 @@ compare_softImpute_splr <-
       sout$beta_hat =  fit2$u %*% (fit2$d * t(fit2$v))
       sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)
       
-      results = list(model = "SoftImpute_splr")
+      results = list(model = "CASMC_holdout")
       results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
       results$alpha = NA
       results$lambda.1 = NA
@@ -260,7 +221,7 @@ compare_softImpute_splr <-
       results
    }
 
-compare_softImpute_splr_Kfold <-
+compare_CASMC_kfold <-
    function(gen.dat,
             splr.dat,
             n_folds,
@@ -269,7 +230,7 @@ compare_softImpute_splr_Kfold <-
             n.lambda) {
       start_time = Sys.time()
       
-      best_fit = simpute.cov.Kf_splr(
+      best_fit = CASMC_cv_kfold(
          gen.dat$Y,
          splr.dat,
          gen.dat$W,
@@ -292,7 +253,7 @@ compare_softImpute_splr_Kfold <-
       sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)
       
       
-      results = list(model = "SoftImpute_splr_Kfold")
+      results = list(model = "CASMC_kfold")
       results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
       results$alpha = NA
       results$lambda.1 = NA
@@ -342,7 +303,7 @@ compare_and_save <- function(missingness,
                              cov_eff = TRUE,
                              note = "") {
    ncores = min(ncores, length(dim))
-   stopifnot(length(model_mask)==8)
+   stopifnot(length(model_mask)==7)
    if (ncores > 1) {
       cl <- makeCluster(ncores)
       registerDoParallel(cl)
@@ -414,19 +375,14 @@ compare_and_save <- function(missingness,
       # soft Impute model without covariates
       cat("M2 - ")
       if (model_mask[2])
-         results = rbind(results, compare_softImpute_orig(gen.dat, valid.dat))
+         results = rbind(results, compare_softImpute(gen.dat, valid.dat))
       #----------------------------------------------------------------------------
-      # soft Impute model with covariates
+      # Soft Impute with Covariates and With L2 regularization on the covariates
       cat("M3 - ")
       if (model_mask[3])
-         results = rbind(results, compare_softImpute_cov(gen.dat, valid.dat))
-      #-------------------------------------------------------------------------------------
-      # Soft Impute with Covariates and With L2 regularization on the covariates
-      cat("M4 - ")
-      if (model_mask[4])
          results = rbind(
             results,
-            compare_softImpute_L2(
+            compare_CAMC_holdout(
                gen.dat,
                valid.dat,
                lambda.1_grid,
@@ -437,14 +393,28 @@ compare_and_save <- function(missingness,
          )
       #-------------------------------------------------------------------------------------
       # Soft Impute with Covariates and With L2 regularization on the covariates and K-fold cross-validation
+      cat("M4 - ")
+      if (model_mask[4])
+         results = rbind(
+            results,
+            compare_CAMC_kfold(
+               gen.dat,
+               lambda.1_grid,
+               n_folds,
+               rank.step,
+               rank.limit,
+               n.lambda
+            )
+         )
+      #--------------------------------------------------------------------------------
       cat("M5 - ")
       if (model_mask[5])
          results = rbind(
             results,
-            compare_softImpute_Kfold(
+            compare_CASMC_holdout(
                gen.dat,
-               lambda.1_grid,
-               n_folds,
+               valid.dat,
+               splr.dat,
                rank.step,
                rank.limit,
                n.lambda
@@ -455,21 +425,7 @@ compare_and_save <- function(missingness,
       if (model_mask[6])
          results = rbind(
             results,
-            compare_softImpute_splr(
-               gen.dat,
-               valid.dat,
-               splr.dat,
-               rank.step,
-               rank.limit,
-               n.lambda
-            )
-         )
-      #--------------------------------------------------------------------------------
-      cat("M7 - ")
-      if (model_mask[7])
-         results = rbind(
-            results,
-            compare_softImpute_splr_Kfold(
+            compare_CASMC_kfold(
                gen.dat,
                splr.dat,
                n_folds,
@@ -479,8 +435,8 @@ compare_and_save <- function(missingness,
             )
          )
       #--------------------------------------------------------------------------------
-      cat("M8 - ")
-      if (model_mask[8])
+      cat("M7 - ")
+      if (model_mask[7])
          results = rbind(results, compare_naive(gen.dat))
       cat("Done.\n")
       #--------------------------------------------------------------------------------
@@ -529,13 +485,70 @@ lambda.1_grid = seq(0, 2, length = 20)
 lambda.2_grid = seq(.9, 0, length = 20)
 ncores = 1
 error_function <- RMSE_error
-model_mask <- rep(T, 8)
-model_mask[c(1, 2,6,8)] <- TRUE
+model_mask <- rep(T, 7)
+model_mask[c(1, 2,6)] <- TRUE
 mao_r <- 10
-ncovariates <- 20
-cov_eff = F
+ncovariates <- 10
+cov_eff = TRUE
 note = ""
 
+
+compare_and_save(
+   0.8,
+   FALSE,
+   lambda.1_grid = lambda.1_grid,
+   lambda.2_grid = lambda.2_grid,
+   alpha_grid = alpha_grid,
+   ncores = ncores,
+   model_mask = model_mask,
+   ncovariates = ncovariates,
+   mao_r = mao_r,
+   error_function = error_function,
+   cov_eff = cov_eff,
+   note = note
+)
+compare_and_save(
+   0.8,
+   TRUE,
+   lambda.1_grid = lambda.1_grid,
+   lambda.2_grid = lambda.2_grid,
+   alpha_grid = alpha_grid,
+   ncores = ncores,
+   model_mask = model_mask,
+   ncovariates = ncovariates,
+   mao_r = mao_r,
+   error_function = error_function,
+   cov_eff = cov_eff,
+   note = note
+)
+compare_and_save(
+   0.9,
+   FALSE,
+   lambda.1_grid = lambda.1_grid,
+   lambda.2_grid = lambda.2_grid,
+   alpha_grid = alpha_grid,
+   ncores = ncores,
+   model_mask = model_mask,
+   ncovariates = ncovariates,
+   mao_r = mao_r,
+   error_function = error_function,
+   cov_eff = cov_eff,
+   note = note
+)
+compare_and_save(
+   0.9,
+   TRUE,
+   lambda.1_grid = lambda.1_grid,
+   lambda.2_grid = lambda.2_grid,
+   alpha_grid = alpha_grid,
+   ncores = ncores,
+   model_mask = model_mask,
+   ncovariates = ncovariates,
+   mao_r = mao_r,
+   error_function = error_function,
+   cov_eff = cov_eff,
+   note = note
+)
 compare_and_save(
    0,
    FALSE,
@@ -550,61 +563,4 @@ compare_and_save(
    cov_eff = cov_eff,
    note = note
 )
-compare_and_save(
-   0.8,
-   FALSE,
-   lambda.1_grid = lambda.1_grid,
-   lambda.2_grid = lambda.2_grid,
-   alpha_grid = alpha_grid,
-   ncores = ncores,
-   model_mask = model_mask,
-   ncovariates = ncovariates,
-   mao_r = mao_r,
-   error_function = error_function,
-   cov_eff = cov_eff,
-   note = note
-)
-compare_and_save(
-   0.8,
-   TRUE,
-   lambda.1_grid = lambda.1_grid,
-   lambda.2_grid = lambda.2_grid,
-   alpha_grid = alpha_grid,
-   ncores = ncores,
-   model_mask = model_mask,
-   ncovariates = ncovariates,
-   mao_r = mao_r,
-   error_function = error_function,
-   cov_eff = cov_eff,
-   note = note
-)
-compare_and_save(
-   0.9,
-   FALSE,
-   lambda.1_grid = lambda.1_grid,
-   lambda.2_grid = lambda.2_grid,
-   alpha_grid = alpha_grid,
-   ncores = ncores,
-   model_mask = model_mask,
-   ncovariates = ncovariates,
-   mao_r = mao_r,
-   error_function = error_function,
-   cov_eff = cov_eff,
-   note = note
-)
-compare_and_save(
-   0.9,
-   TRUE,
-   lambda.1_grid = lambda.1_grid,
-   lambda.2_grid = lambda.2_grid,
-   alpha_grid = alpha_grid,
-   ncores = ncores,
-   model_mask = model_mask,
-   ncovariates = ncovariates,
-   mao_r = mao_r,
-   error_function = error_function,
-   cov_eff = cov_eff,
-   note = note
-)
-
 #------------------------------------------------------------------------------------
