@@ -51,6 +51,21 @@ head(dtest)
 dim(dtest)
 head(dX)
 dim(dX)
+#-------------------------- drop movies with no ratings
+bad_movies <- (dtest %>% 
+  filter(!movie_id %in% dtrain$movie_id))$movie_id
+bad_movies
+dtest %<>% filter(! movie_id %in% bad_movies)
+dtrain %<>% filter(! movie_id %in% bad_movies)
+# reset the index 
+dtrain %<>%
+  #mutate(movie_id = as.integer(factor(movie_id)))
+  mutate(movie_id = ifelse(movie_id < bad_movies[1], movie_id, movie_id-1)) %>% 
+  mutate(movie_id = ifelse(movie_id < bad_movies[2], movie_id, movie_id-1)) 
+dtest %<>%
+  #mutate(movie_id = as.integer(factor(movie_id)))
+  mutate(movie_id = ifelse(movie_id < bad_movies[1], movie_id, movie_id-1)) %>% 
+  mutate(movie_id = ifelse(movie_id < bad_movies[2], movie_id, movie_id-1)) 
 
 
 #----------------------------------------
@@ -114,8 +129,8 @@ best_fit = simpute.cov.cv_splr(
   trace = T,
   thresh = 1e-6,
   n.lambda = 30,
-  rank.step = 2,
-  rank.limit = 40
+  rank.step = 4,
+  rank.limit = 50
 )
 print(paste("Execution time is", round(as.numeric(
   difftime(Sys.time(), start_time, units = "secs")
@@ -139,14 +154,23 @@ sd(beta[, 2])
 #------------------------------------------------------------------
 # fit the original soft Impute and get the results
 start_time = Sys.time()
+
+#Y_train[Y_train==0] <- NA
+#xc=biScale(Y_train,col.scale=FALSE,row.scale=FALSE,trace=TRUE)
+#biScale(dtrain.mat) -> scaleout
+#scaleout[1:10,1:10]
+#Y_train[1:10,1:10]
+
+
 sout <- simpute.orig(
   Y_train,
   W_valid,
   dtrain.Y,
   trace = TRUE,
-  rank.limit = 30,
+  rank.limit = 50,
   print.best = FALSE,
-  rank.step = 2,
+  rank.step = 7,
+  biscale=F
 )
 print(paste("Execution time is", round(as.numeric(
   difftime(Sys.time(), start_time, units = "secs")

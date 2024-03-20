@@ -438,6 +438,21 @@ head(dtrain)</code></pre>
 ## [6,]    1  42</code></pre>
 <pre class="r"><code>dim(dX)</code></pre>
 <pre><code>## [1] 943   2</code></pre>
+<pre class="r"><code>bad_movies &lt;- (dtest %&gt;% 
+  filter(!movie_id %in% dtrain$movie_id))$movie_id
+bad_movies</code></pre>
+<pre><code>## [1] 1582 1653</code></pre>
+<pre class="r"><code>dtest %&lt;&gt;% filter(! movie_id %in% bad_movies)
+dtrain %&lt;&gt;% filter(! movie_id %in% bad_movies)
+# reset the index 
+dtrain %&lt;&gt;%
+  #mutate(movie_id = as.integer(factor(movie_id)))
+  mutate(movie_id = ifelse(movie_id &lt; bad_movies[1], movie_id, movie_id-1)) %&gt;% 
+  mutate(movie_id = ifelse(movie_id &lt; bad_movies[2], movie_id, movie_id-1)) 
+dtest %&lt;&gt;%
+  #mutate(movie_id = as.integer(factor(movie_id)))
+  mutate(movie_id = ifelse(movie_id &lt; bad_movies[1], movie_id, movie_id-1)) %&gt;% 
+  mutate(movie_id = ifelse(movie_id &lt; bad_movies[2], movie_id, movie_id-1)) </code></pre>
 <pre class="r"><code># prepare sparse matrix and X decomposition
 dtrain.mat &lt;- sparseMatrix(
   i = dtrain$user_id,
@@ -448,7 +463,7 @@ dtrain.mat &lt;- sparseMatrix(
 
 dtrain.mat &lt;- as(dtrain.mat, &quot;Incomplete&quot;)
 dim(dtrain.mat)</code></pre>
-<pre><code>## [1]  943 1682</code></pre>
+<pre><code>## [1]  943 1680</code></pre>
 <pre class="r"><code>X_r &lt;- reduced_hat_decomp(dX, 1e-2)</code></pre>
 <pre class="r"><code>#
 # #
@@ -481,7 +496,7 @@ dtrain.mat &lt;- as(dtrain.Y, &quot;Incomplete&quot;)
 
 dW &lt;- !is.na(dtrain.Y)
 sum(dW == 0) / length(dW)</code></pre>
-<pre><code>## [1] 0.9429907</code></pre>
+<pre><code>## [1] 0.9429228</code></pre>
 <pre class="r"><code>dtrain.Y[is.na(dtrain.Y)] = 0
 W_valid &lt;- matrix.split.train.test(dW, testp = 0.2)
 Y_train = (dtrain.Y * W_valid)
@@ -498,17 +513,17 @@ best_fit = simpute.cov.cv_splr(
   trace = T,
   thresh = 1e-6,
   n.lambda = 30,
-  rank.step = 2,
-  rank.limit = 40
+  rank.step = 4,
+  rank.limit = 50
 )</code></pre>
 <pre><code>## [1] &quot; 1 lambda=   9.8982, rank.max = 2  ==&gt; rank = 2, error = 0.97506, niter/fit = 83 + 100&quot;
-## [1] &quot; 2 lambda=   9.5568, rank.max = 4  ==&gt; rank = 4, error = 0.97364, niter/fit = 100 + 100&quot;
-## [1] &quot; 3 lambda=   9.2155, rank.max = 6  ==&gt; rank = 6, error = 0.97442, niter/fit = 100 + 92&quot;
+## [1] &quot; 2 lambda=   9.5568, rank.max = 6  ==&gt; rank = 6, error = 0.97173, niter/fit = 100 + 100&quot;
+## [1] &quot; 3 lambda=   9.2155, rank.max = 10  ==&gt; rank = 10, error = 0.98380, niter/fit = 100 + 90&quot;
 ## [1] &quot;Performance didn&#39;t improve for the last 1 iterations.&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Execution time is&quot;, round(as.numeric(
   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
 ), 2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 4.64 seconds&quot;</code></pre>
+<pre><code>## [1] &quot;Execution time is 4.65 seconds&quot;</code></pre>
 <pre class="r"><code>fit1 = best_fit$fit1
 fit2 = best_fit$fit2
 # get estimates and validate
@@ -520,56 +535,66 @@ A = revertBiScaledMatrix(A, biScale.out)
 #qr(A)$rank
 dtest$preds &lt;- A[cbind(dtest$user_id, dtest$movie_id)]
 RMSE_error(dtest$preds, dtest$rating)</code></pre>
-<pre><code>## [1] 0.9462937</code></pre>
+<pre><code>## [1] 0.9436599</code></pre>
 <pre class="r"><code>mean(beta[, 1])</code></pre>
-<pre><code>## [1] -0.01139076</code></pre>
+<pre><code>## [1] -0.01039996</code></pre>
 <pre class="r"><code>mean(beta[, 2])</code></pre>
-<pre><code>## [1] -0.001579418</code></pre>
+<pre><code>## [1] -0.001676361</code></pre>
 <pre class="r"><code>sd(beta[, 1])</code></pre>
-<pre><code>## [1] 0.3225063</code></pre>
+<pre><code>## [1] 0.3134358</code></pre>
 <pre class="r"><code>sd(beta[, 2])</code></pre>
-<pre><code>## [1] 0.007614051</code></pre>
+<pre><code>## [1] 0.007445609</code></pre>
 <pre class="r"><code># fit the original soft Impute and get the results
 start_time = Sys.time()
+
+#Y_train[Y_train==0] &lt;- NA
+#xc=biScale(Y_train,col.scale=FALSE,row.scale=FALSE,trace=TRUE)
+#biScale(dtrain.mat) -&gt; scaleout
+#scaleout[1:10,1:10]
+#Y_train[1:10,1:10]
+
+
 sout &lt;- simpute.orig(
   Y_train,
   W_valid,
   dtrain.Y,
   trace = TRUE,
-  rank.limit = 30,
+  rank.limit = 50,
   print.best = FALSE,
-  rank.step = 2,
+  rank.step = 7,
+  biscale=F
 )</code></pre>
 <pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
 ## Convergence not achieved by 300 iterations</code></pre>
-<pre><code>##  1 lambda=   39.717, rank.max = 3  ==&gt; rank = 1, error = 0.99658
-##  2 lambda=   37.626, rank.max = 3  ==&gt; rank = 1, error = 0.99478
-##  3 lambda=   35.536, rank.max = 4  ==&gt; rank = 2, error = 0.99295
-##  4 lambda=   33.446, rank.max = 4  ==&gt; rank = 2, error = 0.98988
-##  5 lambda=   31.355, rank.max = 4  ==&gt; rank = 2, error = 0.98692
-##  6 lambda=   29.265, rank.max = 4  ==&gt; rank = 2, error = 0.98407
-##  7 lambda=   27.175, rank.max = 5  ==&gt; rank = 3, error = 0.98128
-##  8 lambda=   25.084, rank.max = 7  ==&gt; rank = 5, error = 0.97769
-##  9 lambda=   22.994, rank.max = 9  ==&gt; rank = 7, error = 0.97340
-## 10 lambda=   20.903, rank.max = 11  ==&gt; rank = 9, error = 0.96939
-## 11 lambda=   18.813, rank.max = 13  ==&gt; rank = 11, error = 0.96580
-## 12 lambda=   16.723, rank.max = 15  ==&gt; rank = 13, error = 0.96324
-## 13 lambda=   14.632, rank.max = 17  ==&gt; rank = 15, error = 0.96409
-## 14 lambda=   12.542, rank.max = 19  ==&gt; rank = 17, error = 0.96806
-## 15 lambda=   10.452, rank.max = 21  ==&gt; rank = 19, error = 0.97939
-## 16 lambda=   8.3614, rank.max = 23  ==&gt; rank = 21, error = 1.00266
+<pre><code>##  1 lambda=   39.717, rank.max = 8  ==&gt; rank = 1, error = 0.99658
+##  2 lambda=   37.626, rank.max = 8  ==&gt; rank = 1, error = 0.99478
+##  3 lambda=   35.536, rank.max = 9  ==&gt; rank = 2, error = 0.99295
+##  4 lambda=   33.446, rank.max = 9  ==&gt; rank = 2, error = 0.98988
+##  5 lambda=   31.355, rank.max = 9  ==&gt; rank = 2, error = 0.98692
+##  6 lambda=   29.265, rank.max = 9  ==&gt; rank = 2, error = 0.98407
+##  7 lambda=   27.175, rank.max = 10  ==&gt; rank = 3, error = 0.98127
+##  8 lambda=   25.084, rank.max = 12  ==&gt; rank = 5, error = 0.97770
+##  9 lambda=   22.994, rank.max = 16  ==&gt; rank = 9, error = 0.97336
+## 10 lambda=   20.903, rank.max = 23  ==&gt; rank = 16, error = 0.96906
+## 11 lambda=   18.813, rank.max = 30  ==&gt; rank = 23, error = 0.96530
+## 12 lambda=   16.723, rank.max = 37  ==&gt; rank = 30, error = 0.96262
+## 13 lambda=   14.632, rank.max = 44  ==&gt; rank = 37, error = 0.96252
+## 14 lambda=   12.542, rank.max = 50  ==&gt; rank = 44, error = 0.96662
+## 15 lambda=   10.452, rank.max = 50  ==&gt; rank = 50, error = 0.97732
+## 16 lambda=   8.3614, rank.max = 50  ==&gt; rank = 50, error = 0.99871
+## 17 lambda=    6.271, rank.max = 50  ==&gt; rank = 50, error = 1.03702
 ## Performance didn&#39;t improve for the last 5 iterations.</code></pre>
 <pre class="r"><code>print(paste(&quot;Execution time is&quot;, round(as.numeric(
   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
 ), 2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 211.66 seconds&quot;</code></pre>
+<pre><code>## [1] &quot;Execution time is 157.73 seconds&quot;</code></pre>
 <pre class="r"><code>sout$A_hat = revertBiScaledMatrix(sout$A_hat, biScale.out)
 dtest$preds_orig &lt;- sout$A_hat[cbind(dtest$user_id, dtest$movie_id)]
 
 RMSE_error(dtest$preds_orig, dtest$rating)</code></pre>
-<pre><code>## [1] 0.9561925</code></pre>
+<pre><code>## [1] 0.9648473</code></pre>
 <pre class="r"><code>sout$rank_A</code></pre>
-<pre><code>## [1] 13</code></pre>
+<pre><code>## [1] 44</code></pre>
 <pre class="r"><code># repeat with mao
 lambda.1_grid = seq(0, 2, length = 20)
 lambda.2_grid = seq(0.9, 0, length = 20)
@@ -605,7 +630,7 @@ mao.out &lt;- suppressMessages(suppressWarnings(
 print(paste(&quot;Execution time is&quot;, round(as.numeric(
   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
 ), 2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 29.38 seconds&quot;</code></pre>
+<pre><code>## [1] &quot;Execution time is 23.08 seconds&quot;</code></pre>
 <pre class="r"><code>mao.out$A_hat = revertBiScaledMatrix(mao.out$A_hat, biScale.out)
 dtest$preds_mao &lt;-
   mao.out$A_hat[cbind(dtest$user_id, dtest$movie_id)]

@@ -1,5 +1,5 @@
 # Soft Impute with Covariates fit. Fixed Lambda2. beta_partial is input.
-simpute.svd.cov <-
+CAMC_fit_svd <-
    function (Y,
              X,
              beta_partial,

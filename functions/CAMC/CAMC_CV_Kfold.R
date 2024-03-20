@@ -1,13 +1,65 @@
+CAMC_cv_kfold <- function(Y,
+                          X,
+                          W,
+                          n_folds = 3,
+                          trace = TRUE,
+                          rank.limit = 30,
+                          print.best = TRUE,
+                          lambda.1_grid = seq(0, 3, length = 20),
+                          rank.step = 2,
+                          n.lambda = 30,
+                          type = "als",
+                          tol = 2){
+   start_time = Sys.time()
+   fit1 <-
+      CAMC_cv_kfold_lambda2(
+         Y,
+         X,
+         W,
+         n_folds = n_folds,
+         print.best = print.best,
+         trace = trace,
+         rank.limit = rank.limit,
+         lambda1 = 0,
+         n1n2 = 1,
+         warm = NULL,
+         tol = tol,
+         rank.step = rank.step,
+         n.lambda = n.lambda,
+         type=type
+      )
+   fit2 <-
+      CAMC_cv_kfold_lambda1(
+         Y,
+         X,
+         W,
+         fit1$lambda2,
+         n_folds = n_folds,
+         print.best = print.best,
+         trace = trace,
+         lambda1.grid = lambda.1_grid ,
+         n1n2 = 1,
+         warm = NULL,
+         J = c(fit1$J),
+         type=type
+      )
+   
+   time_seconds = as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+   list(fit1 = fit1,
+        fit2 = fit2,
+        time_seconds = time_seconds)
+}
 
-simpute.cov.kfold.lambda1 <- function(Y, X, W, lambda2=NA, J=NA,
+
+CAMC_cv_kfold_lambda1 <- function(Y, X, W, lambda2=NA, J=NA,
                               trace=FALSE, print.best=TRUE, thresh=1e-5, n_folds=3,
                            type="als", lambda1.grid=NA, n1n2=1, warm=NULL){
    
    stopifnot(type %in% c("svd", "als"))
    if(type == "svd"){
-      fit.function <- simpute.svd.cov
+      fit.function <- CAMC_fit_svd
    }else
-      fit.function <- simpute.als.cov
+      fit.function <- CAMC_fit_als
    
    n <- ncol(X)
    stopifnot(n1n2 %in% 1:3)
@@ -76,16 +128,16 @@ simpute.cov.kfold.lambda1 <- function(Y, X, W, lambda2=NA, J=NA,
    return(results)
 }
 #--------------------------------------------------------------------
-simpute.cov.kfold <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
+CAMC_cv_kfold_lambda2 <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lambda=20,
                            trace=FALSE, print.best=TRUE, tol=5, thresh=1e-5, n_folds=3,
                            rank.init=3, rank.limit=50, rank.step=2,
                            type="als", lambda1=0, n1n2=1, warm=NULL){
    
    stopifnot(type %in% c("svd", "als"))
    if(type == "svd"){
-      fit.function <- simpute.svd.cov
+      fit.function <- CAMC_fit_svd
    }else
-      fit.function <- simpute.als.cov
+      fit.function <- CAMC_fit_als
    
    stopifnot(n1n2 %in% 1:3)
    
@@ -133,13 +185,8 @@ simpute.cov.kfold <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lamb
       err = err / n_folds
       rank = as.integer(rank / n_folds)
       
-      # get test estimates and test error
-      #v=as.matrix(fiti$v)
-      #vd=v*outer(rep(1,nrow(v)),fiti$d)
-      #soft_estim = fiti$u %*% t(vd)  + X %*% fiti$beta.estim
-      #err = test_error(soft_estim[W==0], Y.valid)
+      
       #----------------------------
-      #warm <- fiti # warm start for next 
       if(trace==TRUE)
          print(sprintf("%2d lambda=%9.5g, rank.max = %d  ==> rank = %d, error = %.5f\n",
                      i, lamseq[i], rank.max, rank, err))
@@ -150,14 +197,7 @@ simpute.cov.kfold <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lamb
          best_lambda = lamseq[i]
          best_rank = rank.max
          counter=1
-         #best_fit$error = err
-         #best_fit$rank_A = qr(soft_estim)$rank
-         #best_fit$rank_B = rank
-         #best_fit$lambda = lamseq[i]
-         #best_fit$rank.max = rank.max
-         #best_estimates = soft_estim
-         #best_beta = fiti$beta.estim
-         #best_B = fiti$u %*% t(vd)
+         
       }else counter = counter + 1
       if(counter >= tol){
          if(trace | print.best)
@@ -174,7 +214,6 @@ simpute.cov.kfold <- function(Y, X, W, lambda.factor=1/4, lambda.init=NA, n.lamb
    
    
    results = list()
-   #results$fit = fiti
    results$lambda1 = lambda1
    results$lambda2 = best_lambda
    results$B_hat = fiti$u %*%(fiti$d*t(fiti$v))
