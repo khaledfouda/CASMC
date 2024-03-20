@@ -3,7 +3,7 @@
 
 
 # EDIT: These functions return the 1 / (probability of inclusion) NOT missingness.
-theta_default <- function(X, W, ...) {
+MaoBinomalWeights <- function(X, W, ...) {
    # using logistic regression as indicated in (a1)
    n1 = dim(W)[1]
    n2 = dim(W)[2]
@@ -13,9 +13,9 @@ theta_default <- function(X, W, ...) {
       model_fit = glm(X1 ~ ., family = binomial(), data = model_data)
       theta_hat[, j] = predict(model_fit, type = "response")
    }
-   return(theta_hat)
+   return(1 / theta_hat)
 }
-theta_random <- function(W, ...) {
+MaoByColWeights <- function(W, ...) {
    # A theta estimation function that selects the proportion of missing data within the same column
    # using formula (a2)
    n1 = dim(W)[1]
@@ -24,15 +24,15 @@ theta_random <- function(W, ...) {
    for (j in 1:n2) {
       theta_hat[, j] = sum(W[, j] == 1) / n1
    }
-   return(theta_hat)
+   return(1 / theta_hat)
 }
-theta_simple <- function(W, ...) {
+MaoUniWeights <- function(W, ...) {
    # A theta estimation function that selects the proportion of missing data in the matrix
    # using formula (a3)
    n1 = dim(W)[1]
    n2 = dim(W)[2]
    theta_hat = matrix(sum(W == 1)/(n1 * n2), n1, n2)
-   return(theta_hat)
+   return(1 /theta_hat)
 }
 
 

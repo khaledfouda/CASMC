@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-03-18" />
+<meta name="date" content="2024-03-20" />
 
 <title>explore.R</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">explore.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-03-18</h4>
+<h4 class="date">2024-03-20</h4>
 
 </div>
 
@@ -372,8 +372,8 @@ suppressMessages(suppressWarnings(source(&quot;./code_files/import_lib.R&quot;, 
 #  read_csv(&quot;MovieLens/ml-latest/genome-tags.csv&quot;, show_col_types = FALSE)
 # tags &lt;-
 #  read_csv(&quot;MovieLens/ml-latest/tags.csv&quot;, show_col_types = FALSE)
-# 
-# 
+#
+#
 # head(tags)
 # head(genome_tags)
 # head(genome_scores)
@@ -382,28 +382,28 @@ suppressMessages(suppressWarnings(source(&quot;./code_files/import_lib.R&quot;, 
 
 # read the data, and clean it. &gt;&gt;&gt;&gt;
 dtrain &lt;- read_tsv(
- &quot;MovieLens/ml-100k/ua.base&quot;,
- col_names = c(&quot;user_id&quot;, &quot;movie_id&quot;, &quot;rating&quot;, &quot;timestamp&quot;),
- show_col_types = FALSE
+  &quot;MovieLens/ml-100k/ua.base&quot;,
+  col_names = c(&quot;user_id&quot;, &quot;movie_id&quot;, &quot;rating&quot;, &quot;timestamp&quot;),
+  show_col_types = FALSE
 )
 dtest &lt;- read_tsv(
- &quot;MovieLens/ml-100k/ua.test&quot;,
- col_names = c(&quot;user_id&quot;, &quot;movie_id&quot;, &quot;rating&quot;, &quot;timestamp&quot;),
- show_col_types = FALSE
+  &quot;MovieLens/ml-100k/ua.test&quot;,
+  col_names = c(&quot;user_id&quot;, &quot;movie_id&quot;, &quot;rating&quot;, &quot;timestamp&quot;),
+  show_col_types = FALSE
 )
 dX &lt;- read_delim(
- &quot;MovieLens/ml-100k/u.user&quot;,
- delim = &quot;|&quot;,
- col_names = c(&quot;user_id&quot;, &quot;age&quot;, &quot;sex&quot;, &quot;occupation&quot;, &quot;zipcode&quot;),
- show_col_types = FALSE
+  &quot;MovieLens/ml-100k/u.user&quot;,
+  delim = &quot;|&quot;,
+  col_names = c(&quot;user_id&quot;, &quot;age&quot;, &quot;sex&quot;, &quot;occupation&quot;, &quot;zipcode&quot;),
+  show_col_types = FALSE
 )
 dX %&gt;%
- arrange(user_id) %&gt;%
- transmute(Male = sex == &quot;M&quot;, age = age) %&gt;%
- # age = (age - mean(age))/sd(age)) %&gt;%
- # mutate(Male = (Male - mean(Male)) / sd(Male) ) %&gt;%
- as.matrix -&gt;
- dX
+  arrange(user_id) %&gt;%
+  transmute(Male = sex == &quot;M&quot;,
+            age = age) %&gt;%  #(age - mean(age)) / sd(age)) %&gt;%
+  # mutate(Male = (Male - mean(Male)) / sd(Male)) %&gt;%
+  as.matrix -&gt;
+  dX
 head(dtrain)</code></pre>
 <pre><code>## # A tibble: 6 × 4
 ##   user_id movie_id rating timestamp
@@ -440,10 +440,10 @@ head(dtrain)</code></pre>
 <pre><code>## [1] 943   2</code></pre>
 <pre class="r"><code># prepare sparse matrix and X decomposition
 dtrain.mat &lt;- sparseMatrix(
- i = dtrain$user_id,
- j = dtrain$movie_id,
- x = dtrain$rating,
- dims = c(max(dtrain$user_id), max(dtrain$movie_id))
+  i = dtrain$user_id,
+  j = dtrain$movie_id,
+  x = dtrain$rating,
+  dims = c(max(dtrain$user_id), max(dtrain$movie_id))
 )
 
 dtrain.mat &lt;- as(dtrain.mat, &quot;Incomplete&quot;)
@@ -472,13 +472,16 @@ dim(dtrain.mat)</code></pre>
 #
 #=-======================================================
 ## prepare validation data
-dtrain.Y = as.matrix(dtrain.mat)</code></pre>
+biScale.out &lt;-biScaleMatrix(as.matrix(dtrain.mat)) </code></pre>
 <pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
 ## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
 ## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre class="r"><code>dW &lt;- !is.na(dtrain.Y)
+<pre class="r"><code>dtrain.Y = biScale.out$scaledMat
+dtrain.mat &lt;- as(dtrain.Y, &quot;Incomplete&quot;)
+
+dW &lt;- !is.na(dtrain.Y)
 sum(dW == 0) / length(dW)</code></pre>
-<pre><code>## [1] 0.9428986</code></pre>
+<pre><code>## [1] 0.9429907</code></pre>
 <pre class="r"><code>dtrain.Y[is.na(dtrain.Y)] = 0
 W_valid &lt;- matrix.split.train.test(dW, testp = 0.2)
 Y_train = (dtrain.Y * W_valid)
@@ -487,236 +490,180 @@ test_error &lt;- RMSE_error</code></pre>
 <pre class="r"><code># fit splr model and get RMSE
 start_time &lt;- Sys.time()
 best_fit = simpute.cov.cv_splr(
- Y_train,
- X_r,
- Y_valid,
- W_valid,
- dtrain.Y,
- trace = T,
- thresh = 1e-6,
- n.lambda = 30,
- rank.limit = 30
+  Y_train,
+  X_r,
+  Y_valid,
+  W_valid,
+  dtrain.Y,
+  trace = T,
+  thresh = 1e-6,
+  n.lambda = 30,
+  rank.step = 2,
+  rank.limit = 40
 )</code></pre>
-<pre><code>## [1] &quot; 1 lambda=   89.177, rank.max = 2  ==&gt; rank = 1, error = 1.26791, niter/fit = 40 + 74&quot;
-## [1] &quot; 2 lambda=   86.102, rank.max = 3  ==&gt; rank = 1, error = 1.25822, niter/fit = 10 + 3&quot;
-## [1] &quot; 3 lambda=   83.027, rank.max = 3  ==&gt; rank = 1, error = 1.24799, niter/fit = 10 + 2&quot;
-## [1] &quot; 4 lambda=   79.952, rank.max = 3  ==&gt; rank = 1, error = 1.23768, niter/fit = 10 + 2&quot;
-## [1] &quot; 5 lambda=   76.877, rank.max = 3  ==&gt; rank = 1, error = 1.22719, niter/fit = 11 + 4&quot;
-## [1] &quot; 6 lambda=   73.802, rank.max = 3  ==&gt; rank = 1, error = 1.21671, niter/fit = 11 + 3&quot;
-## [1] &quot; 7 lambda=   70.727, rank.max = 3  ==&gt; rank = 1, error = 1.20617, niter/fit = 11 + 3&quot;
-## [1] &quot; 8 lambda=   67.651, rank.max = 3  ==&gt; rank = 1, error = 1.19546, niter/fit = 12 + 4&quot;
-## [1] &quot; 9 lambda=   64.576, rank.max = 3  ==&gt; rank = 1, error = 1.18475, niter/fit = 12 + 4&quot;
-## [1] &quot;10 lambda=   61.501, rank.max = 3  ==&gt; rank = 1, error = 1.17403, niter/fit = 12 + 3&quot;
-## [1] &quot;11 lambda=   58.426, rank.max = 3  ==&gt; rank = 1, error = 1.16312, niter/fit = 13 + 4&quot;
-## [1] &quot;12 lambda=   55.351, rank.max = 3  ==&gt; rank = 1, error = 1.15225, niter/fit = 13 + 4&quot;
-## [1] &quot;13 lambda=   52.276, rank.max = 3  ==&gt; rank = 1, error = 1.14118, niter/fit = 14 + 5&quot;
-## [1] &quot;14 lambda=   49.201, rank.max = 3  ==&gt; rank = 1, error = 1.13006, niter/fit = 15 + 5&quot;
-## [1] &quot;15 lambda=   46.126, rank.max = 3  ==&gt; rank = 1, error = 1.11901, niter/fit = 15 + 5&quot;
-## [1] &quot;16 lambda=   43.051, rank.max = 3  ==&gt; rank = 1, error = 1.10783, niter/fit = 16 + 5&quot;
-## [1] &quot;17 lambda=   39.976, rank.max = 3  ==&gt; rank = 2, error = 1.09629, niter/fit = 17 + 6&quot;
-## [1] &quot;18 lambda=   36.901, rank.max = 4  ==&gt; rank = 2, error = 1.08191, niter/fit = 22 + 10&quot;
-## [1] &quot;19 lambda=   33.826, rank.max = 4  ==&gt; rank = 2, error = 1.06809, niter/fit = 17 + 3&quot;
-## [1] &quot;20 lambda=   30.751, rank.max = 4  ==&gt; rank = 3, error = 1.05382, niter/fit = 20 + 7&quot;
-## [1] &quot;21 lambda=   27.676, rank.max = 5  ==&gt; rank = 4, error = 1.03904, niter/fit = 21 + 7&quot;
-## [1] &quot;22 lambda=   24.601, rank.max = 6  ==&gt; rank = 6, error = 1.02383, niter/fit = 23 + 8&quot;
-## [1] &quot;23 lambda=   21.525, rank.max = 8  ==&gt; rank = 8, error = 1.00571, niter/fit = 37 + 18&quot;
-## [1] &quot;24 lambda=    18.45, rank.max = 10  ==&gt; rank = 10, error = 0.98954, niter/fit = 29 + 6&quot;
-## [1] &quot;25 lambda=   15.375, rank.max = 12  ==&gt; rank = 12, error = 0.97514, niter/fit = 37 + 12&quot;
-## [1] &quot;26 lambda=     12.3, rank.max = 14  ==&gt; rank = 14, error = 0.96542, niter/fit = 47 + 15&quot;
-## [1] &quot;27 lambda=   9.2252, rank.max = 16  ==&gt; rank = 16, error = 0.96693, niter/fit = 61 + 18&quot;
+<pre><code>## [1] &quot; 1 lambda=   9.8982, rank.max = 2  ==&gt; rank = 2, error = 0.97506, niter/fit = 83 + 100&quot;
+## [1] &quot; 2 lambda=   9.5568, rank.max = 4  ==&gt; rank = 4, error = 0.97364, niter/fit = 100 + 100&quot;
+## [1] &quot; 3 lambda=   9.2155, rank.max = 6  ==&gt; rank = 6, error = 0.97442, niter/fit = 100 + 92&quot;
 ## [1] &quot;Performance didn&#39;t improve for the last 1 iterations.&quot;</code></pre>
 <pre class="r"><code>print(paste(&quot;Execution time is&quot;, round(as.numeric(
- difftime(Sys.time(), start_time, units = &quot;secs&quot;)
+  difftime(Sys.time(), start_time, units = &quot;secs&quot;)
 ), 2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 9.53 seconds&quot;</code></pre>
+<pre><code>## [1] &quot;Execution time is 4.64 seconds&quot;</code></pre>
 <pre class="r"><code>fit1 = best_fit$fit1
 fit2 = best_fit$fit2
 # get estimates and validate
 beta =  fit2$u %*% (fit2$d * t(fit2$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + X_r$X %*% t(beta)
+A = revertBiScaledMatrix(A, biScale.out)
+
 #qr(A)$rank
 dtest$preds &lt;- A[cbind(dtest$user_id, dtest$movie_id)]
 RMSE_error(dtest$preds, dtest$rating)</code></pre>
-<pre><code>## [1] 1.009387</code></pre>
-<pre class="r"><code>mean(beta[,1])</code></pre>
-<pre><code>## [1] 0.9656128</code></pre>
-<pre class="r"><code>mean(beta[,2])</code></pre>
-<pre><code>## [1] 0.0693738</code></pre>
-<pre class="r"><code>sd(beta[,1])</code></pre>
-<pre><code>## [1] 0.3844759</code></pre>
-<pre class="r"><code>sd(beta[,2])</code></pre>
-<pre><code>## [1] 0.009471206</code></pre>
+<pre><code>## [1] 0.9462937</code></pre>
+<pre class="r"><code>mean(beta[, 1])</code></pre>
+<pre><code>## [1] -0.01139076</code></pre>
+<pre class="r"><code>mean(beta[, 2])</code></pre>
+<pre><code>## [1] -0.001579418</code></pre>
+<pre class="r"><code>sd(beta[, 1])</code></pre>
+<pre><code>## [1] 0.3225063</code></pre>
+<pre class="r"><code>sd(beta[, 2])</code></pre>
+<pre><code>## [1] 0.007614051</code></pre>
 <pre class="r"><code># fit the original soft Impute and get the results
+start_time = Sys.time()
 sout &lt;- simpute.orig(
- Y_train,
- W_valid,
- dtrain.Y,
- trace = TRUE,
- rank.limit = 30,
- print.best = FALSE,
- rank.step = 2,
-)</code></pre>
-<pre><code>##  1 lambda=    484.3, rank.max = 3  ==&gt; rank = 1, error = 3.69691
-##  2 lambda=   458.81, rank.max = 3  ==&gt; rank = 1, error = 3.59054
-##  3 lambda=   433.32, rank.max = 3  ==&gt; rank = 1, error = 3.48143
-##  4 lambda=   407.83, rank.max = 3  ==&gt; rank = 1, error = 3.36998
-##  5 lambda=   382.34, rank.max = 3  ==&gt; rank = 1, error = 3.25606
-##  6 lambda=   356.85, rank.max = 3  ==&gt; rank = 1, error = 3.13941
-##  7 lambda=   331.36, rank.max = 3  ==&gt; rank = 1, error = 3.01977
-##  8 lambda=   305.87, rank.max = 3  ==&gt; rank = 1, error = 2.89672
-##  9 lambda=   280.38, rank.max = 3  ==&gt; rank = 1, error = 2.77017
-## 10 lambda=   254.89, rank.max = 3  ==&gt; rank = 1, error = 2.63972
-## 11 lambda=    229.4, rank.max = 3  ==&gt; rank = 1, error = 2.50441
-## 12 lambda=   203.91, rank.max = 3  ==&gt; rank = 1, error = 2.36407
-## 13 lambda=   178.43, rank.max = 3  ==&gt; rank = 1, error = 2.21802
-## 14 lambda=   152.94, rank.max = 3  ==&gt; rank = 1, error = 2.06419
-## 15 lambda=   127.45, rank.max = 3  ==&gt; rank = 1, error = 1.90325
-## 16 lambda=   101.96, rank.max = 3  ==&gt; rank = 1, error = 1.73166
-## 17 lambda=   76.468, rank.max = 3  ==&gt; rank = 1, error = 1.54952
-## 18 lambda=   50.979, rank.max = 4  ==&gt; rank = 2, error = 1.35073
-## 19 lambda=   25.489, rank.max = 6  ==&gt; rank = 4, error = 1.12469
-## 20 lambda=        0, rank.max = 8  ==&gt; rank = 6, error = 1.00407</code></pre>
-<pre class="r"><code>dtest$preds_orig &lt;- sout$A_hat[cbind(dtest$user_id, dtest$movie_id)]
-
-RMSE_error(dtest$preds_orig, dtest$rating)</code></pre>
-<pre><code>## [1] 1.077224</code></pre>
-<pre class="r"><code>sout$rank_A</code></pre>
-<pre><code>## [1] 6</code></pre>
-<pre class="r"><code># repeat with mao
-lambda.1_grid = seq(0, 2, length = 20)
-lambda.2_grid = seq(.9, 0, length = 20)
-alpha_grid = seq(0.992, 1, length = 10)
-start_time = Sys.time()
-cv.out &lt;-suppressMessages(suppressWarnings( Mao.cv(
- dtrain.Y,
- X_r$X,
- dtrain.Y,
- dW,
- n_folds = 3,
- lambda.1_grid = lambda.1_grid,
- lambda.2_grid = lambda.2_grid,
- alpha_grid = alpha_grid,
- numCores = 1,
- n1n2_optimized = FALSE,
- theta_estimator = theta_default
-)))
-mao.out &lt;- suppressMessages(suppressWarnings(
- Mao.fit(
+  Y_train,
+  W_valid,
   dtrain.Y,
-  X_r$X,
-  dW,
-  cv.out$best_parameters$lambda.1,
-  cv.out$best_parameters$lambda.2,
-  cv.out$best_parameters$alpha,
-  theta_estimator = theta_default,
-  n1n2_optimized = FALSE
- )))
-print(paste(&quot;Execution time is&quot;, round(as.numeric(
-  difftime(Sys.time(), start_time, units = &quot;secs&quot;)
-), 2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 43.38 seconds&quot;</code></pre>
-<pre class="r"><code>dtest$preds_mao &lt;-
- mao.out$A_hat[cbind(dtest$user_id, dtest$movie_id)]
-RMSE_error(dtest$preds_mao, dtest$rating)</code></pre>
-<pre><code>## [1] 3.593934</code></pre>
-<pre class="r"><code>mao.out$rank</code></pre>
-<pre><code>## [1] 2</code></pre>
-<pre class="r"><code># applying the K-fold method
-# 
-# 
-start_time = Sys.time()
-soutl2 &lt;-
-simpute.cov.kfold(
- dtrain.Y,
- X_r$X,
- dW,
- n_folds = 3,
- print.best =TRUE,
- trace = TRUE,
- rank.limit = 30,
- lambda1 = 0,
- n1n2 = 1,
- warm = NULL,
- tol = 2,
- rank.step = 2,
- n.lambda = 30
-)</code></pre>
-<pre><code>## [1] &quot; 1 lambda=   110.96, rank.max = 3  ==&gt; rank = 1, error = 1.40611\n&quot;
-## [1] &quot; 2 lambda=   107.14, rank.max = 3  ==&gt; rank = 1, error = 1.39361\n&quot;
-## [1] &quot; 3 lambda=   103.31, rank.max = 3  ==&gt; rank = 1, error = 1.37965\n&quot;
-## [1] &quot; 4 lambda=   99.483, rank.max = 3  ==&gt; rank = 1, error = 1.36601\n&quot;
-## [1] &quot; 5 lambda=   95.657, rank.max = 3  ==&gt; rank = 1, error = 1.35192\n&quot;
-## [1] &quot; 6 lambda=   91.831, rank.max = 3  ==&gt; rank = 1, error = 1.33722\n&quot;
-## [1] &quot; 7 lambda=   88.005, rank.max = 3  ==&gt; rank = 1, error = 1.32259\n&quot;
-## [1] &quot; 8 lambda=   84.178, rank.max = 3  ==&gt; rank = 1, error = 1.30735\n&quot;
-## [1] &quot; 9 lambda=   80.352, rank.max = 3  ==&gt; rank = 1, error = 1.29216\n&quot;
-## [1] &quot;10 lambda=   76.526, rank.max = 3  ==&gt; rank = 1, error = 1.27661\n&quot;
-## [1] &quot;11 lambda=   72.699, rank.max = 3  ==&gt; rank = 1, error = 1.26110\n&quot;
-## [1] &quot;12 lambda=   68.873, rank.max = 3  ==&gt; rank = 1, error = 1.24472\n&quot;
-## [1] &quot;13 lambda=   65.047, rank.max = 3  ==&gt; rank = 1, error = 1.22886\n&quot;
-## [1] &quot;14 lambda=   61.221, rank.max = 3  ==&gt; rank = 1, error = 1.21256\n&quot;
-## [1] &quot;15 lambda=   57.394, rank.max = 3  ==&gt; rank = 1, error = 1.19615\n&quot;
-## [1] &quot;16 lambda=   53.568, rank.max = 3  ==&gt; rank = 1, error = 1.17947\n&quot;
-## [1] &quot;17 lambda=   49.742, rank.max = 3  ==&gt; rank = 1, error = 1.16226\n&quot;
-## [1] &quot;18 lambda=   45.915, rank.max = 3  ==&gt; rank = 1, error = 1.14565\n&quot;
-## [1] &quot;19 lambda=   42.089, rank.max = 3  ==&gt; rank = 1, error = 1.12783\n&quot;
-## [1] &quot;20 lambda=   38.263, rank.max = 3  ==&gt; rank = 1, error = 1.11019\n&quot;
-## [1] &quot;21 lambda=   34.437, rank.max = 3  ==&gt; rank = 2, error = 1.09127\n&quot;
-## [1] &quot;22 lambda=    30.61, rank.max = 4  ==&gt; rank = 2, error = 1.06996\n&quot;
-## [1] &quot;23 lambda=   26.784, rank.max = 4  ==&gt; rank = 3, error = 1.04778\n&quot;
-## [1] &quot;24 lambda=   22.958, rank.max = 5  ==&gt; rank = 5, error = 1.02380\n&quot;
-## [1] &quot;25 lambda=   19.131, rank.max = 7  ==&gt; rank = 7, error = 0.99848\n&quot;
-## [1] &quot;26 lambda=   15.305, rank.max = 9  ==&gt; rank = 9, error = 0.97634\n&quot;
-## [1] &quot;27 lambda=   11.479, rank.max = 11  ==&gt; rank = 11, error = 0.96205\n&quot;
-## [1] &quot;28 lambda=   7.6526, rank.max = 13  ==&gt; rank = 13, error = 0.95770\n&quot;
-## [1] &quot;29 lambda=   3.8263, rank.max = 15  ==&gt; rank = 15, error = 0.97481\n&quot;
-## [1] &quot;Performance didn&#39;t improve for the last 2 iterations.&quot;
-## [1] &quot;lambda=   7.6526, rank.max = 13, error = 0.95770\n&quot;</code></pre>
-<pre class="r"><code>soutl2. &lt;-
- simpute.cov.kfold.lambda1(
-  dtrain.Y,
-  X_r$X,
-  dW,
-  soutl2$lambda2,
-  n_folds = 3,
-  print.best = TRUE,
   trace = TRUE,
-  lambda1.grid = lambda.1_grid ,
-  n1n2 = 1,
-  warm = NULL,
-  J = c(soutl2$J)
- )</code></pre>
-<pre><code>## [1] &quot; 1 lambda1=        0, lambda2=   7.6526, rank.max = 13, error = 0.99203\n&quot;
-## [1] &quot; 2 lambda1=  0.10526, lambda2=   7.6526, rank.max = 13, error = 0.94228\n&quot;
-## [1] &quot; 3 lambda1=  0.21053, lambda2=   7.6526, rank.max = 13, error = 0.93437\n&quot;
-## [1] &quot; 4 lambda1=  0.31579, lambda2=   7.6526, rank.max = 13, error = 0.93066\n&quot;
-## [1] &quot; 5 lambda1=  0.42105, lambda2=   7.6526, rank.max = 13, error = 0.92907\n&quot;
-## [1] &quot; 6 lambda1=  0.52632, lambda2=   7.6526, rank.max = 13, error = 0.92818\n&quot;
-## [1] &quot; 7 lambda1=  0.63158, lambda2=   7.6526, rank.max = 13, error = 0.92799\n&quot;
-## [1] &quot; 8 lambda1=  0.73684, lambda2=   7.6526, rank.max = 13, error = 0.92791\n&quot;
-## [1] &quot; 9 lambda1=  0.84211, lambda2=   7.6526, rank.max = 13, error = 0.92785\n&quot;
-## [1] &quot;10 lambda1=  0.94737, lambda2=   7.6526, rank.max = 13, error = 0.92780\n&quot;
-## [1] &quot;11 lambda1=   1.0526, lambda2=   7.6526, rank.max = 13, error = 0.92774\n&quot;
-## [1] &quot;12 lambda1=   1.1579, lambda2=   7.6526, rank.max = 13, error = 0.92769\n&quot;
-## [1] &quot;13 lambda1=   1.2632, lambda2=   7.6526, rank.max = 13, error = 0.92732\n&quot;
-## [1] &quot;14 lambda1=   1.3684, lambda2=   7.6526, rank.max = 13, error = 0.92726\n&quot;
-## [1] &quot;15 lambda1=   1.4737, lambda2=   7.6526, rank.max = 13, error = 0.92722\n&quot;
-## [1] &quot;16 lambda1=   1.5789, lambda2=   7.6526, rank.max = 13, error = 0.92719\n&quot;
-## [1] &quot;17 lambda1=   1.6842, lambda2=   7.6526, rank.max = 13, error = 0.92717\n&quot;
-## [1] &quot;18 lambda1=   1.7895, lambda2=   7.6526, rank.max = 13, error = 0.92715\n&quot;
-## [1] &quot;19 lambda1=   1.8947, lambda2=   7.6526, rank.max = 13, error = 0.92715\n&quot;
-## [1] &quot;20 lambda1=   1.8947, lambda2=   7.6526, rank.max = 13, error = 0.92715\n&quot;</code></pre>
+  rank.limit = 30,
+  print.best = FALSE,
+  rank.step = 2,
+)</code></pre>
+<pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 300 iterations</code></pre>
+<pre><code>##  1 lambda=   39.717, rank.max = 3  ==&gt; rank = 1, error = 0.99658
+##  2 lambda=   37.626, rank.max = 3  ==&gt; rank = 1, error = 0.99478
+##  3 lambda=   35.536, rank.max = 4  ==&gt; rank = 2, error = 0.99295
+##  4 lambda=   33.446, rank.max = 4  ==&gt; rank = 2, error = 0.98988
+##  5 lambda=   31.355, rank.max = 4  ==&gt; rank = 2, error = 0.98692
+##  6 lambda=   29.265, rank.max = 4  ==&gt; rank = 2, error = 0.98407
+##  7 lambda=   27.175, rank.max = 5  ==&gt; rank = 3, error = 0.98128
+##  8 lambda=   25.084, rank.max = 7  ==&gt; rank = 5, error = 0.97769
+##  9 lambda=   22.994, rank.max = 9  ==&gt; rank = 7, error = 0.97340
+## 10 lambda=   20.903, rank.max = 11  ==&gt; rank = 9, error = 0.96939
+## 11 lambda=   18.813, rank.max = 13  ==&gt; rank = 11, error = 0.96580
+## 12 lambda=   16.723, rank.max = 15  ==&gt; rank = 13, error = 0.96324
+## 13 lambda=   14.632, rank.max = 17  ==&gt; rank = 15, error = 0.96409
+## 14 lambda=   12.542, rank.max = 19  ==&gt; rank = 17, error = 0.96806
+## 15 lambda=   10.452, rank.max = 21  ==&gt; rank = 19, error = 0.97939
+## 16 lambda=   8.3614, rank.max = 23  ==&gt; rank = 21, error = 1.00266
+## Performance didn&#39;t improve for the last 5 iterations.</code></pre>
 <pre class="r"><code>print(paste(&quot;Execution time is&quot;, round(as.numeric(
   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
 ), 2), &quot;seconds&quot;))</code></pre>
-<pre><code>## [1] &quot;Execution time is 985.99 seconds&quot;</code></pre>
-<pre class="r"><code>dtest$preds_l2 &lt;-
- soutl2.$A_hat[cbind(dtest$user_id, dtest$movie_id)]
-RMSE_error(dtest$preds_l2, dtest$rating)</code></pre>
-<pre><code>## [1] 0.9980134</code></pre>
-<pre class="r"><code>soutl2.$rank</code></pre>
-<pre><code>## [1] 15</code></pre>
+<pre><code>## [1] &quot;Execution time is 211.66 seconds&quot;</code></pre>
+<pre class="r"><code>sout$A_hat = revertBiScaledMatrix(sout$A_hat, biScale.out)
+dtest$preds_orig &lt;- sout$A_hat[cbind(dtest$user_id, dtest$movie_id)]
+
+RMSE_error(dtest$preds_orig, dtest$rating)</code></pre>
+<pre><code>## [1] 0.9561925</code></pre>
+<pre class="r"><code>sout$rank_A</code></pre>
+<pre><code>## [1] 13</code></pre>
+<pre class="r"><code># repeat with mao
+lambda.1_grid = seq(0, 2, length = 20)
+lambda.2_grid = seq(0.9, 0, length = 20)
+alpha_grid = seq(0.992, 1, length = 20)
+start_time = Sys.time()
+cv.out &lt;- suppressMessages(suppressWarnings(
+  Mao.cv(
+    dtrain.Y,
+    X_r$X,
+    dtrain.Y,
+    dW,
+    n_folds = 3,
+    lambda.1_grid = lambda.1_grid,
+    lambda.2_grid = lambda.2_grid,
+    alpha_grid = alpha_grid,
+    numCores = 1,
+    n1n2_optimized = T,
+    theta_estimator = MaoUniWeights
+  )
+))
+mao.out &lt;- suppressMessages(suppressWarnings(
+  Mao.fit(
+    dtrain.Y,
+    X_r$X,
+    dW,
+    cv.out$best_parameters$lambda.1,
+    cv.out$best_parameters$lambda.2,
+    cv.out$best_parameters$alpha,
+    theta_estimator = MaoUniWeights,
+    n1n2_optimized = T
+  )
+))
+print(paste(&quot;Execution time is&quot;, round(as.numeric(
+  difftime(Sys.time(), start_time, units = &quot;secs&quot;)
+), 2), &quot;seconds&quot;))</code></pre>
+<pre><code>## [1] &quot;Execution time is 29.38 seconds&quot;</code></pre>
+<pre class="r"><code>mao.out$A_hat = revertBiScaledMatrix(mao.out$A_hat, biScale.out)
+dtest$preds_mao &lt;-
+  mao.out$A_hat[cbind(dtest$user_id, dtest$movie_id)]
+RMSE_error(dtest$preds_mao, dtest$rating)</code></pre>
+<pre><code>## [1] 0.9807089</code></pre>
+<pre class="r"><code>mao.out$rank</code></pre>
+<pre><code>## [1] 943</code></pre>
+<pre class="r"><code>cv.out$best_parameters</code></pre>
+<pre><code>## $alpha
+## [1] 0.992
+## 
+## $lambda.1
+## [1] 0
+## 
+## $lambda.2
+## [1] 0</code></pre>
+<pre class="r"><code># applying the K-fold method
+#
+#
+# start_time = Sys.time()
+# soutl2 &lt;-
+# simpute.cov.kfold(
+#  dtrain.Y,
+#  X_r$X,
+#  dW,
+#  n_folds = 3,
+#  print.best =TRUE,
+#  trace = TRUE,
+#  rank.limit = 30,
+#  lambda1 = 0,
+#  n1n2 = 1,
+#  warm = NULL,
+#  tol = 2,
+#  rank.step = 2,
+#  n.lambda = 30
+# )
+# soutl2. &lt;-
+#  simpute.cov.kfold.lambda1(
+#   dtrain.Y,
+#   X_r$X,
+#   dW,
+#   soutl2$lambda2,
+#   n_folds = 3,
+#   print.best = TRUE,
+#   trace = TRUE,
+#   lambda1.grid = lambda.1_grid ,
+#   n1n2 = 1,
+#   warm = NULL,
+#   J = c(soutl2$J)
+#  )
+# print(paste(&quot;Execution time is&quot;, round(as.numeric(
+#   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
+# ), 2), &quot;seconds&quot;))
+# dtest$preds_l2 &lt;-
+#  soutl2.$A_hat[cbind(dtest$user_id, dtest$movie_id)]
+# RMSE_error(dtest$preds_l2, dtest$rating)
+# soutl2.$rank
+#</code></pre>
 
 
 

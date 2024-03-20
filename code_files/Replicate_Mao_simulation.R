@@ -1,10 +1,12 @@
 compare_Mao_mod <-
   function(gen.dat,
+           scaleParam,
            lambda.1_grid,
            lambda.2_grid,
            alpha_grid,
            ncores = 1,
-           n_folds = 5) {
+           n_folds = 5,
+           weight_function = MaoUniWeights) {
     start_time = Sys.time()
     cv.out <- Mao.cv(
       gen.dat$A,
@@ -17,7 +19,7 @@ compare_Mao_mod <-
       alpha_grid = alpha_grid,
       numCores = ncores,
       n1n2_optimized = FALSE,
-      theta_estimator = theta_default
+      theta_estimator = weight_function
     )
     mao.out <-
       Mao.fit(
@@ -27,10 +29,13 @@ compare_Mao_mod <-
         cv.out$best_parameters$lambda.1,
         cv.out$best_parameters$lambda.2,
         cv.out$best_parameters$alpha,
-        theta_estimator = theta_default,
+        theta_estimator = weight_function,
         n1n2_optimized = FALSE
       )
     results = list()
+    # mao.out$B_hat <- revertBiScaledMatrix(mao.out$B_hat, scaleParam)
+    # mao.out$A_hat <- revertBiScaledMatrix(mao.out$A_hat, scaleParam)
+    # mao.out$beta_hat <- ginv(gen.dat$X) %*% revertBiScaledMatrix(gen.dat$X %*% mao.out$beta_hat, scaleParam)
     results$error.beta = RMSE_error(mao.out$beta_hat, gen.dat$beta)
     results$error.B = RMSE_error(mao.out$B_hat, gen.dat$B)
     results$error.all = RMSE_error(mao.out$A_hat, gen.dat$A)
@@ -42,7 +47,7 @@ compare_Mao_mod <-
   }
 
 
-compare_softImpute_orig_mod <- function(gen.dat, valid.dat) {
+compare_softImpute_orig_mod <- function(gen.dat, scaleParam, valid.dat) {
   start_time = Sys.time()
   sout <- simpute.orig(
     valid.dat$Y_train,
@@ -66,7 +71,7 @@ compare_softImpute_orig_mod <- function(gen.dat, valid.dat) {
 
 
 
-compare_softImpute_cov_mod <- function(gen.dat, valid.dat) {
+compare_softImpute_cov_mod <- function(gen.dat, scaleParam, valid.dat) {
   start_time = Sys.time()
   sout <-
     simpute.cov.cv(
@@ -97,6 +102,7 @@ compare_softImpute_cov_mod <- function(gen.dat, valid.dat) {
 
 compare_softImpute_splr_mod <-
   function(gen.dat,
+           scaleParam, 
            valid.dat,
            splr.dat,
            rank.step,
@@ -181,8 +187,13 @@ replicate_mao_sim <- function(n_folds = 3,
         n2 = dim,
         m = ncovariates,
         r = mao_r,
-        seed = NULL
+        seed = NULL,
+        method = "UNI"
       )
+    # scale
+    scaleParam <- NA#biScaleMatrix(gen.dat$Y)
+    #gen.dat$Y <- scaleParam$scaledMat
+    #scaleParam$scaledMat <- NULL
     #-------------------------------------------------------------------------------------
     # validation set to be used for the next two models
     valid.dat = list()
@@ -200,21 +211,24 @@ replicate_mao_sim <- function(n_folds = 3,
     # fit 1. Mao
     
     results1[i,] <-  compare_Mao_mod(gen.dat,
+                                     scaleParam,
                                      lambda.1_grid,
                                      lambda.2_grid,
                                      alpha_grid,
                                      1,
-                                     n_folds)
+                                     n_folds
+                                     )
     
     
     #----------------------------------------------------------
     # soft Impute model without covariates
-    results2[i,] <- compare_softImpute_orig_mod(gen.dat, valid.dat)
+    results2[i,] <- compare_softImpute_orig_mod(gen.dat, scaleParam, valid.dat)
     #----------------------------------------------------------------------------
     # soft Impute model with covariates
-    results3[i,] <- compare_softImpute_cov_mod(gen.dat, valid.dat)
+    results3[i,] <- compare_softImpute_cov_mod(gen.dat, scaleParam, valid.dat)
     #--------------------------------------------------------------------------------
     results4[i,] <- compare_softImpute_splr_mod(gen.dat,
+                                                scaleParam,
                                                 valid.dat,
                                                 splr.dat,
                                                 rank.step,
@@ -278,9 +292,9 @@ source("./code_files/import_lib.R", local = FALSE)
 for(dim in c(400,600,800,1000))
 results = replicate_mao_sim(
   n_folds = 3,
-  n_reps = 200,
+  n_reps = 2,
   dim = dim,
   save_to_disk = FALSE,
-  print_every = 10,
+  print_every = 1,
   error_function = RMSE_error 
 )

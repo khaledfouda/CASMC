@@ -61,7 +61,7 @@ Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha) {
    beta_hat = solve(data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
    T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda.2, 0) * t(data$svdd$v))
    # B hat as in (11)
-   B_hat = (1 + 2 * (1 - alpha) * data$n1n2 * lambda.2) ^ (-1) * T_c_D
+   B_hat = ((1 + 2 * (1 - alpha) * data$n1n2 * lambda.2) ^ (-1)) * T_c_D
    # Estimate the matrix as given in the model at the top
    A_hat = data$X %*% beta_hat + B_hat
    
