@@ -4,6 +4,7 @@ author: "Khaled Fouda"
 output:
   html_document:
     df_print: paged
+    output_file: ../html/8_Sparse_Zero_Intercept_Rank_Constrained_Imputation.html
 editor_options:
   chunk_output_type: console
 ---
@@ -11,14 +12,16 @@ editor_options:
 
 
 ```{r setup, include=TRUE, warning=FALSE, message=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE)
 library(kableExtra)
 library(magrittr)
 library(tidyverse)
 library(softImpute)
-
-knitr::opts_knit$set(root.dir="/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/")
+root_dir = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
+knitr::opts_knit$set(root.dir=root_dir)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, eval = FALSE, 
+                      cache.path = paste0(root_dir,"/Documentation/cache/"))
 ```
+
 
 
 ```{r include=TRUE, warning=FALSE, message=FALSE, eval=TRUE}
@@ -45,19 +48,32 @@ We will consider two models. The first model attempts to directly complete $X \b
 
 # Problem Set-up
 
-For the first Model, assume that we have a partially observed matrix $Y$ of rank $k$. We want to predict a low-rank matrix $M$ such that 
+In the context of our model, we have
 
 $$
-\| P_\Omega(Y)-P_\Omega(M) \|^2_F < \epsilon,
+Y = Y - P_{\Omega}(\hat{M}).
+$$
+Which lays the ground to solving the following problem:
+
+$$
+Y = X \beta = Z
+$$
+### Note: The first model here is just for illustration but we decided to move forward with the second model as it provided better performance.
+
+
+For the first Model, assume that we have a partially observed matrix $Y$ of rank $k$. We want to predict a low-rank matrix $Z$ such that 
+
+$$
+\| P_\Omega(Y)-P_\Omega(Z) \|^2_F < \epsilon,
 $$
 
 and
 
 $$
-\| M\|_0 = \sum_i I(\sigma_i>0) = k.
+\| Z\|_0 = \sum_i I(\sigma_i>0) = k.
 $$
 
-We will consider the Alternating-Least-Squares model and therefore $M=AB^T=UD^2V^T$ where $A=UD$ and $B=VD$.
+We will consider the Alternating-Least-Squares model and therefore $Z=AB^T=UD^2V^T$ where $A=UD$ and $B=VD$.
 
 The loss function is similar to the original soft-impute but without the regularization.
 
@@ -88,6 +104,9 @@ $$
 
 We compute the svd decomposition of $BD$ and $AD$ at every step and update $U$, $V$, $D$, and $S$ accordingly.
 
+
+---------------------------------------
+
 # Naive MC (For Initialization)
 
 Replacing the random initialization of $U$, $D$, and $V$ by the decomposition of a naive matrix completition cuts the number of iterations needed for convergence by half. For a partially observed matrix Y, the naive MC is defined as:
@@ -105,10 +124,10 @@ The code for the Naive MC can be found under /functions/utils/naive_MC.R. The fu
 The code for the model above can be found under /functions/SoftImpute_Incomplete/fit_no_covariates_fixed_rank.R.
 
 
-We now illustrate our model above:
+<!-- We now illustrate our model above: -->
 
 
-```{r eval=TRUE}
+```{r eval=FALSE, echo=FALSE}
 
 # first we generate simulation data and estimating the low-rank M and the observed Xbeta
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
@@ -160,48 +179,49 @@ print(paste("Test error A =", round(test_error((A_hat)[gen.dat$W==0], gen.dat$A[
 
 # Model 2
 
+# SZIRCI
 
 ## Problem Set-up
 
-We also assume that we have a partially observed matrix $Y$ of dimension $(n \times m)$ and rank $k$. We also fully observe matrix $X$ of dimension $(n\times k)$ and rank $k$. We seek a rank-k matrix $B$ suck that
+We also assume that we have a partially observed matrix $Y$ of dimension $(n \times m)$ and rank $k$. We also fully observe matrix $X$ of dimension $(n\times k)$ and rank $k$. We seek a rank-k matrix $\beta$ suck that
 
 $$
-\| P_\Omega(Y) - P_\Omega(XB^T)\|^2_F < \epsilon,
+\| P_\Omega(Y) - P_\Omega(X{\beta}^T)\|^2_F < \epsilon,
 $$
 
 and 
 
 $$
-\|B\|_0 = k.
+\|\beta\|_0 = k.
 $$
 
-Let the SVD decomposition of $B$ be $B=U_BD_BV_B^T$.
+Let the SVD decomposition of $\beta$ be $\beta=U_{\beta}D_{\beta}V_{\beta}^T$.
 
 
 Define $U_x = \tilde{U}$ and $V_x = \tilde{D} \tilde{V}^T$ such that $X = \tilde{U}\tilde{D}\tilde{V}^T$.
 
-Define $U = U_X V_X V_B$, $D=D_B$, and $V = U_B$ such that $XB^T = U D V^T$.
+Define $U = U_X V_X V_\beta$, $D=D_\beta$, and $V = U_\beta$ such that $X\beta^T = U D V^T$.
 
 The sparse + low-rank decomposition is
 
 $$
 \begin{aligned}
-Y^* &= P_\Omega(Y-AB^T) + U D V^T \\
- &= S + U_XV_XV_BD_BU_B^T  
+Y^* &= P_\Omega(Y-A{\beta}^T) + U D V^T \\
+ &= S + U_XV_XV_{\beta}D_{\beta}U_{\beta}^T
 \end{aligned}
 $$
 
-The least squares solution for $B$ is
+The least squares solution for $\beta$ is
 
 $$
 \begin{aligned}
-B &= (X^TX)^{-1}X^TY^* \\
+\beta &= (X^TX)^{-1}X^TY^* \\
 &=(V_X^TU_X^TU_XV_X)^{-1}V_X^TU_X^T Y^* \\
 &=(V_X^TV_X)^{-1}V_X^TU_X^T Y^* \\
 &=(V_X^TV_X)^{-1}V_X^TU_X^T S + 
-(V_X^TV_X)^{-1}V_X^TU_X^T U_XV_XV_BD_BU_B^T  \\
+(V_X^TV_X)^{-1}V_X^TU_X^T U_XV_XV_{\beta}D_{\beta} U_\beta^T  \\
 &=(V_X^TV_X)^{-1}V_X^TU_X^T S + 
-(V_X^TV_X)^{-1}V_X^TV_XV_BD_BU_B^T  \\
+(V_X^TV_X)^{-1}V_X^TV_XV_\beta D_\beta U_{\beta}^T  \\
 \end{aligned}
 $$
 
@@ -211,8 +231,8 @@ Since we don't update $X$ as it's fully observed, let $X_1=(V_X^TV_X)^{-1}V_X^TU
 
 $$
 \begin{aligned}
-B &=X_1 S + X_2V_BD_BU_B^T  \\
-&=X_1 (Y-SPROD(XV_B,U_BD_B)) + X_2V_BD_BU_B^T  \\
+\beta &=X_1 S + X_2V_\beta D_\beta U_\beta^T  \\
+&=X_1 (Y-SPROD(XV_\beta ,U_\beta D_\beta )) + X_2V_\beta D_\beta U_\beta^T  \\
 \end{aligned}
 $$
 
@@ -222,8 +242,25 @@ $$
 Illustration:
 
 
-```{r eval=TRUE}
+```{r szirci, eval=TRUE}
 # optional initialization. (if warm.start= NULL, the function will do this)
+# first we generate simulation data and estimating the low-rank M and the observed Xbeta
+setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
+source("./code_files/import_lib.R")
+gen.dat <- generate_simulation_data_ysf(2,800,700,10,10, missing_prob = 0.9,coll=T)
+W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
+Y_train = (gen.dat$Y * W_valid)
+Y_valid = gen.dat$Y[W_valid==0]
+y = yfill = Y_train
+y[y==0] = NA
+ys <- as(y, "Incomplete")
+X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
+beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
+fit1 = CASMC_fit(y=ys, svdH=X_r$svdH,  trace=F, J=7,
+                                            thresh=1e-5, lambda=11.1, init = "naive",
+                                            final.svd = T,maxit = 100, warm.start = NULL)
+xbeta.sparse <- ys
+xbeta.sparse@x = fit1$xbeta.obs
 X = X_r$X
 svdX = fast.svd(X)#fast.svd(X)
 Ux = svdX$u
@@ -232,22 +269,22 @@ X0 = ginv(t(Vx)%*%Vx) %*% t(Vx)
 warm.start = list()
 warm.start$X1 = X0 %*% t(Ux)
 warm.start$X2 = X0 %*% Vx
-B = t( ginv(X) %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
+B = t( ginv(X) %*% naive_MC(as.matrix(xbeta.sparse))) # Beta = (X^-1 Y)'
 warm.start$Bsvd = fast.svd(B)
 #-----------------------------------------
 start_time <- Sys.time()
 for(i in 1:100){
-fit3 = simpute.als.splr.fit.beta(xbeta.sparse, X_r$X, X_r$rank, final.trim = F,warm.start = warm.start,
+fit3 = SZIRCI(xbeta.sparse, X_r$X, X_r$rank, final.trim = F,warm.start = warm.start,
                                  trace.it = F)
 }
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 beta_estim2 =  fit3$u %*% (fit3$d * t(fit3$v))
+M = fit1$u %*% (fit1$d * t(fit1$v))
 A_hat2 = M + X_r$X %*% t(beta_estim2)
-print(paste("Test error A =", round(test_error((A_hat2)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+print(paste("Test error O =", round(test_error((A_hat2)[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 
 print(paste("Test error Beta (Naive) =", round(test_error(ginv(X_r$X)%*%naive_MC(as.matrix(xbeta.sparse)),
                                                   gen.dat$beta.x),5)))
-print(paste("Test error Beta (Model 1) =", round(test_error(ginv(X_r$X)%*%xbeta_estim, gen.dat$beta.x),5)))
 print(paste("Test error Beta (Model 2) =", round(test_error(t(beta_estim2), gen.dat$beta.x),5)))
 ```
 
@@ -264,7 +301,7 @@ Cons:
 
 ----------------------------------------------------------------------------
 
-## NEW: Comparing the performance of the second model (call it Beta-Impute) compared to the original Soft-Impute model.
+## NEW: Comparing the performance of the second model (SZIRCI) compared to the original Soft-Impute model.
 
 Model:  $Y = X \beta + \epsilon$ ,
 where $X$ is a given covariate matrix, $\epsilon$ is a white noise that we're not interested in. 
@@ -289,7 +326,7 @@ for(b in 1:B){
    Y <- as(Y, "Incomplete")
    
    start_time <- Sys.time()
-   fit = simpute.als.splr.fit.beta(Y, X_r$X,  X_r$rank, maxit=500,
+   fit = SZIRCI(Y, X_r$X,  X_r$rank, maxit=500,
                                     trace.it = F,final.trim = F,thresh = 1e-6)
    
    beta.estim <- fit$u %*% (fit$d * t(fit$v))
