@@ -28,32 +28,71 @@ library(data.table)
 ### Model Summary
 
 ```{r}
-Models <- c("Mao", "SoftImpute_Orig", "SoftImpute_Cov", "SoftImpute_L2",
-            "SoftImpute_KFold", "SoftImpute_splr", "SoftImpute_splr_Kfold")
+Models <- c(
+   "Mao",
+   "SoftImpute",
+   "CAMC_holdout",
+   "CAMC_kfold",
+   "CASMC_holdout",
+   "CASMC_kfold",
+   "Naive"
+)
 
-Note <- c("Mao's original model", "Original Soft-Impute from the library",
-          "Soft-Impute with Covariates", "Soft-Impute with covariates and ridge",
-          "Same as above but with K-fold", "Same as SoftImpute_L2 but with the Sparse-plus-low-rank representation", "Same as above but with K-fold")
+Note <- c(
+   "Mao's original model",
+   "Soft-Impute (fit function from library and CV from Vignette)",
+   "Covariate-Adjusted Matrix Completition with holdout cross-validation",
+   "Covariate-Adjusted Matrix Completition with K-fold cross-validation",
+   "Covariate-Adjusted Sparse  Matrix Completition (Sparse-plus-low-rank) with holdout cross-validation",
+   "Covariate-Adjusted Sparse  Matrix Completition (Sparse-plus-low-rank) with K-fold cross-validation",
+   "Missing Values are replaced with the middle point of row and column average."
+)
 
+model_rep <-
+   c(
+      "$\\begin{aligned} O &= X \\beta + M  \\end{aligned}$",
+      "$\\begin{aligned} O &=  M  \\end{aligned}$",
+      "$\\begin{aligned} O &= X \\beta + AB^T  \\end{aligned}$",
+      "$\\begin{aligned} O &= X \\beta + AB^T  \\end{aligned}$",
+      "$\\begin{aligned} O &= P_{\\Omega}(O-X \\beta - AB^T) + (X \\beta + AB^T)\\\\&=Sparse +  Low Rank  \\end{aligned}$",
+      "$\\begin{aligned} O &= P_{\\Omega}(O-X \\beta - AB^T) + (X \\beta + AB^T)\\\\&=Sparse +  Low Rank\\end{aligned}$",
+      ""
+   )
 
-include_cov <- rep("Yes",7)
-include_cov[2] <- "No"
-Cross_validation_type <- rep("Validation Set",7)
+include_cov <- rep("Yes", 7)
+include_cov[c(2, 7)] <- "No"
+Cross_validation_type <- rep("80%/20%", 6, 7)
 Cross_validation_type[c(1)] <- "K-fold (5)"
-Cross_validation_type[c(5)] <- "K-fold (3)"
-Cross_validation_type[c(7)] <- "K-fold (10)"
+Cross_validation_type[c(4)] <- "K-fold (3)"
+Cross_validation_type[c(6)] <- "K-fold (5)"
+Cross_validation_type[c(7)] <- ""
 Regular_cov <- rep("Ridge", 7)
-Regular_cov[2:3] <- "None"
-Regular_cov[6:7] <- "Dimension Reduction"
-New_Model <- rep("Yes",7)
+Regular_cov[2] <- "None"
+Regular_cov[7] <- ""
+Regular_cov[5:6] <- "Dimension Reduction"
+New_Model <- rep("Yes", 7)
 New_Model[1:2] <- "No"
+New_Model[7] <- ""
 
-data.frame(Model=Models, Note=Note, `Has Covariates?`=include_cov,
-           `Cross-Validation Type`=Cross_validation_type, 
-           `Regularization on the Covariates?`=Regular_cov,
-           `New Model`=New_Model) %>%
-   kable("html", escape=FALSE, align = 'c', caption="Model Summary Table") %>%
-     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center")
+data.frame(
+   Model = Models,
+   Note = Note,
+   `Has Covariates?` = include_cov,
+   `Cross-Validation Type` = Cross_validation_type,
+   `Regularization on the Covariates?` = Regular_cov,
+   `New Model` = New_Model,
+   Model.Representation = model_rep
+) %>%
+   kable("html",
+         escape = FALSE,
+         #align = 'c',
+         caption = "Model Summary Table; $Y= P_{\\Omega}(O) + \\epsilon$ is observed where $\\Omega$ are the observed indices and $\\epsilon$ is a small random noise. (ie, Y is partially observed and slightly corrupted version of O.") %>%
+   kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed"),
+      full_width = F,
+      position = "center"
+   ) %>% 
+   column_spec(2, width = "300px")
 
 ```
 
@@ -85,61 +124,115 @@ results %<>%
 
 
 color_min_values <- function(data, columns) {
-  data <- as.data.frame(data)
-  for (col_name in columns) {
-    col_min <- min(as.numeric(data[[col_name]]), na.rm = TRUE)
-    colrounded <- round(as.numeric(data[[col_name]]),4)
-    data[[col_name]] <- cell_spec(ifelse(as.numeric((is.na(data[[col_name]]))),'',colrounded),
-                                  "html", color = ifelse(as.numeric((is.na(data[[col_name]]))), "grey98", "black"),
-                              background = fifelse((data[[col_name]]) == col_min, "lightgreen", "grey98","grey98"))
-  }
-    col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
-    data[["rank"]] <- cell_spec(data[["rank"]], "html", 
-                                  background = ifelse(abs(data[["rank_diff"]]) == col_min, "lightgreen", "grey98"))
-  return(data)
+   data <- as.data.frame(data)
+   for (col_name in columns) {
+      col_min <- min(as.numeric(data[[col_name]]), na.rm = TRUE)
+      colrounded <- round(as.numeric(data[[col_name]]), 4)
+      data[[col_name]] <-
+         cell_spec(
+            ifelse(as.numeric((is.na(
+               data[[col_name]]
+            ))), '', colrounded),
+            "html",
+            color = ifelse(as.numeric((is.na(
+               data[[col_name]]
+            ))), "grey98", "black"),
+            background = fifelse((data[[col_name]]) == col_min, "lightgreen", "grey98", "grey98")
+         )
+   }
+   col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
+   data[["rank"]] <- cell_spec(data[["rank"]],
+                               "html",
+                               background = ifelse(abs(data[["rank_diff"]]) == col_min, "lightgreen", "grey98"))
+   return(data)
 }
 # results <- results_MaoSim
-print_table <- function(results, missingness=NULL, coll=TRUE, prob=NA, caption=""){
-   
-   
-   #$$
-   names(results) = gsub("error\\.", "", names(results))
-   results %>% 
-   filter(missinginess == missingness, collinearity==coll) %>%
-   dplyr::rename(A = all, A_test = test, Method=model, missing_prob = missinginess,
-                                       seconds = time) %>%
-   mutate(rank_diff = rank - true_rank) %>% 
-   select(Method, true_rank, missing_prob, lambda.1, lambda.2,  A_test, A, B, beta,
-             rank, rank_diff, seconds)   -> combined_results
-   #$$
-   test_col=6
-   if(missingness == 0){
-      test_col=5
-      combined_results %<>% select(-missing_prob)
-      nfixed=2
-   }else
-      nfixed=3
-    
-   
-   # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
-   error_columns <- c("A_test", "B", "beta", "A","seconds")
-   for(i in seq(1,32,8))
-      combined_results[i:(i+7), ] <- color_min_values(combined_results[i:(i+7), ], error_columns)
-   
-   combined_results %>%
-      mutate_if(is.numeric, function(x) replace_na(as.character(round(x,4)), '')) %>% 
+print_table <-
+   function(results,
+            missingness = NULL,
+            coll = TRUE,
+            prob = NA,
+            caption = "",
+            nmodels = 7) {
+      #$$
+      names(results) = gsub("error\\.", "", names(results))
+      results %>%
+         filter(missinginess == missingness, collinearity == coll) %>%
+         dplyr::rename(
+            O = all,
+            O_test = test,
+            Method = model,
+            missing_prob = missinginess,
+            seconds = time,
+            M = B,
+            Beta = beta
+         ) %>%
+         mutate(rank_diff = rank - true_rank) %>%
+         select(
+            Method,
+            true_rank,
+            missing_prob,
+            lambda.1,
+            lambda.2,
+            O_test,
+            O,
+            M,
+            Beta,
+            rank,
+            rank_diff,
+            seconds
+         )   -> combined_results
+      combined_results %<>% 
+         mutate(seconds = ifelse(Method == "Naive", NA, seconds))
       
-   kable("html", escape=FALSE, align = 'c', caption=caption) %>%
-     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
-     add_header_above(c("Fixed" = nfixed, "Hyperparameters" = 2, "Error on" = 4,"Rank"=2, "Time"=1)) %>%
-     pack_rows("400x400", 1, 8) %>%
-     pack_rows("600x600", (8*1)+1, 8*2 ) %>% 
-     pack_rows("800x800", (8*2)+1, 8*3) %>% 
-     pack_rows("1000x1000", (8*3)+1, 8*4) %>%
-        column_spec(test_col, bold = T, background =grDevices::adjustcolor( "red", alpha.f = 0.1))
-
-  
-}
+      #$$
+      test_col = 6
+      if (missingness == 0) {
+         test_col = 5
+         combined_results %<>% select(-missing_prob)
+         nfixed = 2
+      } else
+         nfixed = 3
+      
+      
+      # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
+      error_columns <- c("O_test", "O", "Beta", "M", "seconds")
+      for (i in seq(1, 28, nmodels))
+         combined_results[i:(i + nmodels - 1),] <-
+         color_min_values(combined_results[i:(i + nmodels - 1),], error_columns)
+      
+      combined_results %>%
+         mutate_if(is.numeric, function(x)
+            replace_na(as.character(round(x, 4)), '')) %>%
+         
+         kable("html",
+               escape = FALSE,
+               align = 'c',
+               caption = caption) %>%
+         kable_styling(
+            bootstrap_options = c("striped", "hover", "condensed"),
+            full_width = F,
+            position = "center"
+         ) %>%
+         add_header_above(c(
+            "Fixed" = nfixed,
+            "Hyperparameters" = 2,
+            "Error on" = 4,
+            "Rank" = 2,
+            "Time" = 1
+         )) %>%
+         pack_rows("400x400", 1, nmodels) %>%
+         pack_rows("600x600", (nmodels * 1) + 1, nmodels * 2) %>%
+         pack_rows("800x800", (nmodels * 2) + 1, nmodels * 3) %>%
+         pack_rows("1000x1000", (nmodels * 3) + 1, nmodels * 4) %>%
+         column_spec(
+            test_col,
+            bold = T,
+            background = grDevices::adjustcolor("red", alpha.f = 0.1)
+         )
+      
+      
+   }
 ```
 
 
