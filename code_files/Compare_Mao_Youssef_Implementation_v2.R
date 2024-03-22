@@ -183,7 +183,7 @@ compare_CASMC_holdout <-
       start_time = Sys.time()
       
       
-      best_fit = CASMC_cv_holdout(
+      best_fit = CASMC_cv_holdout_v2(
          valid.dat$Y_train,
          splr.dat,
          valid.dat$Y_valid,
@@ -199,12 +199,12 @@ compare_CASMC_holdout <-
       )
       
       
-      fit1 = best_fit$fit1
-      fit2 = best_fit$fit2
+      fit1 = best_fit$fit
+      #fit2 = best_fit$fit2
       sout = best_fit
       # get estimates and validate
       sout$B_hat = fit1$u %*% (fit1$d * t(fit1$v))
-      sout$beta_hat =  fit2$u %*% (fit2$d * t(fit2$v))
+      sout$beta_hat =  fit1$beta#fit2$u %*% (fit2$d * t(fit2$v))
       sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)
       
       results = list(model = "CASMC_holdout")
@@ -230,7 +230,7 @@ compare_CASMC_kfold <-
             n.lambda) {
       start_time = Sys.time()
       
-      best_fit = CASMC_cv_kfold(
+      best_fit = CASMC_cv_kfold_v2(
          gen.dat$Y,
          splr.dat,
          gen.dat$W,
@@ -244,12 +244,12 @@ compare_CASMC_kfold <-
       )
       
       
-      fit1 = best_fit$fit1
-      fit2 = best_fit$fit2
+      fit1 = best_fit$fit
+      #fit2 = best_fit$fit2
       sout = best_fit
       # get estimates and validate
       sout$B_hat = fit1$u %*% (fit1$d * t(fit1$v))
-      sout$beta_hat =  fit2$u %*% (fit2$d * t(fit2$v))
+      sout$beta_hat =  fit1$beta#fit2$u %*% (fit2$d * t(fit2$v))
       sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)
       
       
@@ -286,7 +286,7 @@ compare_naive <- function(gen.dat) {
 
 compare_and_save <- function(missingness,
                              coll = TRUE,
-                             n_folds = 3,
+                             n_folds = 5,
                              dim = seq(400, 1000, 200),
                              ncovariates = 10,
                              lambda.1_grid = seq(0, 3, length = 20),

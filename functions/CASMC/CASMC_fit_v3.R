@@ -67,8 +67,8 @@ CASMC_fit_v3 <-
       #J = JD
       beta = as.matrix(warm.start$beta)
       Beta = fast.svd(beta)
-      xbeta.obs = warm.start$xbeta.obs
-      #xbeta.obs <- suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
+      #xbeta.obs = warm.start$xbeta.obs
+      xbeta.obs <- suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
       if (JD >= J) {
         U = warm.start$u[, seq(J), drop = FALSE]
         V = warm.start$v[, seq(J), drop = FALSE]
@@ -112,13 +112,15 @@ CASMC_fit_v3 <-
     }
     
     #----------------------------------------
-    S <- S2 <- y
+    S <- y
     ratio <- 1
     iter <- 0
     counter = 0
     best_score = Inf
     best_iter = NA
     #-----------------------------------------------------------
+    
+    #--------------------------------------------------------------
     #####
     # update Beta once at the beginning
     VDsq = t(Dsq * t(V))
@@ -165,11 +167,11 @@ CASMC_fit_v3 <-
       
       #------------------------------------------------------------
       # part 4: update beta
-      VDsq = t(Dsq * t(V))
       # HU = svdH$u %*% (svdH$v %*% U)
       # xbeta.obs = xbeta.obs +
       #   suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol) +
       #   suvC(HU, VDsq, irow, pcol)
+      VDsq = t(Dsq * t(V))
       UD = t(Beta$d * t(Beta$u))
       xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
       M_obs = suvC(U, VDsq, irow, pcol)
