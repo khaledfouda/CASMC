@@ -1,7 +1,8 @@
 
+# this one incorporates SZIRCI into the model:
+# Option 1: using P(Xbeta)  as Y into the new model.
 
-
-CASMC_fit <-
+CASMC_fit_v2 <-
   function (y,
             X = NULL,
             svdH = NULL,
@@ -78,11 +79,21 @@ CASMC_fit <-
         U = naive_fit$u
         V = naive_fit$v
         Dsq = naive_fit$d
+        #----------------------
+        # initialization for SZIRCI
+        svdX = fast.svd(X)
+        Ux = svdX$u
+        Vx = svdX$d * t(svdX$v)
+        X0 = ginv(t(Vx) %*% Vx) %*% t(Vx)
+        X1 = X0 %*% t(Ux)
+        X2 = X0 %*% Vx
+        beta = t(ginv(X) %*% Y_naive) # B = (X^-1 Y)'
+        Beta = fast.svd(beta)
       }
     }
     
     #----------------------------------------
-    S = y
+    S <- S2 <- y
     ratio <- 1
     iter <- 0
     counter = 0
@@ -130,7 +141,7 @@ CASMC_fit <-
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
       #--------------------------
-      # part 3: Update beta
+      # part 3: Update Xbeta
       VDsq = t(Dsq * t(V))
       HU = svdH$u %*% (svdH$v %*% U)
       
@@ -140,6 +151,13 @@ CASMC_fit <-
       
       M_obs = suvC(U, VDsq, irow, pcol)
       S@x = y@x - M_obs - xbeta.obs
+      #------------------------------------------------------------
+      # part 4: update beta
+      UD = t(Beta$d * t(Beta$u))
+      S2@x <- xbeta.obs - suvC(X %*% Beta$v, UD, irow, pcol)
+      
+      beta = t(X1 %*% S2 + X2 %*% Beta$v %*% t(UD))
+      Beta = fast.svd(as.matrix(beta))
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
@@ -183,7 +201,8 @@ CASMC_fit <-
       lambda = lambda,
       J = J,
       n_iter = iter,
-      xbeta.obs = xbeta.obs
+      xbeta.obs = xbeta.obs,
+      beta = beta
     )
     out
   }

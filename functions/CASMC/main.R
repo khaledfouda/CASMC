@@ -5,8 +5,8 @@ source("./code_files/import_lib.R")
 
 # 0. prepare the data
 
-gen.dat <-  generate_simulation_data_mao(400,400,10,10, "MAR", 2024)
-gen.dat <- generate_simulation_data_ysf(2,400,400,10,10, missing_prob = 0.9,coll=T)
+gen.dat <-  generate_simulation_data_mao(800,800,10,10, "MAR", 2024)
+gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
 y[y==0] = NA
@@ -20,24 +20,45 @@ max.rank = 3
 # files: fit_covariates.R; fit_n_covariates_fixed_rank_beta.R
 
 start_time <- Sys.time()
-set.seed(2020);fits <- CASMC_fit(y=y, svdH=X_r$svdH,  trace=T, J=max.rank,
+set.seed(2020);fits <- CASMC_fit(y=y, svdH=X_r$svdH,  trace=F, J=max.rank,
                                             thresh=1e-6, lambda=lambda2, init = "naive",
                                             final.svd = T,maxit = 500, warm.start = NULL)
 xbeta.sparse@x = fits$xbeta.obs
-#warm.start above expects u,d,v,xbeta.obs
+# warm.start above expects u,d,v,xbeta.obs
 fit4 = SZIRCI(xbeta.sparse, X_r$X,  X_r$rank, maxit=300,
-                                 trace.it = F,final.trim = F,thresh = 1e-6)
+                                trace.it = F,final.trim = F,thresh = 1e-6)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 # get estimates and validate
 beta =  fit4$u %*% (fit4$d * t(fit4$v))
 M = fits$u %*% (fits$d * t(fits$v))
 A = M + X_r$X %*% t(beta)
-test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta.x)[gen.dat$Y!=0] )
-test_error(fits$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[gen.dat$Y!=0] )
-print(paste("Test error =", round(test_error(t(beta), gen.dat$beta.x),5)))
+test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+test_error(fits$xbeta.obs, (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
 test_error(M, gen.dat$B)
 print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+#----------------------------------------------------
+# second version option 1
+start_time <- Sys.time()
+set.seed(2020);fits2 <- CASMC_fit_v3(y=y, X=X_r$X, svdH=X_r$svdH,  trace=F, J=max.rank,
+                                 thresh=1e-6, lambda=lambda2, init = "naive",
+                                 final.svd = T,maxit = 500, warm.start = NULL)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+# get estimates and validate
+beta =  fits2$beta
+
+M = fits2$u %*% (fits2$d * t(fits2$v))
+A = M + X_r$X %*% t(beta)
+test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+test_error(fits2$xbeta.obs, (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
+test_error(M, gen.dat$B)
+print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+
+
+
 #------------------------------------------------------------------------------------
 # [optional] prepare warm.start for the second fit function:
 
