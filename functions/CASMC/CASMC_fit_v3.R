@@ -139,8 +139,17 @@ CASMC_fit_v3 <-
       V.old = V
       Dsq.old = Dsq
       #----------------------------------------------
-      # part 1: Update B
+      # Part 0: Update Beta
       VDsq = t(Dsq * t(V))
+      UD = t(Beta$d * t(Beta$u))
+      xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
+      M_obs = suvC(U, VDsq, irow, pcol)
+      S@x = y@x - M_obs - xbeta.obs
+      beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
+      Beta = fast.svd(as.matrix(beta))
+      ##--------------------------------------------
+      # part 1: Update B
+      #VDsq = t(Dsq * t(V))
       UtH = (t(U) %*% svdH$u) %*% (svdH$v)
       IUH = t(U) - UtH
       B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
@@ -150,6 +159,7 @@ CASMC_fit_v3 <-
       V = Bsvd$u
       Dsq = Bsvd$d
       U = U %*% (Bsvd$v)
+      #--------------------------------
       #-------------------------------------------------------------
       # part 2: Update A
       UDsq = t(Dsq * t(U))
@@ -163,7 +173,6 @@ CASMC_fit_v3 <-
       V = V %*% (Asvd$v)
       #--------------------------
       # part 3: Update Xbeta
-      #
       
       #------------------------------------------------------------
       # part 4: update beta
@@ -171,13 +180,14 @@ CASMC_fit_v3 <-
       # xbeta.obs = xbeta.obs +
       #   suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol) +
       #   suvC(HU, VDsq, irow, pcol)
-      VDsq = t(Dsq * t(V))
-      UD = t(Beta$d * t(Beta$u))
-      xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
-      M_obs = suvC(U, VDsq, irow, pcol)
-      S@x = y@x - M_obs - xbeta.obs
-      beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
-      Beta = fast.svd(as.matrix(beta))
+      
+      # VDsq = t(Dsq * t(V))
+      # UD = t(Beta$d * t(Beta$u))
+      # xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
+      # M_obs = suvC(U, VDsq, irow, pcol)
+      # S@x = y@x - M_obs - xbeta.obs
+      # beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
+      # Beta = fast.svd(as.matrix(beta))
       
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)

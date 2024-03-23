@@ -266,12 +266,12 @@ apply_to_movies <- function(dtrain, test) {
   M = fit1$u %*% (fit1$d * t(fit1$v))
   A = M + X_r$X %*% t(beta)
   
-  A = revertBiScaledMatrix(A, biScale.out)
+  A = revertBiScaledMatrix(as.matrix(A), biScale.out)
   dtest$preds_l2S <-
     A[cbind(dtest$user_id, dtest$movie_id)]
   
   error_5 <- RMSE_error(dtest$preds_l2S, dtest$rating)
-  rank_5 <- qr(A)$rank
+  rank_5 <- best_fit2$rank
   #--------------------------------------------------------------
   data.frame(
     model = c("CASMC_holdout", "SoftImpute", "Mao", "CAMAC_kfold", "CASMAC_kfold"),

@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-03-22" />
+<meta name="date" content="2024-03-23" />
 
 <title>explore.R</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">explore.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-03-22</h4>
+<h4 class="date">2024-03-23</h4>
 
 </div>
 
@@ -583,40 +583,60 @@ apply_to_movies &lt;- function(dtrain, test) {
   # cv.out$best_parameters
   #---------------------------------------------------------------
   # applying the K-fold method
-  #
-  #
-  # start_time = Sys.time()
-  # soutl2 &lt;-
-  # CAMC_cv_kfold(
-  #  dtrain.Y,
-  #  X_r$X,
-  #  dW,
-  #  n_folds = 3,
-  #  print.best =TRUE,
-  #  trace = TRUE,
-  #  rank.limit = 30,
-  #  tol = 2,
-  #  rank.step = 2,
-  #  n.lambda = 30
-  # )
-  # time_4 &lt;- round(as.numeric(
-  #   difftime(Sys.time(), start_time, units = &quot;secs&quot;)), 2)
-  # # print(paste(&quot;Execution time is&quot;, round(as.numeric(
-  # #   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
-  # # ), 2), &quot;seconds&quot;))
-  # 
-  # soutl2$fit2$A_hat = revertBiScaledMatrix(soutl2$fit2$A_hat, biScale.out)
-  # dtest$preds_l2 &lt;-
-  #  soutl2$fit2$A_hat[cbind(dtest$user_id, dtest$movie_id)]
-  # 
-  # error_4 &lt;- RMSE_error(dtest$preds_l2, dtest$rating)
-  # rank_4 &lt;- soutl2$fit2$rank
+
+
+  start_time = Sys.time()
+  soutl2 &lt;-
+  CAMC_cv_kfold(
+   dtrain.Y,
+   X_r$X,
+   dW,
+   n_folds = 5,
+   print.best =TRUE,
+   trace = TRUE,
+   rank.limit = 30,
+   tol = 2,
+   rank.step = 2,
+   n.lambda = 30
+  )
+  time_4 &lt;- round(as.numeric(
+    difftime(Sys.time(), start_time, units = &quot;secs&quot;)), 2)
+  # print(paste(&quot;Execution time is&quot;, round(as.numeric(
+  #   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
+  # ), 2), &quot;seconds&quot;))
+
+  soutl2$fit2$A_hat = revertBiScaledMatrix(soutl2$fit2$A_hat, biScale.out)
+  dtest$preds_l2 &lt;-
+   soutl2$fit2$A_hat[cbind(dtest$user_id, dtest$movie_id)]
+
+  error_4 &lt;- RMSE_error(dtest$preds_l2, dtest$rating)
+  rank_4 &lt;- soutl2$fit2$rank
+  #-----------------------------------------------------------
+  # apply the k-fold with CASMAC
   
+  start_time &lt;- Sys.time()
+  best_fit2 = CASMC_cv_kfold_v2(dtrain.Y, X_r, dW, trace=T,print.best = TRUE,
+                                n.lambda = 20, n_folds = 5, rank.limit=70, rank.step=3)
+  time_5 &lt;- round(as.numeric(
+    difftime(Sys.time(), start_time, units = &quot;secs&quot;)), 2)  
+  fit1 = best_fit2$fit
+  # get estimates and validate
+  beta =  fit1$beta
+  M = fit1$u %*% (fit1$d * t(fit1$v))
+  A = M + X_r$X %*% t(beta)
+  
+  A = revertBiScaledMatrix(as.matrix(A), biScale.out)
+  dtest$preds_l2S &lt;-
+    A[cbind(dtest$user_id, dtest$movie_id)]
+  
+  error_5 &lt;- RMSE_error(dtest$preds_l2S, dtest$rating)
+  rank_5 &lt;- best_fit2$rank
+  #--------------------------------------------------------------
   data.frame(
-    model = c(&quot;CASMC_holdout&quot;, &quot;SoftImpute&quot;, &quot;Mao&quot;),
-    RMSE = c(error_1, error_2, error_3),
-    Rank =  c(rank_1, rank_2, rank_3),
-    time = c(time_1, time_2, time_3)
+    model = c(&quot;CASMC_holdout&quot;, &quot;SoftImpute&quot;, &quot;Mao&quot;, &quot;CAMAC_kfold&quot;, &quot;CASMAC_kfold&quot;),
+    RMSE = c(error_1, error_2, error_3, error_4, error_5),
+    Rank =  c(rank_1, rank_2, rank_3, rank_4, rank_5),
+    time = c(time_1, time_2, time_3, time_4, time_5)
   )
 }
 
@@ -659,7 +679,35 @@ out1 &lt;- apply_to_movies(dtrain, dtest)</code></pre>
 ## 15 lambda=   10.452, rank.max = 50  ==&gt; rank = 50, error = 0.97732
 ## 16 lambda=   8.3614, rank.max = 50  ==&gt; rank = 50, error = 0.99871
 ## 17 lambda=    6.271, rank.max = 50  ==&gt; rank = 50, error = 1.03702
-## Performance didn&#39;t improve for the last 5 iterations.</code></pre>
+## Performance didn&#39;t improve for the last 5 iterations.[1] &quot; 1 lambda=   12.037, rank.max = 3  ==&gt; rank = 3, error = 0.95931\n&quot;
+## [1] &quot; 2 lambda=   11.622, rank.max = 5  ==&gt; rank = 5, error = 0.95871\n&quot;
+## [1] &quot; 3 lambda=   11.207, rank.max = 7  ==&gt; rank = 7, error = 0.96365\n&quot;
+## [1] &quot;Performance didn&#39;t improve for the last 2 iterations.&quot;
+## [1] &quot;lambda=   11.622, rank.max = 5, error = 0.95871\n&quot;
+## [1] &quot; 1 lambda1=        0, lambda2=   11.622, rank.max = 5, error = 0.96095\n&quot;
+## [1] &quot; 2 lambda1=  0.15789, lambda2=   11.622, rank.max = 5, error = 0.95843\n&quot;
+## [1] &quot; 3 lambda1=  0.31579, lambda2=   11.622, rank.max = 5, error = 0.95829\n&quot;
+## [1] &quot; 4 lambda1=  0.47368, lambda2=   11.622, rank.max = 5, error = 0.95821\n&quot;
+## [1] &quot; 5 lambda1=  0.63158, lambda2=   11.622, rank.max = 5, error = 0.95812\n&quot;
+## [1] &quot; 6 lambda1=  0.78947, lambda2=   11.622, rank.max = 5, error = 0.95810\n&quot;
+## [1] &quot; 7 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot; 8 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot; 9 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;10 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;11 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;12 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;13 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;14 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;15 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;16 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;17 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;18 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;19 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot;20 lambda1=  0.94737, lambda2=   11.622, rank.max = 5, error = 0.95809\n&quot;
+## [1] &quot; 1 lambda=   12.037, rank.max = 3  ==&gt; rank = 3, error = 0.95971, niter = 324&quot;
+## [1] &quot; 2 lambda=   11.456, rank.max = 6  ==&gt; rank = 6, error = 0.96049, niter = 500&quot;
+## [1] &quot;Performance didn&#39;t improve for the last 1 iterations.&quot;
+## [1] &quot;lambda=   12.037, rank.max = 3, error = 0.95971&quot;</code></pre>
 <pre class="r"><code>dtrain &lt;- read_tsv(
   &quot;MovieLens/ml-100k/ub.base&quot;,
   col_names = c(&quot;user_id&quot;, &quot;movie_id&quot;, &quot;rating&quot;, &quot;timestamp&quot;),
@@ -693,17 +741,50 @@ out2 &lt;- apply_to_movies(dtrain, dtest)</code></pre>
 ## 14 lambda=    12.47, rank.max = 50  ==&gt; rank = 45, error = 0.96463
 ## 15 lambda=   10.392, rank.max = 50  ==&gt; rank = 50, error = 0.97443
 ## 16 lambda=   8.3133, rank.max = 50  ==&gt; rank = 50, error = 0.99504
-## Performance didn&#39;t improve for the last 5 iterations.</code></pre>
+## Performance didn&#39;t improve for the last 5 iterations.[1] &quot; 1 lambda=    11.99, rank.max = 3  ==&gt; rank = 3, error = 0.95894\n&quot;
+## [1] &quot; 2 lambda=   11.576, rank.max = 5  ==&gt; rank = 5, error = 0.95850\n&quot;
+## [1] &quot; 3 lambda=   11.163, rank.max = 7  ==&gt; rank = 7, error = 0.95903\n&quot;
+## [1] &quot;Performance didn&#39;t improve for the last 2 iterations.&quot;
+## [1] &quot;lambda=   11.576, rank.max = 5, error = 0.95850\n&quot;
+## [1] &quot; 1 lambda1=        0, lambda2=   11.576, rank.max = 5, error = 0.95823\n&quot;
+## [1] &quot; 2 lambda1=  0.15789, lambda2=   11.576, rank.max = 5, error = 0.95580\n&quot;
+## [1] &quot; 3 lambda1=  0.31579, lambda2=   11.576, rank.max = 5, error = 0.95560\n&quot;
+## [1] &quot; 4 lambda1=  0.47368, lambda2=   11.576, rank.max = 5, error = 0.95551\n&quot;
+## [1] &quot; 5 lambda1=  0.63158, lambda2=   11.576, rank.max = 5, error = 0.95546\n&quot;
+## [1] &quot; 6 lambda1=  0.78947, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot; 7 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot; 8 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot; 9 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;10 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;11 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;12 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;13 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;14 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;15 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;16 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;17 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;18 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;19 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot;20 lambda1=  0.94737, lambda2=   11.576, rank.max = 5, error = 0.95545\n&quot;
+## [1] &quot; 1 lambda=    11.99, rank.max = 3  ==&gt; rank = 3, error = 0.96191, niter = 391&quot;
+## [1] &quot; 2 lambda=   11.411, rank.max = 6  ==&gt; rank = 6, error = 0.95966, niter = 463&quot;
+## [1] &quot; 3 lambda=   10.833, rank.max = 9  ==&gt; rank = 9, error = 0.96283, niter = 500&quot;
+## [1] &quot;Performance didn&#39;t improve for the last 1 iterations.&quot;
+## [1] &quot;lambda=   11.411, rank.max = 6, error = 0.95966&quot;</code></pre>
 <pre class="r"><code>print(out1)</code></pre>
 <pre><code>##           model      RMSE Rank   time
-## 1 CASMC_holdout 0.9445823   NA   4.52
-## 2    SoftImpute 0.9648473   44 363.60
-## 3           Mao 0.9807089  943  89.95</code></pre>
+## 1 CASMC_holdout 0.9445823   NA   4.12
+## 2    SoftImpute 0.9648473   44 325.73
+## 3           Mao 0.9807089  943  46.41
+## 4   CAMAC_kfold 0.9480215    7 728.21
+## 5  CASMAC_kfold 0.9543923    3   8.41</code></pre>
 <pre class="r"><code>print(out2)</code></pre>
 <pre><code>##           model      RMSE Rank   time
-## 1 CASMC_holdout 0.9737595   NA   5.71
-## 2    SoftImpute 0.9833658   38 238.66
-## 3           Mao 0.9974624  943  87.04</code></pre>
+## 1 CASMC_holdout 0.9737595   NA   2.14
+## 2    SoftImpute 0.9833658   38 115.08
+## 3           Mao 0.9974624  943  40.61
+## 4   CAMAC_kfold 0.9695754    7 922.77
+## 5  CASMAC_kfold 0.9727968    6  12.28</code></pre>
 
 
 

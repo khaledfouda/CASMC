@@ -3,15 +3,15 @@ CASMC_cv_kfold_v2 <-
             X_r,
             W,
             n_folds = 5,
-            lambda.factor = 1 / 4,
-            lambda.init = NA,
+            lambda.max = NA,
             n.lambda = 30,
-            trace = FALSE,
-            thresh = 1e-6,
-            maxit = 100,
+            lambda.factor = 1 / 4,
             rank.init = 3,
             rank.limit = 20,
             rank.step = 2,
+            trace = FALSE,
+            thresh = 1e-6,
+            maxit = 100,
             warm = NULL,
             tol = 1,
             print.best = TRUE,
@@ -20,9 +20,9 @@ CASMC_cv_kfold_v2 <-
          set.seed(seed)
       #----------------------------------------------------
       lam0 <-
-         ifelse(is.na(lambda.init),
+         ifelse(is.na(lambda.max),
                 lambda0.cov_splr(Y, X_r$svdH) * lambda.factor,
-                lambda.init)
+                lambda.max)
       lamseq <- seq(from = lam0,
                     to = 1,
                     length = n.lambda)
@@ -80,7 +80,7 @@ CASMC_cv_kfold_v2 <-
                thresh = thresh,
                lambda = lamseq[i],
                init = "naive",
-               final.svd = T,
+               final.svd = F,
                maxit = maxit,
                warm.start = fiti,
                Xterms = Xterms
@@ -101,7 +101,7 @@ CASMC_cv_kfold_v2 <-
                   thresh = thresh,
                   lambda = lamseq[i],
                   init = "naive",
-                  final.svd = T,
+                  final.svd = F,
                   maxit = maxit,
                   warm.start = fiti,
                   Xterms = Xterms
@@ -184,7 +184,7 @@ CASMC_cv_kfold_v2 <-
             thresh = thresh,
             lambda = best_fit$lambda,
             init = "naive",
-            final.svd = T,
+            final.svd = F,
             maxit = maxit,
             warm.start = best_fit$fit,
             Xterms = Xterms

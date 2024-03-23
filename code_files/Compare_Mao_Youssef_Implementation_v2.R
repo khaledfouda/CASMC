@@ -53,7 +53,6 @@ compare_softImpute <- function(gen.dat, valid.dat) {
    start_time = Sys.time()
    sout <- simpute.cv(
       valid.dat$Y_train,
-      valid.dat$W_valid,
       gen.dat$Y,
       trace = FALSE,
       rank.limit = 30,
@@ -65,12 +64,12 @@ compare_softImpute <- function(gen.dat, valid.dat) {
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
-   results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
+   results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
                                                                             0])
-   results$error.all = test_error(sout$A_hat, gen.dat$A)
+   results$error.all = test_error(sout$estimates, gen.dat$O)
    results$error.B = NA
    results$error.beta = NA
-   results$rank = sout$rank_A
+   results$rank = sout$rank_M
    results
 }
 

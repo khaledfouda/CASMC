@@ -39,15 +39,15 @@ generate_simulation_data_mao <-
       V <- matrix(rnorm(n2 * r), ncol = r)
       P_X = X %*% solve(t(X) %*% X) %*% t(X)
       P_bar_X = diag(1, n1) - P_X
-      B = P_bar_X %*% U %*% t(V)
+      M = P_bar_X %*% U %*% t(V)
       if (cov_eff) {
-         A <- X %*% beta + B
+         O <- X %*% beta + M
       } else{
          beta <- matrix(0, m, n2)
-         A <- B
+         O <- M
       }
       
-      rank <- qr(A)$rank # = m + r
+      rank <- qr(O)$rank # = m + r
       #-----------------------------------------------------------------------------
       stopifnot(method %in% c("MAR", "UNI"))
       if (method == "MAR") {
@@ -68,21 +68,21 @@ generate_simulation_data_mao <-
       # Does fully observed Y = A (ie,  without noise?)? In that case ignore the code below.
       #----------------------------------------------------------------------
       # Computing epsilon as iid zero mean Gaussian with variance chosen such that the signal-to-noise ratio (SNR) is 1
-      signal_A <- sum((A - mean(A)) ^ 2) / (n1 * n2 - 1)
-      sigma_epsilon <- sqrt(signal_A)  # Since SNR = 1
+      signal_O <- sum((O - mean(O)) ^ 2) / (n1 * n2 - 1)
+      sigma_epsilon <- sqrt(signal_O)  # Since SNR = 1
       epsilon <-
          matrix(rnorm(n1 * n2, mean = 0, sd = sigma_epsilon), n1, n2)
       #--------------------------------------------------------------------------------------------
       # Y is a corrupted, partially-observed version of A. Yij=0 for missing data [maybe consider making it NA]
-      Y <- (A + epsilon) * W
+      Y <- (O + epsilon) * W
       #---------------------------------------------------------------------
       return(list(
-         A = A,
+         O = O,
          W = W,
          X = X,
          Y = Y,
          beta = beta,
-         B = B,
+         M = M,
          #theta = theta,
          #gamma = gamma,
          #inclusion_prob = inclusion_prob,

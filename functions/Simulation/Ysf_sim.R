@@ -18,9 +18,9 @@ generate_simulation_data_ysf <-
       #X <- normalize_matrix(X)
       beta.x <- matrix(runif(m1 * n2), ncol = n2)
       beta.z <- matrix(runif(m2 * n1), ncol = n1)
-      B.x <- matrix(runif(n1 * m2), ncol = m2)
-      B.z <- matrix(runif(m2 * n2), ncol = n2)
-      B <- B.x %*% B.z
+      M.x <- matrix(runif(n1 * m2), ncol = m2)
+      M.z <- matrix(runif(m2 * n2), ncol = n2)
+      M <- M.x %*% M.z
       
       # if collinearity is needed, make the correlation between the first two columns in X and Z between (.99,1)
       # the actual correlation value is very close to 95%
@@ -40,42 +40,42 @@ generate_simulation_data_ysf <-
       
       if (model == 1) {
          if (cov_eff) {
-            A <- (X %*% beta.x) + t(Z %*% beta.z) + P_bar_X %*% B %*% P_bar_Z
+            O <- (X %*% beta.x) + t(Z %*% beta.z) + P_bar_X %*% M %*% P_bar_Z
          } else{
             beta.x <- matrix(0, m1, ncol = n2)
             beta.z <- matrix(0, m2, ncol = n1)
-            A <-  P_bar_X %*% B %*% P_bar_Z
+            O <-  P_bar_X %*% M %*% P_bar_Z
          }
-         Y <- (A + E) * W
-         rank <- qr(A)$rank
+         Y <- (O + E) * W
+         rank <- qr(O)$rank
          return(list(
-            A = A,
+            O = O,
             W = W,
             X = X,
             Z = Z,
             Y = Y,
             beta.x = beta.x,
             beta.z = beta.z,
-            B = B,
+            M = M,
             rank = rank
          ))
       } else if (model == 2) {
          if (cov_eff) {
-            A <- (X %*% beta.x) + P_bar_X %*% B
+            O <- (X %*% beta.x) + P_bar_X %*% M
          } else{
             beta.x <- matrix(0, m1, ncol = n2)
             beta.z <- matrix(0, m2, ncol = n1)
-            A <- P_bar_X %*% B
+            O <- P_bar_X %*% M
          }
-         Y <- (A + E) * W
-         rank <- qr(A)$rank
+         Y <- (O + E) * W
+         rank <- qr(O)$rank
          return(list(
-            A = A,
+            O = O,
             W = W,
             X = X,
             Y = Y,
-            beta.x = beta.x,
-            B = B,
+            beta = beta.x,
+            M = M,
             rank = rank
          ))
       }
