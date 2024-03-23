@@ -475,7 +475,7 @@ compare_and_save <- function(missingness,
    print(paste("Results saved to", paste0(data_dir, filename)))
    return(final.results)
    #----------------------------
-}
+} 
 
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
@@ -489,8 +489,8 @@ model_mask <- rep(T, 7)
 model_mask[c(1, 2,6)] <- TRUE
 mao_r <- 10
 ncovariates <- 10
-cov_eff = TRUE
-note = ""
+cov_eff = FALSE
+note = "_no_cov_"
 
 
 compare_and_save(

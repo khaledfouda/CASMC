@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-03-21" />
+<meta name="date" content="2024-03-22" />
 
 <title>explore.R</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">explore.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-03-21</h4>
+<h4 class="date">2024-03-22</h4>
 
 </div>
 
@@ -475,7 +475,7 @@ apply_to_movies &lt;- function(dtrain, test) {
   #------------------------------------------------------------------
   # fit splr model and get RMSE
   start_time &lt;- Sys.time()
-  best_fit = CASMC_cv_holdout(
+  best_fit = CASMC_cv_holdout_v2(
     Y_train,
     X_r,
     Y_valid,
@@ -491,13 +491,13 @@ apply_to_movies &lt;- function(dtrain, test) {
   # print(paste(&quot;Execution time is&quot;, round(as.numeric(
   #   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
   # ), 2), &quot;seconds&quot;))
-  fit1 = best_fit$fit1
-  fit2 = best_fit$fit2
+  fit1 = best_fit$fit
+  #fit2 = best_fit$fit2
   # get estimates and validate
-  beta =  fit2$u %*% (fit2$d * t(fit2$v))
+  beta =  fit1$beta#fit2$u %*% (fit2$d * t(fit2$v))
   M = fit1$u %*% (fit1$d * t(fit1$v))
   A = M + X_r$X %*% t(beta)
-  A = revertBiScaledMatrix(A, biScale.out)
+  A = revertBiScaledMatrix(as.matrix(A), biScale.out)
   
   #qr(A)$rank
   dtest$preds &lt;- A[cbind(dtest$user_id, dtest$movie_id)]
@@ -533,7 +533,7 @@ apply_to_movies &lt;- function(dtrain, test) {
   #   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
   # ), 2), &quot;seconds&quot;))
   
-  sout$A_hat = revertBiScaledMatrix(sout$A_hat, biScale.out)
+  sout$A_hat = revertBiScaledMatrix(as.matrix(sout$A_hat), biScale.out)
   dtest$preds_orig &lt;- sout$A_hat[cbind(dtest$user_id, dtest$movie_id)]
   
   error_2 &lt;- RMSE_error(dtest$preds_orig, dtest$rating)
@@ -556,7 +556,7 @@ apply_to_movies &lt;- function(dtrain, test) {
       alpha_grid = alpha_grid,
       numCores = 1,
       n1n2_optimized = T,
-      theta_estimator = MaoUniWeights
+      theta_estimator = MaoBinomalWeights
     )
   ))
   mao.out &lt;- suppressMessages(suppressWarnings(
@@ -567,7 +567,7 @@ apply_to_movies &lt;- function(dtrain, test) {
       cv.out$best_parameters$lambda.1,
       cv.out$best_parameters$lambda.2,
       cv.out$best_parameters$alpha,
-      theta_estimator = MaoUniWeights,
+      theta_estimator = MaoBinomalWeights,
       n1n2_optimized = T
     )
   ))
@@ -604,11 +604,11 @@ apply_to_movies &lt;- function(dtrain, test) {
   # # print(paste(&quot;Execution time is&quot;, round(as.numeric(
   # #   difftime(Sys.time(), start_time, units = &quot;secs&quot;)
   # # ), 2), &quot;seconds&quot;))
-  #
+  # 
   # soutl2$fit2$A_hat = revertBiScaledMatrix(soutl2$fit2$A_hat, biScale.out)
   # dtest$preds_l2 &lt;-
   #  soutl2$fit2$A_hat[cbind(dtest$user_id, dtest$movie_id)]
-  #
+  # 
   # error_4 &lt;- RMSE_error(dtest$preds_l2, dtest$rating)
   # rank_4 &lt;- soutl2$fit2$rank
   
@@ -636,9 +636,9 @@ out1 &lt;- apply_to_movies(dtrain, dtest)</code></pre>
 <pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
 ## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
 ## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre><code>## [1] &quot; 1 lambda=   9.8627, rank.max = 2  ==&gt; rank = 2, error = 0.97313, niter/fit = 84 + 100&quot;
-## [1] &quot; 2 lambda=   9.5226, rank.max = 6  ==&gt; rank = 6, error = 0.97248, niter/fit = 100 + 100&quot;
-## [1] &quot; 3 lambda=   9.1825, rank.max = 10  ==&gt; rank = 10, error = 0.98345, niter/fit = 100 + 87&quot;
+<pre><code>## [1] &quot; 1 lambda=   9.8627, rank.max = 2  ==&gt; rank = 2, error = 0.97458, niter/fit = 85&quot;
+## [1] &quot; 2 lambda=   9.5226, rank.max = 6  ==&gt; rank = 6, error = 0.97451, niter/fit = 100&quot;
+## [1] &quot; 3 lambda=   9.1825, rank.max = 10  ==&gt; rank = 10, error = 0.98589, niter/fit = 100&quot;
 ## [1] &quot;Performance didn&#39;t improve for the last 1 iterations.&quot;</code></pre>
 <pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
 ## Convergence not achieved by 300 iterations</code></pre>
@@ -672,9 +672,8 @@ dtest &lt;- read_tsv(
 )
 
 out2 &lt;- apply_to_movies(dtrain, dtest)</code></pre>
-<pre><code>## [1] &quot; 1 lambda=   9.8089, rank.max = 2  ==&gt; rank = 2, error = 0.97360, niter/fit = 92 + 100&quot;
-## [1] &quot; 2 lambda=   9.4707, rank.max = 6  ==&gt; rank = 6, error = 0.97325, niter/fit = 100 + 100&quot;
-## [1] &quot; 3 lambda=   9.1324, rank.max = 10  ==&gt; rank = 10, error = 0.98335, niter/fit = 100 + 85&quot;
+<pre><code>## [1] &quot; 1 lambda=   9.8089, rank.max = 2  ==&gt; rank = 2, error = 0.97531, niter/fit = 92&quot;
+## [1] &quot; 2 lambda=   9.4707, rank.max = 6  ==&gt; rank = 6, error = 0.97550, niter/fit = 100&quot;
 ## [1] &quot;Performance didn&#39;t improve for the last 1 iterations.&quot;</code></pre>
 <pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
 ## Convergence not achieved by 300 iterations</code></pre>
@@ -686,26 +685,25 @@ out2 &lt;- apply_to_movies(dtrain, dtest)</code></pre>
 ##  6 lambda=   29.097, rank.max = 9  ==&gt; rank = 2, error = 0.98271
 ##  7 lambda=   27.018, rank.max = 10  ==&gt; rank = 3, error = 0.97975
 ##  8 lambda=    24.94, rank.max = 12  ==&gt; rank = 5, error = 0.97608
-##  9 lambda=   22.862, rank.max = 17  ==&gt; rank = 10, error = 0.97178
-## 10 lambda=   20.783, rank.max = 24  ==&gt; rank = 17, error = 0.96733
-## 11 lambda=   18.705, rank.max = 31  ==&gt; rank = 24, error = 0.96327
-## 12 lambda=   16.627, rank.max = 38  ==&gt; rank = 31, error = 0.96073
-## 13 lambda=   14.548, rank.max = 45  ==&gt; rank = 38, error = 0.96068
-## 14 lambda=    12.47, rank.max = 50  ==&gt; rank = 45, error = 0.96469
-## 15 lambda=   10.392, rank.max = 50  ==&gt; rank = 50, error = 0.97430
-## 16 lambda=   8.3133, rank.max = 50  ==&gt; rank = 50, error = 0.99479
-## 17 lambda=    6.235, rank.max = 50  ==&gt; rank = 50, error = 1.03187
+##  9 lambda=   22.862, rank.max = 17  ==&gt; rank = 10, error = 0.97200
+## 10 lambda=   20.783, rank.max = 24  ==&gt; rank = 17, error = 0.96732
+## 11 lambda=   18.705, rank.max = 31  ==&gt; rank = 24, error = 0.96324
+## 12 lambda=   16.627, rank.max = 38  ==&gt; rank = 31, error = 0.96055
+## 13 lambda=   14.548, rank.max = 45  ==&gt; rank = 38, error = 0.96086
+## 14 lambda=    12.47, rank.max = 50  ==&gt; rank = 45, error = 0.96463
+## 15 lambda=   10.392, rank.max = 50  ==&gt; rank = 50, error = 0.97443
+## 16 lambda=   8.3133, rank.max = 50  ==&gt; rank = 50, error = 0.99504
 ## Performance didn&#39;t improve for the last 5 iterations.</code></pre>
 <pre class="r"><code>print(out1)</code></pre>
 <pre><code>##           model      RMSE Rank   time
-## 1 CASMC_holdout 0.9448021   NA   4.86
-## 2    SoftImpute 0.9648473   44 154.70
-## 3           Mao 0.9807089  943  21.08</code></pre>
+## 1 CASMC_holdout 0.9445823   NA   4.52
+## 2    SoftImpute 0.9648473   44 363.60
+## 3           Mao 0.9807089  943  89.95</code></pre>
 <pre class="r"><code>print(out2)</code></pre>
 <pre><code>##           model      RMSE Rank   time
-## 1 CASMC_holdout 0.9650058   NA   3.83
-## 2    SoftImpute 0.9822523   45 135.18
-## 3           Mao 0.9974624  943  21.06</code></pre>
+## 1 CASMC_holdout 0.9737595   NA   5.71
+## 2    SoftImpute 0.9833658   38 238.66
+## 3           Mao 0.9974624  943  87.04</code></pre>
 
 
 

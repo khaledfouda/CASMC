@@ -1,3 +1,5 @@
+
+```{r}
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 suppressMessages(suppressWarnings(source("./code_files/import_lib.R", local = FALSE)))
 #https://paperswithcode.com/sota/collaborative-filtering-on-movielens-100k
@@ -311,3 +313,13 @@ out2 <- apply_to_movies(dtrain, dtest)
 
 print(out1)
 print(out2)
+```
+
+
+
+---
+title: explore.R
+author: kfouda
+date: '2024-03-23'
+
+---

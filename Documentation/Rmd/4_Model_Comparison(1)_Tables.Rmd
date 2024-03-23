@@ -27,6 +27,7 @@ knitr::opts_chunk$set(echo = FALSE, cache = FALSE, eval = TRUE,
 source("./code_files/import_lib.R")
 #path_to_data = "./Mao/saved_data/"
 library(data.table)
+rmarkdown::render("Documentation/Rmd//4_Model_Comparison(1)_Tables.Rmd",output_dir = "Documentation/html/")
 ```
 
 ### Model Summary
