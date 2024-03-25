@@ -31,8 +31,8 @@ MaoUniWeights <- function(W, ...) {
    # using formula (a3)
    n1 = dim(W)[1]
    n2 = dim(W)[2]
-   theta_hat = matrix(sum(W == 1)/(n1 * n2), n1, n2)
-   return(1 /theta_hat)
+   theta_hat = matrix(sum(W == 1) / (n1 * n2), n1, n2)
+   return(1 / theta_hat)
 }
 
 
@@ -65,7 +65,7 @@ Mao.fit <-
       
       if (n1n2_optimized == TRUE) {
          # we define the factor that will be used later:
-         n1n2 = svd(X.X)$d[1] 
+         n1n2 = svd(X.X)$d[1]
       } else{
          n1n2 = n1 * n2 / 2
       }
@@ -81,7 +81,7 @@ Mao.fit <-
       svdd = svd(P_bar_X %*% W_theta_Y)
       if (n1n2_optimized == TRUE) {
          # evaluation of  (b)
-         n1n2 = svdd$d[1] 
+         n1n2 = svdd$d[1]
       } else{
          n1n2 = n1 * n2 / 2
       }
@@ -99,9 +99,9 @@ Mao.fit <-
       rank = qr(A_hat)$rank
       
       return(list(
-         A_hat = A_hat,
-         B_hat = B_hat,
-         beta_hat = beta_hat,
+         estimates = A_hat,
+         M = B_hat,
+         beta = beta_hat,
          rank = rank
       ))
    }

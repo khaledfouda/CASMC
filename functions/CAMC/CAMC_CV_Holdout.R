@@ -92,9 +92,6 @@ CAMC_cv_holdout_lambda2 <-
                     to = 0,
                     length = n.lambda)
       
-      fits <- as.list(lamseq)
-      ranks <- as.integer(lamseq)
-      
       
       rank.max <- rank.init
       #warm <- NULL
@@ -102,8 +99,8 @@ CAMC_cv_holdout_lambda2 <-
       best_fit <-
          list(
             error = Inf,
-            rank_A = NA,
-            rank_B = NA,
+            rank_O = NA,
+            rank_M = NA,
             lambda = NA,
             rank.max = NA
          )
@@ -155,13 +152,13 @@ CAMC_cv_holdout_lambda2 <-
          # register best fir
          if (err < best_fit$error) {
             best_fit$error = err
-            best_fit$rank_A = qr(soft_estim)$rank
-            best_fit$rank_B = rank
+            best_fit$rank_O = qr(soft_estim)$rank
+            best_fit$rank_M = rank
             best_fit$lambda = lamseq[i]
             best_fit$rank.max = rank.max
             best_estimates = soft_estim
             best_beta = fiti$beta.estim
-            best_B = fiti$u %*% t(vd)
+            best_M = fiti$u %*% t(vd)
             counter = 1
          } else
             counter = counter + 1
@@ -178,9 +175,9 @@ CAMC_cv_holdout_lambda2 <-
       }
       if (print.best == TRUE)
          print(best_fit)
-      best_fit$A_hat = best_estimates
-      best_fit$B_hat = best_B
-      best_fit$beta_hat = best_beta
+      best_fit$estimates = best_estimates
+      best_fit$M = best_M
+      best_fit$beta = best_beta
       best_fit$last.fit = fiti
       return(best_fit)
    }
@@ -276,10 +273,10 @@ CAMC_cv_holdout_lambda1 <-
       #results$fit = fiti
       results$lambda1 = best_lambda1
       results$lambda2 = lambda2
-      results$B_hat = fiti$u %*% (fiti$d * t(fiti$v))
-      results$A_hat = results$B_hat + X %*% fiti$beta.estim
-      results$beta_hat = fiti$beta.estim
-      results$rank_A = qr(results$A_hat)$rank
+      results$M = fiti$u %*% (fiti$d * t(fiti$v))
+      results$estimates = results$M + X %*% fiti$beta.estim
+      results$beta = fiti$beta.estim
+      results$rank_O = qr(results$estimates)$rank
       results$J = J
       return(results)
    }

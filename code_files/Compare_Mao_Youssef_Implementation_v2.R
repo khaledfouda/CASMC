@@ -11,7 +11,7 @@ compare_Mao <-
             weight_function = MaoBinomalWeights) {
       start_time = Sys.time()
       cv.out <- Mao.cv(
-         gen.dat$A,
+         gen.dat$O,
          gen.dat$X,
          gen.dat$Y,
          gen.dat$W,
@@ -40,11 +40,11 @@ compare_Mao <-
       results$alpha = cv.out$best_parameters$alpha
       results$lambda.1 = cv.out$best_parameters$lambda.1
       results$lambda.2 = cv.out$best_parameters$lambda.2
-      results$error.test = test_error(mao.out$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
-                                                                                  0])
-      results$error.all = test_error(mao.out$A_hat, gen.dat$A)
-      results$error.B = test_error(mao.out$B_hat, gen.dat$B)
-      results$error.beta = test_error(mao.out$beta_hat, gen.dat$beta)
+      results$error.test = test_error(mao.out$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
+                                                                                      0])
+      results$error.all = test_error(mao.out$estimates, gen.dat$O)
+      results$error.M = test_error(mao.out$M, gen.dat$M)
+      results$error.beta = test_error(mao.out$beta, gen.dat$beta)
       results$rank = mao.out$rank
       results
    }
@@ -65,44 +65,13 @@ compare_softImpute <- function(gen.dat, valid.dat) {
    results$lambda.1 = NA
    results$lambda.2 = sout$lambda
    results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
-                                                                            0])
+                                                                                0])
    results$error.all = test_error(sout$estimates, gen.dat$O)
-   results$error.B = NA
+   results$error.M = NA
    results$error.beta = NA
    results$rank = sout$rank_M
    results
 }
-
-# compare_softImpute_cov <- function(gen.dat, valid.dat) {
-#    start_time = Sys.time()
-#    sout <-
-#       simpute.cov.cv(
-#          valid.dat$Y_train,
-#          gen.dat$X,
-#          valid.dat$W_valid,
-#          valid.dat$Y_valid,
-#          trace = F,
-#          rank.limit = 30,
-#          quiet = TRUE,
-#          print.best = FALSE,
-#          rank.step = 4,
-#          type = "als",
-#          lambda1 = 0,
-#          tol = 2
-#       )
-#    results = list(model = "SoftImpute_Cov")
-#    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-#    results$alpha = NA
-#    results$lambda.1 = 0
-#    results$lambda.2 = sout$lambda
-#    results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
-#                                                                             0])
-#    results$error.all = test_error(sout$A_hat, gen.dat$A)
-#    results$error.B = test_error(sout$B_hat, gen.dat$B)
-#    results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
-#    results$rank = sout$rank_A
-#    results
-# }
 
 compare_CAMC_holdout <-
    function(gen.dat,
@@ -113,24 +82,36 @@ compare_CAMC_holdout <-
             n.lambda) {
       start_time = Sys.time()
       
-      fiti <- CAMC_cv_holdout(valid.dat$Y_train, gen.dat$X, valid.dat$W_valid,
-                              valid.dat$Y_valid, trace = FALSE, rank.limit = rank.limit,
-                              print.best = FALSE, rank.step  = rank.step, n.lambda = n.lambda,
-                              type = "als", quiet = TRUE, tol = 2, lambda.1_grid = lambda.1_grid)
+      fiti <-
+         CAMC_cv_holdout(
+            valid.dat$Y_train,
+            gen.dat$X,
+            valid.dat$W_valid,
+            valid.dat$Y_valid,
+            trace = FALSE,
+            rank.limit = rank.limit,
+            print.best = FALSE,
+            rank.step  = rank.step,
+            n.lambda = n.lambda,
+            type = "als",
+            quiet = TRUE,
+            tol = 2,
+            lambda.1_grid = lambda.1_grid
+         )
       sout <- fiti$fit2
-         
+      
       
       results = list(model = "CAMC_holdout")
       results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
       results$alpha = NA
       results$lambda.1 = sout$lambda1
       results$lambda.2 = sout$lambda2
-      results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
+      results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
                                                                                0])
-      results$error.all = test_error(sout$A_hat, gen.dat$A)
-      results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
-      results$error.B = test_error(sout$B_hat, gen.dat$B)
-      results$rank = sout$rank_A
+      results$error.all = test_error(sout$estimates, gen.dat$O)
+      results$error.beta = test_error(sout$beta, gen.dat$beta)
+      results$error.M = test_error(sout$M, gen.dat$M)
+      results$rank = sout$rank_O
       results
    }
 
@@ -142,30 +123,32 @@ compare_CAMC_kfold <-
             rank.limit,
             n.lambda) {
       start_time = Sys.time()
-      fiti <- CAMC_cv_kfold(gen.dat$Y,
-                            gen.dat$X,
-                            gen.dat$W,
-                            n_folds = n_folds,
-                            trace = FALSE,
-                            rank.limit = rank.limit,
-                            print.best = FALSE,
-                            lambda.1_grid = lambda.1_grid,
-                            rank.step = rank.step,
-                            n.lambda = n.lambda,
-                            type = "als",
-                            tol = 2)
+      fiti <- CAMC_cv_kfold(
+         gen.dat$Y,
+         gen.dat$X,
+         gen.dat$W,
+         n_folds = n_folds,
+         trace = FALSE,
+         rank.limit = rank.limit,
+         print.best = FALSE,
+         lambda.1_grid = lambda.1_grid,
+         rank.step = rank.step,
+         n.lambda = n.lambda,
+         type = "als",
+         tol = 2
+      )
       sout <- fiti$fit2
       results = list(model = "CAMC_kfold")
       results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
       results$alpha = NA
       results$lambda.1 = sout$lambda1
       results$lambda.2 = sout$lambda2
-      results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
+      results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
                                                                                0])
-      results$error.all = test_error(sout$A_hat, gen.dat$A)
-      results$error.beta = test_error(sout$beta_hat, gen.dat$beta)
-      results$error.B = test_error(sout$B_hat, gen.dat$B)
-      results$rank = sout$rank_A
+      results$error.all = test_error(sout$estimates, gen.dat$O)
+      results$error.beta = test_error(sout$beta, gen.dat$beta)
+      results$error.M = test_error(sout$M, gen.dat$M)
+      results$rank = sout$rank_O
       results
    }
 
@@ -202,21 +185,21 @@ compare_CASMC_holdout <-
       #fit2 = best_fit$fit2
       sout = best_fit
       # get estimates and validate
-      sout$B_hat = fit1$u %*% (fit1$d * t(fit1$v))
-      sout$beta_hat =  fit1$beta#fit2$u %*% (fit2$d * t(fit2$v))
-      sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)
+      sout$M = fit1$u %*% (fit1$d * t(fit1$v))
+      sout$beta =  fit1$beta
+      sout$estimates = sout$M + splr.dat$X %*% t(sout$beta)
       
       results = list(model = "CASMC_holdout")
       results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
       results$alpha = NA
       results$lambda.1 = NA
       results$lambda.2 = sout$lambda
-      results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
+      results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
                                                                                0])
-      results$error.all = test_error(sout$A_hat, gen.dat$A)
-      results$error.beta = test_error(t(sout$beta_hat), gen.dat$beta)
-      results$error.B = test_error(sout$B_hat, gen.dat$B)
-      results$rank = qr(sout$A_hat)$rank
+      results$error.all = test_error(sout$estimates, gen.dat$O)
+      results$error.beta = test_error(t(sout$beta), gen.dat$beta)
+      results$error.M = test_error(sout$M, gen.dat$M)
+      results$rank = qr(sout$estimates)$rank
       results
    }
 
@@ -244,12 +227,11 @@ compare_CASMC_kfold <-
       
       
       fit1 = best_fit$fit
-      #fit2 = best_fit$fit2
       sout = best_fit
       # get estimates and validate
-      sout$B_hat = fit1$u %*% (fit1$d * t(fit1$v))
-      sout$beta_hat =  fit1$beta#fit2$u %*% (fit2$d * t(fit2$v))
-      sout$A_hat = sout$B_hat + splr.dat$X %*% t(sout$beta_hat)
+      sout$M = fit1$u %*% (fit1$d * t(fit1$v))
+      sout$beta =  fit1$beta
+      sout$estimates = sout$M + splr.dat$X %*% t(sout$beta)
       
       
       results = list(model = "CASMC_kfold")
@@ -257,28 +239,28 @@ compare_CASMC_kfold <-
       results$alpha = NA
       results$lambda.1 = NA
       results$lambda.2 = sout$lambda
-      results$error.test = test_error(sout$A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W ==
+      results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
                                                                                0])
-      results$error.all = test_error(sout$A_hat, gen.dat$A)
-      results$error.beta = test_error(t(sout$beta_hat), gen.dat$beta)
-      results$error.B = test_error(sout$B_hat, gen.dat$B)
-      results$rank = qr(sout$A_hat)$rank
+      results$error.all = test_error(sout$estimates, gen.dat$O)
+      results$error.beta = test_error(t(sout$beta), gen.dat$beta)
+      results$error.M = test_error(sout$M, gen.dat$M)
+      results$rank = qr(sout$estimates)$rank
       results
    }
 
 compare_naive <- function(gen.dat) {
    start_time = Sys.time()
-   A_hat = naive_MC(gen.dat$Y)
+   estimates = naive_MC(gen.dat$Y)
    results = list(model = "Naive")
    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
    results$alpha = NA
    results$lambda.1 = NA
    results$lambda.2 = NA
-   results$error.test = test_error(A_hat[gen.dat$W == 0], gen.dat$A[gen.dat$W == 0])
-   results$error.all = test_error(A_hat, gen.dat$A)
-   results$error.B = NA
+   results$error.test = test_error(estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W == 0])
+   results$error.all = test_error(estimates, gen.dat$O)
+   results$error.M = NA
    results$error.beta = NA
-   results$rank = qr(A_hat)$rank
+   results$rank = qr(estimates)$rank
    results
 }
 
@@ -302,7 +284,7 @@ compare_and_save <- function(missingness,
                              cov_eff = TRUE,
                              note = "") {
    ncores = min(ncores, length(dim))
-   stopifnot(length(model_mask)==7)
+   stopifnot(length(model_mask) == 7)
    if (ncores > 1) {
       cl <- makeCluster(ncores)
       registerDoParallel(cl)
@@ -474,7 +456,7 @@ compare_and_save <- function(missingness,
    print(paste("Results saved to", paste0(data_dir, filename)))
    return(final.results)
    #----------------------------
-} 
+}
 
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
@@ -485,10 +467,10 @@ lambda.2_grid = seq(.9, 0, length = 20)
 ncores = 1
 error_function <- RMSE_error
 model_mask <- rep(T, 7)
-model_mask[c(1, 2,6)] <- TRUE
+model_mask[c(4)] <- T
 mao_r <- 10
 ncovariates <- 10
-cov_eff = FALSE
+cov_eff = F
 note = "_no_cov_"
 
 
