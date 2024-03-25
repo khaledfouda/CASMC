@@ -349,7 +349,8 @@ compare_and_save <- function(missingness,
                lambda.2_grid,
                alpha_grid,
                1,
-               n_folds
+               n_folds,
+               weight_function = MaoUniWeights
             )
          )
       #----------------------------------------------------------
@@ -461,8 +462,8 @@ compare_and_save <- function(missingness,
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
-alpha_grid = seq(0.992, 1, length = 10)
-lambda.1_grid = seq(0, 2, length = 20)
+alpha_grid = seq(0.992, 1, length = 5)
+lambda.1_grid = seq(20, 50, length = 30)
 lambda.2_grid = seq(.9, 0, length = 20)
 ncores = 1
 error_function <- RMSE_error
