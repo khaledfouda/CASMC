@@ -80,7 +80,7 @@ Mao.cv <-
             lambda.2_grid = seq(0.9, 0.1, length = 30),
             alpha_grid = seq(0.992, 1, length = 20),
             seed = NULL,
-            numCores = 16,
+            numCores = 1,
             n1n2_optimized = FALSE,
             theta_estimator = theta_default) {
       #' -------------------------------------------------------------------
@@ -143,6 +143,7 @@ Mao.cv <-
             if (score < best_score) {
                best_score = score
                best_params$lambda.2 = lambda.2
+               #print(paste(score, "lambda.2", lambda.2))
             }
          }
          # fixing optimal values of lambda 2 and lambda 1 and optimizing for alpha separately
@@ -163,6 +164,7 @@ Mao.cv <-
             if (score < best_score) {
                best_score = score
                best_params$alpha = alpha
+               #print(paste(score, "alpha", alpha))
             }
          }
          

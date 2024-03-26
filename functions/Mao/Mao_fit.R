@@ -22,17 +22,17 @@ MaoByColWeights <- function(W, ...) {
    n2 = dim(W)[2]
    theta_hat = matrix(NA, n1, n2)
    for (j in 1:n2) {
-      theta_hat[, j] = sum(W[, j] == 1) / n1
+      theta_hat[, j] = n1 / sum(W[, j] == 1) 
    }
-   return(1 / theta_hat)
+   return(theta_hat)
 }
 MaoUniWeights <- function(W, ...) {
    # A theta estimation function that selects the proportion of missing data in the matrix
    # using formula (a3)
    n1 = dim(W)[1]
    n2 = dim(W)[2]
-   theta_hat = matrix(sum(W == 1) / (n1 * n2), n1, n2)
-   return(1 / theta_hat)
+   theta_hat = matrix((n1 * n2) / sum(W == 1) , n1, n2)
+   return(theta_hat)
 }
 
 

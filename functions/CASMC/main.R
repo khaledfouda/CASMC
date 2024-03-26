@@ -15,6 +15,26 @@ xbeta.sparse = y
 lambda2 =  15.66312
 max.rank = 3
 
+#--- tmp delete later
+#
+cv.out <- Mao.cv(
+   gen.dat$O,
+   gen.dat$X,
+   gen.dat$Y,
+   gen.dat$W,
+   n_folds = 3,
+   # lambda.1_grid = lambda.1_grid,
+   # lambda.2_grid = lambda.2_grid,
+   # alpha_grid = alpha_grid,
+   numCores = 1,
+   n1n2_optimized = FALSE,
+   theta_estimator = MaoUniWeights
+)
+#
+#
+#---tmp end
+
+
 #-----------------------------------------------------------------------
 # 1. Fit the model without cross validation:
 # files: fit_covariates.R; fit_n_covariates_fixed_rank_beta.R
