@@ -224,7 +224,7 @@ for (hparams in list(c(0.9, TRUE),
       mao_r = 10,
       error_function = RMSE_error,
       cov_eff = TRUE,
-      model_flag = c(F,F,F,F,T,T,F),
-      note = "_sparseOnly_"
+      model_flag = c(F,F,F,T,T,F,F),
+      note = "_long_"
    )
 }
