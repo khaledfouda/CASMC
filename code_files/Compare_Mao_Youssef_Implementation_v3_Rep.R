@@ -43,7 +43,6 @@ compare_and_save_with_rep <- function(missingness,
    data_dir = "./saved_data/"
    stopifnot(missingness %in% c(0, 0.8, 0.9))
    stopifnot(length(dim) == 1)
-   final.results = data.frame()
    metrics = c(
       "time",
       "alpha",
@@ -55,19 +54,20 @@ compare_and_save_with_rep <- function(missingness,
       "error.beta",
       "rank"
    )
-   models = c(#"Mao",
+   models = c(
+      "Mao",
       "SoftImpute",
       "CAMC_holdout",
-      #"CAMC_kfold",
+      "CAMC_kfold",
       "CASMC_holdout",
       "CASMC_kfold",
       "Naive")
    
    model_functions = list(
-      #compare_Mao,
+      compare_Mao,
       compare_softImpute,
       compare_CAMC_holdout,
-      #compare_CAMC_kfold,
+      compare_CAMC_kfold,
       compare_CASMC_holdout,
       compare_CASMC_kfold,
       compare_naive
@@ -141,17 +141,17 @@ compare_and_save_with_rep <- function(missingness,
                weight_function = weight_function
             )[-1]
          )
-         new_mean <- update_mean(perf_means[i,], results, n)
-         perf_stdev[i,] <-
-            update_sse(perf_means[i,], new_mean, perf_stdev[i,],
+         new_mean <- update_mean(perf_means[i, ], results, n)
+         perf_stdev[i, ] <-
+            update_sse(perf_means[i, ], new_mean, perf_stdev[i, ],
                        results, n)
-         perf_means[i,] <- new_mean
+         perf_means[i, ] <- new_mean
       }
-      print(perf_means)
-      print(perf_stdev)
+      # print(perf_means)
+      # print(perf_stdev)
    }
    for (i in 1:length(model_functions))
-      perf_stdev[i,] <- get_sd_from_sse(perf_stdev[i,], n)
+      perf_stdev[i, ] <- get_sd_from_sse(perf_stdev[i, ], n)
    #---------------------
    # we now combine them in a dataframe
    df_means <- as.data.frame(perf_means)
@@ -201,19 +201,19 @@ source("./code_files/import_lib.R", local = FALSE)
 
 
 for (hparams in list(c(0.9, TRUE),
-                     #c(0.8, TRUE),
-                     #c(0, FALSE),
-                     #c(0.8, FALSE)))
-                     c(0.9, FALSE))) {
+                     c(0.9, FALSE),
+                     c(0, FALSE),
+                     c(0.8, TRUE),
+                     c(0.8, FALSE))) {
    compare_and_save_with_rep(
       hparams[1],
       hparams[2],
-      num_replications = 100,
-      dim = 800,
+      num_replications = 50,
+      dim = 600,
       lambda.1_grid = seq(2, 0, length = 20),
       lambda.2_grid = seq(.9, 0, length = 20),
       alpha_grid = seq(0.992, 1, length = 10),
-      ncores_mao = 2,
+      ncores_mao = 1,
       ncovariates = 10,
       mao_r = 10,
       error_function = RMSE_error,
