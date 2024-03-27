@@ -38,11 +38,13 @@ compare_and_save_with_rep <- function(missingness,
                                       first_seed = NULL,
                                       mao_r = ncovariates,
                                       cov_eff = TRUE,
+                                      model_flag = rep(TRUE,7),
                                       note = "") {
    test_error <<- error_function
    data_dir = "./saved_data/"
    stopifnot(missingness %in% c(0, 0.8, 0.9))
    stopifnot(length(dim) == 1)
+   stopifnot(length(model_flag) == 7)
    metrics = c(
       "time",
       "alpha",
@@ -72,6 +74,9 @@ compare_and_save_with_rep <- function(missingness,
       compare_CASMC_kfold,
       compare_naive
    )
+   models = models[model_flag]
+   model_functions = model_functions[model_flag]
+   
    perf_means <- perf_stdev <-
       matrix(0,
              length(models),
@@ -167,6 +172,7 @@ compare_and_save_with_rep <- function(missingness,
    results$B = num_replications
    results$missinginess = missingness
    results$collinearity = coll
+   results$model = models
    
    print(results)
    print("Exiting Loop ...")
@@ -208,8 +214,8 @@ for (hparams in list(c(0.9, TRUE),
    compare_and_save_with_rep(
       hparams[1],
       hparams[2],
-      num_replications = 50,
-      dim = 600,
+      num_replications = 200,
+      dim = 800,
       lambda.1_grid = seq(2, 0, length = 20),
       lambda.2_grid = seq(.9, 0, length = 20),
       alpha_grid = seq(0.992, 1, length = 10),
@@ -218,6 +224,7 @@ for (hparams in list(c(0.9, TRUE),
       mao_r = 10,
       error_function = RMSE_error,
       cov_eff = TRUE,
-      note = ""
+      model_flag = c(F,F,F,F,T,T,F),
+      note = "_sparseOnly_"
    )
 }
