@@ -206,9 +206,9 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 
-for (hparams in list(c(0.9, TRUE),
-                     c(0.9, FALSE),
+for (hparams in list(#c(0.9, TRUE),
                      c(0, FALSE),
+                     c(0.9, FALSE),
                      c(0.8, TRUE),
                      c(0.8, FALSE))) {
    compare_and_save_with_rep(
