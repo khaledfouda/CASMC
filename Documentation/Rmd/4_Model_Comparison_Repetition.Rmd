@@ -1,0 +1,307 @@
+---
+title: "Comparing Model Implementations - Repetition"
+author: "Khaled Fouda"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+     df_print: paged 
+     output_file: Documentation/html/Comapring_Model_Implementations_Tables.html
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=TRUE, echo=F, message=FALSE, warning=FALSE}
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+root_dir = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
+knitr::opts_knit$set(root.dir=root_dir)
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE, eval = TRUE, 
+                      cache.path = paste0(root_dir,"/Documentation/cache/"))
+#source("./Mao/SMC_functions6.R")
+```
+
+
+```{r include=TRUE, message=FALSE, warning=FALSE}
+source("./code_files/import_lib.R")
+#path_to_data = "./Mao/saved_data/"
+library(data.table)
+note = "_sparseOnly_"
+note=""
+```
+
+
+```{r include=FALSE, eval=FALSE, echo=FALSE}
+# rmarkdown::render("Documentation/Rmd//4_Model_Comparison(1)_Tables.Rmd",
+#                   output_dir = "Documentation/html/",
+#                   output_file = "4_Model_Comparison_Tables_No_Covariate_Effects.html")
+# 
+# 
+# rmarkdown::render("Documentation/Rmd//4_Model_Comparison(1)_Tables.Rmd",
+                  # output_dir = "Documentation/html/")
+
+```
+
+
+### Model Summary
+```{r}
+
+file_list <- list.files(path = path_to_data, pattern =
+                           paste0("((Compare_MC_Models_Youssef_Simulation_with_replications_",note,
+                                  "[0-9]+.*)|(Compare_MC_Models_Mao_Simulation_with_replications",note,"))\\.csv$"),
+                        full.names = TRUE,recursive =F)
+
+results = data.frame()
+for(f in file_list)
+   results = rbind(results, read.csv(f))
+
+results %<>%
+   mutate(simulation = case_when(missinginess == 0 ~ "Mao",
+                                 missinginess == 0.8 & collinearity == TRUE ~ "80% Missing with Coll",
+                                 missinginess == 0.8 & collinearity == FALSE ~ "80% Missing",
+                                 missinginess == 0.9 & collinearity == TRUE ~ "90% Missing with Coll",
+                                 missinginess == 0.9 & collinearity == FALSE ~ "90% Missing"))
+
+```
+
+```{r}
+Models <- c(
+   "Mao",
+   "SoftImpute",
+   "CAMC_holdout",
+   "CAMC_kfold",
+   "CASMC_holdout",
+   "CASMC_kfold",
+   "Naive"
+)
+results$model = rep(Models, 5)
+
+Note <- c(
+   "Mao's original model",
+   "Soft-Impute (fit function from library and CV from Vignette)",
+   "Covariate-Adjusted Matrix Completition with holdout cross-validation",
+   "Covariate-Adjusted Matrix Completition with K-fold cross-validation",
+   "Covariate-Adjusted Sparse  Matrix Completition (Sparse-plus-low-rank) with holdout cross-validation",
+   "Covariate-Adjusted Sparse  Matrix Completition (Sparse-plus-low-rank) with K-fold cross-validation",
+   "Missing Values are replaced with the middle point of row and column average."
+)
+
+model_rep <-
+   c(
+      "$\\begin{aligned} O = X \\beta + M  \\end{aligned}$",
+      "$\\begin{aligned} O =  M  \\end{aligned}$",
+      "$\\begin{aligned} O = X \\beta + AB^T  \\end{aligned}$",
+      "$\\begin{aligned} O = X \\beta + AB^T  \\end{aligned}$",
+      "$\\begin{aligned} O = P_{\\Omega}(O-X \\beta - AB^T) + (X \\beta + AB^T)\\\\ =Sparse +  Low Rank  \\end{aligned}$",
+      "$\\begin{aligned} O = P_{\\Omega}(O-X \\beta - AB^T) + (X \\beta + AB^T)\\\\ =Sparse +  Low Rank\\end{aligned}$",
+      ""
+   )
+
+hyperparameters <- c(
+   "$(\\Theta,\\lambda_1, \\lambda_2,\\alpha)$",
+   "$(\\lambda_2,J)$",
+   "$(\\lambda_1, \\lambda_2, J)$",
+   "$(\\lambda_1, \\lambda_2, J)$",
+   "$(\\lambda_2, J)$",
+   "$(\\lambda_2, J)$",
+   ""
+)
+
+include_cov <- rep("Yes", 7)
+include_cov[c(2, 7)] <- "No"
+Cross_validation_type <- rep("80%/20%", 6, 7)
+Cross_validation_type[c(1)] <- "K-fold (5)"
+Cross_validation_type[c(4)] <- "K-fold (3)"
+Cross_validation_type[c(6)] <- "K-fold (5)"
+Cross_validation_type[c(7)] <- ""
+Regular_cov <- rep("Ridge", 7)
+Regular_cov[2] <- "None"
+Regular_cov[7] <- ""
+Regular_cov[5:6] <- "Dimension Reduction"
+New_Model <- rep("Yes", 7)
+New_Model[1:2] <- "No"
+New_Model[7] <- ""
+
+data.frame(
+   Model = Models,
+   Note = Note,
+   `Has Covariates?` = include_cov,
+   `Cross-Validation Type` = Cross_validation_type,
+   `Regularization on the Covariates?` = Regular_cov,
+   `New Model` = New_Model,
+   Model.Representation = model_rep,
+   Hyperparameters = hyperparameters
+) %>%
+   kable("html",
+         escape = FALSE,
+         #align = 'c',
+         caption = "Model Summary Table; $Y= P_{\\Omega}(O) + \\epsilon$ is observed where $\\Omega$ are the observed indices and $\\epsilon$ is a small random noise. (ie, Y is partially observed and slightly corrupted version of O.") %>%
+   kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed"),
+      full_width = F,
+      position = "center"
+   ) %>% 
+   column_spec(2, width = "300px")
+
+```
+
+
+
+
+
+
+```{r}
+# Function to color minimum values in green
+
+
+
+color_min_values <- function(data, columns) {
+   data <- as.data.frame(data)
+   for (col_name in columns) {
+      col_min <- min(as.numeric(data[[col_name]]), na.rm = TRUE)
+      colrounded <- round(as.numeric(data[[col_name]]), 4)
+      data[[col_name]] <-
+         cell_spec(
+            ifelse(as.numeric((is.na(
+               data[[col_name]]
+            ))), '', colrounded),
+            "html",
+            color = ifelse(as.numeric((is.na(
+               data[[col_name]]
+            ))), "grey98", "black"),
+            background = fifelse((data[[col_name]]) == col_min, "lightgreen", "grey98", "grey98")
+         )
+   }
+   col_min <- min(abs(data[["rank_diff"]]), na.rm = TRUE)
+   data[["rank"]] <- cell_spec(data[["rank"]],
+                               "html",
+                               background = ifelse(abs(data[["rank_diff"]]) == col_min, "lightgreen", "grey98"))
+   return(data)
+}
+# results <- results_MaoSim
+missingness=0.8; coll=TRUE;
+print_table <-
+   function(results,
+            missingness = NULL,
+            coll = TRUE,
+            prob = NA,
+            caption = "",
+            nmodels = 7) {
+      #$$
+      names(results) = gsub("error\\.", "", names(results))
+      results %>%
+         filter(missinginess == missingness, collinearity == coll) %>%
+         dplyr::rename(
+            O_mean = all_mean,
+            O_sd = all_sd,
+            O_test_mean = test_mean,
+            O_test_sd = test_sd,
+            Method = model,
+            missing_prob = missinginess
+         ) %>%
+         mutate(rank_diff = rank_mean - true_rank) %>%
+         select(
+            Method,
+            true_rank,
+            missing_prob,
+            rank_diff,
+            contains("_mean"),
+            contains("_sd"),
+            -contains("alpha")
+            # lambda.1,
+            # lambda.2,
+            # O_test,
+            # O,
+            # M,
+            # Beta,
+            # rank,
+            # seconds
+         )   -> combined_results
+      combined_results %<>% 
+         mutate(time_mean = ifelse(Method == "Naive", NA, time_mean))
+      
+      #$$
+      test_col = 6
+      if (missingness == 0) {
+         test_col = 5
+         combined_results %<>% select(-missing_prob)
+         nfixed = 2
+      } else
+         nfixed = 3
+      
+      
+      # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
+      error_columns <- c("O_test", "O", "beta", "M", "time")
+      # for (i in seq(1, 28, nmodels))
+      #    combined_results[i:(i + nmodels - 1),] <-
+      #    color_min_values(combined_results[i:(i + nmodels - 1),], error_columns)
+      for(ec in error_columns){
+         combined_results[[ec]]
+      }
+      
+      
+      combined_results %>%
+         mutate_if(is.numeric, function(x)
+            replace_na(as.character(round(x, 4)), '')) %>%
+         
+         kable("html",
+               escape = FALSE,
+               align = 'c',
+               caption = caption) %>%
+         kable_styling(
+            bootstrap_options = c("striped", "hover", "condensed"),
+            full_width = F,
+            position = "center"
+         ) %>%
+         add_header_above(c(
+            "Fixed" = nfixed,
+            "Hyperparameters" = 4,
+            "Error on" = 8,
+            "Rank" = 3,
+            "Time" = 2
+         )) %>%
+         pack_rows("400x400", 1, nmodels) #%>%
+         pack_rows("600x600", (nmodels * 1) + 1, nmodels * 2) %>%
+         pack_rows("800x800", (nmodels * 2) + 1, nmodels * 3) %>%
+         pack_rows("1000x1000", (nmodels * 3) + 1, nmodels * 4) %>%
+         column_spec(
+            test_col,
+            bold = T,
+            background = grDevices::adjustcolor("red", alpha.f = 0.1)
+         )
+      
+      
+   }
+```
+
+
+## Simulation 1:   Mao's Simulation; 10 Covariates; 90% Missing; No Collinearity 
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0,F, caption = "Data was simulated using Mao with m=10 and r=10")
+```
+
+## Simulation 2:   Yousef's Simulation; 10 Covariates; 80% Missing; No Collinearity
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.8,F, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and without collinearity")
+```
+
+## Simulation 3:   Yousef's Simulation; 10 Covariates; 80% Missing; With Collinearity
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.8,T, "Data was simulated using Youssef's model with m1=m2=10, 80% missing values, and with collinearity")
+```
+
+## Simulation 4:   Yousef's Simulation; 10 Covariates; 90% Missing; No Collinearity
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.9,F, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and without collinearity")
+```
+
+## Simulation 5:   Yousef's Simulation; 10 Covariates; 90% Missing; With Collinearity
+
+```{r fig.height=15, fig.width=15}
+print_table(results,0.9,T, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")
+```
