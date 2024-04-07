@@ -1,6 +1,7 @@
 load_movielens_100k <-
  function(subset = "a",
-          remove_bad_movies = FALSE)
+          remove_bad_movies = FALSE,
+          scale = TRUE)
  {
   dtrain <- read_tsv(
    paste0("MovieLens/ml-100k/u", subset, ".base"),
@@ -59,9 +60,15 @@ load_movielens_100k <-
   dtrain.mat <- as(dtrain.mat, "Incomplete")
   X_r <- reduced_hat_decomp(dX, 1e-2)
   #--------------------------------------------
+  if(scale){
+    
   biScale.out <- biScaleMatrix(as.matrix(dtrain.mat))
   dtrain.Y = biScale.out$scaledMat
   dtrain.mat <- as(dtrain.Y, "Incomplete")
+  }else{
+    biScale.out = NULL
+    dtrain.Y = as.matrix(dtrain.mat)
+  }
   
   dW <- !is.na(dtrain.Y)
   sum(dW == 0) / length(dW)
@@ -69,17 +76,27 @@ load_movielens_100k <-
   W_valid <- matrix.split.train.test(dW, testp = 0.2)
   Y_train = (dtrain.Y * W_valid)
   Y_valid = dtrain.Y[W_valid == 0]
-  test_error <- RMSE_error
+ #---------------------------------------------
+ # X test as sparse
+  dtest.inc <- sparseMatrix(
+    i = dtest$user_id,
+    j = dtest$movie_id,
+    x = dtest$rating,
+    dims = c(max(dtest$user_id), max(dtest$movie_id))
+  )
+  
+  dtest.inc <- as(dtest.inc, "Incomplete")
  #---------------------------------------------
  # prepare output
  out <- list() 
  out$X_r = X_r
- out$train_unscaled = dtrain
  out$W = dW
  out$biScale = biScale.out
+ out$train.df = dtrain
  out$train.mat = dtrain.Y
- out$test = dtest
  out$train.inc = dtrain.mat
+ out$test.df = dtest
+ out$test.inc = dtest.inc
  out$valid = list()
  out$valid$W = W_valid
  out$valid$train = Y_train
