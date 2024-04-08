@@ -1,6 +1,4 @@
-library(cmfrec)
-library(Matrix)
-library(MatrixExtra)
+
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 suppressMessages(suppressWarnings(source("./code_files/import_lib.R", local = FALSE)))
 source("./MovieLens/load_data.R")
@@ -10,8 +8,48 @@ print_rmse <- function(X_test, X_hat, model_name) {
  cat(sprintf("RMSE for %s is: %.4f\n", model_name, rmse))
 }
 
+
+
+
+
+dat <- load_movielens_100k("a", remove_bad_movies = T, scale = T)
+
+best_fit = CASMC_cv_holdout_v2(
+  dat$valid$train,
+  dat$X_r,
+  dat$valid$test,
+  dat$valid$W,
+  dat$train.mat,
+  trace = F,
+  thresh = 1e-6,
+  n.lambda = 30,
+  rank.step = 4,
+  rank.limit = 50 
+)
+fit1 = best_fit$fit
+beta =  fit1$beta
+M = fit1$u %*% (fit1$d * t(fit1$v))
+A = M + dat$X_r$X %*% t(beta)
+A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
+#qr(A)$rank
+preds <- A[cbind(dat$test.df$user_id, dat$test.df$movie_id)]
+RMSE_error(preds, dat$test.df$rating)
+
+
+#---------------------
+library(cmfrec)
+library(Matrix)
+library(MatrixExtra)
+
 dat <-
  load_movielens_100k("a", remove_bad_movies = TRUE, scale = FALSE)
+
+
+
+
+
+
+
 
 X_train <- as.coo.matrix(dat$train.inc)
 str(X_train)
@@ -27,6 +65,7 @@ model.classic <-
   verbose = FALSE,
   nthreads = 6
  )
+
 
 
 pred_classic <- predict(model.classic, X_test)
@@ -74,31 +113,6 @@ pred_side_info <- predict(model.w.sideinfo, X_test)
 print_rmse(X_test, pred_side_info, "model with side info")
 
 #------------------------------------------------
-dat <- load_movielens_100k("a", remove_bad_movies = T, scale = T)
-
-best_fit = CASMC_cv_holdout_v2(
- dat$valid$train,
- dat$X_r,
- dat$valid$test,
- dat$valid$W,
- dat$train.mat,
- trace = F,
- thresh = 1e-6,
- n.lambda = 30,
- rank.step = 4,
- rank.limit = 50 
-)
-fit1 = best_fit$fit
-beta =  fit1$beta
-M = fit1$u %*% (fit1$d * t(fit1$v))
-A = M + dat$X_r$X %*% t(beta)
-A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
-#qr(A)$rank
-preds <- A[cbind(dat$test.df$user_id, dat$test.df$movie_id)]
-RMSE_error(preds, dat$test.df$rating)
-
-
-#---------------------
 results <- data.frame(
  NonPersonalized = RMSE_error(X_test@x, pred_baseline@x),
  ClassicalModel = RMSE_error(X_test@x, pred_classic@x),
