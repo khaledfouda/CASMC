@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-04-07" />
+<meta name="date" content="2024-04-09" />
 
 <title>cmfrec_lib_on_sim.R</title>
 
@@ -576,7 +576,7 @@ display: none;
 
 <h1 class="title toc-ignore">cmfrec_lib_on_sim.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-04-07</h4>
+<h4 class="date">2024-04-09</h4>
 
 </div>
 
@@ -586,95 +586,54 @@ display: none;
 setwd(&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP&quot;)
 source(&quot;./MovieLens/load_data.R&quot;)
 source(&quot;./code_files/import_lib.R&quot;)</code></pre>
-<pre><code>## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-## ✔ dplyr     1.1.4     ✔ readr     2.1.5
-## ✔ forcats   1.0.0     ✔ stringr   1.5.1
-## ✔ ggplot2   3.5.0     ✔ tibble    3.2.1
-## ✔ lubridate 1.9.3     ✔ tidyr     1.3.1
-## ✔ purrr     1.0.2     
-## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter()     masks stats::filter()
-## ✖ dplyr::group_rows() masks kableExtra::group_rows()
-## ✖ dplyr::lag()        masks stats::lag()
-## ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors
-## 
-## Attaching package: &#39;magrittr&#39;
-## 
-## 
-## The following object is masked from &#39;package:purrr&#39;:
-## 
-##     set_names
-## 
-## 
-## The following object is masked from &#39;package:tidyr&#39;:
-## 
-##     extract
-## 
-## 
-## Loading required package: foreach
-## 
-## 
-## Attaching package: &#39;foreach&#39;
-## 
-## 
-## The following objects are masked from &#39;package:purrr&#39;:
-## 
-##     accumulate, when
-## 
-## 
-## Loading required package: doParallel
-## 
-## Loading required package: iterators
-## 
-## Loading required package: parallel
-## 
-## Loading required package: Matrix
-## 
-## 
-## Attaching package: &#39;Matrix&#39;
-## 
-## 
-## The following objects are masked from &#39;package:tidyr&#39;:
-## 
-##     expand, pack, unpack
-## 
-## 
-## Loaded softImpute 1.4-1
-## 
-## 
-## 
-## Attaching package: &#39;softImpute&#39;
-## 
-## 
-## The following object is masked from &#39;package:tidyr&#39;:
-## 
-##     complete
-## 
-## 
-## 
-## Attaching package: &#39;MASS&#39;
-## 
-## 
-## The following object is masked from &#39;package:patchwork&#39;:
-## 
-##     area
-## 
-## 
-## The following object is masked from &#39;package:dplyr&#39;:
-## 
-##     select</code></pre>
-<pre class="r"><code>rm(list = ls(all.names = TRUE))
+<pre><code>## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package kableExtra loaded.&quot;
+## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package doParallel loaded.&quot;
+## [1] &quot;Package foreach loaded.&quot;
+## [1] &quot;Package hexbin loaded.&quot;
+## [1] &quot;Package patchwork loaded.&quot;
+## [1] &quot;Package ggplot2 loaded.&quot;
+## [1] &quot;Package softImpute loaded.&quot;
+## [1] &quot;Package irlba loaded.&quot;
+## [1] &quot;Package MASS loaded.&quot;
+## [1] &quot;Package svd loaded.&quot;
+## [1] &quot;Package corpcor loaded.&quot;
+## [1] &quot;Package magrittr loaded.&quot;
+## [1] &quot;Package RSpectra loaded.&quot;
+## [1] &quot;Package Matrix loaded.&quot;
+## [1] &quot;Package knitr loaded.&quot;</code></pre>
+<pre class="r"><code># rm(list = ls(all.names = TRUE))
 setwd(&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP&quot;)
 source(&quot;./MovieLens/load_data.R&quot;)
-source(&quot;./code_files/import_lib.R&quot;)
-source(&quot;./MovieLens/apply_cmref_on_simulation.R&quot;)
+source(&quot;./code_files/import_lib.R&quot;)</code></pre>
+<pre><code>## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package kableExtra loaded.&quot;
+## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package doParallel loaded.&quot;
+## [1] &quot;Package foreach loaded.&quot;
+## [1] &quot;Package hexbin loaded.&quot;
+## [1] &quot;Package patchwork loaded.&quot;
+## [1] &quot;Package ggplot2 loaded.&quot;
+## [1] &quot;Package softImpute loaded.&quot;
+## [1] &quot;Package irlba loaded.&quot;
+## [1] &quot;Package MASS loaded.&quot;
+## [1] &quot;Package svd loaded.&quot;
+## [1] &quot;Package corpcor loaded.&quot;
+## [1] &quot;Package magrittr loaded.&quot;
+## [1] &quot;Package RSpectra loaded.&quot;
+## [1] &quot;Package Matrix loaded.&quot;
+## [1] &quot;Package knitr loaded.&quot;</code></pre>
+<pre class="r"><code>source(&quot;./MovieLens/apply_cmref_on_simulation.R&quot;)
 
 dat &lt;-generate_simulation_data_mao(800,800,10,10, &quot;MAR&quot;, 2024)
 apply_to_sim_dat(dat)</code></pre>
 <pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
 ## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
-## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).
-## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
+## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
+<pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 300 iterations</code></pre>
+<pre><code>## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -697,7 +656,7 @@ NonPersonalized
 4.530997
 </td>
 <td style="text-align:right;">
-0.0536907
+0.0738590
 </td>
 </tr>
 <tr>
@@ -708,7 +667,7 @@ ClassicalModel
 4.027130
 </td>
 <td style="text-align:right;">
-0.0960581
+0.1119359
 </td>
 </tr>
 <tr>
@@ -719,7 +678,7 @@ ClassicPlusImplicit
 3.767632
 </td>
 <td style="text-align:right;">
-4.1978116
+3.3409467
 </td>
 </tr>
 <tr>
@@ -730,7 +689,7 @@ CollectiveModel
 3.757859
 </td>
 <td style="text-align:right;">
-0.4759514
+0.3869543
 </td>
 </tr>
 <tr>
@@ -741,20 +700,60 @@ CASMAC
 2.432144
 </td>
 <td style="text-align:right;">
-7.5723288
+8.0965717
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SoftImpute
+</td>
+<td style="text-align:right;">
+3.077933
+</td>
+<td style="text-align:right;">
+198.2984924
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Naive
+</td>
+<td style="text-align:right;">
+4.460006
+</td>
+<td style="text-align:right;">
+0.0377259
 </td>
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>rm(list = ls(all.names = TRUE))
+<pre class="r"><code># rm(list = ls(all.names = TRUE))
 
 setwd(&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP&quot;)
 source(&quot;./MovieLens/load_data.R&quot;)
-source(&quot;./code_files/import_lib.R&quot;)
-source(&quot;./MovieLens/apply_cmref_on_simulation.R&quot;)
+source(&quot;./code_files/import_lib.R&quot;)</code></pre>
+<pre><code>## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package kableExtra loaded.&quot;
+## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package doParallel loaded.&quot;
+## [1] &quot;Package foreach loaded.&quot;
+## [1] &quot;Package hexbin loaded.&quot;
+## [1] &quot;Package patchwork loaded.&quot;
+## [1] &quot;Package ggplot2 loaded.&quot;
+## [1] &quot;Package softImpute loaded.&quot;
+## [1] &quot;Package irlba loaded.&quot;
+## [1] &quot;Package MASS loaded.&quot;
+## [1] &quot;Package svd loaded.&quot;
+## [1] &quot;Package corpcor loaded.&quot;
+## [1] &quot;Package magrittr loaded.&quot;
+## [1] &quot;Package RSpectra loaded.&quot;
+## [1] &quot;Package Matrix loaded.&quot;
+## [1] &quot;Package knitr loaded.&quot;</code></pre>
+<pre class="r"><code>source(&quot;./MovieLens/apply_cmref_on_simulation.R&quot;)
 
 dat &lt;- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
 apply_to_sim_dat(dat)</code></pre>
+<pre><code>## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -774,10 +773,10 @@ time
 NonPersonalized
 </td>
 <td style="text-align:right;">
-0.9969662
+0.9860747
 </td>
 <td style="text-align:right;">
-0.0365038
+0.0545638
 </td>
 </tr>
 <tr>
@@ -785,10 +784,10 @@ NonPersonalized
 ClassicalModel
 </td>
 <td style="text-align:right;">
-0.7656456
+0.7594349
 </td>
 <td style="text-align:right;">
-0.0754251
+0.0806201
 </td>
 </tr>
 <tr>
@@ -796,10 +795,10 @@ ClassicalModel
 ClassicPlusImplicit
 </td>
 <td style="text-align:right;">
-0.7394017
+0.7343872
 </td>
 <td style="text-align:right;">
-0.3519399
+3.4101136
 </td>
 </tr>
 <tr>
@@ -807,10 +806,10 @@ ClassicPlusImplicit
 CollectiveModel
 </td>
 <td style="text-align:right;">
-0.7154373
+0.7117213
 </td>
 <td style="text-align:right;">
-0.3042464
+0.3147533
 </td>
 </tr>
 <tr>
@@ -818,10 +817,32 @@ CollectiveModel
 CASMAC
 </td>
 <td style="text-align:right;">
-0.5490331
+0.5448655
 </td>
 <td style="text-align:right;">
-24.9252024
+2.7313898
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SoftImpute
+</td>
+<td style="text-align:right;">
+0.7314169
+</td>
+<td style="text-align:right;">
+54.4512458
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Naive
+</td>
+<td style="text-align:right;">
+3.2237385
+</td>
+<td style="text-align:right;">
+0.0219381
 </td>
 </tr>
 </tbody>

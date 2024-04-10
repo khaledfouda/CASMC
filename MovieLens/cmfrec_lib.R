@@ -34,6 +34,9 @@ A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds <- A[cbind(dat$test.df$user_id, dat$test.df$movie_id)]
 RMSE_error(preds, dat$test.df$rating)
+#------------------------------------------------------------
+
+
 
 
 #---------------------

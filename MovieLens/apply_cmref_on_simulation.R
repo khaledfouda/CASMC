@@ -52,10 +52,27 @@ apply_to_sim_dat <- function(dat){
  preds = A[dat$W==0]
  time_casmc <- as.numeric(difftime(Sys.time(), start_time,units = "secs"))
  # RMSE_error(preds, dat$O[dat$W==0])
- 
- 
  #----------------------------------------------------------------------------------
- library(Matrix)
+ # soft-impute
+ start_time = Sys.time()
+ sout <- simpute.cv(
+   Y_train,
+   dat$Y,
+   trace = FALSE,
+   rank.limit = 30,
+   print.best = FALSE,
+   rank.step = 2
+ )
+ preds_simpute <- sout$estimates[dat$W == 0]
+
+ time_softImpute = as.numeric(difftime(Sys.time(), start_time,units = "secs"))
+ #---------------------------------------------------------------------------------
+ # Naive
+ start_time = Sys.time()
+ estimates = naive_MC(dat$Y)
+ preds_naive = estimates[dat$W == 0]
+ time_naive <-  as.numeric(difftime(Sys.time(), start_time,units = "secs"))
+ #----------------------------------------------------------------------------------
  library(MatrixExtra)
  library(cmfrec)
  X_train <- as.coo.matrix(dat$train.inc)
@@ -130,14 +147,21 @@ apply_to_sim_dat <- function(dat){
   ClassicalModel = RMSE_error(X_test@x, pred_classic@x),
   ClassicPlusImplicit = RMSE_error(X_test@x, pred_improved@x),
   CollectiveModel = RMSE_error(X_test@x, pred_side_info@x),
-  CASMAC = RMSE_error(dat$O[dat$W==0], preds)
+  CASMAC = RMSE_error(dat$O[dat$W==0], preds),
+  SoftImpute = RMSE_error(dat$O[dat$W==0], preds_simpute),
+  Naive = RMSE_error(dat$O[dat$W==0], preds_naive)
  )
  results <- as.data.frame(t(results))
  names(results) <- "RMSE"
- results$time <- c(time_baseline, time_classic, time_improved, time_sideinfo, time_casmc)
+ results$time <- c(time_baseline, time_classic, time_improved, time_sideinfo, time_casmc,
+                   time_softImpute, time_naive)
+ 
+ 
+ if("package:cmfrec" %in% search()) detach("package:cmfrec", unload=TRUE)
+ if("package:MatrixExtra" %in% search()) detach("package:MatrixExtra", unload=TRUE)
+ 
  
  results %>%
   kable() %>%
   kable_styling()  
-
 }
