@@ -21,11 +21,14 @@ load_movielens_100k <-
    show_col_types = FALSE
   ) %>%
    arrange(user_id) %>%
-   transmute(Male = sex == "M",
-             (age - mean(age)) / sd(age)) %>%
-   mutate(Male = (Male - mean(Male)) / sd(Male)) %>%
+   transmute(age.sq = age ** 2,
+             Male = sex == "M") %>%
+   # mutate(Male = (Male - mean(Male)) / sd(Male),
+   #        age = (age - mean(age)) / sd(age),
+   #        age.sq = (age.sq - mean(age.sq)) / sd(age.sq)) %>%
+    select(-age.sq) %>% 
    as.matrix
-  #-------------------------- drop movies with no ratings
+  #-------------------------- drop movies with no ratings 
   if (remove_bad_movies) {
    bad_movies <- (dtest %>%
                    filter(!movie_id %in% dtrain$movie_id))$movie_id

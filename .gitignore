@@ -44,6 +44,9 @@ __packages
 *.rda
 *.RDA
 *.Rda
+*.RDS
+*.Rds
+*.rds
 
 # ignore saved data folder
 */saved_data/
@@ -55,6 +58,8 @@ saved_data/*
 *.csv
 *.tsv
 *.zip
+*.tgz
+*.json
 
 # remove rmd cache folders
 

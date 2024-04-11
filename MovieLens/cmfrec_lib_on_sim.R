@@ -23,5 +23,12 @@ source("./MovieLens/load_data.R")
 source("./code_files/import_lib.R")
 source("./MovieLens/apply_cmref_on_simulation.R")
 
-dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
+dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.5,coll=T)
 apply_to_sim_dat(dat)
+
+
+
+
+dat <- generate_simulation_data_cmf(800,800,10,10, missing_prob = 0.9)
+apply_to_sim_dat(dat)
+
