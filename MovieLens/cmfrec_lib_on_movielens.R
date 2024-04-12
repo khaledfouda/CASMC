@@ -74,10 +74,6 @@ dat <-
 
 
 
-
-
-
-
 X_train <- as.coo.matrix(dat$train.inc)
 str(X_train)
 X_test <- as.coo.matrix(dat$test.inc)

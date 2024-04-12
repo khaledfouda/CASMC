@@ -61,6 +61,12 @@ load_movielens_100k <-
   )
   
   dtrain.mat <- as(dtrain.mat, "Incomplete")
+  #---------------------------------------------------------
+  # tmp: split test. 90% test set.
+  
+  # Wsplit = 0 -> W=1 = 1.1%, Wsplit = 1 & w=0: 94%; Wsplit=1 & W=1 = 4%
+  # W==1: 5%.  test size: 0.5%
+  #------------------------------------------------------------
   X_r <- reduced_hat_decomp(dX, 1e-2)
   #--------------------------------------------
   if(scale){
