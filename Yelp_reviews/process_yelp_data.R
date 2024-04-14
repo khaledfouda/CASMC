@@ -202,8 +202,8 @@ reviews_matrix <- as(reviews_matrix, "Incomplete")
 length(reviews_matrix@x)/(nrow(reviews_matrix)*ncol(reviews_matrix))
 #--------------------------------------------------------------------------
 saveRDS(reviews_matrix, "Yelp_reviews/data/subset_PA/sample/reviews.RDS")
-saveRDS(users_philly,   "Yelp_reviews/data/subset_PA/sample/users.RDS")
-saveRDS(business_philly,"Yelp_reviews/data/subset_PA/sample/business.RDS")
+saveRDS(users_philly, "Yelp_reviews/data/subset_PA/sample/users.RDS")
+saveRDS(business_philly, "Yelp_reviews/data/subset_PA/sample/business.RDS")
 #---------------------------------------------------------------------------------
 # end ......
 
