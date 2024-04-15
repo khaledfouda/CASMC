@@ -31,9 +31,10 @@ CASMC_cv_holdout_v2 <-
                     to = 0,
                     length = n.lambda)
       #----------------------------------------------------
-      Y[Y == 0] = NA
+      stopifnot(inherits(Y, "dgCMatrix"))
+      #Y[Y == 0] = NA
       #m = dim(Y)[2]
-      Y <- as(Y, "Incomplete")
+      #Y <- as(Y, "Incomplete")
       #valid_ind = W_valid == 0
       W_valid[W_valid == 1] = NA
       W_valid[W_valid == 0] =  1
@@ -125,8 +126,9 @@ CASMC_cv_holdout_v2 <-
       }
       # fit one last time full model, if the train/valid is provided
       if (!is.null(y)) {
-         y[y == 0] = NA
-         y <- as(y, "Incomplete")
+         stopifnot(inherits(y, "dgCMatrix"))
+         #y[y == 0] = NA
+         #y <- as(y, "Incomplete")
          best_fit$fit <-
             CASMC_fit_v3(
                y = y,

@@ -611,11 +611,10 @@ print_rmse &lt;- function(X_test, X_hat, model_name) {
 
 
 scale = F
-dat &lt;- load_Yelp_data(scale=T, seed=2024)</code></pre>
-<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
-## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
-## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre class="r"><code>best_fit = CASMC_cv_holdout_v2(
+dat &lt;- load_Yelp_data(scale=T, seed=2024)
+
+
+best_fit = CASMC_cv_holdout_v2(
  dat$valid$train,
  dat$X_r,
  dat$valid$valid@x,
@@ -635,7 +634,7 @@ if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds &lt;- A[dat$W_test==0]
 RMSE_error(preds, dat$test.inc@x)</code></pre>
-<pre><code>## [1] 0.1857799</code></pre>
+<pre><code>## [1] 0.09555841</code></pre>
 <pre class="r"><code>casmc_error = RMSE_error(dat$test.inc@x, preds)
 #------------------------------------------------------------
 dat$valid$train.mat &lt;- as.matrix(dat$valid$train)
@@ -668,7 +667,7 @@ time_naive &lt;-
  as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
 naive_error = RMSE_error(dat$test.inc@x, preds_naive)
 naive_error</code></pre>
-<pre><code>## [1] 0.1108865</code></pre>
+<pre><code>## [1] 0.1027231</code></pre>
 <pre class="r"><code>#----------------------------------------------------------------------------------
 
 
@@ -686,24 +685,24 @@ library(MatrixExtra)</code></pre>
 <pre class="r"><code>X_train &lt;- as.coo.matrix(dat$train.inc)
 str(X_train)</code></pre>
 <pre><code>## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
-##   ..@ i       : int [1:60757] 103 248 327 408 430 464 524 542 582 587 ...
+##   ..@ i       : int [1:60757] 34 61 62 102 103 135 139 165 188 229 ...
 ##   ..@ j       : int [1:60757] 0 0 0 0 0 0 0 0 0 0 ...
 ##   ..@ Dim     : int [1:2] 1000 1000
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:60757] 0.393 0.368 0.369 0.398 0.372 ...
+##   ..@ x       : num [1:60757] 0.481 0.433 0.225 0.413 0.438 ...
 ##   ..@ factors : list()</code></pre>
 <pre class="r"><code>X_test &lt;- as.coo.matrix(dat$test.inc)
 str(X_test)</code></pre>
 <pre><code>## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
-##   ..@ i       : int [1:15189] 8 533 648 896 408 560 718 850 880 967 ...
-##   ..@ j       : int [1:15189] 0 0 0 0 1 1 1 1 1 1 ...
+##   ..@ i       : int [1:15189] 7 161 255 499 795 875 975 76 80 105 ...
+##   ..@ j       : int [1:15189] 0 0 0 0 0 0 0 1 1 1 ...
 ##   ..@ Dim     : int [1:2] 1000 1000
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:15189] 0.348 0.197 0.367 0.376 0.409 ...
+##   ..@ x       : num [1:15189] 0.304 0.482 0.238 0.374 0.323 ...
 ##   ..@ factors : list()</code></pre>
 <pre class="r"><code>model.classic &lt;-
  CMF(
@@ -719,11 +718,11 @@ str(X_test)</code></pre>
 
 pred_classic &lt;- predict(model.classic, X_test)
 print_rmse(X_test, pred_classic, &quot;classic model&quot;)</code></pre>
-<pre><code>## RMSE for classic model is: 0.0806</code></pre>
+<pre><code>## RMSE for classic model is: 0.0825</code></pre>
 <pre class="r"><code>model.baseline &lt;- MostPopular(X_train, lambda = 10, scale_lam = FALSE)
 pred_baseline &lt;- predict(model.baseline, X_test)
 print_rmse(X_test, pred_baseline, &quot;non-personalized model&quot;)</code></pre>
-<pre><code>## RMSE for non-personalized model is: 0.0804</code></pre>
+<pre><code>## RMSE for non-personalized model is: 0.0823</code></pre>
 <pre class="r"><code>model.improved &lt;- CMF(
  X_train,
  k = 25,
@@ -739,7 +738,7 @@ print_rmse(X_test, pred_baseline, &quot;non-personalized model&quot;)</code></pr
 )
 pred_improved &lt;- predict(model.improved, X_test)
 print_rmse(X_test, pred_improved, &quot;improved classic model&quot;)</code></pre>
-<pre><code>## RMSE for improved classic model is: 0.0806</code></pre>
+<pre><code>## RMSE for improved classic model is: 0.0824</code></pre>
 <pre class="r"><code>model.w.sideinfo &lt;- CMF(
  X_train,
  U = dat$X_r$X,
@@ -760,7 +759,7 @@ print_rmse(X_test, pred_improved, &quot;improved classic model&quot;)</code></pr
 )
 pred_side_info &lt;- predict(model.w.sideinfo, X_test)
 print_rmse(X_test, pred_side_info, &quot;model with side info&quot;)</code></pre>
-<pre><code>## RMSE for model with side info is: 0.0808</code></pre>
+<pre><code>## RMSE for model with side info is: 0.0824</code></pre>
 <pre class="r"><code>#------------------------------------------------
 results &lt;- data.frame(
  NonPersonalized = RMSE_error(X_test@x, pred_baseline@x),
@@ -792,7 +791,7 @@ RMSE
 NonPersonalized
 </td>
 <td style="text-align:right;">
-0.0804160
+0.0823084
 </td>
 </tr>
 <tr>
@@ -800,7 +799,7 @@ NonPersonalized
 ClassicalModel
 </td>
 <td style="text-align:right;">
-0.0806220
+0.0825058
 </td>
 </tr>
 <tr>
@@ -808,7 +807,7 @@ ClassicalModel
 ClassicPlusImplicit
 </td>
 <td style="text-align:right;">
-0.0805526
+0.0824384
 </td>
 </tr>
 <tr>
@@ -816,7 +815,7 @@ ClassicPlusImplicit
 CollectiveModel
 </td>
 <td style="text-align:right;">
-0.0808107
+0.0824384
 </td>
 </tr>
 <tr>
@@ -824,7 +823,7 @@ CollectiveModel
 CASMC
 </td>
 <td style="text-align:right;">
-0.1857799
+0.0955584
 </td>
 </tr>
 <tr>
@@ -832,7 +831,7 @@ CASMC
 SoftImpute
 </td>
 <td style="text-align:right;">
-0.0923370
+0.0860976
 </td>
 </tr>
 <tr>
@@ -840,7 +839,7 @@ SoftImpute
 Naive
 </td>
 <td style="text-align:right;">
-0.1108865
+0.1027231
 </td>
 </tr>
 </tbody>

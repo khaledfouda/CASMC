@@ -27,14 +27,13 @@ CASMC_fit_v3 <-
             Xterms = NULL,
             final.svd = TRUE,
             init = "naive") {
-    if (!inherits(y, "dgCMatrix"))
-      y = as(y, "dgCMatrix")
+    stopifnot(inherits(y, "dgCMatrix"))
     irow = y@i
     pcol = y@p
     n <- dim(y)
     m <- n[2]
     n <- n[1]
-    nz = nnzero(y)
+    nz = nnzero(y, na.counted = TRUE)
     initialize_beta = FALSE
     beta.obs = NULL
     #-------------------------------
@@ -93,7 +92,7 @@ CASMC_fit_v3 <-
         xbeta.obs = suvC(svdH$u, t(as.matrix(svdH$v %*% y)), irow, pcol)
       } else if (init == "naive") {
         Y_naive = as.matrix(y)
-        yobs = !is.na(Y_naive)
+        yobs = Y_naive != 0
         Y_naive = naive_MC(Y_naive)
         naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
         xbeta.obs <- naive_fit[yobs]
@@ -148,6 +147,7 @@ CASMC_fit_v3 <-
       beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
       Beta = fast.svd(as.matrix(beta))
       ##--------------------------------------------
+      
       # part 1: Update B
       #VDsq = t(Dsq * t(V))
       UtH = (t(U) %*% svdH$u) %*% (svdH$v)

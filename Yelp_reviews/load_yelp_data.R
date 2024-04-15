@@ -7,7 +7,7 @@ load_Yelp_data <-
       set.seed(seed)
     users <- readRDS("./Yelp_reviews/data/subset_PA/sample/users.RDS")
     reviews <-
-      readRDS("./Yelp_reviews/data/subset_PA/sample/reviews.RDS") %>%  t()
+      readRDS("./Yelp_reviews/data/subset_PA/sample/reviews.RDS") #%>%  t()
     business <-
       readRDS("./Yelp_reviews/data/subset_PA/sample/business.RDS")
     
@@ -28,26 +28,33 @@ load_Yelp_data <-
     # summary(reviews@x)
     # sd(reviews@x)
     #---------------------------------------------------------------
+    
+    #reviews[reviews==0] <- NA
+    #reviews@x[reviews@x > 5] = 5
+    #reviews@x <-  log1p(reviews@x)
+    #reviews@x
     # normalize and remove outliers
-    reviews@x[reviews@x > 5] = 5
-    # normalize = function(x)
-    #  (x - mean(x)) / sd(x)
+    #normalize = function(x)
+    #(x - min(x)) / (max(x)-min(x)) + .1 #sd(x)
     #reviews@x <- normalize(reviews@x)
     #-------------------------------------------------------------------------
     # scale
     if (scale) {
-      biScale.out <- biScaleMatrix(as.matrix(reviews))
+      biScale.out <- biScaleMatrix(as.matrix(reviews),T,F)
       reviews <- as(biScale.out$scaledMat, "Incomplete")
     } else{
       biScale.out = NULL
     }
+    
+    
+    
     #-------------------------------------------------------------------------
     train_set = reviews * mask_test * mask_valid
     test_set = reviews * (1 - mask_test)
     valid_set = reviews * (1 - mask_valid)
-    length(train_set@x)
-    length(test_set@x)
-    length(valid_set@x)
+    # length(train_set@x)
+    # length(test_set@x)
+    # length(valid_set@x)
     #--------------------------------------------------------------------------
     X_cov <- users %>%
       dplyr::select(average_stars,
@@ -60,18 +67,18 @@ load_Yelp_data <-
       scale() %>%
       as.matrix()
     
-    X_cov <- business %>% 
-      dplyr::select(stars, review_count, is_open) %>% 
-      scale() %>% 
-      as.matrix()
+    # X_cov <- business %>% 
+    #   dplyr::select(stars, review_count, is_open) %>% 
+    #   scale() %>% 
+    #   as.matrix()
     
     
     
-    #require(stats)
-    #pca_result <- prcomp(X_cov, scale. = TRUE)
-    #summary(pca_result)
-    #pca_scores <- pca_result$x[, 1:5]
-    X_r <- reduced_hat_decomp(X_cov)
+    require(stats)
+    pca_result <- prcomp(X_cov, scale. = TRUE)
+    summary(pca_result)
+    pca_scores <- pca_result$x[, 1:5]
+    X_r <- reduced_hat_decomp(pca_scores)
     
     #-----------------------------------------------------------------------------
     out = list(
