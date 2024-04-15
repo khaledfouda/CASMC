@@ -9,18 +9,20 @@ print_rmse <- function(X_test, X_hat, model_name) {
 }
 
 
+(as.matrix(dat$train.inc)==0) %>%  sum()
+
 
 scale = FALSE
 dat <- load_Yelp_data(scale=scale, seed=2024)
-dat$valid$train <- as.matrix(dat$valid$train)
-dat$train.inc <- as.matrix(dat$train.inc)
+dat$valid$train.mat <- as.matrix(dat$valid$train)
+dat$train.mat <- as.matrix(dat$train.inc)
 
 best_fit = CASMC_cv_holdout_v2(
- as.matrix(dat$valid$train),
+ as.matrix(dat$valid$train.mat),
  dat$X_r,
  dat$valid$valid@x,
  dat$valid$W,
- as.matrix(dat$train.inc),
+ as.matrix(dat$train.mat),
  trace = F,
  thresh = 1e-6,
  n.lambda = 30,
@@ -38,13 +40,13 @@ RMSE_error(preds, dat$test.inc@x)
 
 casmc_error = RMSE_error(dat$test.inc@x, preds)
 #------------------------------------------------------------
-dat$valid$train[dat$valid$train==0] = NA
-dat$train.inc[dat$train.inc==0] = NA
+dat$valid$train.mat[dat$valid$train.mat==0] = NA
+dat$train.mat[dat$train.mat==0] = NA
 # soft-impute
 start_time = Sys.time()
 sout <- simpute.cv(
- dat$valid$train,
- dat$train.inc,
+ dat$valid$train.mat,
+ dat$train.mat,
  trace = FALSE,
  rank.limit = 30,
  print.best = FALSE,
@@ -59,7 +61,7 @@ time_softImpute = as.numeric(difftime(Sys.time(), start_time, units = "secs"))
 #---------------------------------------------------------------------------------
 # Naive
 start_time = Sys.time()
-estimates = naive_MC(dat$train.inc)
+estimates = naive_MC(dat$train.mat)
 if(scale) estimates =  revertBiScaledMatrix(as.matrix(estimates), dat$biScale)
 preds_naive = estimates[dat$W_test==0]
 time_naive <-
@@ -69,14 +71,15 @@ naive_error = RMSE_error(dat$test.inc@x, preds_naive)
 
 
 
+
+# source("./code_files/import_lib.R")
+
+# dat <- load_Yelp_data(scale=FALSE, seed=2024)
+
 #---------------------
 library(cmfrec)
 library(Matrix)
 library(MatrixExtra)
-
-
-dat <- load_Yelp_data(scale=FALSE, seed=2024)
-
 
 
 X_train <- as.coo.matrix(dat$train.inc)

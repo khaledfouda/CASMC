@@ -7,7 +7,7 @@ load_Yelp_data <-
       set.seed(seed)
     users <- readRDS("./Yelp_reviews/data/subset_PA/sample/users.RDS")
     reviews <-
-      readRDS("./Yelp_reviews/data/subset_PA/sample/reviews.RDS")
+      readRDS("./Yelp_reviews/data/subset_PA/sample/reviews.RDS") %>%  t()
     business <-
       readRDS("./Yelp_reviews/data/subset_PA/sample/business.RDS")
     
@@ -59,11 +59,19 @@ load_Yelp_data <-
                     contains("compliment")) %>%
       scale() %>%
       as.matrix()
-    require(stats)
-    pca_result <- prcomp(X_cov, scale. = TRUE)
-    summary(pca_result)
-    pca_scores <- pca_result$x[, 1:5]
-    X_r <- reduced_hat_decomp(pca_scores)
+    
+    X_cov <- business %>% 
+      dplyr::select(stars, review_count, is_open) %>% 
+      scale() %>% 
+      as.matrix()
+    
+    
+    
+    #require(stats)
+    #pca_result <- prcomp(X_cov, scale. = TRUE)
+    #summary(pca_result)
+    #pca_scores <- pca_result$x[, 1:5]
+    X_r <- reduced_hat_decomp(X_cov)
     
     #-----------------------------------------------------------------------------
     out = list(
