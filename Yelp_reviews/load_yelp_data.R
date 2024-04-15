@@ -62,7 +62,7 @@ load_Yelp_data <-
     require(stats)
     pca_result <- prcomp(X_cov, scale. = TRUE)
     summary(pca_result)
-    pca_scores <- pca_result$x[, 1:2]
+    pca_scores <- pca_result$x[, 1:5]
     X_r <- reduced_hat_decomp(pca_scores)
     
     #-----------------------------------------------------------------------------

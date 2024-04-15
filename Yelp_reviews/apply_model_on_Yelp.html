@@ -609,12 +609,9 @@ print_rmse &lt;- function(X_test, X_hat, model_name) {
 
 
 
-
-dat &lt;- load_Yelp_data(scale=TRUE, seed=2024)</code></pre>
-<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
-## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
-## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre class="r"><code>dat$valid$train &lt;- as.matrix(dat$valid$train)
+scale = FALSE
+dat &lt;- load_Yelp_data(scale=scale, seed=2024)
+dat$valid$train &lt;- as.matrix(dat$valid$train)
 dat$train.inc &lt;- as.matrix(dat$train.inc)
 
 best_fit = CASMC_cv_holdout_v2(
@@ -628,17 +625,23 @@ best_fit = CASMC_cv_holdout_v2(
  n.lambda = 30,
  rank.step = 2,
  rank.limit = 30 
-)
-fit1 = best_fit$fit
+)</code></pre>
+<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
+## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
+## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
+<pre class="r"><code>fit1 = best_fit$fit
 beta =  fit1$beta
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + dat$X_r$X %*% t(beta)
-A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
+if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds &lt;- A[dat$W_test==0]
 RMSE_error(preds, dat$test.inc@x)</code></pre>
-<pre><code>## [1] 4.129128</code></pre>
-<pre class="r"><code>#------------------------------------------------------------
+<pre><code>## [1] 1.697736</code></pre>
+<pre class="r"><code>casmc_error = RMSE_error(dat$test.inc@x, preds)
+#------------------------------------------------------------
+dat$valid$train[dat$valid$train==0] = NA
+dat$train.inc[dat$train.inc==0] = NA
 # soft-impute
 start_time = Sys.time()
 sout &lt;- simpute.cv(
@@ -648,21 +651,22 @@ sout &lt;- simpute.cv(
  rank.limit = 30,
  print.best = FALSE,
  rank.step = 2
-)</code></pre>
-<pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
-## Convergence not achieved by 300 iterations</code></pre>
-<pre class="r"><code>sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
+)
+if(scale) sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
 preds_simpute &lt;- sout$estimates[dat$W_test==0]
+simpute_error = RMSE_error(dat$test.inc@x, preds_simpute)
+
 
 time_softImpute = as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
 #---------------------------------------------------------------------------------
 # Naive
 start_time = Sys.time()
 estimates = naive_MC(dat$train.inc)
-estimates =  revertBiScaledMatrix(as.matrix(estimates), dat$biScale)
+if(scale) estimates =  revertBiScaledMatrix(as.matrix(estimates), dat$biScale)
 preds_naive = estimates[dat$W_test==0]
 time_naive &lt;-
  as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
+naive_error = RMSE_error(dat$test.inc@x, preds_naive)
 #----------------------------------------------------------------------------------
 
 
@@ -753,24 +757,18 @@ print_rmse(X_test, pred_improved, &quot;improved classic model&quot;)</code></pr
 )
 pred_side_info &lt;- predict(model.w.sideinfo, X_test)
 print_rmse(X_test, pred_side_info, &quot;model with side info&quot;)</code></pre>
-<pre><code>## RMSE for model with side info is: 3.4062</code></pre>
+<pre><code>## RMSE for model with side info is: 3.4063</code></pre>
 <pre class="r"><code>#------------------------------------------------
 results &lt;- data.frame(
  NonPersonalized = RMSE_error(X_test@x, pred_baseline@x),
  ClassicalModel = RMSE_error(X_test@x, pred_classic@x),
  ClassicPlusImplicit = RMSE_error(X_test@x, pred_improved@x),
  CollectiveModel = RMSE_error(X_test@x, pred_side_info@x),
- CASMAC = RMSE_error(dat$test.inc@x, preds),
- SoftImpute = RMSE_error(dat$test.inc@x, preds_simpute),
- Naive = RMSE_error(dat$test.inc@x, preds_naive)
-)</code></pre>
-<pre><code>## Warning in true - predicted: longer object length is not a multiple of shorter
-## object length</code></pre>
-<pre><code>## Warning in true - predicted: longer object length is not a multiple of shorter
-## object length
-## Warning in true - predicted: longer object length is not a multiple of shorter
-## object length</code></pre>
-<pre class="r"><code>results &lt;- as.data.frame(t(results))
+ CASMC = casmc_error,
+ SoftImpute = simpute_error,
+ Naive = naive_error
+)
+results &lt;- as.data.frame(t(results))
 names(results) &lt;- &quot;RMSE&quot;
 results %&gt;%
  kable() %&gt;%
@@ -791,7 +789,7 @@ RMSE
 NonPersonalized
 </td>
 <td style="text-align:right;">
-2.930121
+2.9301208
 </td>
 </tr>
 <tr>
@@ -799,7 +797,7 @@ NonPersonalized
 ClassicalModel
 </td>
 <td style="text-align:right;">
-3.491649
+3.4916487
 </td>
 </tr>
 <tr>
@@ -807,7 +805,7 @@ ClassicalModel
 ClassicPlusImplicit
 </td>
 <td style="text-align:right;">
-3.409132
+3.4091318
 </td>
 </tr>
 <tr>
@@ -815,15 +813,15 @@ ClassicPlusImplicit
 CollectiveModel
 </td>
 <td style="text-align:right;">
-3.406233
+3.4063056
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-CASMAC
+CASMC
 </td>
 <td style="text-align:right;">
-3.612800
+1.6977360
 </td>
 </tr>
 <tr>
@@ -831,7 +829,7 @@ CASMAC
 SoftImpute
 </td>
 <td style="text-align:right;">
-3.604949
+0.9117462
 </td>
 </tr>
 <tr>
@@ -839,7 +837,7 @@ SoftImpute
 Naive
 </td>
 <td style="text-align:right;">
-3.604771
+0.9589523
 </td>
 </tr>
 </tbody>

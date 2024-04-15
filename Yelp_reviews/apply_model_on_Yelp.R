@@ -10,8 +10,8 @@ print_rmse <- function(X_test, X_hat, model_name) {
 
 
 
-
-dat <- load_Yelp_data(scale=TRUE, seed=2024)
+scale = FALSE
+dat <- load_Yelp_data(scale=scale, seed=2024)
 dat$valid$train <- as.matrix(dat$valid$train)
 dat$train.inc <- as.matrix(dat$train.inc)
 
@@ -31,12 +31,15 @@ fit1 = best_fit$fit
 beta =  fit1$beta
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + dat$X_r$X %*% t(beta)
-A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
+if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds <- A[dat$W_test==0]
 RMSE_error(preds, dat$test.inc@x)
 
+casmc_error = RMSE_error(dat$test.inc@x, preds)
 #------------------------------------------------------------
+dat$valid$train[dat$valid$train==0] = NA
+dat$train.inc[dat$train.inc==0] = NA
 # soft-impute
 start_time = Sys.time()
 sout <- simpute.cv(
@@ -47,18 +50,21 @@ sout <- simpute.cv(
  print.best = FALSE,
  rank.step = 2
 )
-sout$estimates <-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
+if(scale) sout$estimates <-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
 preds_simpute <- sout$estimates[dat$W_test==0]
+simpute_error = RMSE_error(dat$test.inc@x, preds_simpute)
+
 
 time_softImpute = as.numeric(difftime(Sys.time(), start_time, units = "secs"))
 #---------------------------------------------------------------------------------
 # Naive
 start_time = Sys.time()
 estimates = naive_MC(dat$train.inc)
-estimates =  revertBiScaledMatrix(as.matrix(estimates), dat$biScale)
+if(scale) estimates =  revertBiScaledMatrix(as.matrix(estimates), dat$biScale)
 preds_naive = estimates[dat$W_test==0]
 time_naive <-
  as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+naive_error = RMSE_error(dat$test.inc@x, preds_naive)
 #----------------------------------------------------------------------------------
 
 
@@ -140,9 +146,9 @@ results <- data.frame(
  ClassicalModel = RMSE_error(X_test@x, pred_classic@x),
  ClassicPlusImplicit = RMSE_error(X_test@x, pred_improved@x),
  CollectiveModel = RMSE_error(X_test@x, pred_side_info@x),
- CASMAC = RMSE_error(dat$test.inc@x, preds),
- SoftImpute = RMSE_error(dat$test.inc@x, preds_simpute),
- Naive = RMSE_error(dat$test.inc@x, preds_naive)
+ CASMC = casmc_error,
+ SoftImpute = simpute_error,
+ Naive = naive_error
 )
 results <- as.data.frame(t(results))
 names(results) <- "RMSE"
