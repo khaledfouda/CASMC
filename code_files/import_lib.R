@@ -2,25 +2,6 @@
 
 
 
-#
-# library(Matrix)
-# library(knitr)
-# library(kableExtra)
-# library(tidyverse)
-# library(magrittr)
-# library(foreach)
-# library(doParallel)
-# library(ggplot2)
-# library(hexbin)
-# library(patchwork)
-# library(softImpute)
-# library(irlba) #propack
-# library(MASS) #ginv
-# library(svd) # propack
-# library(corpcor) # fast.svd
-# library(RSpectra)
-
-
 packages <-
  c(
   "tidyverse",
@@ -32,16 +13,18 @@ packages <-
   "patchwork",
   "ggplot2",
   "softImpute",
-  "irlba",
-  "MASS",
-  "svd",
-  "corpcor",
+  "irlba", # propack
+  "MASS", # ginv (alternative to solve())
+  "svd", # another propack. i forgot which one i ended up using :)
+  "corpcor", # fast.svd
   "magrittr",
   "RSpectra",
   "Matrix",
-  "knitr"
+  "knitr",
+  "roxygen2" # to create help pages
  )
 
+# unload the packages if they're loaded. 
 for (pkg in packages) {
  name = paste0("package:",pkg)
  if (name %in% search()) {
@@ -53,7 +36,7 @@ for (pkg in packages) {
   )))
  }
 }
-
+# load the packages
 for (pkg in packages) {
  print(paste("Package", pkg, "loaded."))
  suppressMessages(suppressWarnings(library(
@@ -77,6 +60,7 @@ file_list <-
  )
 file_list <- file_list[!grepl("main\\.R$", file_list)]
 file_list <- file_list[!grepl("/old/", file_list)]
+file_list <- file_list[!grepl("/old.*/", file_list)]
 
 . = lapply(file_list, source)
 

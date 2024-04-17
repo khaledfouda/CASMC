@@ -635,7 +635,7 @@ if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds &lt;- A[dat$W_test==0]
 RMSE_error(preds, dat$test.inc@x)</code></pre>
-<pre><code>## [1] 0.1857799</code></pre>
+<pre><code>## [1] 0.1543945</code></pre>
 <pre class="r"><code>casmc_error = RMSE_error(dat$test.inc@x, preds)
 #------------------------------------------------------------
 dat$valid$train.mat &lt;- as.matrix(dat$valid$train)
@@ -816,7 +816,7 @@ ClassicPlusImplicit
 CollectiveModel
 </td>
 <td style="text-align:right;">
-0.0808107
+0.0808110
 </td>
 </tr>
 <tr>
@@ -824,7 +824,7 @@ CollectiveModel
 CASMC
 </td>
 <td style="text-align:right;">
-0.1857799
+0.1543945
 </td>
 </tr>
 <tr>

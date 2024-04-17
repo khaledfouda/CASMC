@@ -1,20 +1,7 @@
 
 
 
-# this one incorporates SZIRCI into the model:
-# Option 2: get rid of the Xbeta and use the new estimates!
-GetXterms <- function(X) {
-  svdX = fast.svd(X)
-  Ux = svdX$u
-  Vx = svdX$d * t(svdX$v)
-  X0 = ginv(t(Vx) %*% Vx) %*% t(Vx)
-  X1 = X0 %*% t(Ux)
-  X2 = X0 %*% Vx
-  list(X1 = X1, X2 = X2)
-}
-
-
-CASMC_fit_v3 <-
+CASMC_fit <-
   function (y,
             X = NULL,
             svdH = NULL,
@@ -24,16 +11,16 @@ CASMC_fit_v3 <-
             maxit = 100,
             trace.it = FALSE,
             warm.start = NULL,
-            Xterms = NULL,
             final.svd = TRUE,
             init = "naive") {
-    stopifnot(inherits(y, "dgCMatrix"))
+    if (!inherits(y, "dgCMatrix"))
+      y = as(y, "dgCMatrix")
     irow = y@i
     pcol = y@p
     n <- dim(y)
     m <- n[2]
     n <- n[1]
-    nz = nnzero(y, na.counted = TRUE)
+    nz = nnzero(y)
     initialize_beta = FALSE
     beta.obs = NULL
     #-------------------------------
@@ -46,28 +33,18 @@ CASMC_fit_v3 <-
         print(paste("Rank of H is ", J_H))
     }
     #---------------------------------------------------
-    if (is.null(Xterms)) {
-      stopifnot(!is.null(X))
-      Xterms = GetXterms(X)
-    }
-    X1 = Xterms$X1
-    X2 = Xterms$X2
-    #---------------------------------------------------
     warm = FALSE
     clean.warm.start(warm.start)
     if (!is.null(warm.start)) {
       #must have u,d and v components
-      if (!all(match(c("u", "d", "v", "xbeta.obs", "beta"), names(warm.start), 0) >
+      if (!all(match(c("u", "d", "v", "xbeta.obs"), names(warm.start), 0) >
                0))
         stop("warm.start does not have components u, d and v")
       warm = TRUE
       D = warm.start$d
       JD = sum(D > 0)
       #J = JD
-      beta = as.matrix(warm.start$beta)
-      Beta = fast.svd(beta)
-      #xbeta.obs = warm.start$xbeta.obs
-      xbeta.obs <- suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
+      xbeta.obs = warm.start$xbeta.obs
       if (JD >= J) {
         U = warm.start$u[, seq(J), drop = FALSE]
         V = warm.start$v[, seq(J), drop = FALSE]
@@ -92,7 +69,7 @@ CASMC_fit_v3 <-
         xbeta.obs = suvC(svdH$u, t(as.matrix(svdH$v %*% y)), irow, pcol)
       } else if (init == "naive") {
         Y_naive = as.matrix(y)
-        yobs = Y_naive != 0
+        yobs = !is.na(Y_naive)
         Y_naive = naive_MC(Y_naive)
         naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
         xbeta.obs <- naive_fit[yobs]
@@ -101,25 +78,17 @@ CASMC_fit_v3 <-
         U = naive_fit$u
         V = naive_fit$v
         Dsq = naive_fit$d
-        #----------------------
-        # initialization for SZIRCI
-        beta = t(ginv(X) %*% Y_naive) # B = (X^-1 Y)'
-        Beta = fast.svd(beta)
-        # xbeta.obs <- suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
-        #---------------------------------------------------------------
       }
     }
     
     #----------------------------------------
-    S <- y
+    S = y
     ratio <- 1
     iter <- 0
     counter = 0
     best_score = Inf
     best_iter = NA
     #-----------------------------------------------------------
-    
-    #--------------------------------------------------------------
     #####
     # update Beta once at the beginning
     VDsq = t(Dsq * t(V))
@@ -138,18 +107,8 @@ CASMC_fit_v3 <-
       V.old = V
       Dsq.old = Dsq
       #----------------------------------------------
-      # Part 0: Update Beta
-      VDsq = t(Dsq * t(V))
-      UD = t(Beta$d * t(Beta$u))
-      xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
-      M_obs = suvC(U, VDsq, irow, pcol)
-      S@x = y@x - M_obs - xbeta.obs
-      beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
-      Beta = fast.svd(as.matrix(beta))
-      ##--------------------------------------------
-      
       # part 1: Update B
-      #VDsq = t(Dsq * t(V))
+      VDsq = t(Dsq * t(V))
       UtH = (t(U) %*% svdH$u) %*% (svdH$v)
       IUH = t(U) - UtH
       B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
@@ -159,7 +118,6 @@ CASMC_fit_v3 <-
       V = Bsvd$u
       Dsq = Bsvd$d
       U = U %*% (Bsvd$v)
-      #--------------------------------
       #-------------------------------------------------------------
       # part 2: Update A
       UDsq = t(Dsq * t(U))
@@ -172,23 +130,16 @@ CASMC_fit_v3 <-
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
       #--------------------------
-      # part 3: Update Xbeta
+      # part 3: Update beta
+      VDsq = t(Dsq * t(V))
+      HU = svdH$u %*% (svdH$v %*% U)
       
-      #------------------------------------------------------------
-      # part 4: update beta
-      # HU = svdH$u %*% (svdH$v %*% U)
-      # xbeta.obs = xbeta.obs +
-      #   suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol) +
-      #   suvC(HU, VDsq, irow, pcol)
+      xbeta.obs = xbeta.obs +
+        suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol) +
+        suvC(HU, VDsq, irow, pcol)
       
-      # VDsq = t(Dsq * t(V))
-      # UD = t(Beta$d * t(Beta$u))
-      # xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
-      # M_obs = suvC(U, VDsq, irow, pcol)
-      # S@x = y@x - M_obs - xbeta.obs
-      # beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
-      # Beta = fast.svd(as.matrix(beta))
-      
+      M_obs = suvC(U, VDsq, irow, pcol)
+      S@x = y@x - M_obs - xbeta.obs
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
@@ -232,8 +183,7 @@ CASMC_fit_v3 <-
       lambda = lambda,
       J = J,
       n_iter = iter,
-      xbeta.obs = xbeta.obs,
-      beta = beta
+      xbeta.obs = xbeta.obs
     )
     out
   }
