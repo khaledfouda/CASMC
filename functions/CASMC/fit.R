@@ -1,39 +1,32 @@
-# this one incorporates SZIRCI into the model:
-# Option 2: get rid of the Xbeta and use the new estimates!
-GetXterms <- function(X) {
-  svdX = fast.svd(X)
-  Ux = svdX$u
-  Vx = svdX$d * t(svdX$v)
-  X0 = ginv(t(Vx) %*% Vx) %*% t(Vx)
-  X1 = X0 %*% t(Ux)
-  X2 = X0 %*% Vx
-  list(X1 = X1, X2 = X2)
-}
 
-#' Sum Two Numbers
-#'
-#' This function takes two numeric inputs and returns their sum.
+#' Covariate-Adjusted-Sparse-Matrix-completion
+#' Fit function
+#' 
 #' @param y A sparse matrix of class Incomplete.
-#' @param svdH A list consisting of the SVD of the hat matrix. see reduced_hat_decomp function.
-#' @param X optional
-#' @param J Hyperparameter. The maximum rank of the low-rank matrix M = AB
-#' @param Xterms ...
-#' @return The sum of \code{x} and \code{y}.
+#' @param X covariate matrix
+#' @param svdH (optional) A list consisting of the SVD of the hat matrix. see reduced_hat_decomp function.
+#' @param Xterms (optional) A list of terms computed using GetXterms function.
+#' @param J (hyperparameter). The maximum rank of the low-rank matrix M = AB. Default is 2
+#' @param lambda (hyperparameter) The L2 regularization parameter for A and B
+#' @param r (hyperparameter, optional) The rank of covariate effects (beta). The rank will be the same
+#'                                      as the covariate matrix if r not provided
+#' @return A list of u,d,v of M, Beta, and a vector of the observed Xbeta
 #' @examples
-#' add_numbers(1, 3)
+#'  CASMC_fit(y,X,J=5)
 #' @export
 #'
 CASMC_fit <-
   function(y,
-           X = NULL,
+           X,
            svdH = NULL,
+           Xterms = NULL,
            J = 2,
-           thresh = 1e-05,
+           r = NULL,
            lambda = 0,
            maxit = 100,
+           thresh = 1e-05,
            trace.it = FALSE,
            warm.start = NULL,
-           Xterms = NULL,
            final.svd = TRUE,
            init = "naive") {
     stopifnot(inherits(y, "dgCMatrix"))
@@ -42,9 +35,8 @@ CASMC_fit <-
     n <- dim(y)
     m <- n[2]
     n <- n[1]
-    nz = nnzero(y, na.counted = TRUE)
-    initialize_beta = FALSE
-    beta.obs = NULL
+    if (trace.it)
+      nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
     # if svdH is not given but X is given.
     if (is.null(svdH)) {
@@ -63,6 +55,7 @@ CASMC_fit <-
     }
     X1 = Xterms$X1
     X2 = Xterms$X2
+    Xterms <- NULL
     #---------------------------------------------------
     # warm start or initialize (naive or random)
     warm = FALSE
@@ -119,10 +112,10 @@ CASMC_fit <-
         V = naive_fit$v
         Dsq = naive_fit$d
         #----------------------
-        # initialization for SZIRCI
-        beta = t(ginv(X) %*% Y_naive) # B = (X^-1 Y)'
+        # initialization for beta = X^-1 Y
+        # comment for later: shouldn't be X^-1 H Y??
+        beta = t(ginv(X) %*% Y_naive)
         Beta = fast.svd(beta)
-        # xbeta.obs <- suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
         #---------------------------------------------------------------
       }
     }
@@ -135,20 +128,12 @@ CASMC_fit <-
     best_score = Inf
     best_iter = NA
     #-----------------------------------------------------------
-    
-    #--------------------------------------------------------------
-    #####
-    # update Beta once at the beginning if parameters were initialized
-    if (is.null(warm.start)) {
-      VDsq = t(Dsq * t(V))
-      HU = svdH$u %*% (svdH$v %*% U)
-      xbeta.obs = xbeta.obs +
-        suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol) +
-        suvC(HU, VDsq, irow, pcol)
+    # Adjst the rank of Beta if provided
+    if (!is.null(r)) {
+      Beta$u <- Beta$u[, 1:r]
+      Beta$v <- Beta$v[1:r, ]
+      Beta$d <- Beta$d[1:r]
     }
-    # initial M and S (sparse Y - M - Xbeta )
-    M_obs = suvC(U, VDsq, irow, pcol)
-    S@x = y@x - M_obs - xbeta.obs
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
       iter <- iter + 1
@@ -157,89 +142,82 @@ CASMC_fit <-
       Dsq.old = Dsq
       #----------------------------------------------
       # Part 1: Update Beta while A and B are fixed
+      # updates xbeta.obs and Beta.
       VDsq = t(Dsq * t(V))
-      UD = t(Beta$d * t(Beta$u))
-      xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
+      UD.beta = t(Beta$d * t(Beta$u))
+      xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
       M_obs = suvC(U, VDsq, irow, pcol)
       S@x = y@x - M_obs - xbeta.obs
-      beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
+      beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD.beta))
       Beta = fast.svd(as.matrix(beta))
+      # Adjust the rank of Beta if provided
+      if (!is.null(r)) {
+        Beta$u <- Beta$u[, 1:r]
+        Beta$v <- Beta$v[1:r, ]
+        Beta$d <- Beta$d[1:r]
+      }
       ##--------------------------------------------
-      
-      # part 1: Update B
-      #VDsq = t(Dsq * t(V))
+      # part 2: Update B while A and beta are fixed
+      # updates U, Dsq, V
       IUH = t(U) - (t(U) %*% svdH$u) %*% (svdH$v)
       B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
-      if (lambda > 0)
-        B = t((B) * (Dsq / (Dsq + lambda)))
+      B = t((B) * (Dsq / (Dsq + lambda)))
       Bsvd = fast.svd(B)
       V = Bsvd$u
       Dsq = Bsvd$d
       U = U %*% (Bsvd$v)
-      #--------------------------------
       #-------------------------------------------------------------
-      # part 2: Update A
+      # part 3: Update A while B and beta are fixed
+      # updates U, Dsq, V
       UDsq = t(Dsq * t(U))
       A.partial = ((S %*% V) + UDsq)
       A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
-      if (lambda > 0)
-        A = t(t(A) * (Dsq / (Dsq + lambda)))
+      A = t(t(A) * (Dsq / (Dsq + lambda)))
       Asvd =  fast.svd(A)
       U = Asvd$u
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
-      #--------------------------
-      # part 3: Update Xbeta
-      
-      #------------------------------------------------------------
-      # part 4: update beta
-      # HU = svdH$u %*% (svdH$v %*% U)
-      # xbeta.obs = xbeta.obs +
-      #   suvC(svdH$u, t(as.matrix(svdH$v %*% S)), irow, pcol) +
-      #   suvC(HU, VDsq, irow, pcol)
-      
-      # VDsq = t(Dsq * t(V))
-      # UD = t(Beta$d * t(Beta$u))
-      # xbeta.obs <- suvC(X %*% Beta$v, UD, irow, pcol)
-      # M_obs = suvC(U, VDsq, irow, pcol)
-      # S@x = y@x - M_obs - xbeta.obs
-      # beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD))
-      # Beta = fast.svd(as.matrix(beta))
-      
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
       if (trace.it) {
         obj = (.5 * sum(S@x ^ 2) + lambda * sum(Dsq)) / nz
-        if (trace.it)
-          cat(iter, ":", "obj", format(round(obj, 5)), "ratio", ratio, "\n")
+        cat(iter, ":", "obj", format(round(obj, 5)), "ratio", ratio, "\n")
       }
       #-----------------------------------------------------------------------------------
       
     }
     if (iter == maxit &
         trace.it)
-      warning(paste("Convergence not achieved by", maxit, "iterations"))
-    if (lambda > 0 & final.svd) {
+      warning(
+        paste(
+          "Convergence not achieved by",
+          maxit,
+          "iterations. Consider increasing the number of iterations."
+        )
+      )
+    
+    # one final fit for one of the parameters (A) has proved to improve the performance significantly.
+    if (final.svd) {
       #---- update A
-      UDsq = t(Dsq * t(U))
-      A.partial = ((S %*% V) + UDsq)
+      A.partial = ((S %*% V) + t(Dsq * t(U)))
       A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
       Asvd =  fast.svd(A)
       U = Asvd$u
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
-      #------------------
       Dsq = pmax(Dsq - lambda, 0)
+      #------------------
       if (trace.it) {
-        UDsq = t(Dsq * t(U))
-        M_obs = suvC(UDsq, V, irow, pcol)
+        M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
         S@x = y@x - M_obs - xbeta.obs
         obj = (.5 * sum(S@x ^ 2) + lambda * sum(Dsq)) / nz
         cat("final SVD:", "obj", format(round(obj, 5)), "\n")
         cat("Number of Iterations for covergence is ", iter, "\n")
       }
     }
+    #-------------------------------------------------------
+    # trim in case we reduce the rank of M to be smaller than J.
     J = min(sum(Dsq > 0) + 1, J)
     J = min(J, length(Dsq))
     out = list(
