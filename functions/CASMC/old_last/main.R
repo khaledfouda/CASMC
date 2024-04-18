@@ -6,7 +6,7 @@ source("./code_files/import_lib.R")
 # 0. prepare the data
 
 gen.dat <-  generate_simulation_data_mao(800,800,10,10, "MAR", 2024)
-gen.dat <- generate_simulation_data_ysf(2,400,500,10,10, missing_prob = 0.8,coll=T,cov_eff = F)
+gen.dat <- generate_simulation_data_ysf(2,800,800,10,10, missing_prob = 0.9,coll=T)
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
 y[y==0] = NA
@@ -15,11 +15,53 @@ xbeta.sparse = y
 lambda2 =  15.66312
 max.rank = 3
 
+#--- tmp delete later
+#
+cv.out <- Mao.cv(
+   gen.dat$O,
+   gen.dat$X,
+   gen.dat$Y,
+   gen.dat$W,
+   n_folds = 3,
+   # lambda.1_grid = lambda.1_grid,
+   # lambda.2_grid = lambda.2_grid,
+   # alpha_grid = alpha_grid,
+   numCores = 1,
+   n1n2_optimized = FALSE,
+   theta_estimator = MaoUniWeights
+)
+#
+#
+#---tmp end
+
 
 #-----------------------------------------------------------------------
 # 1. Fit the model without cross validation:
+# files: fit_covariates.R; fit_n_covariates_fixed_rank_beta.R
+
 start_time <- Sys.time()
-set.seed(2020);fits2 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace=F, J=max.rank, r = 3,
+set.seed(2020);fits <- CASMC_fit(y=y, svdH=X_r$svdH,  trace=F, J=max.rank,
+                                            thresh=1e-6, lambda=lambda2, init = "naive",
+                                            final.svd = T,maxit = 500, warm.start = NULL)
+xbeta.sparse@x = fits$xbeta.obs
+# warm.start above expects u,d,v,xbeta.obs
+fit4 = SZIRCI(xbeta.sparse, X_r$X,  X_r$rank, maxit=300,
+                                trace.it = F,final.trim = F,thresh = 1e-6)
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+# get estimates and validate
+beta =  fit4$u %*% (fit4$d * t(fit4$v))
+M = fits$u %*% (fits$d * t(fits$v))
+A = M + X_r$X %*% t(beta)
+test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+test_error(fits$xbeta.obs, (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
+test_error(M, gen.dat$B)
+print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
+#----------------------------------------------------
+# second version option 1
+start_time <- Sys.time()
+set.seed(2020);fits2 <- CASMC_fit_v3(y=y, X=X_r$X, svdH=X_r$svdH,  trace=F, J=max.rank,
                                  thresh=1e-6, lambda=lambda2, init = "naive",
                                  final.svd = T,maxit = 500, warm.start = NULL)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
@@ -32,9 +74,25 @@ A = M + X_r$X %*% t(beta)
 test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
 test_error(fits2$xbeta.obs, (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
 print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
-test_error(M, gen.dat$M)
-print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5)))
+test_error(M, gen.dat$B)
+print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 
+
+
+#------------------------------------------------------------------------------------
+# [optional] prepare warm.start for the second fit function:
+
+svdX = fast.svd(X_r$X)
+Ux = svdX$u
+Vx = svdX$d * t(svdX$v)
+X0 = ginv(t(Vx)%*%Vx) %*% t(Vx)
+warm.start = list()
+warm.start$X1 = X0 %*% t(Ux)
+warm.start$X2 = X0 %*% Vx
+B = t( ginv(X_r$X) %*% naive_MC(as.matrix(xbeta.sparse))) # B = (X^-1 Y)'
+warm.start$Bsvd = fast.svd(B)
+fit4 = SZIRCI(xbeta.sparse, X_r$X,  X_r$rank, maxit=300, warm.start = warm.start,
+                                 trace.it = T,final.trim = F,thresh = 1e-6)
 #----------------------------------------------------------------------------------------------------------
 # 2. cross-validation with train/test split
 # file: split_cross_validation.R
@@ -42,47 +100,43 @@ print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$
 # prepare the data
 W_valid <- matrix.split.train.test(gen.dat$W, testp=0.2)
 Y_train = (gen.dat$Y * W_valid)
-Y_train[Y_train==0] = NA
-Y_train <- as(Y_train, "Incomplete")
 Y_valid = gen.dat$Y[W_valid==0]
 # fit
 start_time <- Sys.time()
-best_fit = CASMC_cv_holdout(Y_train, X_r, Y_valid, W_valid, r = NULL, y=y,
+best_fit = CASMC_cv_holdout(Y_train, X_r, Y_valid, W_valid, gen.dat$Y,
                                trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
-fit1 = best_fit$fit
+fit1 = best_fit$fit1
+fit2 = best_fit$fit2
 # get estimates and validate
-beta =  as.matrix(fit1$beta)
+beta =  fit2$u %*% (fit2$d * t(fit2$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + X_r$X %*% t(beta)
-test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta.x)[gen.dat$Y!=0] )
 # test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )
-print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
-test_error(M, gen.dat$M)
-print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5)))
+print(paste("Test error =", round(test_error(t(beta), gen.dat$beta.x),5)))
+test_error(M, gen.dat$B)
+print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 best_fit$rank.max
 best_fit$lambda
 #---------------------------------------------------------------------------------
-# ---- <r>
-# prepare the data
-# fit
+# repeat with the new version
 start_time <- Sys.time()
-best_fit = CASMC_cv_holdout_with_r(Y_train, X_r, Y_valid, W_valid, r_min=0,  y=y,
+best_fit = CASMC_cv_holdout(Y_train, X_r, Y_valid, W_valid, gen.dat$Y,
                             trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
-print(best_fit$r)
 fit1 = best_fit$fit
 # get estimates and validate
-beta =  as.matrix(fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) )
+beta =  fit1$beta
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + X_r$X %*% t(beta)
-test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta.x)[gen.dat$Y!=0] )
 # test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )
-print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
-test_error(M, gen.dat$M)
-print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5)))
+print(paste("Test error =", round(test_error(t(beta), gen.dat$beta.x),5)))
+test_error(M, gen.dat$B)
+print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$A[gen.dat$W==0]),5)))
 best_fit$rank.max
 best_fit$lambda
 #------------------------------------------------------------------------------------

@@ -15,12 +15,13 @@ scale = F
 dat <- load_Yelp_data(scale=T, seed=2024)
 
 
-best_fit = CASMC_cv_holdout_v2(
+best_fit = CASMC_cv_holdout_with_r(
  dat$valid$train,
  dat$X_r,
  dat$valid$valid@x,
  dat$valid$W,
- dat$train.inc,
+ r_min = 0,
+ y = dat$train.inc,
  trace = F,
  thresh = 1e-6,
  n.lambda = 30,
@@ -28,7 +29,7 @@ best_fit = CASMC_cv_holdout_v2(
  rank.limit = 30 
 )
 fit1 = best_fit$fit
-beta =  fit1$beta
+beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + dat$X_r$X %*% t(beta)
 if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)

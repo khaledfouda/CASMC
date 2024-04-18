@@ -1,3 +1,73 @@
+CASMC_cv_holdout_with_r <-
+   function(y_train,
+            X_r,
+            y_valid,
+            W_valid,
+            r_min = 0,
+            y = NULL,
+            error_function = RMSE_error,
+            lambda.factor = 1 / 4,
+            lambda.init = NULL,
+            n.lambda = 20,
+            trace = FALSE,
+            print.best = TRUE,
+            early.stopping = 1,
+            thresh = 1e-6,
+            maxit = 100,
+            rank.init = 2,
+            rank.limit = 30,
+            rank.step = 2,
+            warm = NULL,
+            quiet = FALSE) {
+      r_seq <- (X_r$rank):(r_min)#(X_r$rank):(r_min)
+      Xterms = GetXterms(X_r$X)
+      best_score = Inf
+      best_fit = NULL
+      warm = NULL
+      
+      for (r in r_seq) {
+         fiti <- CASMC_cv_holdout(
+            y_train = y_train,
+            X_r = X_r,
+            y_valid = y_valid,
+            W_valid = W_valid,
+            y = y,
+            Xterms = Xterms,
+            r = r,
+            error_function = error_function,
+            lambda.factor = lambda.factor,
+            lambda.init = lambda.init,
+            n.lambda = n.lambda,
+            trace = trace,
+            print.best = print.best,
+            early.stopping = early.stopping,
+            thresh = thresh,
+            maxit = maxit,
+            rank.init = rank.init,
+            rank.limit = rank.limit,
+            rank.step = rank.step,
+            warm = warm,
+            quiet = quiet
+         )
+         warm = fiti$fit
+         if (fiti$error < best_score) {
+            best_score = fiti$error
+            best_fit = fiti
+         }
+         print(paste(r, "-", fiti$error))
+      }
+      return(best_fit)
+      
+   }
+
+
+
+
+
+
+
+
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Cross-Validation function with holdout method (training / validation)
 #'
@@ -17,7 +87,9 @@ CASMC_cv_holdout <-
             X_r,
             y_valid,
             W_valid,
+            r = NULL,
             y = NULL,
+            Xterms = NULL,
             error_function = RMSE_error,
             lambda.factor = 1 / 4,
             lambda.init = NULL,
@@ -49,10 +121,11 @@ CASMC_cv_holdout <-
       vpcol = W_valid@p
       W_valid = NULL
       #------------------------------------------------
-      Xterms = GetXterms(X_r$X)
+      if (is.null(Xterms))
+         Xterms = GetXterms(X_r$X)
       #-----------------------------------------------------------------------
       rank.max <- rank.init
-      best_fit <- list(error = Inf)
+      best_fit <- list(error = Inf, r = r)
       counter <- 0
       #---------------------------------------------------------------------
       for (i in seq(along = lamseq)) {
@@ -62,6 +135,7 @@ CASMC_cv_holdout <-
                X = X_r$X,
                svdH = X_r$svdH,
                Xterms = Xterms,
+               r = r,
                J = rank.max,
                lambda = lamseq[i],
                warm.start = warm,
@@ -74,7 +148,7 @@ CASMC_cv_holdout <-
          
          #--------------------------------------------------------------
          # predicting validation set and xbetas for next fit:
-         Beta = fast.svd(as.matrix(fiti$beta))
+         Beta = fiti$Beta
          XbetaValid = suvC(X_r$X %*% Beta$v, t(Beta$d * t(Beta$u)), virow, vpcol)
          MValid = suvC(fiti$u, t(fiti$d * t(fiti$v)), virow, vpcol)
          #--------------------------------------------
@@ -109,10 +183,12 @@ CASMC_cv_holdout <-
             counter = counter + 1
          if (counter >= early.stopping) {
             if (trace)
-               print(sprintf(
-                  "Early stopping. Reached Peak point. Performance didn't improve for the last %d iterations.",
-                  counter
-               ))
+               print(
+                  sprintf(
+                     "Early stopping. Reached Peak point. Performance didn't improve for the last %d iterations.",
+                     counter
+                  )
+               )
             break
          }
          # compute rank.max for next iteration
@@ -127,6 +203,7 @@ CASMC_cv_holdout <-
                X = X_r$X,
                svdH = X_r$svdH,
                Xterms = Xterms,
+               r = r,
                J = best_fit$rank.max,
                lambda = best_fit$lambda,
                warm.start = best_fit$fit1,

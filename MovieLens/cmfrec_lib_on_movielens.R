@@ -16,12 +16,12 @@ dat <- load_movielens_100k("a", remove_bad_movies = T, scale = T)
 dat$test.ind = cbind(dat$test.df$user_id, dat$test.df$movie_id)
 
 
-best_fit = CASMC_cv_holdout_v2(
-  dat$valid$train,
+best_fit = CASMC_cv_holdout_with_r(
+  dat$valid$train.inc,
   dat$X_r,
   dat$valid$test,
   dat$valid$W,
-  dat$train.mat,
+  y=dat$train.inc,
   trace = F,
   thresh = 1e-6,
   n.lambda = 30,
@@ -29,7 +29,7 @@ best_fit = CASMC_cv_holdout_v2(
   rank.limit = 30 
 )
 fit1 = best_fit$fit
-beta =  fit1$beta
+beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) 
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + dat$X_r$X %*% t(beta)
 A = revertBiScaledMatrix(as.matrix(A), dat$biScale)

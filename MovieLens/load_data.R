@@ -84,6 +84,9 @@ load_movielens_100k <-
   dtrain.Y[is.na(dtrain.Y)] = 0
   W_valid <- matrix.split.train.test(dW, testp = 0.2)
   Y_train = (dtrain.Y * W_valid)
+  Y_train_inc = Y_train
+  Y_train_inc[Y_train_inc==0] = NA
+  Y_train_inc = as(Y_train_inc, "Incomplete")
   Y_valid = dtrain.Y[W_valid == 0]
  #---------------------------------------------
  # X test as sparse
@@ -110,6 +113,7 @@ load_movielens_100k <-
  out$valid$W = W_valid
  out$valid$train = Y_train
  out$valid$test = Y_valid
+ out$valid$train.inc = Y_train_inc
  return(out)
  }
 

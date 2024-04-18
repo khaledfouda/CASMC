@@ -38,6 +38,7 @@ CASMC_fit <-
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
+    
     # if svdH is not given but X is given.
     if (is.null(svdH)) {
       stopifnot(!is.null(X))
@@ -62,15 +63,15 @@ CASMC_fit <-
     clean.warm.start(warm.start)
     if (!is.null(warm.start)) {
       #must have u,d and v components
-      if (!all(match(c("u", "d", "v", "xbeta.obs", "beta"), names(warm.start), 0) >
+      if (!all(match(c("u", "d", "v", "xbeta.obs", "Beta"), names(warm.start), 0) >
                0))
         stop("warm.start does not have components u, d and v")
       warm = TRUE
       D = warm.start$d
       JD = sum(D > 0)
       #J = JD
-      beta = as.matrix(warm.start$beta)
-      Beta = fast.svd(beta)
+      #beta = as.matrix(warm.start$beta)
+      Beta = warm.start$Beta #fast.svd(beta)
       #xbeta.obs = warm.start$xbeta.obs
       xbeta.obs <-
         suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
@@ -119,7 +120,6 @@ CASMC_fit <-
         #---------------------------------------------------------------
       }
     }
-    
     #----------------------------------------
     S <- y
     ratio <- 1
@@ -130,9 +130,10 @@ CASMC_fit <-
     #-----------------------------------------------------------
     # Adjst the rank of Beta if provided
     if (!is.null(r)) {
-      Beta$u <- Beta$u[, 1:r]
-      Beta$v <- Beta$v[1:r, ]
-      Beta$d <- Beta$d[1:r]
+      beta_rank = min(sum(round(Beta$d,4)>0), r)
+      Beta$u <- Beta$u[, 1:beta_rank, drop=FALSE]
+      Beta$v <- Beta$v[, 1:beta_rank, drop=FALSE]
+      Beta$d <- Beta$d[1:beta_rank]
     }
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
@@ -145,6 +146,7 @@ CASMC_fit <-
       # updates xbeta.obs and Beta.
       VDsq = t(Dsq * t(V))
       UD.beta = t(Beta$d * t(Beta$u))
+      #print(dim(X)); print(dim(Beta$v))
       xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
       M_obs = suvC(U, VDsq, irow, pcol)
       S@x = y@x - M_obs - xbeta.obs
@@ -152,9 +154,10 @@ CASMC_fit <-
       Beta = fast.svd(as.matrix(beta))
       # Adjust the rank of Beta if provided
       if (!is.null(r)) {
-        Beta$u <- Beta$u[, 1:r]
-        Beta$v <- Beta$v[1:r, ]
-        Beta$d <- Beta$d[1:r]
+        beta_rank = min(sum(round(Beta$d,4)>0), r)
+        Beta$u <- Beta$u[, 1:beta_rank, drop=FALSE]
+        Beta$v <- Beta$v[, 1:beta_rank, drop=FALSE]
+        Beta$d <- Beta$d[1:beta_rank]
       }
       ##--------------------------------------------
       # part 2: Update B while A and beta are fixed
@@ -228,7 +231,7 @@ CASMC_fit <-
       J = J,
       n_iter = iter,
       xbeta.obs = xbeta.obs,
-      beta = beta
+      Beta = Beta
     )
     out
   }

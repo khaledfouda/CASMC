@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-04-15" />
+<meta name="date" content="2024-04-17" />
 
 <title>apply_model_on_Yelp.R</title>
 
@@ -576,7 +576,7 @@ display: none;
 
 <h1 class="title toc-ignore">apply_model_on_Yelp.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-04-15</h4>
+<h4 class="date">2024-04-17</h4>
 
 </div>
 
@@ -599,7 +599,8 @@ source(&quot;./code_files/import_lib.R&quot;)</code></pre>
 ## [1] &quot;Package magrittr loaded.&quot;
 ## [1] &quot;Package RSpectra loaded.&quot;
 ## [1] &quot;Package Matrix loaded.&quot;
-## [1] &quot;Package knitr loaded.&quot;</code></pre>
+## [1] &quot;Package knitr loaded.&quot;
+## [1] &quot;Package roxygen2 loaded.&quot;</code></pre>
 <pre class="r"><code>source(&quot;./Yelp_reviews/load_yelp_data.R&quot;)
 #---------------
 print_rmse &lt;- function(X_test, X_hat, model_name) {
@@ -615,27 +616,34 @@ dat &lt;- load_Yelp_data(scale=T, seed=2024)</code></pre>
 <pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
 ## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
 ## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre class="r"><code>best_fit = CASMC_cv_holdout_v2(
+<pre class="r"><code>best_fit = CASMC_cv_holdout_with_r(
  dat$valid$train,
  dat$X_r,
  dat$valid$valid@x,
  dat$valid$W,
- dat$train.inc,
+ r_min = 0,
+ y = dat$train.inc,
  trace = F,
  thresh = 1e-6,
  n.lambda = 30,
  rank.step = 2,
  rank.limit = 30 
-)
-fit1 = best_fit$fit
-beta =  fit1$beta
+)</code></pre>
+<pre><code>## [1] &quot;5 - 0.178149589904087&quot;
+## [1] &quot;4 - 0.158132259810266&quot;
+## [1] &quot;3 - 0.157114432560589&quot;
+## [1] &quot;2 - 0.0979760569456576&quot;
+## [1] &quot;1 - 0.0897032368718575&quot;
+## [1] &quot;0 - 0.092284252465259&quot;</code></pre>
+<pre class="r"><code>fit1 = best_fit$fit
+beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + dat$X_r$X %*% t(beta)
 if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds &lt;- A[dat$W_test==0]
 RMSE_error(preds, dat$test.inc@x)</code></pre>
-<pre><code>## [1] 0.1543945</code></pre>
+<pre><code>## [1] 0.09003542</code></pre>
 <pre class="r"><code>casmc_error = RMSE_error(dat$test.inc@x, preds)
 #------------------------------------------------------------
 dat$valid$train.mat &lt;- as.matrix(dat$valid$train)
@@ -651,8 +659,10 @@ sout &lt;- simpute.cv(
  rank.limit = 30,
  print.best = FALSE,
  rank.step = 2
-)
-if(scale) sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
+)</code></pre>
+<pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 300 iterations</code></pre>
+<pre class="r"><code>if(scale) sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
 preds_simpute &lt;- sout$estimates[dat$W_test==0]
 simpute_error = RMSE_error(dat$test.inc@x, preds_simpute)
 
@@ -824,7 +834,7 @@ CollectiveModel
 CASMC
 </td>
 <td style="text-align:right;">
-0.1543945
+0.0900354
 </td>
 </tr>
 <tr>
@@ -832,7 +842,7 @@ CASMC
 SoftImpute
 </td>
 <td style="text-align:right;">
-0.0923370
+0.0926507
 </td>
 </tr>
 <tr>
