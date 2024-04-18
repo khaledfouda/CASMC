@@ -6,10 +6,13 @@ load_Yelp_data <-
            seed = NULL) {
     if (!is.null(seed))
       set.seed(seed)
-    stopifnot(covarites %in% c("rows", "columns"))
+    stopifnot(covariates %in% c("rows", "columns"))
     reviews <-
       readRDS("./Yelp_reviews/data/subset_PA/sample/reviews.RDS") #%>%  t()
     
+    
+    if(covariates == "rows"){
+      
     
     users <- readRDS("./Yelp_reviews/data/subset_PA/sample/users.RDS") %>% 
       mutate(elite_count = sapply(strsplit(elite, ","), length)) %>% 
@@ -19,9 +22,14 @@ load_Yelp_data <-
                     funny,
                     cool,
                     fans,
+                    elite_count,
                     contains("compliment")) %>%
+      mutate(across(everything(), ~ ifelse(is.na(.), mean(.,na.rm=T), .))) %>% 
       scale() %>%
       as.matrix()
+      
+    X <- users
+    }else{
       
     business <-
       readRDS("./Yelp_reviews/data/subset_PA/sample/business.RDS") 
@@ -47,23 +55,15 @@ load_Yelp_data <-
       arrange(desc(value)) %>%  
       filter(value > 100) %>% 
       select(name) -> categories_to_keep
+    df1 <- select(df1,all_of(categories_to_keep$name))
     
     
-    business %>%
-      select(stars, review_count, is_open) %>% 
-      cbind(select(df1,all_of(categories_to_keep$name)))
-    
-    # df1 %>%  %>%  cbind(business)
-    df1 = business %>% select(attributes)
-    
-    
-    attributes_expanded <- df1 %>%
-      mutate(row_id = row_number()) %>% # Add an ID to preserve original row association
+    df2 = business %>% select(attributes)
+    attributes_expanded <- df2 %>%
+      mutate(row_id = row_number()) %>%
       unnest_wider(attributes) %>%
-      select(-row_id) # Remove the row_id if you don't need it anymore
-    
-    head(attributes_expanded)
-    
+      select(-row_id)
+
     attributes_expanded %>% summarise_all(function(d) length(unique(d))) %>% 
       pivot_longer(cols=everything(), names_to="name", values_to = 'value') %>% 
       filter(value <= 5) %>% 
@@ -71,33 +71,29 @@ load_Yelp_data <-
     
     attributes_expanded %>% 
       select(all_of(attributes_to_keep$name)) %>% 
-      mutate(across(everything(), factor)) %>% 
-      
-      view
+      #mutate(across(everything(), factor)) %>% 
+        fastDummies::dummy_cols(remove_first_dummy  = TRUE,ignore_na=T,
+                              remove_selected_columns=T) %>%  
+      select(where(~ mean(is.na(.)) <= 0.1)) %>% 
+      mutate(across(everything(), ~ ifelse(is.na(.), mean(.,na.rm=T), .))) ->
+      df2
     
-    # If not already installed: install.packages("fastDummies")
-    library(fastDummies)
-    attributes_expanded <- fastDummies::dummy_cols(attributes_expanded, remove_first_dummy = TRUE)
+    business %>%
+      select(stars, review_count, is_open) %>% 
+      cbind(df1) %>% 
+      select(where(~ mean(is.na(.)) <= 0.1)) %>% 
+      mutate(across(everything(), ~ ifelse(is.na(.)|is.nan(.), mean(.,na.rm=T), .))) %>%
+      cbind(df2) %>% 
+      select(where(~ length(table(.)) >1)) %>% 
+      scale() %>% 
+      as.matrix() -> 
+      business
     
+    X <- business
+    reviews = t(reviews)
+    }
+    #-----------------------------------------------------------------------------------
     
-    # Now 'attributes_expanded' has one column for each list element from the 'attributes' column
-    # If necessary, you can then join this back with the original data frame 'df' by 'row_id'
-    df <- df %>%
-      mutate(row_id = row_number()) %>%
-      left_join(attributes_expanded, by = "row_id") %>%
-      select(-row_id)
-    
-    
-    unlist(categs[1])[2]
-  
-  
-  unlist(business$categories)[1]    
-    
-    if(covariates == "columns"){
-      X = business
-      reviews = t(reviews)
-    }else
-      X = users
     
     mask_observ <- as.matrix(reviews != 0)
     
@@ -128,7 +124,7 @@ load_Yelp_data <-
     #-------------------------------------------------------------------------
     # scale
     if (scale) {
-      biScale.out <- biScaleMatrix(as.matrix(reviews),T,F)
+      biScale.out <- biScaleMatrix(as.matrix(reviews),F,F)
       reviews <- as(biScale.out$scaledMat, "Incomplete")
     } else{
       biScale.out = NULL
@@ -145,20 +141,20 @@ load_Yelp_data <-
     # length(valid_set@x)
     #--------------------------------------------------------------------------
     
-    users$elite_count <-
-    users %>%
-      select(elite, elite_count) %>%  view
-    
-    X_cov <- users %>%
-      dplyr::select(average_stars,
-                    review_count,
-                    useful,
-                    funny,
-                    cool,
-                    fans,
-                    contains("compliment")) %>%
-      scale() %>%
-      as.matrix()
+    # users$elite_count <-
+    # users %>%
+    #   select(elite, elite_count) %>%  view
+    # 
+    # X_cov <- users %>%
+    #   dplyr::select(average_stars,
+    #                 review_count,
+    #                 useful,
+    #                 funny,
+    #                 cool,
+    #                 fans,
+    #                 contains("compliment")) %>%
+    #   scale() %>%
+    #   as.matrix()
     
     # X_cov <- business %>% 
     #   dplyr::select(stars, review_count, is_open) %>% 
@@ -167,11 +163,11 @@ load_Yelp_data <-
     
     
     
-    require(stats)
-    pca_result <- prcomp(X_cov, scale. = TRUE)
-    summary(pca_result)
-    pca_scores <- pca_result$x[, 1:5]
-    X_r <- reduced_hat_decomp(pca_scores)
+    # require(stats)
+    # pca_result <- prcomp(X_cov, scale. = TRUE)
+    # summary(pca_result)
+    # pca_scores <- pca_result$x[, 1:5]
+    X_r <- reduced_hat_decomp(X)
     
     #-----------------------------------------------------------------------------
     out = list(

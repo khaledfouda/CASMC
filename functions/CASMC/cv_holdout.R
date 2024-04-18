@@ -90,7 +90,7 @@ CASMC_cv_holdout_with_r <-
       Xterms = GetXterms(X_r$X)
       best_score = Inf
       best_fit = NULL
-      num_cores = min(max_cores, length(r_seq))
+      num_cores = min(max_cores, length(r_seq)+1)
       print(paste("Running on", num_cores, "cores."))
       results <- mclapply(r_seq, function(r) {
          CASMC_cv_holdout(

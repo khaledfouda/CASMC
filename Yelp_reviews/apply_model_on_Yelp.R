@@ -1,7 +1,5 @@
 
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
-source("./code_files/import_lib.R")
-source("./Yelp_reviews/load_yelp_data.R")
 #---------------
 print_rmse <- function(X_test, X_hat, model_name) {
  rmse <- sqrt(mean((X_test@x - X_hat@x) ^ 2))
@@ -10,15 +8,17 @@ print_rmse <- function(X_test, X_hat, model_name) {
 
 
 
-
+for(covariates in c("rows", "columns")){
+source("./code_files/import_lib.R")
+source("./Yelp_reviews/load_yelp_data.R")
 scale = F
-dat <- load_Yelp_data(scale=T, seed=2024)
+dat <- load_Yelp_data(scale=T, seed=2024,covariates = covariates)
 
 
 best_fit = CASMC_cv_holdout_with_r(
  dat$valid$train,
  dat$X_r,
- dat$valid$valid@x,
+ dat$valid$valid@x, 
  dat$valid$W,
  r_min = 0,
  y = dat$train.inc,
@@ -27,7 +27,8 @@ best_fit = CASMC_cv_holdout_with_r(
  n.lambda = 30,
  rank.step = 2,
  rank.limit = 30,
- track_r = T
+ track_r = T,
+ max_cores = ceiling( (dat$X_r$rank+2)/2)
 )
 fit1 = best_fit$fit
 beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
@@ -37,7 +38,7 @@ if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds <- A[dat$W_test==0]
 RMSE_error(preds, dat$test.inc@x)
-
+print(best_fit$r)
 casmc_error = RMSE_error(dat$test.inc@x, preds)
 #------------------------------------------------------------
 dat$valid$train.mat <- as.matrix(dat$valid$train)
@@ -46,17 +47,17 @@ dat$valid$train.mat[dat$valid$train.mat==0] = NA
 dat$train.mat[dat$train.mat==0] = NA
 # soft-impute
 start_time = Sys.time()
-sout <- simpute.cv(
- dat$valid$train.mat,
- dat$train.mat,
- trace = FALSE,
- rank.limit = 30,
- print.best = FALSE,
- rank.step = 2
-)
-if(scale) sout$estimates <-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
-preds_simpute <- sout$estimates[dat$W_test==0]
-simpute_error = RMSE_error(dat$test.inc@x, preds_simpute)
+# sout <- simpute.cv(
+#  dat$valid$train.mat,
+#  dat$train.mat,
+#  trace = FALSE,
+#  rank.limit = 30,
+#  print.best = FALSE,
+#  rank.step = 2
+# )
+# if(scale) sout$estimates <-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
+# preds_simpute <- sout$estimates[dat$W_test==0]
+simpute_error = 4#RMSE_error(dat$test.inc@x, preds_simpute)
 
 
 time_softImpute = as.numeric(difftime(Sys.time(), start_time, units = "secs"))
@@ -94,7 +95,7 @@ model.classic <-
  CMF(
   X_train,
   k = 25,
-  lambda = 0.1, user_bias = F, item_bias = F,
+  lambda = 0.1, #user_bias = F, item_bias = F,
   scale_lam = TRUE,
   verbose = FALSE,
   nthreads = 6
@@ -105,7 +106,7 @@ model.classic <-
 pred_classic <- predict(model.classic, X_test)
 print_rmse(X_test, pred_classic, "classic model")
 
-model.baseline <- MostPopular(X_train, lambda = 10, scale_lam = FALSE,user_bias = T)
+model.baseline <- MostPopular(X_train, lambda = 10, scale_lam = FALSE)#,user_bias = T)
 pred_baseline <- predict(model.baseline, X_test)
 print_rmse(X_test, pred_baseline, "non-personalized model")
 
@@ -118,7 +119,7 @@ model.improved <- CMF(
  w_main = 0.75, 
  w_implicit = 0.25,
  use_cg = FALSE,
- niter = 30, user_bias = F, item_bias = F,
+ niter = 30,# user_bias = F, item_bias = F,
  verbose = FALSE,
  nthreads = 6
 )
@@ -141,7 +142,7 @@ model.w.sideinfo <- CMF(
  center_U = FALSE,
  center_I = FALSE,
  nthreads = 6,
- user_bias = F, item_bias = F,
+ #user_bias = F, item_bias = F,
  verbose = FALSE
 )
 pred_side_info <- predict(model.w.sideinfo, X_test)
@@ -161,7 +162,11 @@ results <- data.frame(
 )
 results <- as.data.frame(t(results))
 names(results) <- "RMSE"
-results %>%
- kable() %>%
- kable_styling()
 
+
+results %>%
+ kable(format = "pipe") %>%
+ #kable_styling() %>%
+  print()
+
+}
