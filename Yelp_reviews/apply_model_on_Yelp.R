@@ -147,6 +147,8 @@ model.w.sideinfo <- CMF(
 pred_side_info <- predict(model.w.sideinfo, X_test)
 print_rmse(X_test, pred_side_info, "model with side info")
 
+detach("package:cmfrec", unload = TRUE)
+detach("package:MatrixExtra", unload = TRUE)
 #------------------------------------------------
 results <- data.frame(
  NonPersonalized = RMSE_error(X_test@x, pred_baseline@x),
@@ -163,5 +165,3 @@ results %>%
  kable() %>%
  kable_styling()
 
-detach("package:cmfrec", unload = TRUE)
-detach("package:MatrixExtra", unload = TRUE)
