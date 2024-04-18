@@ -201,14 +201,14 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 alpha_grid = seq(0.992, 1, length = 5)
-lambda.1_grid = seq(20, 50, length = 30)
+lambda.1_grid = seq(20, 50, length = 20)
 lambda.2_grid = seq(.9, 0, length = 20)
 ncores = 1
 error_function <- RMSE_error
 model_mask <- rep(T, 7)
-model_mask[c(4)] <- T
+model_mask[c(4)] <- F
 mao_r <- 10
-ncovariates <- 10
+ncovariates <- 5
 cov_eff = F
 note = "_no_cov_"
 

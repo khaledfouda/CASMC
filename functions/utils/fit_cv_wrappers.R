@@ -167,13 +167,21 @@ compare_CASMC_holdout <-
           ...) {
   start_time = Sys.time()
   
+  y_train = valid.dat$Y_train
+  y_train[y_train==0] = NA
+  y_train = as(y_train, "Incomplete")
   
-  best_fit = CASMC_cv_holdout_v2(
-   valid.dat$Y_train,
+  y = gen.dat$Y
+  y[y==0] = NA
+  y = as(y, "Incomplete")
+  
+  best_fit = CASMC_cv_holdout_with_r(
+   y_train,
    splr.dat,
    valid.dat$Y_valid,
    valid.dat$W_valid,
-   gen.dat$Y,
+   r_min = 0,
+   y = y,
    trace = F,
    thresh = 1e-6,
    n.lambda = n.lambda,
@@ -189,7 +197,7 @@ compare_CASMC_holdout <-
   sout = best_fit
   # get estimates and validate
   sout$M = fit1$u %*% (fit1$d * t(fit1$v))
-  sout$beta =  fit1$beta
+  sout$beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v) )
   sout$estimates = sout$M + splr.dat$X %*% t(sout$beta)
   
   results = list(model = "CASMC_holdout")

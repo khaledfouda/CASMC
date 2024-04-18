@@ -105,7 +105,7 @@ model.classic <-
 pred_classic <- predict(model.classic, X_test)
 print_rmse(X_test, pred_classic, "classic model")
 
-model.baseline <- MostPopular(X_train, lambda = 10, scale_lam = FALSE,user_bias = T)
+model.baseline <- MostPopular(X_train, lambda = 10, scale_lam = FALSE,user_bias = F)
 pred_baseline <- predict(model.baseline, X_test)
 print_rmse(X_test, pred_baseline, "non-personalized model")
 

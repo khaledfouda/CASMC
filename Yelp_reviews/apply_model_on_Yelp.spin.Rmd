@@ -1,4 +1,5 @@
 
+```{r}
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
 source("./Yelp_reviews/load_yelp_data.R")
@@ -105,7 +106,7 @@ model.classic <-
 pred_classic <- predict(model.classic, X_test)
 print_rmse(X_test, pred_classic, "classic model")
 
-model.baseline <- MostPopular(X_train, lambda = 10, scale_lam = FALSE,user_bias = T)
+model.baseline <- MostPopular(X_train, lambda = 10, scale_lam = FALSE,user_bias = F)
 pred_baseline <- predict(model.baseline, X_test)
 print_rmse(X_test, pred_baseline, "non-personalized model")
 
@@ -165,3 +166,13 @@ results %>%
 
 detach("package:cmfrec", unload = TRUE)
 detach("package:MatrixExtra", unload = TRUE)
+```
+
+
+
+---
+title: apply_model_on_Yelp.R
+author: kfouda
+date: '2024-04-18'
+
+---

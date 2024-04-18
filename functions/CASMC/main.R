@@ -5,8 +5,8 @@ source("./code_files/import_lib.R")
 
 # 0. prepare the data
 
-gen.dat <-  generate_simulation_data_mao(800,800,10,10, "MAR", 2024)
-gen.dat <- generate_simulation_data_ysf(2,400,500,10,10, missing_prob = 0.8,coll=T,cov_eff = F)
+gen.dat <-  generate_simulation_data_mao(400,400,10,10, "MAR", 2024, cov_eff = F)
+gen.dat <- generate_simulation_data_ysf(2,1100,1000,10,10, missing_prob = 0.8,coll=T,cov_eff = T)
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
 y[y==0] = NA
@@ -25,7 +25,7 @@ set.seed(2020);fits2 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace=F, J=max.r
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 # get estimates and validate
-beta =  fits2$beta
+beta =  fits2$Beta$u %*% (fits2$Beta$d * t(fits2$Beta$v))
 
 M = fits2$u %*% (fits2$d * t(fits2$v))
 A = M + X_r$X %*% t(beta)
@@ -48,12 +48,12 @@ Y_valid = gen.dat$Y[W_valid==0]
 # fit
 start_time <- Sys.time()
 best_fit = CASMC_cv_holdout(Y_train, X_r, Y_valid, W_valid, r = NULL, y=y,
-                               trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20)
+                               trace=T, thresh=1e-6,n.lambda = 30, rank.limit = 20)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 fit1 = best_fit$fit
 # get estimates and validate
-beta =  as.matrix(fit1$beta)
+beta = as.matrix(fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) )
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + X_r$X %*% t(beta)
 test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
@@ -68,23 +68,23 @@ best_fit$lambda
 # prepare the data
 # fit
 start_time <- Sys.time()
-best_fit = CASMC_cv_holdout_with_r(Y_train, X_r, Y_valid, W_valid, r_min=0,  y=y,
-                            trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20)
+best_fit2 = CASMC_cv_holdout_with_r_par(Y_train, X_r, Y_valid, W_valid, r_min=0,  y=y,max_cores = 4,
+                            trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20, track_r = T) 
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
-print(best_fit$r)
-fit1 = best_fit$fit
+print(best_fit2$r)
+fit1 = best_fit2$fit
 # get estimates and validate
 beta =  as.matrix(fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) )
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + X_r$X %*% t(beta)
-test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
+test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] ) 
 # test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )
 print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
 test_error(M, gen.dat$M)
-print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5)))
-best_fit$rank.max
-best_fit$lambda
+print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5))) 
+best_fit2$rank.max
+best_fit2$lambda
 #------------------------------------------------------------------------------------
 # K-fold cross-validation
 test_error <- RMSE_error

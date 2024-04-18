@@ -1,3 +1,68 @@
+# CASMC_cv_holdout_with_r <-
+#    function(y_train,
+#             X_r,
+#             y_valid,
+#             W_valid,
+#             r_min = 0,
+#             y = NULL,
+#             error_function = RMSE_error,
+#             lambda.factor = 1 / 4,
+#             lambda.init = NULL,
+#             n.lambda = 20,
+#             trace = FALSE,
+#             print.best = TRUE,
+#             early.stopping = 1,
+#             thresh = 1e-6,
+#             maxit = 100,
+#             rank.init = 2,
+#             rank.limit = 30,
+#             rank.step = 2,
+#             warm = NULL,
+#             track_r = FALSE,
+#             quiet = FALSE) {
+#       r_seq <- (X_r$rank):(r_min)#(X_r$rank):(r_min)
+#       Xterms = GetXterms(X_r$X)
+#       best_score = Inf
+#       best_fit = NULL
+#       warm = NULL
+#       
+#       for (r in r_seq) {
+#          fiti <- CASMC_cv_holdout(
+#             y_train = y_train,
+#             X_r = X_r,
+#             y_valid = y_valid,
+#             W_valid = W_valid,
+#             y = y,
+#             Xterms = Xterms,
+#             r = r,
+#             error_function = error_function,
+#             lambda.factor = lambda.factor,
+#             lambda.init = lambda.init,
+#             n.lambda = n.lambda,
+#             trace = trace,
+#             print.best = print.best,
+#             early.stopping = early.stopping,
+#             thresh = thresh,
+#             maxit = maxit,
+#             rank.init = rank.init,
+#             rank.limit = rank.limit,
+#             rank.step = rank.step,
+#             warm = warm,
+#             quiet = quiet
+#          )
+#          #warm = fiti$fit
+#          if (fiti$error < best_score) {
+#             best_score = fiti$error
+#             best_fit = fiti
+#          }
+#          if (track_r)
+#             print(paste(r, "-", fiti$error))
+#       }
+#       return(best_fit)
+#       
+#    }
+
+#------------------------------------------------------------------------------------------
 CASMC_cv_holdout_with_r <-
    function(y_train,
             X_r,
@@ -18,15 +83,17 @@ CASMC_cv_holdout_with_r <-
             rank.limit = 30,
             rank.step = 2,
             warm = NULL,
+            track_r = FALSE,
+            max_cores = 12,
             quiet = FALSE) {
       r_seq <- (X_r$rank):(r_min)#(X_r$rank):(r_min)
       Xterms = GetXterms(X_r$X)
       best_score = Inf
       best_fit = NULL
-      warm = NULL
-      
-      for (r in r_seq) {
-         fiti <- CASMC_cv_holdout(
+      num_cores = min(max_cores, length(r_seq))
+      print(paste("Running on", num_cores, "cores."))
+      results <- mclapply(r_seq, function(r) {
+         CASMC_cv_holdout(
             y_train = y_train,
             X_r = X_r,
             y_valid = y_valid,
@@ -46,17 +113,23 @@ CASMC_cv_holdout_with_r <-
             rank.init = rank.init,
             rank.limit = rank.limit,
             rank.step = rank.step,
-            warm = warm,
+            warm = NULL,
             quiet = quiet
          )
-         warm = fiti$fit
-         if (fiti$error < best_score) {
-            best_score = fiti$error
-            best_fit = fiti
-         }
-         print(paste(r, "-", fiti$error))
+      }, mc.cores = num_cores)
+      
+      
+      best_fit <-
+         results[[which.min(sapply(results, function(x)
+            x$error))]]
+      
+      if (track_r) {
+         sapply(results, function(x)
+            print(paste(x$r, "-", x$error)))
       }
+      
       return(best_fit)
+      
       
    }
 
@@ -64,10 +137,7 @@ CASMC_cv_holdout_with_r <-
 
 
 
-
-
-
-
+#---------------------------------------------------------------------------------------------
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Cross-Validation function with holdout method (training / validation)
 #'

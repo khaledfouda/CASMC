@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-04-17" />
+<meta name="date" content="2024-04-18" />
 
 <title>apply_model_on_Yelp.R</title>
 
@@ -576,7 +576,7 @@ display: none;
 
 <h1 class="title toc-ignore">apply_model_on_Yelp.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-04-17</h4>
+<h4 class="date">2024-04-18</h4>
 
 </div>
 
@@ -627,14 +627,16 @@ dat &lt;- load_Yelp_data(scale=T, seed=2024)</code></pre>
  thresh = 1e-6,
  n.lambda = 30,
  rank.step = 2,
- rank.limit = 30 
+ rank.limit = 30,
+ track_r = T
 )</code></pre>
-<pre><code>## [1] &quot;5 - 0.178149589904087&quot;
-## [1] &quot;4 - 0.158132259810266&quot;
-## [1] &quot;3 - 0.157114432560589&quot;
-## [1] &quot;2 - 0.0979760569456576&quot;
-## [1] &quot;1 - 0.0897032368718575&quot;
-## [1] &quot;0 - 0.092284252465259&quot;</code></pre>
+<pre><code>## [1] &quot;Running on 6 cores.&quot;
+## [1] &quot;5 - 0.178149589904087&quot;
+## [1] &quot;4 - 0.130420410885377&quot;
+## [1] &quot;3 - 0.116723193353173&quot;
+## [1] &quot;2 - 0.0994257776572589&quot;
+## [1] &quot;1 - 0.0934851866123445&quot;
+## [1] &quot;0 - 0.0854997086275341&quot;</code></pre>
 <pre class="r"><code>fit1 = best_fit$fit
 beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
@@ -643,7 +645,7 @@ if(scale) A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds &lt;- A[dat$W_test==0]
 RMSE_error(preds, dat$test.inc@x)</code></pre>
-<pre><code>## [1] 0.09003542</code></pre>
+<pre><code>## [1] 0.08858293</code></pre>
 <pre class="r"><code>casmc_error = RMSE_error(dat$test.inc@x, preds)
 #------------------------------------------------------------
 dat$valid$train.mat &lt;- as.matrix(dat$valid$train)
@@ -659,10 +661,8 @@ sout &lt;- simpute.cv(
  rank.limit = 30,
  print.best = FALSE,
  rank.step = 2
-)</code></pre>
-<pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
-## Convergence not achieved by 300 iterations</code></pre>
-<pre class="r"><code>if(scale) sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
+)
+if(scale) sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
 preds_simpute &lt;- sout$estimates[dat$W_test==0]
 simpute_error = RMSE_error(dat$test.inc@x, preds_simpute)
 
@@ -834,7 +834,7 @@ CollectiveModel
 CASMC
 </td>
 <td style="text-align:right;">
-0.0900354
+0.0885829
 </td>
 </tr>
 <tr>
@@ -842,7 +842,7 @@ CASMC
 SoftImpute
 </td>
 <td style="text-align:right;">
-0.0926507
+0.0919276
 </td>
 </tr>
 <tr>

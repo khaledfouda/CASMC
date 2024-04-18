@@ -27,10 +27,10 @@ lambda0.cov_splr <- function(Y,
                              tol = 1e-1,
                              max_it = 30) {
    yplus = Y - svdH$u %*% (svdH$v %*% Y)
-   if (inherits(Y, "dgCMatrix") & (dim(Y)[1] == dim(Y)[2]) ) {
-      eigs_sym(yplus, k = 1, which = "LM")$values
-   } else
-      propack.svd(as.matrix(yplus), 1, opts = list(kmax = max_it))$d[1]
+   propack.svd(as.matrix(yplus), 1, opts = list(kmax = max_it))$d[1]
+   # if (inherits(Y, "dgCMatrix") & (dim(Y)[1] == dim(Y)[2]) ) {
+   #    eigs(yplus, k = 1, which = "LM")$values
+   # } else
 }
 
 

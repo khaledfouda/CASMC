@@ -1,7 +1,8 @@
 
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
-#' 
+#'
 #' @param y A sparse matrix of class Incomplete.
 #' @param X covariate matrix
 #' @param svdH (optional) A list consisting of the SVD of the hat matrix. see reduced_hat_decomp function.
@@ -35,6 +36,7 @@ CASMC_fit <-
     n <- dim(y)
     m <- n[2]
     n <- n[1]
+    k <- ncol(X)
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
@@ -130,10 +132,16 @@ CASMC_fit <-
     #-----------------------------------------------------------
     # Adjst the rank of Beta if provided
     if (!is.null(r)) {
-      beta_rank = min(sum(round(Beta$d,4)>0), r)
-      Beta$u <- Beta$u[, 1:beta_rank, drop=FALSE]
-      Beta$v <- Beta$v[, 1:beta_rank, drop=FALSE]
-      Beta$d <- Beta$d[1:beta_rank]
+      beta_rank = min(sum(round(Beta$d, 4) > 0), r)
+      if (beta_rank == 0) {
+        Beta$u <- matrix(0, n, 1)
+        Beta$v <- matrix(0, k, 1)
+        Beta$d <- c(0)
+      } else{
+        Beta$u <- Beta$u[, 1:beta_rank, drop = FALSE]
+        Beta$v <- Beta$v[, 1:beta_rank, drop = FALSE]
+        Beta$d <- Beta$d[1:beta_rank]
+      }
     }
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
@@ -146,7 +154,7 @@ CASMC_fit <-
       # updates xbeta.obs and Beta.
       VDsq = t(Dsq * t(V))
       UD.beta = t(Beta$d * t(Beta$u))
-      #print(dim(X)); print(dim(Beta$v))
+      # print(dim(X)); print(dim(Beta$v))
       xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
       M_obs = suvC(U, VDsq, irow, pcol)
       S@x = y@x - M_obs - xbeta.obs
@@ -154,10 +162,17 @@ CASMC_fit <-
       Beta = fast.svd(as.matrix(beta))
       # Adjust the rank of Beta if provided
       if (!is.null(r)) {
-        beta_rank = min(sum(round(Beta$d,4)>0), r)
-        Beta$u <- Beta$u[, 1:beta_rank, drop=FALSE]
-        Beta$v <- Beta$v[, 1:beta_rank, drop=FALSE]
-        Beta$d <- Beta$d[1:beta_rank]
+        beta_rank = min(sum(round(Beta$d, 4) > 0), r)
+        if (beta_rank == 0) {
+          Beta$u <- matrix(0, n, 1)
+          Beta$v <- matrix(0, k, 1)
+          Beta$d <- c(0)
+        } else{
+          Beta$u <- Beta$u[, 1:beta_rank, drop = FALSE]
+          Beta$v <- Beta$v[, 1:beta_rank, drop = FALSE]
+          Beta$d <- Beta$d[1:beta_rank]
+          
+        }
       }
       ##--------------------------------------------
       # part 2: Update B while A and beta are fixed
