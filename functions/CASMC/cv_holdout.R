@@ -68,8 +68,9 @@ CASMC_cv_holdout_with_r <-
             X_r,
             y_valid,
             W_valid,
-            r_min = 0,
             y = NULL,
+            r_min = 0,
+            r_max = X_r$rank,
             error_function = RMSE_error,
             lambda.factor = 1 / 4,
             lambda.init = NULL,
@@ -86,11 +87,11 @@ CASMC_cv_holdout_with_r <-
             track_r = FALSE,
             max_cores = 12,
             quiet = FALSE) {
-      r_seq <- (X_r$rank):(r_min)#(X_r$rank):(r_min)
+      r_seq <- (max(r_min,0)):(min(X_r$rank,r_max))
       Xterms = GetXterms(X_r$X)
       best_score = Inf
       best_fit = NULL
-      num_cores = min(max_cores, length(r_seq)+1)
+      num_cores = min(max_cores, length(r_seq))
       print(paste("Running on", num_cores, "cores."))
       results <- mclapply(r_seq, function(r) {
          CASMC_cv_holdout(

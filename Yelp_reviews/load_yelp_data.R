@@ -114,7 +114,6 @@ load_Yelp_data <-
     #---------------------------------------------------------------
     
     #reviews[reviews==0] <- NA
-    #reviews@x[reviews@x > 5] = 5
     #reviews@x <-  log1p(reviews@x)
     #reviews@x
     # normalize and remove outliers
@@ -123,8 +122,9 @@ load_Yelp_data <-
     #reviews@x <- normalize(reviews@x)
     #-------------------------------------------------------------------------
     # scale
+    reviews@x[reviews@x > 7] = 7
     if (scale) {
-      biScale.out <- biScaleMatrix(as.matrix(reviews),F,F)
+      biScale.out <- biScaleMatrix(as.matrix(reviews),min_max_scale = T,normalize = T)
       reviews <- as(biScale.out$scaledMat, "Incomplete")
     } else{
       biScale.out = NULL

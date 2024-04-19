@@ -134,7 +134,7 @@ CASMC_fit <-
     if (!is.null(r)) {
       beta_rank = min(sum(round(Beta$d, 4) > 0), r)
       if (beta_rank == 0) {
-        Beta$u <- matrix(0, n, 1)
+        Beta$u <- matrix(0, m, 1)
         Beta$v <- matrix(0, k, 1)
         Beta$d <- c(0)
       } else{
@@ -158,13 +158,18 @@ CASMC_fit <-
       xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
       M_obs = suvC(U, VDsq, irow, pcol)
       S@x = y@x - M_obs - xbeta.obs
+      # print(dim(X1 %*% S))
+      # print(dim(X2 %*% Beta$v %*% t(UD.beta)))
+      # print(dim(X2))
+      # print(dim(t(UD.beta)))
+      # print(dim(Beta$v))
       beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD.beta))
       Beta = fast.svd(as.matrix(beta))
       # Adjust the rank of Beta if provided
       if (!is.null(r)) {
         beta_rank = min(sum(round(Beta$d, 4) > 0), r)
         if (beta_rank == 0) {
-          Beta$u <- matrix(0, n, 1)
+          Beta$u <- matrix(0, m, 1)
           Beta$v <- matrix(0, k, 1)
           Beta$d <- c(0)
         } else{

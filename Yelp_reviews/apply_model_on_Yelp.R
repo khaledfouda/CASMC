@@ -7,6 +7,7 @@ print_rmse <- function(X_test, X_hat, model_name) {
 }
 
 
+all_results = list()
 
 for(covariates in c("rows", "columns")){
 source("./code_files/import_lib.R")
@@ -164,9 +165,15 @@ results <- as.data.frame(t(results))
 names(results) <- "RMSE"
 
 
-results %>%
+all_results[[covariates]] <- 
+  results %>%
  kable(format = "pipe") %>%
- #kable_styling() %>%
-  print()
+ kable_styling() #%>%
+  #print()
 
 }
+
+
+all_results[["rows"]]
+
+all_results[["columns"]]

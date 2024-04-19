@@ -1,14 +1,14 @@
 biScaleMatrix <-
    function(mat,
-            with_min_max = FALSE,
-            min_max_only = FALSE) {
+            min_max_scale = FALSE,
+            normalize = TRUE) {
       if (!is.matrix(mat) && !inherits(mat, "dgCMatrix")) {
          stop("Input must be a matrix or Incomplete matrix.")
       }
       
       rowMeansOrig <-
          colMeansOrig <- rowSDsOrig <- colSDsOrig <- NULL
-      if (!min_max_only) {
+      if (normalize) {
          # Handling for sparse matrices
          if (inherits(mat, "dgCMatrix")) {
             stop("No implemented yet.")
@@ -35,7 +35,7 @@ biScaleMatrix <-
          
       }
       minVal <- maxVal <- NULL
-      if (with_min_max | min_max_only) {
+      if (min_max_scale) {
          mat[mat == 0] <- NA
          minVal <- min(mat, na.rm = TRUE)
          maxVal <- max(mat, na.rm = TRUE)

@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-04-10" />
+<meta name="date" content="2024-04-19" />
 
 <title>cmfrec_lib_on_movielens.R</title>
 
@@ -576,7 +576,7 @@ display: none;
 
 <h1 class="title toc-ignore">cmfrec_lib_on_movielens.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-04-10</h4>
+<h4 class="date">2024-04-19</h4>
 
 </div>
 
@@ -599,7 +599,8 @@ source(&quot;./code_files/import_lib.R&quot;)</code></pre>
 ## [1] &quot;Package magrittr loaded.&quot;
 ## [1] &quot;Package RSpectra loaded.&quot;
 ## [1] &quot;Package Matrix loaded.&quot;
-## [1] &quot;Package knitr loaded.&quot;</code></pre>
+## [1] &quot;Package knitr loaded.&quot;
+## [1] &quot;Package roxygen2 loaded.&quot;</code></pre>
 <pre class="r"><code>source(&quot;./MovieLens/load_data.R&quot;)
 #---------------
 print_rmse &lt;- function(X_test, X_hat, model_name) {
@@ -618,27 +619,32 @@ dat &lt;- load_movielens_100k(&quot;a&quot;, remove_bad_movies = T, scale = T)</
 <pre class="r"><code>dat$test.ind = cbind(dat$test.df$user_id, dat$test.df$movie_id)
 
 
-best_fit = CASMC_cv_holdout_v2(
-  dat$valid$train,
+best_fit = CASMC_cv_holdout_with_r(
+  dat$valid$train.inc,
   dat$X_r,
   dat$valid$test,
   dat$valid$W,
-  dat$train.mat,
+  dat$train.inc,
+  r_min = 0,
+  r_max=  15,
   trace = F,
   thresh = 1e-6,
   n.lambda = 30,
   rank.step = 2,
   rank.limit = 30 
-)
-fit1 = best_fit$fit
-beta =  fit1$beta
+)</code></pre>
+<pre><code>## [1] &quot;Running on 12 cores.&quot;</code></pre>
+<pre class="r"><code>fit1 = best_fit$fit
+beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) 
 M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + dat$X_r$X %*% t(beta)
 A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds &lt;- A[dat$test.ind]
 RMSE_error(preds, dat$test.df$rating)</code></pre>
-<pre><code>## [1] 0.9400692</code></pre>
+<pre><code>## [1] 0.9490545</code></pre>
+<pre class="r"><code>best_fit$r</code></pre>
+<pre><code>## [1] 0</code></pre>
 <pre class="r"><code>#------------------------------------------------------------
 # soft-impute
 start_time = Sys.time()
@@ -675,10 +681,6 @@ library(MatrixExtra)</code></pre>
 <pre><code>## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
 <pre class="r"><code>dat &lt;-
  load_movielens_100k(&quot;a&quot;, remove_bad_movies = TRUE, scale = FALSE)
-
-
-
-
 
 
 
@@ -760,8 +762,11 @@ print_rmse(X_test, pred_improved, &quot;improved classic model&quot;)</code></pr
 )
 pred_side_info &lt;- predict(model.w.sideinfo, X_test)
 print_rmse(X_test, pred_side_info, &quot;model with side info&quot;)</code></pre>
-<pre><code>## RMSE for model with side info is: 0.9312</code></pre>
-<pre class="r"><code>#------------------------------------------------
+<pre><code>## RMSE for model with side info is: 0.9293</code></pre>
+<pre class="r"><code>detach(&quot;package:cmfrec&quot;, unload = TRUE)
+detach(&quot;package:MatrixExtra&quot;, unload = TRUE)
+
+#------------------------------------------------
 results &lt;- data.frame(
  NonPersonalized = RMSE_error(X_test@x, pred_baseline@x),
  ClassicalModel = RMSE_error(X_test@x, pred_classic@x),
@@ -816,7 +821,7 @@ ClassicPlusImplicit
 CollectiveModel
 </td>
 <td style="text-align:right;">
-0.9312493
+0.9292728
 </td>
 </tr>
 <tr>
@@ -824,7 +829,7 @@ CollectiveModel
 CASMAC
 </td>
 <td style="text-align:right;">
-0.9400692
+0.9490545
 </td>
 </tr>
 <tr>
@@ -832,7 +837,7 @@ CASMAC
 SoftImpute
 </td>
 <td style="text-align:right;">
-0.9477645
+0.9477485
 </td>
 </tr>
 <tr>

@@ -21,13 +21,17 @@ best_fit = CASMC_cv_holdout_with_r(
   dat$X_r,
   dat$valid$test,
   dat$valid$W,
-  y=dat$train.inc,
+  dat$train.inc,
+  r_min = 0,
+  r_max=  15,
   trace = F,
   thresh = 1e-6,
   n.lambda = 30,
   rank.step = 2,
   rank.limit = 30 
 )
+
+
 fit1 = best_fit$fit
 beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) 
 M = fit1$u %*% (fit1$d * t(fit1$v))
@@ -36,6 +40,7 @@ A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
 #qr(A)$rank
 preds <- A[dat$test.ind]
 RMSE_error(preds, dat$test.df$rating)
+best_fit$r
 #------------------------------------------------------------
 # soft-impute
 start_time = Sys.time()
@@ -134,6 +139,8 @@ model.w.sideinfo <- CMF(
 )
 pred_side_info <- predict(model.w.sideinfo, X_test)
 print_rmse(X_test, pred_side_info, "model with side info")
+detach("package:cmfrec", unload = TRUE)
+detach("package:MatrixExtra", unload = TRUE)
 
 #------------------------------------------------
 results <- data.frame(
