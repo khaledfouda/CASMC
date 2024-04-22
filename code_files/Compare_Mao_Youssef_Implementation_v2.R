@@ -208,9 +208,9 @@ error_function <- RMSE_error
 model_mask <- rep(T, 7)
 model_mask[c(4)] <- F
 mao_r <- 10
-ncovariates <- 5
-cov_eff = F
-note = "_no_cov_"
+ncovariates <- 8
+cov_eff = T
+note = ""
 
 
 compare_and_save(

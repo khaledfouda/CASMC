@@ -8,7 +8,8 @@ generate_simulation_data_ysf <-
             missing_prob = 0.7,
             coll = FALSE,
             seed = NULL,
-            cov_eff = TRUE) {
+            cov_eff = TRUE,
+            informative_cov_prop = .5) {
       if (!is.null(seed))
          set.seed(seed = seed)
       X <- matrix(rnorm(n1 * m1), ncol = m1)
@@ -63,9 +64,17 @@ generate_simulation_data_ysf <-
          if (cov_eff) {
             O <- (X %*% beta.x) + P_bar_X %*% M
          } else{
-            beta.x <- matrix(0, m1, ncol = n2)
+            ncov_to_keep = round(informative_cov_prop * m1)
+            if (ncov_to_keep < m1) {
+               beta.x[(ncov_to_keep + 1):m1, ] <- 0
+               # beta.z[(ncov_to_keep+1):m2,] <- 0
+               xbeta = X[, 1:ncov_to_keep] %*% beta.x[1:ncov_to_keep, ]
+            } else{
+               beta.x <- matrix(0, m1, ncol = n2)
+               xbeta <- X %*% beta.x
+            }
             beta.z <- matrix(0, m2, ncol = n1)
-            O <- P_bar_X %*% M
+            O <- xbeta + P_bar_X %*% M
          }
          Y <- (O + E) * W
          rank <- qr(O)$rank

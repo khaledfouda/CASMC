@@ -28,18 +28,18 @@ source("./code_files/import_lib.R")
 #path_to_data = "./Mao/saved_data/"
 library(data.table)
 note = "_no_cov_"
-
+note = ""
 ```
 
 
 ```{r include=FALSE, eval=FALSE, echo=FALSE}
-rmarkdown::render("Documentation/Rmd//4_Model_Comparison(1)_Tables.Rmd",
-                  output_dir = "Documentation/html/",
-                  output_file = "4_Model_Comparison_Tables_No_Covariate_Effects.html")
-
-
-rmarkdown::render("Documentation/Rmd//4_Model_Comparison(1)_Tables.Rmd",
-                  output_dir = "Documentation/html/")
+# rmarkdown::render("Documentation/Rmd//4_Model_Comparison(1)_Tables.Rmd",
+#                   output_dir = "Documentation/html/",
+#                   output_file = "4_Model_Comparison_Tables_No_Covariate_Effects.html")
+# 
+# 
+# rmarkdown::render("Documentation/Rmd//4_Model_Comparison(1)_Tables.Rmd",
+#                   output_dir = "Documentation/html/")
 
 ```
 
@@ -185,7 +185,7 @@ print_table <-
             coll = TRUE,
             prob = NA,
             caption = "",
-            nmodels = 7) {
+            nmodels = 6) {
       #$$
       names(results) = gsub("error\\.", "", names(results))
       results %>%
@@ -228,7 +228,7 @@ print_table <-
       
       # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
       error_columns <- c("O_test", "O", "Beta", "M", "seconds")
-      for (i in seq(1, 28, nmodels))
+      for (i in seq(1, nmodels*4, nmodels))
          combined_results[i:(i + nmodels - 1),] <-
          color_min_values(combined_results[i:(i + nmodels - 1),], error_columns)
       

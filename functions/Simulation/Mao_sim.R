@@ -23,7 +23,8 @@ generate_simulation_data_mao <-
             method = "MAR",
             seed = NULL,
             miss.prob = 0.8,
-            cov_eff = TRUE) {
+            cov_eff = TRUE,
+            informative_cov_prop = .5) {
       #' Input:
       #'      n1, n2: are the dimensions of the A, Y, and B matrices
       #'      m: number of covariates
@@ -43,8 +44,15 @@ generate_simulation_data_mao <-
       if (cov_eff) {
          O <- X %*% beta + M
       } else{
-         beta <- matrix(0, m, n2)
-         O <- M
+         ncov_to_keep = round(informative_cov_prop * m)
+         if (ncov_to_keep < m) {
+            beta[(ncov_to_keep + 1):m, ] <- 0
+            xbeta = X[, 1:ncov_to_keep] %*% beta[1:ncov_to_keep, ]
+         } else{
+            beta <- matrix(0, m, n2)
+            xbeta <- X %*% beta
+         }
+         O <- xbeta + M
       }
       
       rank <- qr(O)$rank # = m + r

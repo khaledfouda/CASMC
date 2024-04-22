@@ -190,7 +190,7 @@ compare_CASMC_holdout <-
    rank.step = rank.step,
    print.best = FALSE
   )
-  
+  print(best_fit$r)
   
   fit1 = best_fit$fit
   #fit2 = best_fit$fit2
