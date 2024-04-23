@@ -4,7 +4,8 @@ reduced_hat_decomp <- function(X, tol = 1e-2) {
    rank = length(X_svd$d)
    Q <- qr.Q(Matrix::qr(X))
    H <- Q %*% t(Q)
-   svdH <- fast.svd(H, tol)
+   #svdH <- fast.svd(H, tol)
+   svdH <- irlba(H, nu = rank, nv = rank, tol = tol)
    svdH$u = svdH$u
    svdH$v = svdH$d * t(svdH$v)
    svdH$d <- H <- Q <- NULL

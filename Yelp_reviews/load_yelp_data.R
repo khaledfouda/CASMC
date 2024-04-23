@@ -3,18 +3,19 @@ load_Yelp_data <-
   function(scale = TRUE,
            split_p = list(test = 0.2, valid = 0.2),
            covariates = "rows",
-           seed = NULL) {
+           seed = NULL,
+           subset = "_4x3") {
     if (!is.null(seed))
       set.seed(seed)
     stopifnot(covariates %in% c("rows", "columns"))
     reviews <-
-      readRDS("./Yelp_reviews/data/subset_PA/sample/reviews.RDS") #%>%  t()
+      readRDS(paste0("./Yelp_reviews/data/subset_PA/sample/reviews",subset,".RDS")) #%>%  t()
     
     
     if(covariates == "rows"){
       
     
-    users <- readRDS("./Yelp_reviews/data/subset_PA/sample/users.RDS") %>% 
+    users <- readRDS(paste0("./Yelp_reviews/data/subset_PA/sample/users",subset,".RDS")) %>% 
       mutate(elite_count = sapply(strsplit(elite, ","), length)) %>% 
       dplyr::select(average_stars,
                     review_count,
@@ -32,7 +33,7 @@ load_Yelp_data <-
     }else{
       
     business <-
-      readRDS("./Yelp_reviews/data/subset_PA/sample/business.RDS") 
+      readRDS(paste0("./Yelp_reviews/data/subset_PA/sample/business",subset,".RDS")) 
     
     categs = strsplit(unlist(business$categories), ",")
   
@@ -122,15 +123,13 @@ load_Yelp_data <-
     #reviews@x <- normalize(reviews@x)
     #-------------------------------------------------------------------------
     # scale
-    reviews@x[reviews@x > 7] = 7
+    reviews@x[reviews@x > 7] = 7  
     if (scale) {
-      biScale.out <- biScaleMatrix(as.matrix(reviews),min_max_scale = T,normalize = T)
+      biScale.out <- biScaleMatrix(as.matrix(reviews),min_max_scale = T,normalize = F)
       reviews <- as(biScale.out$scaledMat, "Incomplete")
     } else{
       biScale.out = NULL
     }
-    
-    
     
     #-------------------------------------------------------------------------
     train_set = reviews * mask_test * mask_valid

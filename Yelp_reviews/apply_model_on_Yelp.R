@@ -8,12 +8,12 @@ print_rmse <- function(X_test, X_hat, model_name) {
 
 
 all_results = list()
-
+covariates <- "rows"
 for(covariates in c("rows", "columns")){
 source("./code_files/import_lib.R")
 source("./Yelp_reviews/load_yelp_data.R")
 scale = F
-dat <- load_Yelp_data(scale=T, seed=2024,covariates = covariates)
+dat <- load_Yelp_data(scale=T, seed=2024,covariates = covariates,subset = "_4x3")
 
 
 best_fit = CASMC_cv_holdout_with_r(
