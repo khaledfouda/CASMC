@@ -1,6 +1,7 @@
 load_movielens_1M <-
-  function(scale = FALSE)
+  function(scale = FALSE, seed= 2023)
   {
+    set.seed(seed)
     scale = FALSE
     ratings <-
       read.table(
@@ -24,21 +25,50 @@ load_movielens_1M <-
     users %<>%
       arrange(user.id) %>%
       select(-user.id, -zip.code) %>%
-      mutate(age.sq = age ** 2) %>%
+      mutate(#age.sq = age ** 2,
+             occupation = as.factor(occupation)) %>%
       fastDummies::dummy_columns(
         ignore_na = T,
         remove_selected_columns = T,
         remove_most_frequent_dummy = T
       ) %>%
-      scale() %>%
+      #scale() %>%
       as.matrix()
+    
+    # there are 21 categories in the occupation, we need to reduce that. 
+    subset = users[,3:ncol(users)] 
+    ratings %>%
+      group_by(user.id) %>% 
+      summarise(avg.score = mean(rating)) %>%
+      arrange(user.id) %>% 
+      cbind(subset) %>% 
+      select(-user.id) -> avg.ratings
+    
+    lm.fit <- lm(avg.score~., data=avg.ratings)
+    model_summary = summary(lm.fit)
+    coefficients_table <- model_summary$coefficients[-1,]
+    significant_covariates <- rownames(coefficients_table)[coefficients_table[, "Pr(>|t|)"] < 0.05]
+    subset <- subset[, significant_covariates, drop = FALSE]
+    users[,1:2] %>% 
+      cbind(subset) ->
+      users
+    #----------------------------
+    
     
     X_r <- reduced_hat_decomp(users, 1e-2)
     #---------------------------------------------------------------------------------------
     # prepare sparse matrix and X decomposition
+    user.id = as.numeric(
+      factor(as.character(ratings$user.id),
+             levels = sort(unique(ratings$user.id)))
+    )
+    movie.id = as.numeric(
+      factor(as.character(ratings$movie.id),
+             levels = sort(unique(ratings$movie.id)))
+    )
     ratings.inc <- sparseMatrix(
-      i = ratings$user.id,
-      j = ratings$movie.id,
+      i = user.id,
+      j = movie.id,
       x = scale(ratings$rating)[, 1],
       dims = c(max(ratings$user.id), max(ratings$movie.id))
     )  %>%
@@ -118,6 +148,6 @@ load_movielens_1M <-
     
     out$valid = list()
     out$valid$train = y_train
-    out$valid$valid = y_valid_vec
+    out$valid$valid_vec = y_valid_vec
     return(out)
   }

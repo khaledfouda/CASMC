@@ -36,6 +36,8 @@ generate_simulation_data_ysf <-
       P_Z = Z %*% solve(t(Z) %*% Z) %*% t(Z)
       P_bar_Z = diag(1, n2) - P_Z
       
+      X <- matrix(rnorm(n1 * m1, 5, 3), ncol = m1)
+      
       W <-
          matrix(rbinom(n1 * n2, 1, (1 - missing_prob)) , nrow = n1)
       
@@ -66,9 +68,9 @@ generate_simulation_data_ysf <-
          } else{
             ncov_to_keep = round(informative_cov_prop * m1)
             if (ncov_to_keep < m1) {
-               beta.x[(ncov_to_keep + 1):m1, ] <- 0
+               beta.x[(ncov_to_keep + 1):m1,] <- 0
                # beta.z[(ncov_to_keep+1):m2,] <- 0
-               xbeta = X[, 1:ncov_to_keep] %*% beta.x[1:ncov_to_keep, ]
+               xbeta = X[, 1:ncov_to_keep] %*% beta.x[1:ncov_to_keep,]
             } else{
                beta.x <- matrix(0, m1, ncol = n2)
                xbeta <- X %*% beta.x
@@ -76,17 +78,27 @@ generate_simulation_data_ysf <-
             beta.z <- matrix(0, m2, ncol = n1)
             O <- xbeta + P_bar_X %*% M
          }
+         O = (O - mean(O)) / sd(O)
          Y <- (O + E) * W
          rank <- qr(O)$rank
-         return(list(
-            O = O,
-            W = W,
-            X = X,
-            Y = Y,
-            beta = beta.x,
-            M = M,
-            rank = rank
-         ))
+         return(
+            list(
+               O = O,
+               W = W,
+               X = X,
+               Y = Y,
+               beta = beta.x,
+               M = M,
+               rank = rank,
+               # extra transformation on X for testing purposes.
+               X.scaled.mean = X + 5,
+               X.scaled.var = X * 3,
+               X.scaled.minmax =  apply(X, 2, function(x)
+                  (x - min(x)) / (max(x) - min(x))),
+               X.scaled.std = scale(X),
+               X.scaled.logp = log(X + 1)
+            )
+         )
       }
       else{
          stop("Error: Unrecognized model.")

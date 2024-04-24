@@ -26,7 +26,7 @@ load_Yelp_data <-
                     elite_count,
                     contains("compliment")) %>%
       mutate(across(everything(), ~ ifelse(is.na(.), mean(.,na.rm=T), .))) %>% 
-      scale() %>%
+      #scale() %>%
       as.matrix()
       
     X <- users

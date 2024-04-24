@@ -86,6 +86,7 @@ CASMC_cv_holdout_with_r <-
             warm = NULL,
             track_r = FALSE,
             max_cores = 12,
+            pct = 0.98,
             quiet = FALSE) {
       r_seq <- (max(r_min,0)):(min(X_r$rank,r_max))
       Xterms = GetXterms(X_r$X)
@@ -114,6 +115,7 @@ CASMC_cv_holdout_with_r <-
             rank.init = rank.init,
             rank.limit = rank.limit,
             rank.step = rank.step,
+            pct = pct,
             warm = NULL,
             quiet = quiet
          )
@@ -174,6 +176,7 @@ CASMC_cv_holdout <-
             rank.limit = 30,
             rank.step = 2,
             warm = NULL,
+            pct = 0.98,
             quiet = FALSE) {
       # prepare the sequence of lambda (nuclear regularization hyperparameter)
       if (is.null(lambda.init))
@@ -225,7 +228,12 @@ CASMC_cv_holdout <-
          #--------------------------------------------
          err = error_function(MValid + XbetaValid, y_valid)
          rank <- sum(round(fiti$d, 4) > 0)
+         # newly added, to be removed later
+         var_explained = fiti$d^2 / sum(fiti$d^2)
+         cum_var = cumsum(var_explained)
+         rank2 <- which(cum_var >= pct)[1]
          warm <- fiti # warm start for next
+         #print(paste(rank,"-",rank2))
          #---------------------------------------------------------------------
          if (trace == TRUE)
             print(sprintf(
@@ -263,7 +271,7 @@ CASMC_cv_holdout <-
             break
          }
          # compute rank.max for next iteration
-         rank.max <- min(rank + rank.step, rank.limit)
+         rank.max <- min(rank2 + rank.step, rank.limit)
       }
       # fit one last time full model, if the train/valid is provided
       if (!is.null(y)) {

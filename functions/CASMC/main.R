@@ -6,7 +6,8 @@ source("./code_files/import_lib.R")
 # 0. prepare the data
 
 gen.dat <-  generate_simulation_data_mao(400,400,10,10, "MAR", 2024, cov_eff = F)
-gen.dat <- generate_simulation_data_ysf(2,1100,1000,10,10, missing_prob = 0.8,coll=T,cov_eff = T)
+gen.dat <- generate_simulation_data_ysf(2,900,800,10,10, missing_prob = 0.8,coll=F,cov_eff = T,seed = 2024)
+
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
 y[y==0] = NA
@@ -66,9 +67,13 @@ best_fit$lambda
 #---------------------------------------------------------------------------------
 # ---- <r>
 # prepare the data
+
+X_r = reduced_hat_decomp(gen.dat$X.scaled.minmax, 1e-2)
+
+
 # fit
 start_time <- Sys.time()
-best_fit2 = CASMC_cv_holdout_with_r_par(Y_train, X_r, Y_valid, W_valid, r_min=0,  y=y,max_cores = 4,
+best_fit2 = CASMC_cv_holdout_with_r(Y_train, X_r, Y_valid, W_valid, r_min=10,  y=y,
                             trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20, track_r = T) 
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
@@ -80,9 +85,10 @@ M = fit1$u %*% (fit1$d * t(fit1$v))
 A = M + X_r$X %*% t(beta)
 test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] ) 
 # test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )
-print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
-test_error(M, gen.dat$M)
 print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5))) 
+test_error(M, gen.dat$M)
+print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
+best_fit2$r
 best_fit2$rank.max
 best_fit2$lambda
 #------------------------------------------------------------------------------------
