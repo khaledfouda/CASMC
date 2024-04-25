@@ -134,13 +134,13 @@ model.w.sideinfo <- CMF(
  scale_lam = TRUE,
  niter = 30,
  use_cg = FALSE,
- include_all_X = FALSE,
- w_main = 0.75,
- w_user = 0.5,
- w_item = 0.5,
- w_implicit = 0.5,
- center_U = FALSE,
- center_I = FALSE,
+ include_all_X = T,#FALSE,
+ # w_main = 0.75,
+ # w_user = 0.5,
+ # w_item = 0.5,
+ # w_implicit = 0.5,
+ #center_U = FALSE,
+ #center_I = FALSE,
  nthreads = 6,
  verbose = FALSE
 )
@@ -161,6 +161,13 @@ results <- data.frame(
 )
 results <- as.data.frame(t(results))
 names(results) <- "RMSE"
+
+improvements <- sapply(results, function(x) (rmse_naive - x) / rmse_naive * 100) %>% round(1)
+results$improvement = (improvements)
+
 results %>%
+  arrange(desc(improvement)) %>% 
  kable() %>%
  kable_styling()
+
+

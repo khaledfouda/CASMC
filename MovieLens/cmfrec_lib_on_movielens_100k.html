@@ -13,7 +13,7 @@
 
 <meta name="date" content="2024-04-25" />
 
-<title>cmfrec_lib_on_movielens_1M.R</title>
+<title>cmfrec_lib_on_movielens_100k.R</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -574,7 +574,7 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">cmfrec_lib_on_movielens_1M.R</h1>
+<h1 class="title toc-ignore">cmfrec_lib_on_movielens_100k.R</h1>
 <h4 class="author">kfouda</h4>
 <h4 class="date">2024-04-25</h4>
 
@@ -582,7 +582,211 @@ display: none;
 
 
 <pre class="r"><code>setwd(&quot;/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP&quot;)
-source(&quot;./code_files/import_lib.R&quot;)</code></pre>
+#---------------
+print_rmse &lt;- function(X_test, X_hat, model_name) {
+  rmse &lt;- sqrt(mean((X_test@x - X_hat@x) ^ 2))
+  cat(sprintf(&quot;RMSE for %s is: %.4f\n&quot;, model_name, rmse))
+}
+
+RMSE_error2 &lt;- function(preds, orig, glob_mean, glob_sd) {
+  RMSE_error((preds * glob_sd) + glob_mean, (orig * glob_sd) + glob_mean)
+}
+
+subs &lt;- c(&quot;a&quot;, &quot;b&quot;)
+i = 1
+all_res &lt;- list()
+for (i in 1:2) {
+  source(&quot;./code_files/import_lib.R&quot;)
+  source(&quot;./MovieLens/load_data_100k.R&quot;)
+  dat &lt;-
+    load_movielens_100k(subs[i], remove_bad_movies = T, scale = F)
+  dat$test.ind = cbind(dat$test.df$user_id, dat$test.df$movie_id)
+  
+  if (i == 2) {
+    best_fit = CASMC_cv_holdout_with_r(
+      dat$valid$train.inc,
+      dat$X_r,
+      dat$valid$test,
+      dat$valid$W,
+      dat$train.inc,
+      #r = dat$X_r$rank,
+      r_min = 0,
+      r_max =  15,
+      track_r = T,
+      trace = T,
+      thresh = 1e-6,
+      n.lambda = 30,
+      lambda.factor = 0.9,
+      rank.init = 1,
+      rank.step = 2,
+      rank.limit = 30,
+      pct = 0.90,
+      seed = 2023
+    )
+  } else{
+    best_fit = CASMC_cv_holdout_with_r(
+      dat$valid$train.inc,
+      dat$X_r,
+      dat$valid$test,
+      dat$valid$W,
+      dat$train.inc,
+      # r = dat$X_r$rank,
+      r_min = 0,
+      r_max =  15,
+      track_r = T,
+      trace = T,
+      thresh = 1e-6,
+      n.lambda = 10,
+      rank.init = 5,
+      rank.step = 1,
+      rank.limit = 30,
+      pct = 0.90,
+    )
+  }
+  
+  
+  fit1 = best_fit$fit
+  beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
+  M = fit1$u %*% (fit1$d * t(fit1$v))
+  A = M + dat$X_r$X %*% t(beta)
+  #A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
+  #qr(A)$rank
+  preds &lt;- A[dat$test.ind]
+  RMSE_error((preds * dat$glob_sd) + dat$glob_mean,
+             (dat$test.df$rating * dat$glob_sd) + dat$glob_mean
+  ) %&gt;% print()
+  RMSE_error(preds, dat$test.df$rating) %&gt;% print()
+  
+  
+  best_fit$r %&gt;% print()
+  #------------------------------------------------------------
+  # soft-impute
+  start_time = Sys.time()
+  sout &lt;- simpute.cv(
+    dat$valid$train,
+    dat$train.mat,
+    trace = FALSE,
+    rank.limit = 30,
+    print.best = FALSE,
+    rank.step = 2
+  )
+  #sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
+  preds_simpute &lt;- sout$estimates[dat$test.ind]
+  
+  time_softImpute = as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
+  #---------------------------------------------------------------------------------
+  # Naive
+  start_time = Sys.time()
+  estimates = as.matrix(naive_MC(dat$train.mat))
+  #estimates =  revertBiScaledMatrix(as.matrix(estimates), dat$biScale)
+  preds_naive = estimates[dat$test.ind]
+  time_naive &lt;-
+    as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
+  #----------------------------------------------------------------------------------
+  
+  
+  
+  #---------------------
+  library(cmfrec)
+  library(Matrix)
+  library(MatrixExtra)
+  
+  # dat &lt;-
+  #  load_movielens_100k(&quot;a&quot;, remove_bad_movies = TRUE, scale = FALSE)
+  
+  
+  
+  
+  X_train &lt;- as.coo.matrix(dat$train.inc)
+  str(X_train)
+  X_test &lt;- as.coo.matrix(dat$test.inc)
+  str(X_test)
+  
+  model.classic &lt;-
+    CMF(
+      X_train,
+      k = 25,
+      lambda = 0.1,
+      scale_lam = TRUE,
+      verbose = FALSE,
+      nthreads = 6
+    )
+  
+  
+  
+  pred_classic &lt;- predict(model.classic, X_test)
+  print_rmse(X_test, pred_classic, &quot;classic model&quot;)
+  
+  model.baseline &lt;-
+    MostPopular(X_train, lambda = 10, scale_lam = FALSE)
+  pred_baseline &lt;- predict(model.baseline, X_test)
+  print_rmse(X_test, pred_baseline, &quot;non-personalized model&quot;)
+  
+  model.improved &lt;- CMF(
+    X_train,
+    k = 25,
+    lambda = 0.1,
+    scale_lam = TRUE,
+    add_implicit_features = TRUE,
+    w_main = 0.75,
+    w_implicit = 0.25,
+    use_cg = FALSE,
+    niter = 30,
+    verbose = FALSE,
+    nthreads = 6
+  )
+  pred_improved &lt;- predict(model.improved, X_test)
+  print_rmse(X_test, pred_improved, &quot;improved classic model&quot;)
+  
+  model.w.sideinfo &lt;- CMF(
+    X_train,
+    U = dat$X_r$X,
+    k = 25,
+    lambda = 0.1,
+    scale_lam = TRUE,
+    niter = 30,
+    use_cg = FALSE,
+    include_all_X = FALSE,
+    w_main = 0.75,
+    w_user = 0.5,
+    w_item = 0.5,
+    w_implicit = 0.5,
+    center_U = FALSE,
+    center_I = FALSE,
+    nthreads = 6,
+    verbose = FALSE
+  )
+  pred_side_info &lt;- predict(model.w.sideinfo, X_test)
+  print_rmse(X_test, pred_side_info, &quot;model with side info&quot;)
+  detach(&quot;package:cmfrec&quot;, unload = TRUE)
+  detach(&quot;package:MatrixExtra&quot;, unload = TRUE)
+  
+  #------------------------------------------------
+  results &lt;- data.frame(
+    NonPersonalized = RMSE_error2(X_test@x, pred_baseline@x, dat$glob_mean, dat$glob_sd),
+    ClassicalModel = RMSE_error2(X_test@x, pred_classic@x, dat$glob_mean, dat$glob_sd),
+    ClassicPlusImplicit = RMSE_error2(X_test@x, pred_improved@x, dat$glob_mean, dat$glob_sd),
+    CollectiveModel = RMSE_error2(X_test@x, pred_side_info@x, dat$glob_mean, dat$glob_sd),
+    CASMAC = RMSE_error2(dat$test.df$rating, preds, dat$glob_mean, dat$glob_sd),
+    SoftImpute = RMSE_error2(
+      dat$test.df$rating,
+      preds_simpute,
+      dat$glob_mean,
+      dat$glob_sd
+    ),
+    Naive = RMSE_error2(dat$test.df$rating, preds_naive, dat$glob_mean, dat$glob_sd)
+  )
+  results &lt;- as.data.frame(t(results))
+  names(results) &lt;- &quot;RMSE&quot;
+  
+  rmse_naive = RMSE_error2(dat$test.df$rating, preds_naive, dat$glob_mean, dat$glob_sd)
+  
+  improvements &lt;-
+    sapply(results, function(x)
+      (rmse_naive - x) / rmse_naive * 100) %&gt;% round(1)
+  results$improvement = (improvements)
+  all_res[[i]] &lt;- results
+}</code></pre>
 <pre><code>## [1] &quot;Package tidyverse loaded.&quot;
 ## [1] &quot;Package kableExtra loaded.&quot;
 ## [1] &quot;Package tidyverse loaded.&quot;
@@ -601,199 +805,97 @@ source(&quot;./code_files/import_lib.R&quot;)</code></pre>
 ## [1] &quot;Package Matrix loaded.&quot;
 ## [1] &quot;Package knitr loaded.&quot;
 ## [1] &quot;Package roxygen2 loaded.&quot;</code></pre>
-<pre class="r"><code>source(&quot;./MovieLens/load_data_1M.R&quot;)
-#---------------
-print_rmse &lt;- function(X_test, X_hat, model_name) {
- rmse &lt;- sqrt(mean((X_test@x - X_hat@x) ^ 2))
- cat(sprintf(&quot;RMSE for %s is: %.4f\n&quot;, model_name, rmse))
-}
-
-
-
-
-
-dat &lt;- load_movielens_1M()
-
-dat$X_r$rank</code></pre>
-<pre><code>## [1] 3</code></pre>
-<pre class="r"><code>test.ind &lt;- dat$masks$test == 0
-start_time = Sys.time()
-best_fit = CASMC_cv_holdout_with_r(
-  dat$valid$train,
-  dat$X_r,
-  dat$valid$valid_vec,
-  dat$masks$valid,
-  dat$y,
-  #r = dat$X_r$rank,
-  #trace = T,
-  r_min = 0,
-   #r_max=  15,
-   track_r = T,
-  thresh = 1e-6,
-  n.lambda = 30,
-  rank.init = 2,
-  rank.step = 2,
-  pct = 0.98,
-  rank.limit = 30 
-)</code></pre>
+<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
+## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
+## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
 <pre><code>## [1] &quot;Running on 4 cores.&quot;
-## [1] &quot;0 - 0.817754315655194&quot;
-## [1] &quot;1 - 0.816059012105419&quot;
-## [1] &quot;2 - 0.790601681399676&quot;
-## [1] &quot;3 - 0.781269271935639&quot;</code></pre>
-<pre class="r"><code>time_casmc = as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
-fit1 = best_fit$fit
-beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) 
-M = fit1$u %*% (fit1$d * t(fit1$v))
-A = M + dat$X_r$X %*% t(beta)
-#A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
-#qr(A)$rank
-preds &lt;- A[test.ind]
-RMSE_error(preds, dat$y_test_vec)</code></pre>
-<pre><code>## [1] 0.7720551</code></pre>
-<pre class="r"><code>rmse_casmc = RMSE_error(preds, dat$y_test_vec)
-best_fit$r</code></pre>
-<pre><code>## [1] 3</code></pre>
-<pre class="r"><code>print(time_casmc)</code></pre>
-<pre><code>## [1] 433.0206</code></pre>
-<pre class="r"><code>#------------------------------------------------------------
-# soft-impute
-# start_time = Sys.time()
-# sout &lt;- simpute.cv(
-#   dat$valid$train,
-#   dat$train.mat,
-#   trace = FALSE,
-#   rank.limit = 30,
-#   print.best = FALSE,
-#   rank.step = 2
-# )
-# sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
-# preds_simpute &lt;- sout$estimates[dat$test.ind]
-# 
-# time_softImpute = as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
-#---------------------------------------------------------------------------------
-# Naive
-start_time = Sys.time()
-estimates = naive_MC(as.matrix(dat$y))
-#estimates =  revertBiScaledMatrix(as.matrix(estimates), dat$biScale)
-preds_naive = estimates[test.ind]
-time_naive &lt;-
-  as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;))
-RMSE_error(preds_naive, dat$y_test_vec)</code></pre>
-<pre><code>## [1] 0.9993949</code></pre>
-<pre class="r"><code>rmse_naive = RMSE_error(preds_naive, dat$y_test_vec)
-print(time_naive)</code></pre>
-<pre><code>## [1] 1.906551</code></pre>
-<pre class="r"><code>#----------------------------------------------------------------------------------
-
-
-
-#---------------------
-library(cmfrec)
-library(Matrix)
-library(MatrixExtra)</code></pre>
+## [1] &quot;0 - 0.866587460890148&quot;
+## [1] &quot;1 - 0.872886801488695&quot;
+## [1] &quot;2 - 0.857874861957619&quot;
+## [1] &quot;3 - 0.845681045713859&quot;
+## [1] 0.9557574
+## [1] 0.8490739
+## [1] 3</code></pre>
+<pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 300 iterations</code></pre>
 <pre><code>## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
-<pre class="r"><code>X_train &lt;- as.coo.matrix(dat$y)
-str(X_train)</code></pre>
 <pre><code>## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
-##   ..@ i       : int [1:800167] 0 5 8 17 18 22 25 27 35 37 ...
-##   ..@ j       : int [1:800167] 0 0 0 0 0 0 0 0 0 0 ...
-##   ..@ Dim     : int [1:2] 6040 3952
+##   ..@ i       : int [1:90570] 0 1 5 9 12 14 15 17 19 20 ...
+##   ..@ j       : int [1:90570] 0 0 0 0 0 0 0 0 0 0 ...
+##   ..@ Dim     : int [1:2] 943 1680
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:800167] 1.27 0.375 1.27 0.375 1.27 ...
-##   ..@ factors : list()</code></pre>
-<pre class="r"><code>X_test &lt;- as.coo.matrix(dat$y_test)
-str(X_test)</code></pre>
-<pre><code>## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
-##   ..@ i       : int [1:200042] 7 9 20 33 48 50 59 67 74 108 ...
-##   ..@ j       : int [1:200042] 0 0 0 0 0 0 0 0 0 0 ...
-##   ..@ Dim     : int [1:2] 6040 3952
+##   ..@ x       : num [1:90570] 1.306 0.418 0.418 0.418 -0.471 ...
+##   ..@ factors : list()
+## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
+##   ..@ i       : int [1:9428] 4 16 65 66 94 108 130 147 149 231 ...
+##   ..@ j       : int [1:9428] 0 0 0 0 0 0 0 0 0 0 ...
+##   ..@ Dim     : int [1:2] 943 1662
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:200042] 0.375 1.27 -0.521 1.27 1.27 ...
-##   ..@ factors : list()</code></pre>
-<pre class="r"><code>model.classic &lt;-
- CMF(
-  X_train,
-  k = 25,
-  lambda = 0.1,
-  scale_lam = TRUE,
-  verbose = FALSE,
-  nthreads = 6
- )
-
-
-
-pred_classic &lt;- predict(model.classic, X_test)
-print_rmse(X_test, pred_classic, &quot;classic model&quot;)</code></pre>
-<pre><code>## RMSE for classic model is: 0.7783</code></pre>
-<pre class="r"><code>model.baseline &lt;- MostPopular(X_train, lambda = 10, scale_lam = FALSE)
-pred_baseline &lt;- predict(model.baseline, X_test)
-print_rmse(X_test, pred_baseline, &quot;non-personalized model&quot;)</code></pre>
-<pre><code>## RMSE for non-personalized model is: 0.8135</code></pre>
-<pre class="r"><code>model.improved &lt;- CMF(
- X_train,
- k = 25,
- lambda = 0.1,
- scale_lam = TRUE,
- add_implicit_features = TRUE,
- w_main = 0.75,
- w_implicit = 0.25,
- use_cg = FALSE,
- niter = 30,
- verbose = FALSE,
- nthreads = 6
-)
-pred_improved &lt;- predict(model.improved, X_test)
-print_rmse(X_test, pred_improved, &quot;improved classic model&quot;)</code></pre>
-<pre><code>## RMSE for improved classic model is: 0.7901</code></pre>
-<pre class="r"><code>model.w.sideinfo &lt;- CMF(
- X_train,
- U = dat$X_r$X,
- k = 25,
- lambda = 0.1,
- scale_lam = TRUE,
- niter = 30,
- use_cg = FALSE,
- include_all_X = T,#FALSE,
- # w_main = 0.75,
- # w_user = 0.5,
- # w_item = 0.5,
- # w_implicit = 0.5,
- #center_U = FALSE,
- #center_I = FALSE,
- nthreads = 6,
- verbose = FALSE
-)
-pred_side_info &lt;- predict(model.w.sideinfo, X_test)
-print_rmse(X_test, pred_side_info, &quot;model with side info&quot;)</code></pre>
-<pre><code>## RMSE for model with side info is: 0.7769</code></pre>
-<pre class="r"><code>detach(&quot;package:cmfrec&quot;, unload = TRUE)
-detach(&quot;package:MatrixExtra&quot;, unload = TRUE)
-
-#------------------------------------------------
-results &lt;- data.frame(
- NonPersonalized = RMSE_error(X_test@x, pred_baseline@x),
- ClassicalModel = RMSE_error(X_test@x, pred_classic@x),
- ClassicPlusImplicit = RMSE_error(X_test@x, pred_improved@x),
- CollectiveModel = RMSE_error(X_test@x, pred_side_info@x),
- CASMAC = rmse_casmc,
- #SoftImpute = RMSE_error(dat$test.df$rating, preds_simpute),
- Naive = rmse_naive
-)
-results &lt;- as.data.frame(t(results))
-names(results) &lt;- &quot;RMSE&quot;
-
-improvements &lt;- sapply(results, function(x) (rmse_naive - x) / rmse_naive * 100) %&gt;% round(1)
-results$improvement = (improvements)
-
-results %&gt;%
+##   ..@ x       : num [1:9428] 0.418 0.418 -0.471 -0.471 1.306 ...
+##   ..@ factors : list()
+## RMSE for classic model is: 0.8277
+## RMSE for non-personalized model is: 0.8539
+## RMSE for improved classic model is: 0.8252
+## RMSE for model with side info is: 0.8544
+## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package kableExtra loaded.&quot;
+## [1] &quot;Package tidyverse loaded.&quot;
+## [1] &quot;Package doParallel loaded.&quot;
+## [1] &quot;Package foreach loaded.&quot;
+## [1] &quot;Package hexbin loaded.&quot;
+## [1] &quot;Package patchwork loaded.&quot;
+## [1] &quot;Package ggplot2 loaded.&quot;
+## [1] &quot;Package softImpute loaded.&quot;
+## [1] &quot;Package irlba loaded.&quot;
+## [1] &quot;Package MASS loaded.&quot;
+## [1] &quot;Package svd loaded.&quot;
+## [1] &quot;Package corpcor loaded.&quot;
+## [1] &quot;Package magrittr loaded.&quot;
+## [1] &quot;Package RSpectra loaded.&quot;
+## [1] &quot;Package Matrix loaded.&quot;
+## [1] &quot;Package knitr loaded.&quot;
+## [1] &quot;Package roxygen2 loaded.&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;0 - 0.863286203011228&quot;
+## [1] &quot;1 - 0.873774678125059&quot;
+## [1] &quot;2 - 0.854143373902286&quot;
+## [1] &quot;3 - 0.850629733458729&quot;
+## [1] 0.9661416
+## [1] 0.8583242
+## [1] 3</code></pre>
+<pre><code>## Warning in simpute.als(x, J, thresh, lambda, maxit, trace.it, warm.start, :
+## Convergence not achieved by 300 iterations</code></pre>
+<pre><code>## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
+<pre><code>## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
+##   ..@ i       : int [1:90570] 0 1 4 5 9 12 14 15 16 17 ...
+##   ..@ j       : int [1:90570] 0 0 0 0 0 0 0 0 0 0 ...
+##   ..@ Dim     : int [1:2] 943 1680
+##   ..@ Dimnames:List of 2
+##   .. ..$ : NULL
+##   .. ..$ : NULL
+##   ..@ x       : num [1:90570] 1.306 0.418 0.418 0.418 0.418 ...
+##   ..@ factors : list()
+## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
+##   ..@ i       : int [1:9423] 19 40 44 92 95 116 119 133 156 157 ...
+##   ..@ j       : int [1:9423] 0 0 0 0 0 0 0 0 0 0 ...
+##   ..@ Dim     : int [1:2] 943 1656
+##   ..@ Dimnames:List of 2
+##   .. ..$ : NULL
+##   .. ..$ : NULL
+##   ..@ x       : num [1:9423] -0.471 0.418 1.306 1.306 1.306 ...
+##   ..@ factors : list()
+## RMSE for classic model is: 0.8418
+## RMSE for non-personalized model is: 0.8641
+## RMSE for improved classic model is: 0.8389
+## RMSE for model with side info is: 0.8734</code></pre>
+<pre class="r"><code>all_res[[1]] %&gt;%
   arrange(desc(improvement)) %&gt;% 
- kable() %&gt;%
- kable_styling()</code></pre>
+  kable() %&gt;%
+  kable_styling()</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -810,24 +912,13 @@ improvement
 <tbody>
 <tr>
 <td style="text-align:left;">
-CASMAC
+ClassicPlusImplicit
 </td>
 <td style="text-align:right;">
-0.7720551
+0.9289283
 </td>
 <td style="text-align:right;">
-22.7
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-CollectiveModel
-</td>
-<td style="text-align:right;">
-0.7768593
-</td>
-<td style="text-align:right;">
-22.3
+17.2
 </td>
 </tr>
 <tr>
@@ -835,21 +926,21 @@ CollectiveModel
 ClassicalModel
 </td>
 <td style="text-align:right;">
-0.7783258
+0.9317094
 </td>
 <td style="text-align:right;">
-22.1
+16.9
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-ClassicPlusImplicit
+CASMAC
 </td>
 <td style="text-align:right;">
-0.7900658
+0.9557574
 </td>
 <td style="text-align:right;">
-20.9
+14.8
 </td>
 </tr>
 <tr>
@@ -857,10 +948,32 @@ ClassicPlusImplicit
 NonPersonalized
 </td>
 <td style="text-align:right;">
-0.8135025
+0.9612163
 </td>
 <td style="text-align:right;">
-18.6
+14.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CollectiveModel
+</td>
+<td style="text-align:right;">
+0.9617057
+</td>
+<td style="text-align:right;">
+14.2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SoftImpute
+</td>
+<td style="text-align:right;">
+0.9679074
+</td>
+<td style="text-align:right;">
+13.7
 </td>
 </tr>
 <tr>
@@ -868,7 +981,104 @@ NonPersonalized
 Naive
 </td>
 <td style="text-align:right;">
-0.9993949
+1.1213914
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>all_res[[2]] %&gt;%
+  arrange(desc(improvement)) %&gt;% 
+  kable() %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+RMSE
+</th>
+<th style="text-align:right;">
+improvement
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+ClassicPlusImplicit
+</td>
+<td style="text-align:right;">
+0.9442725
+</td>
+<td style="text-align:right;">
+16.0
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ClassicalModel
+</td>
+<td style="text-align:right;">
+0.9475854
+</td>
+<td style="text-align:right;">
+15.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CASMAC
+</td>
+<td style="text-align:right;">
+0.9661416
+</td>
+<td style="text-align:right;">
+14.1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+NonPersonalized
+</td>
+<td style="text-align:right;">
+0.9726663
+</td>
+<td style="text-align:right;">
+13.5
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SoftImpute
+</td>
+<td style="text-align:right;">
+0.9819747
+</td>
+<td style="text-align:right;">
+12.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CollectiveModel
+</td>
+<td style="text-align:right;">
+0.9830852
+</td>
+<td style="text-align:right;">
+12.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Naive
+</td>
+<td style="text-align:right;">
+1.1245662
 </td>
 <td style="text-align:right;">
 0.0

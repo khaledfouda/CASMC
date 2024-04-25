@@ -1,8 +1,10 @@
 load_movielens_100k <-
  function(subset = "a",
           remove_bad_movies = FALSE,
-          scale = TRUE)
+          scale = TRUE,
+          seed = 2023)
  {
+   set.seed(seed)
   dtrain <- read_tsv(
    paste0("MovieLens/ml-100k/u", subset, ".base"),
    col_names = c("user_id", "movie_id", "rating", "timestamp"),
@@ -21,11 +23,11 @@ load_movielens_100k <-
    show_col_types = FALSE
   ) %>%
    arrange(user_id) %>%
-   select(-user_id,- zipcode) %>%
+   select(-user_id,- zipcode, -occupation) %>%
    mutate(age.sq = age ** 2) %>% 
    fastDummies::dummy_cols(remove_first_dummy  = TRUE,ignore_na=T,
                            remove_selected_columns=T) %>%  
-  scale() %>% 
+  #scale() %>% 
   as.matrix()
    # transmute(age.sq = age ** 2,
    #           Male = sex == "M") %>%
@@ -61,9 +63,23 @@ load_movielens_100k <-
   
   #----------------------------------------
   # prepare sparse matrix and X decomposition
+  user.id = as.numeric(
+    factor(as.character(dtrain$user_id),
+           levels = sort(unique(dtrain$user_id)))
+  )
+  movie.id = as.numeric(
+    factor(as.character(dtrain$movie_id),
+           levels = sort(unique(dtrain$movie_id)))
+  )
+  
+  glob_mean = mean(c(dtrain$rating, dtest$rating))
+  glob_sd = sd(c(dtrain$rating, dtest$rating))
+  dtrain$rating = (dtrain$rating - glob_mean) / glob_sd
+  dtest$rating = (dtest$rating - glob_mean) / glob_sd
+  
   dtrain.mat <- sparseMatrix(
-   i = dtrain$user_id,
-   j = dtrain$movie_id,
+   i = user.id,
+   j = movie.id,
    x = dtrain$rating,
    dims = c(max(dtrain$user_id), max(dtrain$movie_id))
   )
@@ -111,6 +127,8 @@ load_movielens_100k <-
  out <- list() 
  out$X_r = X_r
  out$W = dW
+ out$glob_mean = glob_mean
+ out$glob_sd = glob_sd
  out$biScale = biScale.out
  out$train.df = dtrain
  out$train.mat = dtrain.Y

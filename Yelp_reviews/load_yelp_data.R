@@ -1,3 +1,10 @@
+robust_scale <- function(x) {
+  median_x <- median(x, na.rm = TRUE)
+  iqr_x <- IQR(x, na.rm = TRUE)
+  return((x - median_x) / iqr_x)
+}
+
+scale=FALSE; split_p = list(test = 0.2, valid = 0.2); covariates="rows"; seed=2023; subset="_4x3" 
 
 load_Yelp_data <-
   function(scale = TRUE,
@@ -12,10 +19,12 @@ load_Yelp_data <-
       readRDS(paste0("./Yelp_reviews/data/subset_PA/sample/reviews",subset,".RDS")) #%>%  t()
     
     
+    
     if(covariates == "rows"){
       
     
     users <- readRDS(paste0("./Yelp_reviews/data/subset_PA/sample/users",subset,".RDS")) %>% 
+      as.data.frame() %>% 
       mutate(elite_count = sapply(strsplit(elite, ","), length)) %>% 
       dplyr::select(average_stars,
                     review_count,
@@ -24,12 +33,17 @@ load_Yelp_data <-
                     cool,
                     fans,
                     elite_count,
-                    contains("compliment")) %>%
-      mutate(across(everything(), ~ ifelse(is.na(.), mean(.,na.rm=T), .))) %>% 
-      #scale() %>%
+                    contains("compliment"),
+                    -compliment_profile ,
+                    -compliment_cute,
+                    -compliment_list) %>%
+      mutate(across(everything(), ~ ifelse(is.na(.), mean(.,na.rm=T), .))) %>%
+      mutate(across(everything(), robust_scale)) %>%
+      #scale(scale=FALSE) #%>%
       as.matrix()
-      
+    
     X <- users
+    
     }else{
       
     business <-
@@ -124,6 +138,9 @@ load_Yelp_data <-
     #-------------------------------------------------------------------------
     # scale
     reviews@x[reviews@x > 7] = 7  
+    glob_mean = mean(reviews@x)
+    glob_sd = sd(reviews@x)
+    reviews@x = (reviews@x - glob_mean) / glob_sd
     if (scale) {
       biScale.out <- biScaleMatrix(as.matrix(reviews),min_max_scale = T,normalize = F)
       reviews <- as(biScale.out$scaledMat, "Incomplete")
@@ -178,7 +195,9 @@ load_Yelp_data <-
                    train = train_set,
                    valid = valid_set),
       biScale = biScale.out,
-      X_r = X_r
+      X_r = X_r,
+      glob_mean = glob_mean,
+      glob_sd = glob_sd
     )
     return(out)
   }

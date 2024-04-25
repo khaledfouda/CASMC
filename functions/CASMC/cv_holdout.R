@@ -87,7 +87,8 @@ CASMC_cv_holdout_with_r <-
             track_r = FALSE,
             max_cores = 12,
             pct = 0.98,
-            quiet = FALSE) {
+            quiet = FALSE,
+            seed = NULL) {
       r_seq <- (max(r_min,0)):(min(X_r$rank,r_max))
       Xterms = GetXterms(X_r$X)
       best_score = Inf
@@ -117,7 +118,8 @@ CASMC_cv_holdout_with_r <-
             rank.step = rank.step,
             pct = pct,
             warm = NULL,
-            quiet = quiet
+            quiet = quiet,
+            seed = seed
          )
       }, mc.cores = num_cores)
       
@@ -177,7 +179,10 @@ CASMC_cv_holdout <-
             rank.step = 2,
             warm = NULL,
             pct = 0.98,
-            quiet = FALSE) {
+            quiet = FALSE,
+            seed = NULL) {
+      
+      if(!is.null(seed)) set.seed(seed)
       # prepare the sequence of lambda (nuclear regularization hyperparameter)
       if (is.null(lambda.init))
          lambda.init <-
@@ -232,6 +237,8 @@ CASMC_cv_holdout <-
          var_explained = fiti$d^2 / sum(fiti$d^2)
          cum_var = cumsum(var_explained)
          rank <- rank2 <- which(cum_var >= pct)[1]
+         #print( fiti$d)
+         #rank <- rank2 <- min(rank, 2, na.rm=TRUE)
          warm <- fiti # warm start for next
          #print(paste(rank,"-",rank2))
          #---------------------------------------------------------------------

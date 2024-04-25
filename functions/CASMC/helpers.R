@@ -32,7 +32,7 @@ lambda0.cov_splr <- function(Y,
    # if (inherits(Y, "dgCMatrix") & (dim(Y)[1] == dim(Y)[2]) ) {
    #    eigs(yplus, k = 1, which = "LM")$values
    # } else
-}
+} 
 
 
 
