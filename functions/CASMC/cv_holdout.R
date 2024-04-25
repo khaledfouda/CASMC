@@ -231,7 +231,7 @@ CASMC_cv_holdout <-
          # newly added, to be removed later
          var_explained = fiti$d^2 / sum(fiti$d^2)
          cum_var = cumsum(var_explained)
-         rank2 <- which(cum_var >= pct)[1]
+         rank <- rank2 <- which(cum_var >= pct)[1]
          warm <- fiti # warm start for next
          #print(paste(rank,"-",rank2))
          #---------------------------------------------------------------------

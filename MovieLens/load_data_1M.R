@@ -20,13 +20,16 @@ load_movielens_1M <-
                  sep = ":",
                  colClasses = c(NA, "NULL")) %>%
       as.data.frame()
+    
     names(users) <-
       c("user.id", "sex", "age", "occupation", "zip.code")
     users %<>%
       arrange(user.id) %>%
       select(-user.id, -zip.code) %>%
-      mutate(#age.sq = age ** 2,
-             occupation = as.factor(occupation)) %>%
+      mutate(age.sq = age ** 2,
+        #age = (age - mean(age))/sd(age),     
+        occupation = as.factor(occupation)) %>%
+      select(-occupation) %>%
       fastDummies::dummy_columns(
         ignore_na = T,
         remove_selected_columns = T,
@@ -36,22 +39,22 @@ load_movielens_1M <-
       as.matrix()
     
     # there are 21 categories in the occupation, we need to reduce that. 
-    subset = users[,3:ncol(users)] 
-    ratings %>%
-      group_by(user.id) %>% 
-      summarise(avg.score = mean(rating)) %>%
-      arrange(user.id) %>% 
-      cbind(subset) %>% 
-      select(-user.id) -> avg.ratings
-    
-    lm.fit <- lm(avg.score~., data=avg.ratings)
-    model_summary = summary(lm.fit)
-    coefficients_table <- model_summary$coefficients[-1,]
-    significant_covariates <- rownames(coefficients_table)[coefficients_table[, "Pr(>|t|)"] < 0.05]
-    subset <- subset[, significant_covariates, drop = FALSE]
-    users[,1:2] %>% 
-      cbind(subset) ->
-      users
+    # subset = users[,3:ncol(users)] 
+    # ratings %>%
+    #   group_by(user.id) %>% 
+    #   summarise(avg.score = mean(rating)) %>%
+    #   arrange(user.id) %>% 
+    #   cbind(subset) %>% 
+    #   select(-user.id) -> avg.ratings
+    # 
+    # lm.fit <- lm(avg.score~., data=avg.ratings)
+    # model_summary = summary(lm.fit)
+    # coefficients_table <- model_summary$coefficients[-1,]
+    # significant_covariates <- rownames(coefficients_table)[coefficients_table[, "Pr(>|t|)"] < 0.05]
+    # subset <- subset[, significant_covariates, drop = FALSE]
+    # users[,1:2] %>% 
+    #   cbind(subset) ->
+    #   users
     #----------------------------
     
     

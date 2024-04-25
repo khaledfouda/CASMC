@@ -1,4 +1,5 @@
 
+```{r}
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
 source("./MovieLens/load_data_1M.R")
@@ -164,3 +165,13 @@ names(results) <- "RMSE"
 results %>%
  kable() %>%
  kable_styling()
+```
+
+
+
+---
+title: cmfrec_lib_on_movielens_1M.R
+author: kfouda
+date: '2024-04-24'
+
+---
