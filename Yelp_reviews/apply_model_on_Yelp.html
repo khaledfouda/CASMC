@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-04-23" />
+<meta name="date" content="2024-04-26" />
 
 <title>apply_model_on_Yelp.R</title>
 
@@ -576,7 +576,7 @@ display: none;
 
 <h1 class="title toc-ignore">apply_model_on_Yelp.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-04-23</h4>
+<h4 class="date">2024-04-26</h4>
 
 </div>
 
@@ -595,8 +595,8 @@ for(covariates in c(&quot;rows&quot;, &quot;columns&quot;)){
 source(&quot;./code_files/import_lib.R&quot;)
 source(&quot;./Yelp_reviews/load_yelp_data.R&quot;)
 scale = F
-dat &lt;- load_Yelp_data(scale=T, seed=2024,covariates = covariates,subset = &quot;_4x3&quot;)
-
+dat &lt;- load_Yelp_data(scale=F, seed=2024, covariates = covariates, subset = &quot;_4x3&quot;)
+print(dat$X_r$rank)
 
 best_fit = CASMC_cv_holdout_with_r(
  dat$valid$train,
@@ -604,14 +604,20 @@ best_fit = CASMC_cv_holdout_with_r(
  dat$valid$valid@x, 
  dat$valid$W,
  r_min = 0,
- y = dat$train.inc,
- trace = F,
- thresh = 1e-6,
- n.lambda = 30,
- rank.step = 2,
- rank.limit = 30,
+ r_max = 10,
  track_r = T,
- max_cores = ceiling( (dat$X_r$rank+2)/2)
+ max_cores = ceiling( (dat$X_r$rank+2)/2),
+ # r = 0,#dat$X_r$rank,
+ y = dat$train.inc,
+ trace = T,
+ thresh = 1e-6,
+ lambda.factor = 0.8,
+ n.lambda = 40,
+ rank.init = 2,
+ rank.step = 1,
+ rank.limit = 30,
+ pct = 0.90,
+ seed = 203
 )
 fit1 = best_fit$fit
 beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
@@ -771,39 +777,30 @@ all_results[[covariates]] &lt;-
 ## [1] &quot;Package RSpectra loaded.&quot;
 ## [1] &quot;Package Matrix loaded.&quot;
 ## [1] &quot;Package knitr loaded.&quot;
-## [1] &quot;Package roxygen2 loaded.&quot;</code></pre>
-<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
-## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
-## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre><code>## [1] &quot;Running on 10 cores.&quot;
-## [1] &quot;0 - 0.222276117449433&quot;
-## [1] &quot;1 - 0.225704613893922&quot;
-## [1] &quot;2 - 0.228269792461225&quot;
-## [1] &quot;3 - 0.231561500973352&quot;
-## [1] &quot;4 - 0.237590481120589&quot;
-## [1] &quot;5 - 0.241756771354554&quot;
-## [1] &quot;6 - 0.24390470803619&quot;
-## [1] &quot;7 - 0.249733241143628&quot;
-## [1] &quot;8 - 0.251192215940864&quot;
-## [1] &quot;9 - 0.254147819448198&quot;
-## [1] &quot;10 - 0.259278101454247&quot;
-## [1] &quot;11 - 0.261189301900557&quot;
-## [1] &quot;12 - 0.266352913890002&quot;
-## [1] &quot;13 - 0.272052015507325&quot;
-## [1] &quot;14 - 0.274359833811336&quot;
-## [1] &quot;15 - 0.276068643143124&quot;
-## [1] &quot;16 - 0.275411923404716&quot;
-## [1] &quot;17 - 0.275829807876093&quot;
-## [1] 0</code></pre>
+## [1] &quot;Package roxygen2 loaded.&quot;
+## [1] 14
+## [1] &quot;Running on 8 cores.&quot;
+## [1] &quot;0 - 0.589640123705115&quot;
+## [1] &quot;1 - 0.574249534183791&quot;
+## [1] &quot;2 - 0.571626622427292&quot;
+## [1] &quot;3 - 0.574785297246627&quot;
+## [1] &quot;4 - 0.575889172463786&quot;
+## [1] &quot;5 - 0.576745416286545&quot;
+## [1] &quot;6 - 0.57649251118853&quot;
+## [1] &quot;7 - 0.576989794029717&quot;
+## [1] &quot;8 - 0.577873750696229&quot;
+## [1] &quot;9 - 0.577868529182081&quot;
+## [1] &quot;10 - 0.57802387688893&quot;
+## [1] 2</code></pre>
 <pre><code>## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
 <pre><code>## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
-##   ..@ i       : int [1:162806] 66 1115 1141 1193 1510 1525 1661 2102 2294 2302 ...
-##   ..@ j       : int [1:162806] 0 0 0 0 0 0 0 0 0 0 ...
+##   ..@ i       : int [1:103793] 66 1141 1193 1510 1525 1661 2102 2294 2379 2629 ...
+##   ..@ j       : int [1:103793] 0 0 0 0 0 0 0 0 0 0 ...
 ##   ..@ Dim     : int [1:2] 10000 1000
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:162806] 3.33e-01 5.00e-01 2.22e-16 6.67e-01 3.33e-01 ...
+##   ..@ x       : num [1:103793] -0.5 -1.5 0.5 -0.5 -1 0.5 0.5 0.5 0.5 0.5 ...
 ##   ..@ factors : list()
 ## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
 ##   ..@ i       : int [1:40701] 468 3178 3267 3925 3951 4397 4777 4843 4924 5407 ...
@@ -812,12 +809,12 @@ all_results[[covariates]] &lt;-
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:40701] 0.5 0.333 0.5 0.5 0.5 ...
+##   ..@ x       : num [1:40701] 0 -0.5 0 0 0 0 -0.5 0.5 0.5 0.5 ...
 ##   ..@ factors : list()
-## RMSE for classic model is: 0.1877
-## RMSE for non-personalized model is: 0.1829
-## RMSE for improved classic model is: 0.1850
-## RMSE for model with side info is: 0.1851
+## RMSE for classic model is: 0.5891
+## RMSE for non-personalized model is: 0.5555
+## RMSE for improved classic model is: 0.5762
+## RMSE for model with side info is: 0.7524
 ## [1] &quot;Package tidyverse loaded.&quot;
 ## [1] &quot;Package kableExtra loaded.&quot;
 ## [1] &quot;Package tidyverse loaded.&quot;
@@ -836,56 +833,43 @@ all_results[[covariates]] &lt;-
 ## [1] &quot;Package Matrix loaded.&quot;
 ## [1] &quot;Package knitr loaded.&quot;
 ## [1] &quot;Package roxygen2 loaded.&quot;
-## [1] &quot;Running on 13 cores.&quot;
-## [1] &quot;0 - 0.2300416837539&quot;
-## [1] &quot;1 - 0.256772744401692&quot;
-## [1] &quot;2 - 0.286160309001541&quot;
-## [1] &quot;3 - 0.307965429989125&quot;
-## [1] &quot;4 - 0.35352501492091&quot;
-## [1] &quot;5 - 0.360741573779289&quot;
-## [1] &quot;6 - 0.371257756889185&quot;
-## [1] &quot;7 - 0.378756534107897&quot;
-## [1] &quot;8 - 0.386644550808653&quot;
-## [1] &quot;9 - 0.394235572703303&quot;
-## [1] &quot;10 - 0.401135754171949&quot;
-## [1] &quot;11 - 0.407857910253733&quot;
-## [1] &quot;12 - 0.415450642479454&quot;
-## [1] &quot;13 - 0.421600809529469&quot;
-## [1] &quot;14 - 0.426176801021886&quot;
-## [1] &quot;15 - 0.432744794107197&quot;
-## [1] &quot;16 - 0.437676733788855&quot;
-## [1] &quot;17 - 0.442421573079215&quot;
-## [1] &quot;18 - 0.447388866095317&quot;
-## [1] &quot;19 - 0.453148508181199&quot;
-## [1] &quot;20 - 0.457558391519986&quot;
-## [1] &quot;21 - 0.461538052905787&quot;
-## [1] &quot;22 - 0.464984093454325&quot;
-## [1] &quot;23 - 0.469351522004467&quot;
-## [1] &quot;24 - 0.475836208132465&quot;
-## [1] 0</code></pre>
+## [1] 14
+## [1] &quot;Running on 8 cores.&quot;
+## [1] &quot;0 - 0.589640123705115&quot;
+## [1] &quot;1 - 0.574249534183791&quot;
+## [1] &quot;2 - 0.571626622427292&quot;
+## [1] &quot;3 - 0.574785297246627&quot;
+## [1] &quot;4 - 0.575889172463786&quot;
+## [1] &quot;5 - 0.576745416286545&quot;
+## [1] &quot;6 - 0.57649251118853&quot;
+## [1] &quot;7 - 0.576989794029717&quot;
+## [1] &quot;8 - 0.577873750696229&quot;
+## [1] &quot;9 - 0.577868529182081&quot;
+## [1] &quot;10 - 0.57802387688893&quot;
+## [1] 2</code></pre>
 <pre><code>## &#39;MatrixExtra&#39; modifies important behaviors from &#39;Matrix&#39;. See ?MatrixExtra-options.</code></pre>
 <pre><code>## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
-##   ..@ i       : int [1:162806] 155 296 346 386 463 570 581 766 942 945 ...
-##   ..@ j       : int [1:162806] 0 0 0 0 0 0 0 0 0 0 ...
-##   ..@ Dim     : int [1:2] 1000 10000
+##   ..@ i       : int [1:103793] 66 1141 1193 1510 1525 1661 2102 2294 2379 2629 ...
+##   ..@ j       : int [1:103793] 0 0 0 0 0 0 0 0 0 0 ...
+##   ..@ Dim     : int [1:2] 10000 1000
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:162806] 0.5 0.5 0.5 0.5 0.667 ...
+##   ..@ x       : num [1:103793] -0.5 -1.5 0.5 -0.5 -1 0.5 0.5 0.5 0.5 0.5 ...
 ##   ..@ factors : list()
 ## Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
-##   ..@ i       : int [1:40701] 284 196 211 938 7 137 166 187 222 285 ...
-##   ..@ j       : int [1:40701] 0 1 1 1 2 2 2 2 2 2 ...
-##   ..@ Dim     : int [1:2] 1000 10000
+##   ..@ i       : int [1:40701] 468 3178 3267 3925 3951 4397 4777 4843 4924 5407 ...
+##   ..@ j       : int [1:40701] 0 0 0 0 0 0 0 0 0 0 ...
+##   ..@ Dim     : int [1:2] 10000 1000
 ##   ..@ Dimnames:List of 2
 ##   .. ..$ : NULL
 ##   .. ..$ : NULL
-##   ..@ x       : num [1:40701] 5.00e-01 6.67e-01 6.67e-01 2.22e-16 3.33e-01 ...
+##   ..@ x       : num [1:40701] 0 -0.5 0 0 0 0 -0.5 0.5 0.5 0.5 ...
 ##   ..@ factors : list()
-## RMSE for classic model is: 0.1876
-## RMSE for non-personalized model is: 0.1832
-## RMSE for improved classic model is: 0.1853
-## RMSE for model with side info is: 0.1874</code></pre>
+## RMSE for classic model is: 0.5891
+## RMSE for non-personalized model is: 0.5555
+## RMSE for improved classic model is: 0.5762
+## RMSE for model with side info is: 0.7524</code></pre>
 <pre class="r"><code>all_results[[&quot;rows&quot;]]</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
@@ -903,7 +887,7 @@ RMSE
 NonPersonalized
 </td>
 <td style="text-align:right;">
-0.1829039
+0.5554904
 </td>
 </tr>
 <tr>
@@ -911,7 +895,7 @@ NonPersonalized
 ClassicalModel
 </td>
 <td style="text-align:right;">
-0.1876854
+0.5890572
 </td>
 </tr>
 <tr>
@@ -919,7 +903,7 @@ ClassicalModel
 ClassicPlusImplicit
 </td>
 <td style="text-align:right;">
-0.1849538
+0.5761748
 </td>
 </tr>
 <tr>
@@ -927,7 +911,7 @@ ClassicPlusImplicit
 CollectiveModel
 </td>
 <td style="text-align:right;">
-0.1851268
+0.7524379
 </td>
 </tr>
 <tr>
@@ -935,7 +919,7 @@ CollectiveModel
 CASMC
 </td>
 <td style="text-align:right;">
-0.2650203
+0.5703395
 </td>
 </tr>
 <tr>
@@ -951,81 +935,13 @@ SoftImpute
 Naive
 </td>
 <td style="text-align:right;">
-0.2523407
+0.6038990
 </td>
 </tr>
 </tbody>
 </table>
 <pre class="r"><code>all_results[[&quot;columns&quot;]]</code></pre>
-<table class="table" style="margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:left;">
-</th>
-<th style="text-align:right;">
-RMSE
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-NonPersonalized
-</td>
-<td style="text-align:right;">
-0.1831598
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-ClassicalModel
-</td>
-<td style="text-align:right;">
-0.1876064
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-ClassicPlusImplicit
-</td>
-<td style="text-align:right;">
-0.1853048
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-CollectiveModel
-</td>
-<td style="text-align:right;">
-0.1873844
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-CASMC
-</td>
-<td style="text-align:right;">
-0.2822795
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-SoftImpute
-</td>
-<td style="text-align:right;">
-4.0000000
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Naive
-</td>
-<td style="text-align:right;">
-0.2574406
-</td>
-</tr>
-</tbody>
-</table>
+<pre><code>## NULL</code></pre>
 
 
 

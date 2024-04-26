@@ -25,7 +25,7 @@
 #       best_score = Inf
 #       best_fit = NULL
 #       warm = NULL
-#       
+#
 #       for (r in r_seq) {
 #          fiti <- CASMC_cv_holdout(
 #             y_train = y_train,
@@ -59,7 +59,7 @@
 #             print(paste(r, "-", fiti$error))
 #       }
 #       return(best_fit)
-#       
+#
 #    }
 
 #------------------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ CASMC_cv_holdout_with_r <-
             pct = 0.98,
             quiet = FALSE,
             seed = NULL) {
-      r_seq <- (max(r_min,0)):(min(X_r$rank,r_max))
+      r_seq <- (max(r_min, 0)):(min(X_r$rank, r_max))
       Xterms = GetXterms(X_r$X)
       best_score = Inf
       best_fit = NULL
@@ -181,8 +181,8 @@ CASMC_cv_holdout <-
             pct = 0.98,
             quiet = FALSE,
             seed = NULL) {
-      
-      if(!is.null(seed)) set.seed(seed)
+      if (!is.null(seed))
+         set.seed(seed)
       # prepare the sequence of lambda (nuclear regularization hyperparameter)
       if (is.null(lambda.init))
          lambda.init <-
@@ -218,7 +218,7 @@ CASMC_cv_holdout <-
                J = rank.max,
                lambda = lamseq[i],
                warm.start = warm,
-               trace = F,
+               trace.it = F,
                thresh = thresh,
                init = "naive",
                final.svd = T,
@@ -234,7 +234,7 @@ CASMC_cv_holdout <-
          err = error_function(MValid + XbetaValid, y_valid)
          rank <- sum(round(fiti$d, 4) > 0)
          # newly added, to be removed later
-         var_explained = fiti$d^2 / sum(fiti$d^2)
+         var_explained = fiti$d ^ 2 / sum(fiti$d ^ 2)
          cum_var = cumsum(var_explained)
          rank <- rank2 <- which(cum_var >= pct)[1]
          #print( fiti$d)
@@ -295,7 +295,7 @@ CASMC_cv_holdout <-
                warm.start = best_fit$fit1,
                thresh = thresh,
                maxit = maxit,
-               trace = F,
+               trace.it = F,
                final.svd = T
             )
          

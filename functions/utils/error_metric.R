@@ -33,6 +33,10 @@ mao_error <- function(predicted, true) {
 }
 
 
+spearman_error <- function(predicted, true) {
+   cor(true, predicted, method = "spearman")
+}
+
 # watch out! functions send predicted, then true
 # Last line is run last
 #test_error <- adjusted_unexplained_variance

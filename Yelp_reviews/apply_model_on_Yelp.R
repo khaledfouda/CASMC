@@ -13,28 +13,31 @@ for(covariates in c("rows", "columns")){
 source("./code_files/import_lib.R")
 source("./Yelp_reviews/load_yelp_data.R")
 scale = F
-dat <- load_Yelp_data(scale=F, seed=2024,covariates = covariates,subset = "_4x3")
+dat <- load_Yelp_data(scale=F, seed=2024, covariates = covariates, subset = "_4x3")
 print(dat$X_r$rank)
-
 best_fit = CASMC_cv_holdout(
  dat$valid$train,
  dat$X_r,
  dat$valid$valid@x, 
  dat$valid$W,
  # r_min = 0,
+ # r_max = 10,
  # track_r = T,
  # max_cores = ceiling( (dat$X_r$rank+2)/2),
- r = 0,#dat$X_r$rank,
+r = 2,#dat$X_r$rank,
  y = dat$train.inc,
  trace = T,
  thresh = 1e-6,
- lambda.factor = 0.2,
- n.lambda = 30,
- rank.init = 5,
- rank.step = 2,
+ lambda.factor = 0.8,
+ n.lambda = 40,
+ rank.init = 3,
+ rank.step = 1,
  rank.limit = 30,
- pct = 0.99,
+ pct = 0.90,
+ seed = 203
 )
+
+
 fit1 = best_fit$fit
 beta =  fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
 M = fit1$u %*% (fit1$d * t(fit1$v))
@@ -162,7 +165,7 @@ results <- data.frame(
  ClassicPlusImplicit = RMSE_error(X_test@x, pred_improved@x),
  CollectiveModel = RMSE_error(X_test@x, pred_side_info@x),
  CASMC = casmc_error,
- SoftImpute = simpute_error,
+ #SoftImpute = simpute_error,
  Naive = naive_error
 )
 results <- as.data.frame(t(results))

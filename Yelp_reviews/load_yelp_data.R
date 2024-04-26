@@ -39,7 +39,7 @@ load_Yelp_data <-
                     -compliment_list) %>%
       mutate(across(everything(), ~ ifelse(is.na(.), mean(.,na.rm=T), .))) %>%
       mutate(across(everything(), robust_scale)) %>%
-      #scale(scale=FALSE) #%>%
+      #scale() %>%
       as.matrix()
     
     X <- users
@@ -100,7 +100,8 @@ load_Yelp_data <-
       mutate(across(everything(), ~ ifelse(is.na(.)|is.nan(.), mean(.,na.rm=T), .))) %>%
       cbind(df2) %>% 
       select(where(~ length(table(.)) >1)) %>% 
-      scale() %>% 
+      mutate(across(everything(), robust_scale)) %>%
+      #scale() %>% 
       as.matrix() -> 
       business
     
@@ -137,10 +138,13 @@ load_Yelp_data <-
     #reviews@x <- normalize(reviews@x)
     #-------------------------------------------------------------------------
     # scale
-    reviews@x[reviews@x > 7] = 7  
+    # reviews@x <- ifelse(reviews@x>=4, 1, -1)
+    
+    #reviews@x[reviews@x > 7] = 7  
     glob_mean = mean(reviews@x)
     glob_sd = sd(reviews@x)
-    reviews@x = (reviews@x - glob_mean) / glob_sd
+    reviews@x = robust_scale(reviews@x)
+    # reviews@x = (reviews@x - glob_mean) / glob_sd
     if (scale) {
       biScale.out <- biScaleMatrix(as.matrix(reviews),min_max_scale = T,normalize = F)
       reviews <- as(biScale.out$scaledMat, "Incomplete")
