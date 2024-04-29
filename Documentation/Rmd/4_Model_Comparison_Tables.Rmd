@@ -269,7 +269,7 @@ print_table <-
 
 ## Simulation 1:   Mao's Simulation; 10 Covariates; 90% Missing; No Collinearity 
 
-```{r fig.height=15, fig.width=15}
+```{r fig.height=15, fig.width=15, eval=FALSE}
 print_table(results,0,F, caption = "Data was simulated using Mao with m=10 and r=10")
 ```
 
@@ -287,12 +287,12 @@ print_table(results,0.8,T, "Data was simulated using Youssef's model with m1=m2=
 
 ## Simulation 4:   Yousef's Simulation; 10 Covariates; 90% Missing; No Collinearity
 
-```{r fig.height=15, fig.width=15}
+```{r fig.height=15, fig.width=15, eval=FALSE}
 print_table(results,0.9,F, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and without collinearity")
 ```
 
 ## Simulation 5:   Yousef's Simulation; 10 Covariates; 90% Missing; With Collinearity
 
-```{r fig.height=15, fig.width=15}
+```{r fig.height=15, fig.width=15, eval=FALSE}
 print_table(results,0.9,T, "Data was simulated using Youssef's model with m1=m2=10, 90% missing values, and with collinearity")
 ```

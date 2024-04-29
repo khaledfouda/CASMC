@@ -1,45 +1,37 @@
-# Computing the test error as given by Mao in page 205
-unexplained_variance <- function(predicted, true) {
+# generic function:
+error_metric = list(
+   
+#--- error functions:
+unexplained_variance = function(predicted, true) {
    sum((true - predicted) ^ 2) / sum((true - mean(true)) ^ 2)
-}
+},
 
+adjusted_unexplained_variance = function(predicted, true, p = 1, n = length(true)) {
+   ((sum((true - predicted) ^ 2) / 
+        sum((true - mean(true)) ^ 2)) *
+       (n - 1) / (n - p - 1))
+},
 
-MAPE_error <- function(predicted, true) {
+mape = function(predicted, true) {
    mean(abs((true - predicted) / true), na.rm = TRUE) * 100
-}
+},
 
-
-adjusted_unexplained_variance <-
-   function(predicted,
-            true,
-            p = 1,
-            n = length(true)) {
-      ((sum((true - predicted) ^ 2) / sum((true - mean(
-         true
-      )) ^ 2)) * (n - 1) / (n - p - 1))
-   }
-
-normalized_RMSE <- function(predicted, true) {
+rmse_normalized = function(predicted, true) {
    sqrt(mean((true - predicted) ^ 2, na.rm = TRUE)) / sd(true, na.rm = TRUE)
-}
+},
 
-RMSE_error <- function(predicted, true) {
+rmse = function(predicted, true) {
    sqrt(mean((true - predicted) ^ 2, na.rm = TRUE))
-}
+},
 
-mao_error <- function(predicted, true) {
-   # the test error defined by Mao in the simulation section
+rmse_mao = function(predicted, true) {
+   # a form of normalized RMSE that was used in Mao's simulation
    sqrt(sum((predicted - true) ^ 2) / sum(true ^ 2))
-}
+},
 
-
-spearman_error <- function(predicted, true) {
+spearman = function(predicted, true) {
    cor(true, predicted, method = "spearman")
 }
 
-# watch out! functions send predicted, then true
-# Last line is run last
-#test_error <- adjusted_unexplained_variance
-test_error <<- RMSE_error
-#test_error <- normalized_RMSE
-#test_error <- MAPE
+
+)

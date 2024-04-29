@@ -8,7 +8,7 @@ print_rmse <- function(X_test, X_hat, model_name) {
 }
 
 RMSE_error2 <- function(preds, orig, glob_mean, glob_sd) {
-  RMSE_error((preds * glob_sd) + glob_mean, (orig * glob_sd) + glob_mean)
+  error_metric$rmse((preds * glob_sd) + glob_mean, (orig * glob_sd) + glob_mean)
 }
 
 subs <- c("a", "b")
@@ -40,7 +40,8 @@ for (i in 1:2) {
       rank.step = 2,
       rank.limit = 30,
       pct = 0.90,
-      seed = 2023
+      seed = 2023,
+      error_function = error_metric$rmse
     )
   } else{
     best_fit = CASMC_cv_holdout_with_r(
@@ -60,6 +61,7 @@ for (i in 1:2) {
       rank.step = 1,
       rank.limit = 30,
       pct = 0.90,
+      error_function = error_metric$rmse
     )
   }
   
@@ -71,10 +73,10 @@ for (i in 1:2) {
   #A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
   #qr(A)$rank
   preds <- A[dat$test.ind]
-  RMSE_error((preds * dat$glob_sd) + dat$glob_mean,
+  error_metric$rmse((preds * dat$glob_sd) + dat$glob_mean,
              (dat$test.df$rating * dat$glob_sd) + dat$glob_mean
   ) %>% print()
-  RMSE_error(preds, dat$test.df$rating) %>% print()
+  error_metric$rmse(preds, dat$test.df$rating) %>% print()
   
   
   best_fit$r %>% print()
@@ -87,7 +89,8 @@ for (i in 1:2) {
     trace = FALSE,
     rank.limit = 30,
     print.best = FALSE,
-    rank.step = 2
+    rank.step = 2,
+    test_error = error_metric$rmse
   )
   #sout$estimates <-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
   preds_simpute <- sout$estimates[dat$test.ind]

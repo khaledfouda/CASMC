@@ -10,7 +10,8 @@ simpute.cv <- function(Y,
                        rank.step = 2,
                        maxit = 300,
                        biscale = FALSE,
-                       use.complete = FALSE) {
+                       use.complete = FALSE,
+                       test_error = error_metric$rmse) {
   # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
   Y[Y == 0] = NA
   O[O == 0] = NA

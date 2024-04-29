@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-04-25" />
+<meta name="date" content="2024-04-26" />
 
 <title>cmfrec_lib_on_movielens_100k.R</title>
 
@@ -576,7 +576,7 @@ display: none;
 
 <h1 class="title toc-ignore">cmfrec_lib_on_movielens_100k.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-04-25</h4>
+<h4 class="date">2024-04-26</h4>
 
 </div>
 
@@ -589,7 +589,7 @@ print_rmse &lt;- function(X_test, X_hat, model_name) {
 }
 
 RMSE_error2 &lt;- function(preds, orig, glob_mean, glob_sd) {
-  RMSE_error((preds * glob_sd) + glob_mean, (orig * glob_sd) + glob_mean)
+  error_metric$rmse((preds * glob_sd) + glob_mean, (orig * glob_sd) + glob_mean)
 }
 
 subs &lt;- c(&quot;a&quot;, &quot;b&quot;)
@@ -621,7 +621,8 @@ for (i in 1:2) {
       rank.step = 2,
       rank.limit = 30,
       pct = 0.90,
-      seed = 2023
+      seed = 2023,
+      error_function = error_metric$rmse
     )
   } else{
     best_fit = CASMC_cv_holdout_with_r(
@@ -641,6 +642,7 @@ for (i in 1:2) {
       rank.step = 1,
       rank.limit = 30,
       pct = 0.90,
+      error_function = error_metric$rmse
     )
   }
   
@@ -652,10 +654,10 @@ for (i in 1:2) {
   #A = revertBiScaledMatrix(as.matrix(A), dat$biScale)
   #qr(A)$rank
   preds &lt;- A[dat$test.ind]
-  RMSE_error((preds * dat$glob_sd) + dat$glob_mean,
+  error_metric$rmse((preds * dat$glob_sd) + dat$glob_mean,
              (dat$test.df$rating * dat$glob_sd) + dat$glob_mean
   ) %&gt;% print()
-  RMSE_error(preds, dat$test.df$rating) %&gt;% print()
+  error_metric$rmse(preds, dat$test.df$rating) %&gt;% print()
   
   
   best_fit$r %&gt;% print()
@@ -668,7 +670,8 @@ for (i in 1:2) {
     trace = FALSE,
     rank.limit = 30,
     print.best = FALSE,
-    rank.step = 2
+    rank.step = 2,
+    test_error = error_metric$rmse
   )
   #sout$estimates &lt;-  revertBiScaledMatrix(as.matrix(sout$estimates), dat$biScale)
   preds_simpute &lt;- sout$estimates[dat$test.ind]

@@ -22,7 +22,7 @@ compare_and_save <- function(missingness,
                              cov_eff = TRUE,
                              note = "") {
    ncores = min(ncores, length(dim))
-   stopifnot(length(model_mask) == 7)
+   stopifnot(length(model_mask) == 8)
    if (ncores > 1) {
       cl <- makeCluster(ncores)
       registerDoParallel(cl)
@@ -82,12 +82,12 @@ compare_and_save <- function(missingness,
          results = rbind(
             results,
             compare_Mao(
-               gen.dat,
-               lambda.1_grid,
-               lambda.2_grid,
-               alpha_grid,
-               1,
-               n_folds,
+               gen.dat=gen.dat,
+               lambda.1_grid=lambda.1_grid,
+               lambda.2_grid=lambda.2_grid,
+               alpha_grid=alpha_grid,
+               ncores=1,
+               n_folds=n_folds,
                weight_function = MaoUniWeights
             )
          )
@@ -95,7 +95,7 @@ compare_and_save <- function(missingness,
       # soft Impute model without covariates
       cat("M2 - ")
       if (model_mask[2])
-         results = rbind(results, compare_softImpute(gen.dat, valid.dat))
+         results = rbind(results, compare_softImpute(gen.dat=gen.dat, valid.dat=valid.dat))
       #----------------------------------------------------------------------------
       # Soft Impute with Covariates and With L2 regularization on the covariates
       cat("M3 - ")
@@ -103,12 +103,12 @@ compare_and_save <- function(missingness,
          results = rbind(
             results,
             compare_CAMC_holdout(
-               gen.dat,
-               valid.dat,
-               lambda.1_grid,
-               rank.step,
-               rank.limit,
-               n.lambda
+               gen.dat=gen.dat,
+               valid.dat=valid.dat,
+               lambda.1_grid=lambda.1_grid,
+               rank.step=rank.step,
+               rank.limit=rank.limit,
+               n.lambda=n.lambda
             )
          )
       #-------------------------------------------------------------------------------------
@@ -118,12 +118,12 @@ compare_and_save <- function(missingness,
          results = rbind(
             results,
             compare_CAMC_kfold(
-               gen.dat,
-               lambda.1_grid,
-               n_folds,
-               rank.step,
-               rank.limit,
-               n.lambda
+               gen.dat=gen.dat,
+               lambda.1_grid=lambda.1_grid,
+               n_folds=n_folds,
+               rank.step=rank.step,
+               rank.limit=rank.limit,
+               n.lambda=n.lambda
             )
          )
       #--------------------------------------------------------------------------------
@@ -132,12 +132,12 @@ compare_and_save <- function(missingness,
          results = rbind(
             results,
             compare_CASMC_holdout(
-               gen.dat,
-               valid.dat,
-               splr.dat,
-               rank.step,
-               rank.limit,
-               n.lambda
+               gen.dat=gen.dat,
+               valid.dat=valid.dat,
+               splr.dat=splr.dat,
+               rank.step=rank.step,
+               rank.limit=rank.limit,
+               n.lambda=n.lambda
             )
          )
       #--------------------------------------------------------------------------------
@@ -146,18 +146,28 @@ compare_and_save <- function(missingness,
          results = rbind(
             results,
             compare_CASMC_kfold(
-               gen.dat,
-               splr.dat,
-               n_folds,
-               rank.step,
-               rank.limit,
-               n.lambda
+               gen.dat=gen.dat,
+               splr.dat=splr.dat,
+               n_folds=n_folds,
+               rank.step=rank.step,
+               rank.limit=rank.limit,
+               n.lambda=n.lambda
             )
          )
       #--------------------------------------------------------------------------------
       cat("M7 - ")
       if (model_mask[7])
-         results = rbind(results, compare_naive(gen.dat))
+         results = rbind(
+            results,
+            compare_cmf(
+               gen.dat=gen.dat,
+               splr.dat=splr.dat,
+            )
+         )
+      #--------------------------------------------------------------------------------
+      cat("M8 - ")
+      if (model_mask[8])
+         results = rbind(results, compare_naive(gen.dat=gen.dat))
       cat("Done.\n")
       #--------------------------------------------------------------------------------
       results$true_rank = gen.dat$rank
@@ -204,9 +214,9 @@ alpha_grid = seq(0.992, 1, length = 5)
 lambda.1_grid = seq(20, 50, length = 20)
 lambda.2_grid = seq(.9, 0, length = 20)
 ncores = 1
-error_function <- RMSE_error
-model_mask <- rep(T, 7)
-model_mask[c(4)] <- F
+error_function <- error_metric$rmse
+model_mask <- rep(T, 8)
+model_mask[c(4,6)] <- F
 mao_r <- 10
 ncovariates <- 8
 cov_eff = T
@@ -284,3 +294,4 @@ compare_and_save(
    note = note
 )
 #------------------------------------------------------------------------------------
+
