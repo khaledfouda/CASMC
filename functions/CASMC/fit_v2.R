@@ -17,7 +17,7 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC_fit_old <-
+CASMC_fit <-
   function(y,
            X,
            svdH = NULL,
@@ -189,8 +189,9 @@ CASMC_fit_old <-
       ##--------------------------------------------
       # part 2: Update B while A and beta are fixed
       # updates U, Dsq, V
-      IUH = t(U) - (t(U) %*% svdH$u) %*% (svdH$v)
-      B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
+      #IUH = t(U) - (t(U) %*% svdH$u) %*% (svdH$v)
+      B = as.matrix(t(U) %*% S + t(VDsq) )
+      #B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
       B = t((B) * (Dsq / (Dsq + lambda)))
       Bsvd = fast.svd(B)
       V = Bsvd$u
@@ -199,9 +200,10 @@ CASMC_fit_old <-
       #-------------------------------------------------------------
       # part 3: Update A while B and beta are fixed
       # updates U, Dsq, V
-      UDsq = t(Dsq * t(U))
-      A.partial = ((S %*% V) + UDsq)
-      A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
+      #UDsq = t(Dsq * t(U))
+      #print(hi)
+      A = as.matrix((S %*% V) + t(Dsq * t(U)))
+      #A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
       A = t(t(A) * (Dsq / (Dsq + lambda)))
       Asvd =  fast.svd(A)
       U = Asvd$u

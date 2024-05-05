@@ -19,10 +19,11 @@ max.rank = 3
 
 #-----------------------------------------------------------------------
 # 1. Fit the model without cross validation:
+
 start_time <- Sys.time()
 set.seed(2020);fits2 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace=F, J=max.rank, r = 3,
-                                 thresh=1e-6, lambda=lambda2, init = "naive",
-                                 final.svd = T,maxit = 500, warm.start = NULL)
+                                   thresh=1e-6, lambda=lambda2, init = "naive",
+                                   final.svd = T,maxit = 500, warm.start = NULL)
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 # get estimates and validate
@@ -35,6 +36,7 @@ test_error(fits2$xbeta.obs, (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
 print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
 test_error(M, gen.dat$M)
 print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5)))
+fits2$n_iter
 
 #----------------------------------------------------------------------------------------------------------
 # 2. cross-validation with train/test split
