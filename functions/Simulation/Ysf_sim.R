@@ -9,10 +9,15 @@ generate_simulation_data_ysf <-
             coll = FALSE,
             seed = NULL,
             cov_eff = TRUE,
-            informative_cov_prop = .5) {
+            discrete = FALSE,
+            informative_cov_prop = 1) {
       if (!is.null(seed))
          set.seed(seed = seed)
       X <- matrix(rnorm(n1 * m1), ncol = m1)
+      if(discrete){
+         ndisc = ceiling(m1/2) +1
+         X[, ndisc:m1] <- rbinom(n1*(m1-ndisc+1),1,0.4)
+      }
       Z <- matrix(rnorm(n2 * m2), ncol = m2)
       E <- matrix(rnorm(n1 * n2), ncol = n2)
       # normalize X
@@ -36,7 +41,7 @@ generate_simulation_data_ysf <-
       P_Z = Z %*% solve(t(Z) %*% Z) %*% t(Z)
       P_bar_Z = diag(1, n2) - P_Z
       
-      X <- matrix(rnorm(n1 * m1, 5, 3), ncol = m1)
+      #X <- matrix(rnorm(n1 * m1, 5, 3), ncol = m1)
       
       W <-
          matrix(rbinom(n1 * n2, 1, (1 - missing_prob)) , nrow = n1)
@@ -78,7 +83,7 @@ generate_simulation_data_ysf <-
             beta.z <- matrix(0, m2, ncol = n1)
             O <- xbeta + P_bar_X %*% M
          }
-         O = (O - mean(O)) / sd(O)
+         #O = (O - mean(O)) / sd(O)
          Y <- (O + E) * W
          rank <- qr(O)$rank
          return(
@@ -89,14 +94,14 @@ generate_simulation_data_ysf <-
                Y = Y,
                beta = beta.x,
                M = M,
-               rank = rank,
+               rank = rank
                # extra transformation on X for testing purposes.
-               X.scaled.mean = X + 5,
-               X.scaled.var = X * 3,
-               X.scaled.minmax =  apply(X, 2, function(x)
-                  (x - min(x)) / (max(x) - min(x))),
-               X.scaled.std = scale(X),
-               X.scaled.logp = log(X + 1)
+               #X.scaled.mean = X + 5,
+               #X.scaled.var = X * 3,
+               #X.scaled.minmax =  apply(X, 2, function(x)
+               #   (x - min(x)) / (max(x) - min(x))),
+               #X.scaled.std = scale(X),
+               #X.scaled.logp = log(X + 1)
             )
          )
       }

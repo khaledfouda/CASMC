@@ -48,7 +48,9 @@ compare_and_save <- function(missingness,
                m = ncovariates,
                r = mao_r,
                seed = seed,
-               cov_eff = cov_eff
+               cov_eff = cov_eff,
+               discrete = T,
+               informative_cov_prop = 1
             )
       } else
          gen.dat <-
@@ -61,7 +63,9 @@ compare_and_save <- function(missingness,
             missing_prob = missingness,
             coll = coll,
             seed = seed,
-            cov_eff = cov_eff
+            cov_eff = cov_eff,
+            discrete = TRUE,
+            informative_cov_prop = 1
          )
       #-------------------------------------------------------------------------------------
       # validation set to be used for the next two models

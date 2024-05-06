@@ -24,7 +24,8 @@ generate_simulation_data_mao <-
             seed = NULL,
             miss.prob = 0.8,
             cov_eff = TRUE,
-            informative_cov_prop = .5) {
+            discrete = FALSE,
+            informative_cov_prop = 1) {
       #' Input:
       #'      n1, n2: are the dimensions of the A, Y, and B matrices
       #'      m: number of covariates
@@ -35,6 +36,11 @@ generate_simulation_data_mao <-
       if (!is.null(seed))
          set.seed(seed = seed)
       X <- matrix(rnorm(n1 * m), ncol = m) #%>% normalize_matrix()
+      if(discrete){
+         ndisc = ceiling(m/2) +1
+         X[, ndisc:m] <- rbinom(n1*(m-ndisc+1),1,0.4)
+      }
+      
       beta <- matrix(rnorm(m * n2), ncol = n2)
       U <- matrix(rnorm(n1 * r), ncol = r)
       V <- matrix(rnorm(n2 * r), ncol = r)

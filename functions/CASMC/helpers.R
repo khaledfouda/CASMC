@@ -34,7 +34,20 @@ lambda0.cov_splr <- function(Y,
    # } else
 } 
 
-
+computeLaplacian <- function(S, normalized = TRUE) {
+   d <- rowSums(S)
+   if (normalized) {
+      d_inv_sqrt <- 1 / sqrt(d)
+      L <- diag(1, nrow(S)) - (d_inv_sqrt %*% t(d_inv_sqrt)) * S
+   } else {
+      L <- diag(d) - S
+   }
+   return(L)
+}
+update_chol <- function(chol_M, D_vector) {
+   diag_update <- diag(sqrt(as.vector(D_vector)))  # Square root for Cholesky update
+   return(chol_M + diag_update)  
+}
 
 
 suvC <-
