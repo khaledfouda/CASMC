@@ -48,14 +48,15 @@ CASMC_fit_laplace <-
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
-    laplace=F
-    if (!is.null(S.a)) {
-      print(n)
-      laplace = T
-      L = computeLaplacian(S.a, normalized = TRUE)
-      Rpc = chol(diag(lambda, n) + lambda.a * L)
+    laplace.a= laplace.b = F
+    if (!is.null(S.a) & lambda.a > 0) {
+      laplace.a = T
+      L.a = computeLaplacian(S.a, normalized = TRUE) * lambda.a
     }
-    
+    if (!is.null(S.b) & lambda.b > 0) {
+      laplace.b = T
+      L.b = computeLaplacian(S.b, normalized = TRUE) * lambda.b
+    }
     #--------------------------------
     # if svdH is not given but X is given.
     if (is.null(svdH)) {
@@ -206,6 +207,7 @@ CASMC_fit_laplace <-
       # updates U, Dsq, V
       #IUH = t(U) - (t(U) %*% svdH$u) %*% (svdH$v)
       B = as.matrix(t(U) %*% S + t(VDsq))
+      if(laplace.b) B = B - t(V)  %*% L.b
       #B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
       B = t((B) * (Dsq / (Dsq + lambda)))
       Bsvd = fast.svd(B)
@@ -219,11 +221,8 @@ CASMC_fit_laplace <-
       #print(hi)
       A = as.matrix((S %*% V) + t(Dsq * t(U)))
       #A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
-      if(laplace){
-        print(dim(diag(Dsq)))
-        print(dim(Rpc))
-        A = A %*% diag(Dsq) %*% chol2inv(diag(sqrt(Dsq)) + Rpc)
-      }else A = t(t(A) * (Dsq / (Dsq + lambda)))
+      if(laplace.a) A = A - L.a %*% U 
+      A = t(t(A) * (Dsq / (Dsq + lambda)))
       Asvd =  fast.svd(A)
       U = Asvd$u
       Dsq = Asvd$d
