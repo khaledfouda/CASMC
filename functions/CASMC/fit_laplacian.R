@@ -18,7 +18,7 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC_fit_laplace <-
+CASMC_fit <-
   function(y,
            X,
            svdH = NULL,
@@ -48,7 +48,7 @@ CASMC_fit_laplace <-
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
-    laplace.a= laplace.b = F
+    laplace.a <- laplace.b <- F
     if (!is.null(S.a) & lambda.a > 0) {
       laplace.a = T
       L.a = computeLaplacian(S.a, normalized = TRUE) * lambda.a
@@ -58,8 +58,8 @@ CASMC_fit_laplace <-
       L.b = computeLaplacian(S.b, normalized = TRUE) * lambda.b
     }
     #--------------------------------
-    # if svdH is not given but X is given.
-    if (is.null(svdH)) {
+    # if svdH is not given but X is given. only needed if warm.start is not provided
+    if (is.null(warm.start) & is.null(svdH)) {
       stopifnot(!is.null(X))
       svdH = reduced_hat_decomp(X, 1e-2)
       J_H = svdH$rank
@@ -82,18 +82,16 @@ CASMC_fit_laplace <-
     clean.warm.start(warm.start)
     if (!is.null(warm.start)) {
       #must have u,d and v components
-      if (!all(match(c("u", "d", "v", "xbeta.obs", "Beta"), names(warm.start), 0) >
+      if (!all(match(c("u", "d", "v", "Beta"), names(warm.start), 0) >
                0))
         stop("warm.start does not have components u, d and v")
       warm = TRUE
       D = warm.start$d
       JD = sum(D > 0)
       #J = JD
-      #beta = as.matrix(warm.start$beta)
-      Beta = warm.start$Beta #fast.svd(beta)
-      #xbeta.obs = warm.start$xbeta.obs
-      xbeta.obs <-
-        suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
+      Beta = warm.start$Beta
+      # no need to assign xbeta.obs
+      # xbeta.obs <- suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
       if (JD >= J) {
         U = warm.start$u[, seq(J), drop = FALSE]
         V = warm.start$v[, seq(J), drop = FALSE]
@@ -120,11 +118,12 @@ CASMC_fit_laplace <-
         stop("Beta is random initialization isn't implemented yet.")
       } else if (init == "naive") {
         Y_naive = as.matrix(y)
-        yobs = Y_naive != 0
+        # obs.ind = Y_naive != 0
         Y_naive = naive_MC(Y_naive)
         naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
         # Xbeta = H Y
-        xbeta.obs <- naive_fit[yobs]
+        # no need to assign xbeta.obs
+        # xbeta.obs <- naive_fit[obs.ind]
         # M = (I-H) Y
         naive_fit <- Y_naive - naive_fit
         naive_fit <- propack.svd(as.matrix(naive_fit), J)
@@ -140,7 +139,7 @@ CASMC_fit_laplace <-
       }
     }
     #----------------------------------------
-    S <- y
+    yobs <- y@x
     ratio <- 1
     iter <- 0
     counter = 0
@@ -173,16 +172,10 @@ CASMC_fit_laplace <-
       M_obs = suvC(U, VDsq, irow, pcol)
       if (iter == 1) {
         UD.beta = t(Beta$d * t(Beta$u))
-        # print(dim(X)); print(dim(Beta$v))
         xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
-        S@x = y@x - M_obs - xbeta.obs
+        y@x = yobs - M_obs - xbeta.obs
       }
-      # print(dim(X1 %*% S))
-      # print(dim(X2 %*% Beta$v %*% t(UD.beta)))
-      # print(dim(X2))
-      # print(dim(t(UD.beta)))
-      # print(dim(Beta$v))
-      beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD.beta))
+      beta = t(X1 %*% y + X2 %*% Beta$v %*% t(UD.beta))
       Beta = fast.svd(as.matrix(beta))
       # Adjust the rank of Beta if provided
       if (!is.null(r)) {
@@ -201,14 +194,12 @@ CASMC_fit_laplace <-
       # why not this? [added on Mai 2nd - not tested yet; also lines 155 to 163]
       UD.beta = t(Beta$d * t(Beta$u))
       xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
-      S@x = y@x - M_obs - xbeta.obs
+      y@x = yobs - M_obs - xbeta.obs
       ##--------------------------------------------
       # part 2: Update B while A and beta are fixed
       # updates U, Dsq, V
-      #IUH = t(U) - (t(U) %*% svdH$u) %*% (svdH$v)
-      B = as.matrix(t(U) %*% S + t(VDsq))
+      B = as.matrix(t(U) %*% y + t(VDsq))
       if(laplace.b) B = B - t(V)  %*% L.b
-      #B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
       B = t((B) * (Dsq / (Dsq + lambda)))
       Bsvd = fast.svd(B)
       V = Bsvd$u
@@ -217,10 +208,7 @@ CASMC_fit_laplace <-
       #-------------------------------------------------------------
       # part 3: Update A while B and beta are fixed
       # updates U, Dsq, V
-      #UDsq = t(Dsq * t(U))
-      #print(hi)
-      A = as.matrix((S %*% V) + t(Dsq * t(U)))
-      #A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
+      A = as.matrix((y %*% V) + t(Dsq * t(U)))
       if(laplace.a) A = A - L.a %*% U 
       A = t(t(A) * (Dsq / (Dsq + lambda)))
       Asvd =  fast.svd(A)
@@ -231,7 +219,7 @@ CASMC_fit_laplace <-
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
       if (trace.it) {
-        obj = (.5 * sum(S@x ^ 2) + lambda * sum(Dsq)) / nz
+        obj = (.5 * sum(y@x ^ 2) + lambda * sum(Dsq)) / nz
         cat(iter, ":", "obj", format(round(obj, 5)), "ratio", ratio, "\n")
       }
       #-----------------------------------------------------------------------------------
@@ -250,8 +238,9 @@ CASMC_fit_laplace <-
     # one final fit for one of the parameters (A) has proved to improve the performance significantly.
     if (final.svd) {
       #---- update A
-      A.partial = ((S %*% V) + t(Dsq * t(U)))
-      A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
+      A = as.matrix((y %*% V) + t(Dsq * t(U)))
+      if(laplace.a) A = A - L.a %*% U 
+      A = t(t(A) * (Dsq / (Dsq + lambda)))
       Asvd =  fast.svd(A)
       U = Asvd$u
       Dsq = Asvd$d
@@ -260,8 +249,8 @@ CASMC_fit_laplace <-
       #------------------
       if (trace.it) {
         M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
-        S@x = y@x - M_obs - xbeta.obs
-        obj = (.5 * sum(S@x ^ 2) + lambda * sum(Dsq)) / nz
+        y@x = yobs - M_obs - xbeta.obs
+        obj = (.5 * sum(y@x ^ 2) + lambda * sum(Dsq)) / nz
         cat("final SVD:", "obj", format(round(obj, 5)), "\n")
         cat("Number of Iterations for covergence is ", iter, "\n")
       }
@@ -277,7 +266,6 @@ CASMC_fit_laplace <-
       lambda = lambda,
       J = J,
       n_iter = iter,
-      xbeta.obs = xbeta.obs,
       Beta = Beta
     )
     out

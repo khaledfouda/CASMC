@@ -19,17 +19,19 @@ max.rank = 3
 
 #-----------------------------------------------------------------------
 # 1. Fit the model without cross validation:
-similarity.a = diag(1,900)
-similarity.b = matrix(rbinom(800*800,1,0.2),800)
+similarity.a = diag(1,400)
+similarity.b = matrix(rbinom(400*400,1,0.2),400)
 
 
 start_time <- Sys.time()
-set.seed(2020);fits2 <- CASMC_fit_laplace(y=y, X=X_r$X, svdH=X_r$svdH,  trace.it=F, J=max.rank, r = 3,
-                                   thresh=1e-6, lambda=lambda2, init = "naive",
+set.seed(2020);fits2 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace.it=F, J=max.rank, r = 3,
+                                   thresh=1e-6, lambda=lambda2,
                                    final.svd = T,maxit = 500, warm.start = NULL,
-                                   lambda.a = 0.1, S.a=similarity.a,lambda.b = 0.1, S.b=similarity.b
+                                   lambda.a = 0.0, S.a=similarity.a,lambda.b = 0.0, S.b=similarity.b
                                   )
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+
 
 # get estimates and validate
 beta =  fits2$Beta$u %*% (fits2$Beta$d * t(fits2$Beta$v))

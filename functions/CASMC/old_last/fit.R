@@ -42,8 +42,8 @@ CASMC_fit <-
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
     
-    # if svdH is not given but X is given.
-    if (is.null(svdH)) {
+    # if svdH is not given but X is given; only needed if warm.start isn't provided
+    if (is.null(warm.start) & is.null(svdH)) {
       stopifnot(!is.null(X))
       svdH = reduced_hat_decomp(X, 1e-2)
       J_H = svdH$rank
@@ -66,18 +66,15 @@ CASMC_fit <-
     clean.warm.start(warm.start)
     if (!is.null(warm.start)) {
       #must have u,d and v components
-      if (!all(match(c("u", "d", "v", "xbeta.obs", "Beta"), names(warm.start), 0) >
+      if (!all(match(c("u", "d", "v", "Beta"), names(warm.start), 0) >
                0))
         stop("warm.start does not have components u, d and v")
       warm = TRUE
       D = warm.start$d
       JD = sum(D > 0)
-      #J = JD
-      #beta = as.matrix(warm.start$beta)
-      Beta = warm.start$Beta #fast.svd(beta)
-      #xbeta.obs = warm.start$xbeta.obs
-      xbeta.obs <-
-        suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
+      Beta = warm.start$Beta 
+      # no need to set xbeta.obs
+      # xbeta.obs <- suvC(X %*% Beta$v, t(Beta$d * t(Beta$u)), irow, pcol)
       if (JD >= J) {
         U = warm.start$u[, seq(J), drop = FALSE]
         V = warm.start$v[, seq(J), drop = FALSE]
@@ -108,7 +105,8 @@ CASMC_fit <-
         Y_naive = naive_MC(Y_naive)
         naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
         # Xbeta = H Y
-        xbeta.obs <- naive_fit[yobs]
+        # no need to set xbeta.obs
+        #xbeta.obs <- naive_fit[yobs]
         # M = (I-H) Y
         naive_fit <- Y_naive - naive_fit
         naive_fit <- propack.svd(as.matrix(naive_fit), J)
@@ -157,15 +155,9 @@ CASMC_fit <-
       M_obs = suvC(U, VDsq, irow, pcol)
       if (iter == 1) {
         UD.beta = t(Beta$d * t(Beta$u))
-        # print(dim(X)); print(dim(Beta$v))
         xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
         S@x = y@x - M_obs - xbeta.obs
       }
-      # print(dim(X1 %*% S))
-      # print(dim(X2 %*% Beta$v %*% t(UD.beta)))
-      # print(dim(X2))
-      # print(dim(t(UD.beta)))
-      # print(dim(Beta$v))
       beta = t(X1 %*% S + X2 %*% Beta$v %*% t(UD.beta))
       Beta = fast.svd(as.matrix(beta))
       # Adjust the rank of Beta if provided
@@ -189,9 +181,7 @@ CASMC_fit <-
       ##--------------------------------------------
       # part 2: Update B while A and beta are fixed
       # updates U, Dsq, V
-      #IUH = t(U) - (t(U) %*% svdH$u) %*% (svdH$v)
       B = as.matrix(t(U) %*% S + t(VDsq) )
-      #B = as.matrix(IUH %*% S + (IUH %*% U) %*% t(VDsq))
       B = t((B) * (Dsq / (Dsq + lambda)))
       Bsvd = fast.svd(B)
       V = Bsvd$u
@@ -200,10 +190,7 @@ CASMC_fit <-
       #-------------------------------------------------------------
       # part 3: Update A while B and beta are fixed
       # updates U, Dsq, V
-      #UDsq = t(Dsq * t(U))
-      #print(hi)
       A = as.matrix((S %*% V) + t(Dsq * t(U)))
-      #A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
       A = t(t(A) * (Dsq / (Dsq + lambda)))
       Asvd =  fast.svd(A)
       U = Asvd$u
@@ -232,8 +219,8 @@ CASMC_fit <-
     # one final fit for one of the parameters (A) has proved to improve the performance significantly.
     if (final.svd) {
       #---- update A
-      A.partial = ((S %*% V) + t(Dsq * t(U)))
-      A = as.matrix(A.partial - svdH$u %*% (svdH$v %*% A.partial))
+      A = as.matrix((S %*% V) + t(Dsq * t(U)))
+      A = t(t(A) * (Dsq / (Dsq + lambda)))
       Asvd =  fast.svd(A)
       U = Asvd$u
       Dsq = Asvd$d
@@ -259,7 +246,6 @@ CASMC_fit <-
       lambda = lambda,
       J = J,
       n_iter = iter,
-      xbeta.obs = xbeta.obs,
       Beta = Beta
     )
     out
