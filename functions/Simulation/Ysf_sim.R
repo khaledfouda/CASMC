@@ -26,7 +26,7 @@ generate_simulation_data_ysf <-
       beta.z <- matrix(runif(m2 * n1), ncol = n1)
       M.x <- matrix(runif(n1 * m2), ncol = m2)
       M.z <- matrix(runif(m2 * n2), ncol = n2)
-      M <- M.x %*% M.z
+      M <- M.x %*% M.z 
       
       # if collinearity is needed, make the correlation between the first two columns in X and Z between (.99,1)
       # the actual correlation value is very close to 95%

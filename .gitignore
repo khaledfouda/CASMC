@@ -60,6 +60,8 @@ saved_data/*
 *.zip
 *.tgz
 *.json
+*.pkl
+*.dat
 
 # remove rmd cache folders
 
@@ -73,3 +75,6 @@ ml-100k/*
 *ml-*/*
 *JINhuaqing_paper_code*/*
 JINhuaqing_paper_code/
+*MNAR/*
+MNAR/
+
