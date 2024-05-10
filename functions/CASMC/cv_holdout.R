@@ -1,66 +1,188 @@
-# CASMC_cv_holdout_with_r <-
-#    function(y_train,
-#             X_r,
-#             y_valid,
-#             W_valid,
-#             r_min = 0,
-#             y = NULL,
-#             error_function = RMSE_error,
-#             lambda.factor = 1 / 4,
-#             lambda.init = NULL,
-#             n.lambda = 20,
-#             trace = FALSE,
-#             print.best = TRUE,
-#             early.stopping = 1,
-#             thresh = 1e-6,
-#             maxit = 100,
-#             rank.init = 2,
-#             rank.limit = 30,
-#             rank.step = 2,
-#             warm = NULL,
-#             track_r = FALSE,
-#             quiet = FALSE) {
-#       r_seq <- (X_r$rank):(r_min)#(X_r$rank):(r_min)
-#       Xterms = GetXterms(X_r$X)
-#       best_score = Inf
-#       best_fit = NULL
-#       warm = NULL
-#
-#       for (r in r_seq) {
-#          fiti <- CASMC_cv_holdout(
-#             y_train = y_train,
-#             X_r = X_r,
-#             y_valid = y_valid,
-#             W_valid = W_valid,
-#             y = y,
-#             Xterms = Xterms,
-#             r = r,
-#             error_function = error_function,
-#             lambda.factor = lambda.factor,
-#             lambda.init = lambda.init,
-#             n.lambda = n.lambda,
-#             trace = trace,
-#             print.best = print.best,
-#             early.stopping = early.stopping,
-#             thresh = thresh,
-#             maxit = maxit,
-#             rank.init = rank.init,
-#             rank.limit = rank.limit,
-#             rank.step = rank.step,
-#             warm = warm,
-#             quiet = quiet
-#          )
-#          #warm = fiti$fit
-#          if (fiti$error < best_score) {
-#             best_score = fiti$error
-#             best_fit = fiti
-#          }
-#          if (track_r)
-#             print(paste(r, "-", fiti$error))
-#       }
-#       return(best_fit)
-#
-#    }
+CASMC_cv_holdout_with_reg <-
+   function(y_train,
+            X_r,
+            y_valid,
+            W_valid,
+            y = NULL,
+            lambda.beta.grid = seq(0,2,length.out=10),
+            error_function = error_metric$rmse,
+            lambda.factor = 1 / 4,
+            lambda.init = NULL,
+            n.lambda = 20,
+            trace = FALSE,
+            print.best = TRUE,
+            early.stopping = 1,
+            thresh = 1e-6,
+            maxit = 100,
+            rank.init = 2,
+            rank.limit = 30,
+            rank.step = 2,
+            lambda.a = 0,
+            S.a = NULL,
+            lambda.b = 0,
+            S.b = NULL,
+            warm = NULL,
+            track_beta = FALSE,
+            max_cores = 10,
+            pct = 0.98,
+            quiet = FALSE,
+            seed = NULL) {
+      num_cores = length(lambda.beta.grid)
+      if(length(lambda.beta.grid) > max_cores)
+         num_cores <- min(max_cores, ceiling(length(lambda.beta.grid)/2))
+      print(paste("Running on", num_cores, "cores."))
+      
+      
+      best_score = Inf
+      best_fit = NULL
+      results <- mclapply(lambda.beta.grid, function(lambda.beta) {
+         
+         Xterms = GetXterms(X_r$X, lambda.beta)
+         fiti = CASMC_cv_holdout(
+            y_train = y_train,
+            X_r = X_r,
+            y_valid = y_valid,
+            W_valid = W_valid,
+            y = y,
+            Xterms = Xterms,
+            r = NULL,
+            error_function = error_function,
+            lambda.factor = lambda.factor,
+            lambda.init = lambda.init,
+            n.lambda = n.lambda,
+            trace = trace,
+            print.best = print.best,
+            early.stopping = early.stopping,
+            thresh = thresh,
+            maxit = maxit,
+            rank.init = rank.init,
+            rank.limit = rank.limit,
+            rank.step = rank.step,
+            pct = pct,
+            warm = NULL,
+            quiet = quiet,
+            seed = seed,
+            lambda.a = lambda.a,
+            S.a = S.a,
+            lambda.b = lambda.b,
+            S.b = S.b
+         )
+         fiti$lambda.beta = lambda.beta
+         fiti
+      }, mc.cores = num_cores)
+      
+      
+      best_fit <-
+         results[[which.min(sapply(results, function(x)
+            x$error))]]
+      
+      if (track_beta) {
+         sapply(results, function(x)
+            print(paste(x$lambda.beta, "-", x$error)))
+      }
+      
+      return(best_fit)
+      
+      
+   }
+#--------------------------------------------------------------------------------------
+CASMC_cv_holdout_with_reg2 <-
+   function(y_train,
+            X_r,
+            y_valid,
+            W_valid,
+            y = NULL,
+            lambda.beta.grid = seq(0,2,length.out=10),
+            error_function = error_metric$rmse,
+            lambda.factor = 1 / 4,
+            lambda.init = NULL,
+            n.lambda = 20,
+            trace = FALSE,
+            print.best = TRUE,
+            early.stopping = 1,
+            thresh = 1e-6,
+            maxit = 100,
+            rank.init = 2,
+            rank.limit = 30,
+            rank.step = 2,
+            lambda.a = 0,
+            S.a = NULL,
+            lambda.b = 0,
+            S.b = NULL,
+            warm = NULL,
+            track_beta = FALSE,
+            max_cores = 10,
+            pct = 0.98,
+            quiet = FALSE,
+            seed = NULL) {
+      num_cores = length(lambda.beta.grid)
+      if(length(lambda.beta.grid) > max_cores)
+         num_cores <- min(max_cores, ceiling(length(lambda.beta.grid)/2))
+      print(paste("Running on", num_cores, "cores."))
+      
+      
+      best_score = Inf
+      best_fit = NULL
+      # Initialize a list to store the results
+      results <- list()
+      fiti <- list(fit=NULL)
+      # Loop through each lambda.beta value
+      for (i in seq_along(lambda.beta.grid)) {
+         lambda.beta <- lambda.beta.grid[i]
+         
+         # Perform the operations that were inside the mclapply function
+         Xterms <- GetXterms(X_r$X, lambda.beta)
+         fiti <- CASMC_cv_holdout(
+            y_train = y_train,
+            X_r = X_r,
+            y_valid = y_valid,
+            W_valid = W_valid,
+            y = y,
+            Xterms = Xterms,
+            r = NULL,
+            error_function = error_function,
+            lambda.factor = lambda.factor,
+            lambda.init = lambda.init,
+            n.lambda = n.lambda,
+            trace = trace,
+            print.best = print.best,
+            early.stopping = early.stopping,
+            thresh = thresh,
+            maxit = maxit,
+            rank.init = rank.init,
+            rank.limit = rank.limit,
+            rank.step = rank.step,
+            pct = pct,
+            warm = fiti$fit,
+            quiet = quiet,
+            seed = seed,
+            lambda.a = lambda.a,
+            S.a = S.a,
+            lambda.b = lambda.b,
+            S.b = S.b
+         )
+         
+         # Add lambda.beta to the result for traceability
+         fiti$lambda.beta <- lambda.beta
+         
+         # Store the fit object in the results list
+         results[[i]] <- fiti
+      }
+      
+      # Identify the best fit based on minimum error
+      best_fit <- results[[which.min(sapply(results, function(x) x$error))]]
+      
+      # If tracking beta, print lambda.beta and error
+      if (track_beta) {
+         sapply(results, function(x) print(paste(x$lambda.beta, "-", x$error)))
+      }
+      
+      
+      return(best_fit)
+      
+      
+   }
+
 
 #------------------------------------------------------------------------------------------
 CASMC_cv_holdout_with_r <-

@@ -199,20 +199,20 @@ CASMC_fit <-
       ##--------------------------------------------
       # part 2: Update B while A and beta are fixed
       # updates U, Dsq, V
-      B = as.matrix(t(U) %*% y + t(VDsq))
+      B = t(U) %*% y + t(VDsq)
       if(laplace.b) B = B - t(V)  %*% L.b
       B = t((B) * (Dsq / (Dsq + lambda)))
-      Bsvd = fast.svd(B)
+      Bsvd = fast.svd(as.matrix(B))
       V = Bsvd$u
       Dsq = Bsvd$d
       U = U %*% (Bsvd$v)
       #-------------------------------------------------------------
       # part 3: Update A while B and beta are fixed
       # updates U, Dsq, V
-      A = as.matrix((y %*% V) + t(Dsq * t(U)))
+      A = (y %*% V) + t(Dsq * t(U))
       if(laplace.a) A = A - L.a %*% U 
       A = t(t(A) * (Dsq / (Dsq + lambda)))
-      Asvd =  fast.svd(A)
+      Asvd =  fast.svd(as.matrix(A))
       U = Asvd$u
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
@@ -239,10 +239,10 @@ CASMC_fit <-
     # one final fit for one of the parameters (A) has proved to improve the performance significantly.
     if (final.svd) {
       #---- update A
-      A = as.matrix((y %*% V) + t(Dsq * t(U)))
+      A = (y %*% V) + t(Dsq * t(U))
       if(laplace.a) A = A - L.a %*% U 
       A = t(t(A) * (Dsq / (Dsq + lambda)))
-      Asvd =  fast.svd(A)
+      Asvd =  fast.svd(as.matrix(A))
       U = Asvd$u
       Dsq = Asvd$d
       V = V %*% (Asvd$v)

@@ -42,6 +42,8 @@ computeLaplacian <- function(S, normalized = TRUE) {
    } else {
       L <- diag(d) - S
    }
+   L[L==0] <- NA
+   L <- as(L, "Incomplete")
    return(L)
 }
 update_chol <- function(chol_M, D_vector) {
@@ -77,6 +79,14 @@ suvC <-
    }
 
 
+generate_similarity_matrix <- function(n, seed = NULL) {
+   if(! is.null(seed)) set.seed(seed)
+   matrix <- matrix(0, n, n)
+   matrix[upper.tri(matrix)] <- sample(c(0, 1), sum(upper.tri(matrix)), replace = TRUE)
+   matrix <- matrix + t(matrix) # make it symmetric
+   diag(matrix) <- 1
+   return(matrix)
+}
 
 # sparse_prod <-
 #   function(n,m,r,H,sp,si,sx){

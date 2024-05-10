@@ -7,8 +7,8 @@ source("./code_files/import_lib.R")
 
 gen.dat <-  generate_simulation_data_mao(400,400,10,10, "MAR", 2024, cov_eff = F)
 
-gen.dat <- generate_simulation_data_ysf(2,900,800,10,10, missing_prob = 0.8,coll=F,cov_eff = T,
-                                        informative_cov_prop = 0.5,
+gen.dat <- generate_simulation_data_ysf(2,900,800,10,10, missing_prob = 0.8,coll=T,cov_eff = T,
+                                        informative_cov_prop = 0.8,
                                         seed = 2024)
 
 
@@ -23,15 +23,26 @@ max.rank = 3
 X_r$X <- gen.dat$X
 #-----------------------------------------------------------------------
 # 1. Fit the model without cross validation:
-similarity.a = diag(1,400)
-similarity.b = matrix(rbinom(400*400,1,0.2),400)
+similarity.a = generate_similarity_matrix(900, 2023)
+similarity.b = generate_similarity_matrix(800, 2023)
+
+ll <- computeLaplacian(similarity.a)
+ll[ll==0] <- NA
+ll2 <- as(ll, "Incomplete")
+length(ll2@x)
+length(ll)
+suvC(gen.dat$X, t(gen.dat$beta), y@i, y@p)[1:5]
+
+(gen.dat$X  %*% gen.dat$beta)[gen.dat$Y!=0][1:5]
+bb = svd(t(gen.dat$beta))
+suvC(gen.dat$X %*% bb$v, t(bb$d * t(bb$u)), y@i, y@p)[1:5]
 
 
 start_time <- Sys.time()
 set.seed(2020);fits2 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace.it=F, J=max.rank, r = 10,
                                    thresh=1e-6, lambda=lambda2, lambda.beta=0.1,
                                    final.svd = T,maxit = 500, warm.start = NULL,
-                                   lambda.a = 0.0, S.a=similarity.a,lambda.b = 0.0, S.b=similarity.b
+                                   lambda.a = 0.0, S.a=similarity.a,lambda.b = 2.0, S.b=similarity.b
                                   )
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
@@ -84,12 +95,18 @@ best_fit$lambda
 # ---- <r>
 # prepare the data
 
-X_r = reduced_hat_decomp(gen.dat$X.scaled.minmax, 1e-2)
-
 
 # fit
 start_time <- Sys.time()
-best_fit2 = CASMC_cv_holdout_with_r(Y_train, X_r, Y_valid, W_valid, r_min=10,  y=y,
+best_fit2 = CASMC_cv_holdout_with_reg(Y_train, X_r, Y_valid, W_valid,  y=y, 
+                                      lambda.beta.grid =  seq(0,3,length.out=30), max_cores = 30,
+                                    trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20, track_beta = T) 
+print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+
+
+#or
+start_time <- Sys.time()
+best_fit2 = CASMC_cv_holdout_with_r(Y_train, X_r, Y_valid, W_valid, r_min=0,  y=y,
                             trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20, track_r = T) 
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
