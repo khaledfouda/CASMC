@@ -365,8 +365,9 @@ CASMC_cv_holdout <-
          
          #--------------------------------------------------------------
          # predicting validation set and xbetas for next fit:
-         Beta = fiti$Beta
-         XbetaValid = suvC(X_r$X %*% Beta$v, t(Beta$d * t(Beta$u)), virow, vpcol)
+         #Beta = fiti$Beta
+         XbetaValid = suvC(X_r$X , t(fiti$beta), virow, vpcol)
+         #XbetaValid = suvC(X_r$X %*% Beta$v, t(Beta$d * t(Beta$u)), virow, vpcol)
          MValid = suvC(fiti$u, t(fiti$d * t(fiti$v)), virow, vpcol)
          #--------------------------------------------
          err = error_function(MValid + XbetaValid, y_valid)
