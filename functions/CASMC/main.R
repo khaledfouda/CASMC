@@ -6,7 +6,11 @@ source("./code_files/import_lib.R")
 # 0. prepare the data
 
 gen.dat <-  generate_simulation_data_mao(400,400,10,10, "MAR", 2024, cov_eff = F)
-gen.dat <- generate_simulation_data_ysf(2,900,800,10,10, missing_prob = 0.8,coll=F,cov_eff = T,seed = 2024)
+
+gen.dat <- generate_simulation_data_ysf(2,900,800,10,10, missing_prob = 0.8,coll=F,cov_eff = T,
+                                        informative_cov_prop = 0.5,
+                                        seed = 2024)
+
 
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 y = yfill = gen.dat$Y#Y_train
@@ -16,7 +20,7 @@ xbeta.sparse = y
 lambda2 =  15.66312
 max.rank = 3
 
-
+X_r$X <- gen.dat$X
 #-----------------------------------------------------------------------
 # 1. Fit the model without cross validation:
 similarity.a = diag(1,400)
@@ -24,13 +28,18 @@ similarity.b = matrix(rbinom(400*400,1,0.2),400)
 
 
 start_time <- Sys.time()
-set.seed(2020);fits2 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace.it=F, J=max.rank, r = 3,
-                                   thresh=1e-6, lambda=lambda2,
+set.seed(2020);fits2 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace.it=F, J=max.rank, r = 10,
+                                   thresh=1e-6, lambda=lambda2, lambda.beta=0.1,
                                    final.svd = T,maxit = 500, warm.start = NULL,
                                    lambda.a = 0.0, S.a=similarity.a,lambda.b = 0.0, S.b=similarity.b
                                   )
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
+# fits2$Beta$d
+# fits2$Beta$v[1:3,]
+# 
+# 
+# fits2$Beta
 
 
 # get estimates and validate
@@ -38,8 +47,6 @@ beta =  fits2$Beta$u %*% (fits2$Beta$d * t(fits2$Beta$v))
 
 M = fits2$u %*% (fits2$d * t(fits2$v))
 A = M + X_r$X %*% t(beta)
-test_error((X_r$X %*% t(beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
-test_error(fits2$xbeta.obs, (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
 print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
 test_error(M, gen.dat$M)
 print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5)))

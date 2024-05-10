@@ -14,13 +14,13 @@ reduced_hat_decomp <- function(X, tol = 1e-2) {
 UD = function(U, D, n = nrow(U)) {
    U * outer(rep(1, n), D, "*")
 }
-GetXterms <- function(X) {
+GetXterms <- function(X, lambda=0) {
    svdX = fast.svd(X)
    Ux = svdX$u
    Vx = svdX$d * t(svdX$v)
-   X0 = ginv(t(Vx) %*% Vx) %*% t(Vx)
-   X1 = X0 %*% t(Ux)
-   X2 = X0 %*% Vx
+   X0 = ginv(t(Vx) %*% Vx + diag(lambda, ncol(X))) %*% t(Vx)
+   X1 = X0 %*% t(Ux) # k by n
+   X2 = X0 %*% Vx # k by k
    list(X1 = X1, X2 = X2)
 }
 lambda0.cov_splr <- function(Y,

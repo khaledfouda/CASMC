@@ -26,6 +26,7 @@ CASMC_fit <-
            J = 2,
            r = NULL,
            lambda = 0,
+           lambda.beta = 0,
            lambda.a = 0,
            lambda.b = 0,
            S.a = NULL,
@@ -71,7 +72,7 @@ CASMC_fit <-
     # if Xterms are not provided but X is given.
     if (is.null(Xterms)) {
       stopifnot(!is.null(X))
-      Xterms = GetXterms(X)
+      Xterms = GetXterms(X, lambda.beta)
     }
     X1 = Xterms$X1
     X2 = Xterms$X2
@@ -172,10 +173,10 @@ CASMC_fit <-
       M_obs = suvC(U, VDsq, irow, pcol)
       if (iter == 1) {
         UD.beta = t(Beta$d * t(Beta$u))
-        xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
-        y@x = yobs - M_obs - xbeta.obs
+        #xbeta.obs <- suvC(X %*% Beta$v, UD.beta, irow, pcol)
+        y@x = yobs - M_obs #- xbeta.obs
       }
-      beta = t(X1 %*% y + X2 %*% Beta$v %*% t(UD.beta))
+      beta = t(X1 %*% y + (X2 %*% Beta$v) %*% t(UD.beta))
       Beta = fast.svd(as.matrix(beta))
       # Adjust the rank of Beta if provided
       if (!is.null(r)) {

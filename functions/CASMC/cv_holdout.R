@@ -83,10 +83,10 @@ CASMC_cv_holdout_with_r <-
             rank.init = 2,
             rank.limit = 30,
             rank.step = 2,
-            lambda.a = 0, 
+            lambda.a = 0,
             S.a = NULL,
-            lambda.b = 0, 
-            S.b=NULL,
+            lambda.b = 0,
+            S.b = NULL,
             warm = NULL,
             track_r = FALSE,
             max_cores = 12,
@@ -124,7 +124,10 @@ CASMC_cv_holdout_with_r <-
             warm = NULL,
             quiet = quiet,
             seed = seed,
-            lambda.a = lambda.a, S.a=S.a,lambda.b = lambda.b, S.b=S.b
+            lambda.a = lambda.a,
+            S.a = S.a,
+            lambda.b = lambda.b,
+            S.b = S.b
          )
       }, mc.cores = num_cores)
       
@@ -182,10 +185,10 @@ CASMC_cv_holdout <-
             rank.init = 2,
             rank.limit = 30,
             rank.step = 2,
-            lambda.a = 0, 
+            lambda.a = 0,
             S.a = NULL,
-            lambda.b = 0, 
-            S.b=NULL,
+            lambda.b = 0,
+            S.b = NULL,
             warm = NULL,
             pct = 0.98,
             quiet = FALSE,
@@ -229,10 +232,10 @@ CASMC_cv_holdout <-
                warm.start = warm,
                trace.it = F,
                thresh = thresh,
-               lambda.a = lambda.a, 
+               lambda.a = lambda.a,
                S.a = S.a,
-               lambda.b = lambda.b, 
-               S.b=S.b,
+               lambda.b = lambda.b,
+               S.b = S.b,
                init = "naive",
                final.svd = T,
                maxit = maxit
@@ -309,10 +312,10 @@ CASMC_cv_holdout <-
                thresh = thresh,
                maxit = maxit,
                trace.it = F,
-               lambda.a = lambda.a, 
+               lambda.a = lambda.a,
                S.a = S.a,
-               lambda.b = lambda.b, 
-               S.b=S.b,
+               lambda.b = lambda.b,
+               S.b = S.b,
                final.svd = T
             )
          
