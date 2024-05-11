@@ -77,7 +77,8 @@ compare_and_save <- function(missingness,
       #---------------------------------------------------------
       # SPLR data
       splr.dat = reduced_hat_decomp(gen.dat$X, 1e-2)
-      gen.dat$X <- splr.dat$X
+      # gen.dat$X <- splr.dat$X
+      splr.dat$X <- gen.dat$X
       print(i)
       #----------------------------------------------------------------------
       # fit 1. Mao
@@ -215,12 +216,12 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 alpha_grid = seq(0.992, 1, length = 5)
-lambda.1_grid = seq(20, 50, length = 20)
+lambda.1_grid = seq(0, 2, length = 20)
 lambda.2_grid = seq(.9, 0, length = 20)
 ncores = 1
 error_function <- error_metric$rmse
-model_mask <- rep(T, 8)
-model_mask[c(4,6)] <- F
+model_mask <- rep(F, 8)
+model_mask[c(1,2,5,7,8)] <- T
 mao_r <- 10
 ncovariates <- 8
 cov_eff = T

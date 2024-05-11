@@ -126,6 +126,7 @@ compare_and_save_with_rep <- function(missingness,
       # SPLR data
       splr.dat = reduced_hat_decomp(gen.dat$X, 1e-2)
       #gen.dat$X <- splr.dat$X
+      splr.dat$X <- gen.dat$X
       print(n)
       #----------------------------------------------------------------------
       # start fitting the models:
@@ -206,7 +207,7 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 
-for (hparams in list(#c(0.9, TRUE),
+for (hparams in list(c(0.9, TRUE),
                      c(0, FALSE),
                      c(0.9, FALSE),
                      c(0.8, TRUE),
@@ -214,7 +215,7 @@ for (hparams in list(#c(0.9, TRUE),
    compare_and_save_with_rep(
       hparams[1],
       hparams[2],
-      num_replications = 200,
+      num_replications = 80,
       dim = 800,
       lambda.1_grid = seq(2, 0, length = 20),
       lambda.2_grid = seq(.9, 0, length = 20),
@@ -222,9 +223,9 @@ for (hparams in list(#c(0.9, TRUE),
       ncores_mao = 1,
       ncovariates = 10,
       mao_r = 10,
-      error_function = RMSE_error,
+      error_function = error_metric$rmse,
       cov_eff = TRUE,
-      model_flag = c(F,F,F,T,T,F,F),
+      model_flag = c(T,T,F,F,T,F,T),
       note = "_long_"
    )
 }

@@ -5,10 +5,10 @@ source("./code_files/import_lib.R")
 
 # 0. prepare the data
 
-gen.dat <-  generate_simulation_data_mao(400,400,10,10, "MAR", 2024, cov_eff = F)
+gen.dat <-  generate_simulation_data_mao(1000,1000,10,10, "MAR", 2024, cov_eff = F)
 
-gen.dat <- generate_simulation_data_ysf(2,900,800,10,10, missing_prob = 0.8,coll=T,cov_eff = T,
-                                        informative_cov_prop = 0.8,
+gen.dat <- generate_simulation_data_ysf(2,1000,800,15,15, missing_prob = 0.8,coll=F,cov_eff = F,
+                                        informative_cov_prop = 0.5,
                                         seed = 2024)
 
 
@@ -39,7 +39,7 @@ suvC(gen.dat$X %*% bb$v, t(bb$d * t(bb$u)), y@i, y@p)[1:5]
 
 
 start_time <- Sys.time()
-{set.seed(2020);fits3 <- CASMC_fit2(y=y, X=X_r$X, svdH=X_r$svdH,  trace.it=F, J=max.rank, r = 10,
+{set.seed(2020);fits3 <- CASMC_fit(y=y, X=X_r$X, svdH=X_r$svdH,  trace.it=F, J=max.rank, r = 10,
                                    thresh=1e-6, lambda=lambda2, lambda.beta=0.1,
                                    final.svd = T,maxit = 500, warm.start = NULL,
                                    lambda.a = 0.0, S.a=similarity.a,lambda.b = 2.0, S.b=similarity.b
@@ -82,7 +82,7 @@ print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time
 fit1 = best_fit$fit
 # get estimates and validate
 beta = fit1$beta#as.matrix(fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) )
-M = fit1$u %*% (fit1$d * t(fit1$v))
+M = fit1$u %*% (fit1$d * t(fit1$v)) 
 A = M + X_r$X %*% t(beta)
 test_error((X_r$X %*% (beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.dat$Y!=0] )
 # test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )
@@ -94,23 +94,27 @@ best_fit$lambda
 #---------------------------------------------------------------------------------
 # ---- <r>
 # prepare the data
+ 
+lamb = round(sqrt(length(gen.dat $beta)/(nrow(gen.dat$X))) *  seq(0, 10, length.out = 20),3) 
+lamb = c( 1e2,1e3,1e4,1e5, 1e6)
+#[1] "Best fit: lambda_beta =  4.05263157894737  - Validation Error:  1.0853830060108"
 
-
+dim(gen.dat$beta)
 # fit
 start_time <- Sys.time()
 best_fit2 = CASMC_cv_holdout_with_reg(Y_train, X_r, Y_valid, W_valid,  y=y, 
-                                      lambda.beta.grid =  seq(0,3,length.out=30), max_cores = 30,
+                                      lambda.beta.grid =  "default",#"default",#seq(0,5,length.out=20), 
+                                      max_cores = 30,
                                     trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20, track_beta = T) 
 print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
 
 #or
-start_time <- Sys.time()
-best_fit2 = CASMC_cv_holdout_with_r(Y_train, X_r, Y_valid, W_valid, r_min=0,  y=y,
-                            trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20, track_r = T) 
-print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
+# start_time <- Sys.time()
+# best_fit2 = CASMC_cv_holdout_with_r(Y_train, X_r, Y_valid, W_valid, r_min=0,  y=y,
+#                             trace=F, thresh=1e-6,n.lambda = 30, rank.limit = 20, track_r = T) 
+# print(paste("Execution time is",round(as.numeric(difftime(Sys.time(), start_time,units = "secs")),2), "seconds"))
 
-print(best_fit2$r)
 fit1 = best_fit2$fit
 # get estimates and validate
 beta =  fit1$beta#as.matrix(fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v)) )
@@ -120,7 +124,13 @@ test_error((X_r$X %*% (beta))[gen.dat$Y!=0], (gen.dat$X %*% gen.dat$beta)[gen.da
 # test_error(fit1$xbeta.obs, (gen.dat$X %*% gen.dat$beta.x)[Y_train!=0] )
 print(paste("Test error =", round(test_error(A[gen.dat$W==0], gen.dat$O[gen.dat$W==0]),5))) 
 test_error(M, gen.dat$M)
-print(paste("Test error =", round(test_error(t(beta), gen.dat$beta),5)))
+print(paste("Test error =", round(test_error((beta), gen.dat$beta),5)))
+
+beta2 = beta
+beta2 = svd(beta)
+beta2$d[beta2$d < beta2$d[1]*0.1] = 0
+beta2 = beta2$u %*% (beta2$d * t(beta2$v))
+
 best_fit2$r
 best_fit2$rank.max
 best_fit2$lambda
