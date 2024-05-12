@@ -44,7 +44,7 @@ Mao.fit <-
             lambda.2,
             alpha,
             n1n2_optimized = FALSE,
-            theta_estimator = theta_default) {
+            theta_estimator = MaoBinomalWeights) {
       #
       #' ----------------------------------------------
       #' Input: Y: corrupted, partially observed A, (Y is assumed to be the product of Y*W)

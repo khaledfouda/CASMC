@@ -68,8 +68,9 @@ generate_simulation_data_ysf <-
             rank = rank
          ))
       } else if (model == 2) {
+         M <- P_bar_X %*% M
          if (cov_eff) {
-            O <- (X %*% beta.x) + P_bar_X %*% M
+            O <- (X %*% beta.x) + M
          } else{
             ncov_to_keep = round(informative_cov_prop * m1)
             if (ncov_to_keep < m1) {
@@ -81,7 +82,7 @@ generate_simulation_data_ysf <-
                xbeta <- X %*% beta.x
             }
             beta.z <- matrix(0, m2, ncol = n1)
-            O <- xbeta + P_bar_X %*% M
+            O <- xbeta +  M
          }
          #O = (O - mean(O)) / sd(O)
          Y <- (O + E) * W

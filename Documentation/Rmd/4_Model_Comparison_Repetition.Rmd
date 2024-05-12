@@ -27,7 +27,7 @@ knitr::opts_chunk$set(echo = FALSE, cache = FALSE, eval = TRUE,
 source("./code_files/import_lib.R")
 #path_to_data = "./Mao/saved_data/"
 library(data.table)
-note = "_sparseOnly_"
+note = "_long_"
 # note=""
 ```
 
@@ -50,10 +50,10 @@ load_data = function(note) {
    Models <- c(
    "Mao",
    "SoftImpute",
-   "CAMC_holdout",
-   "CAMC_kfold",
-   "CASMC_holdout",
-   "CASMC_kfold",
+   #"CAMC_holdout",
+   #"CAMC_kfold",
+   "CASMC",
+   #"CASMC_kfold",
    "Naive"
 )
    file_list <- list.files(
@@ -307,7 +307,7 @@ print_table <-
 ## 10 covariates and a low-rank matrix of rank 10 were used for all scenarios
 
 ```{r fig.height=15, fig.width=15, results='asis'}
-note = "_sparseOnly_"
+note = "_long_"
 results <- load_data(note)
 for(miss_p  in c(0.8,0.9)){
    for(coll in c(T,F)){

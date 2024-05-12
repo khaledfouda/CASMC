@@ -30,7 +30,7 @@ compare_and_save_with_rep <- function(missingness,
                                       lambda.2_grid = seq(.9, 0, length = 20),
                                       alpha_grid = seq(0.992, 1, length = 10),
                                       ncores_mao = 2,
-                                      weight_function = MaoUniWeights,
+                                      weight_function = MaoUniWeights, 
                                       n.lambda = 30,
                                       rank.limit = 20,
                                       rank.step = 2,
@@ -43,7 +43,7 @@ compare_and_save_with_rep <- function(missingness,
    test_error <<- error_function
    data_dir = "./saved_data/"
    stopifnot(missingness %in% c(0, 0.8, 0.9))
-   stopifnot(length(dim) == 1)
+   stopifnot(length(dim) == 2)
    stopifnot(length(model_flag) == 7)
    metrics = c(
       "time",
@@ -95,8 +95,8 @@ compare_and_save_with_rep <- function(missingness,
       if (missingness == 0) {
          gen.dat <-
             generate_simulation_data_mao(
-               n1 = dim,
-               n2 = dim,
+               n1 = dim[1],
+               n2 = dim[2],
                m = ncovariates,
                r = mao_r,
                seed = seed,
@@ -106,8 +106,8 @@ compare_and_save_with_rep <- function(missingness,
          gen.dat <-
          generate_simulation_data_ysf(
             2,
-            dim,
-            dim,
+            dim[1],
+            dim[2],
             ncovariates,
             ncovariates,
             missing_prob = missingness,
@@ -153,7 +153,7 @@ compare_and_save_with_rep <- function(missingness,
                        results, n)
          perf_means[i, ] <- new_mean
       }
-      # print(perf_means)
+      print(perf_means)
       # print(perf_stdev)
    }
    for (i in 1:length(model_functions))
@@ -168,7 +168,7 @@ compare_and_save_with_rep <- function(missingness,
    colnames(df_stdev) <- paste(colnames(df_stdev), "sd", sep = "_")
    results <- cbind(df_means, df_stdev)
    results$true_rank = gen.dat$rank
-   results$dim = dim
+   results$dim = paste0("(",dim[1],",",dim[2],")")
    results$k = ncovariates
    results$B = num_replications
    results$missinginess = missingness
@@ -191,7 +191,9 @@ compare_and_save_with_rep <- function(missingness,
          "_coll_",
          coll,
          "_dim_",
-         dim,
+         dim[1],
+         "x",
+         dim[2],
          ".csv"
       )
    
@@ -208,24 +210,26 @@ source("./code_files/import_lib.R", local = FALSE)
 
 
 for (hparams in list(c(0.9, TRUE),
-                     c(0, FALSE),
+                     #c(0, FALSE),
                      c(0.9, FALSE),
                      c(0.8, TRUE),
                      c(0.8, FALSE))) {
    compare_and_save_with_rep(
       hparams[1],
       hparams[2],
-      num_replications = 80,
-      dim = 800,
+      num_replications = 39,
+      dim = c(800,900),
+      coll = F,
       lambda.1_grid = seq(2, 0, length = 20),
       lambda.2_grid = seq(.9, 0, length = 20),
       alpha_grid = seq(0.992, 1, length = 10),
       ncores_mao = 1,
       ncovariates = 10,
       mao_r = 10,
+      weight_function = MaoBinomalWeights,
       error_function = error_metric$rmse,
       cov_eff = TRUE,
       model_flag = c(T,T,F,F,T,F,T),
-      note = "_long_"
+      note = "_long2_"
    )
 }
