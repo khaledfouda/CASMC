@@ -307,7 +307,7 @@ print_table <-
 ## 10 covariates and a low-rank matrix of rank 10 were used for all scenarios
 
 ```{r fig.height=15, fig.width=15, results='asis'}
-note = "_long_"
+note = "_long3_"
 results <- load_data(note)
 for(miss_p  in c(0.8,0.9)){
    for(coll in c(T,F)){
@@ -318,22 +318,22 @@ for(miss_p  in c(0.8,0.9)){
  print_table(results,0,FALSE, caption = "")
 ```
 
-```{r fig.height=15, fig.width=15, results='asis'}
-note=""
-results <- load_data(note)
-for(miss_p  in c(0.8,0.9)){
-   for(coll in c(T,F)){
-      print(print_table(results,miss_p,coll, caption = ""))
-      cat("\n")
-   }
-}
- print_table(results,0,FALSE, caption = "")
-```
+<!-- ```{r fig.height=15, fig.width=15, results='asis'} -->
+<!-- note="" -->
+<!-- results <- load_data(note) -->
+<!-- for(miss_p  in c(0.8,0.9)){ -->
+<!--    for(coll in c(T,F)){ -->
+<!--       print(print_table(results,miss_p,coll, caption = "")) -->
+<!--       cat("\n") -->
+<!--    } -->
+<!-- } -->
+<!--  print_table(results,0,FALSE, caption = "") -->
+<!-- ``` -->
 
 
-```{r fig.height=15, fig.width=15, results='asis'}
-note="_long_"
-results <- load_data(note)
- print_table(results,0.9,TRUE, caption = "")
-```
+<!-- ```{r fig.height=15, fig.width=15, results='asis'} -->
+<!-- note="_long_" -->
+<!-- results <- load_data(note) -->
+<!--  print_table(results,0.9,TRUE, caption = "") -->
+<!-- ``` -->
 

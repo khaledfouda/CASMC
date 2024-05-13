@@ -175,7 +175,7 @@ compare_and_save_with_rep <- function(missingness,
    results$collinearity = coll
    results$model = models
    
-   print(results)
+   #print(results)
    print("Exiting Loop ...")
    
    
@@ -209,17 +209,17 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 
-for (hparams in list(c(0.9, TRUE),
-                     #c(0, FALSE),
-                     c(0.9, FALSE),
-                     c(0.8, TRUE),
-                     c(0.8, FALSE))) {
+for (hparams in list(c(0.9, FALSE),
+                     c(0.8, FALSE),
+                     c(0.9, TRUE),
+                     c(0.8, TRUE)
+                     #c(0.0, FALSE)
+                     )) {
    compare_and_save_with_rep(
       hparams[1],
       hparams[2],
       num_replications = 39,
-      dim = c(800,900),
-      coll = F,
+      dim = c(600,700),
       lambda.1_grid = seq(2, 0, length = 20),
       lambda.2_grid = seq(.9, 0, length = 20),
       alpha_grid = seq(0.992, 1, length = 10),
@@ -227,9 +227,9 @@ for (hparams in list(c(0.9, TRUE),
       ncovariates = 10,
       mao_r = 10,
       weight_function = MaoBinomalWeights,
-      error_function = error_metric$rmse,
+      error_function = error_metric$rmse, 
       cov_eff = TRUE,
       model_flag = c(T,T,F,F,T,F,T),
-      note = "_long2_"
+      note = "_long3_"
    )
 }
