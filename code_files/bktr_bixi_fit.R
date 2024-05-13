@@ -1,4 +1,5 @@
 library(BKTR)
+source("./code_files/import_lib.R")
 
 bdat <- BixiData$new()
 model.dat <- list()
@@ -52,7 +53,7 @@ bdatm %>%
  filter(row_number()==1) %>% 
  ungroup() %>% 
  select(-location_id) -> location_covariates
-model.dat$X_row <- location_covariates
+model.dat$X_row <- location_covariates |> as.matrix()
 #-----------------------------------------------------------
 # time covariates
 
@@ -70,7 +71,7 @@ bdatm %>%
  filter(row_number()==1) %>% 
  ungroup() %>% 
  select(-time_id) -> time_covariates
-model.dat$X_col <- time_covariates
+model.dat$X_col <- time_covariates |> as.matrix()
 #----------------------------------------------------------------
 # constructing the similarty matrices
 # Create a matrix of day differences
@@ -137,7 +138,7 @@ mapply(summary,model.dat$X_row)
 masks <- list()
 masks$obs <- as.matrix(model.dat$depart != 0)
 
-split_p <- list(test = 0.4, valid = 0.2)
+split_p <- list(test = 0.5, valid = 0.2)
 
 
 masks$test <- matrix.split.train.test(masks$obs, split_p$test)
@@ -149,24 +150,64 @@ masks$valid <-
 (round(sum(masks$valid == 0) / sum(masks$obs == 1 &
                                     masks$test == 1), 3) == split_p$valid)
 sum(masks$test)
+model.dat$masks <-  masks
 #----------------------------------------------------------------------
 # split the data
 model.dat$splits <- list()
 model.dat$splits$train = model.dat$depart * masks$test * masks$valid
 model.dat$splits$test = model.dat$depart * (1 - masks$test)
 model.dat$splits$valid = model.dat$depart * (1 - masks$valid)
+
 length(model.dat$splits$train@x)
 length(model.dat$splits$test@x)
 length(model.dat$splits$valid@x)
+length(model.dat$depart)
+#----------------------------------------------------------------------------------
+# apply models:
+
+# CASMC
+model.dat$X_r <- reduced_hat_decomp(model.dat$X_row)
+model.dat$X_r$X <- model.dat$X_row
+start_time = Sys.time()
+
+best_fit = CASMC_cv_holdout_with_reg(
+ model.dat$splits$train,
+ model.dat$X_r,
+ model.dat$splits$valid@x,
+ model.dat$masks$valid ,
+ y = model.dat$depart,
+ trace = F,
+ max_cores = 20,
+ thresh = 1e-6,
+ #n.lambda = n.lambda,
+ #rank.limit = rank.limit,
+ maxit = 200,
+ #rank.step = rank.step,
+ print.best = TRUE,
+ track_beta = T
+)
+test_error <- error_metric$rmse
+fit1 = best_fit$fit
+sout = best_fit
+# get estimates and validate
+sout$M = fit1$u %*% (fit1$d * t(fit1$v))
+sout$beta =  (fit1$beta)#fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
+sout$estimates = sout$M + model.dat$X_row %*% (sout$beta)
+
+results = list(model = "CASMC_holdout")
+results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
+results$lambda.1 = sout$lambda.beta
+results$lambda.2 = sout$lambda
+results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
+                                model.dat$splits$test@x)
+results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 & model.dat$masks$obs == 1],
+                                model.dat$depart[model.dat$masks$test == 1& model.dat$masks$obs == 1])
+results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
+                                model.dat$splits$valid@x)
 
 
-
-
-
-
-
-
-
+results$rank = qr(sout$estimates)$rank
+results
 
 
 
