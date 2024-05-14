@@ -18,7 +18,7 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC_cv_holdout <-
+CASMC_cv_nuclear <-
  function(y_train,
           # y_train is expected to be Incomplete
           X,
