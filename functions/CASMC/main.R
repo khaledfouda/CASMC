@@ -266,3 +266,31 @@ print(paste0("The SoftImpute model has on average (with sd) rmse of ",round(mean
              " seconds to run ", B, " simulations"))
 
 
+#----
+
+dat <- generate_simulation_data_ysf(2,800,900,10,10)
+beta <- (dat$beta)
+Xterms <- GetXterms(dat$X)
+
+dat$X %*% t(beta)
+
+
+
+beta = Xterms$X2 %*% beta
+r = 5
+
+dim(Beta$v %*% t(Beta$d * t(Beta$u)))
+dim(Xterms$X2 %*% beta)
+
+
+
+
+system.time({
+   for(i in 1:10000)   
+      # Beta <- irlba(as.matrix(beta), nv = r, nu = r)
+   #beta = (Xterms$X2 %*% Beta$u) %*% (Beta$d * t(Beta$v))
+      Beta2=svds((beta), r)
+})
+
+beta = (as.matrix(beta))
+r=1
