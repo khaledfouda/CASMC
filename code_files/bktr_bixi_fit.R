@@ -1,3 +1,4 @@
+setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 library(BKTR)
 source("./code_files/import_lib.R")
 
@@ -75,15 +76,15 @@ model.dat$X_col <- time_covariates |> as.matrix()
 #----------------------------------------------------------------
 # constructing the similarty matrices
 # Create a matrix of day differences
-dates <- as.Date(unique(bdatm$time))
+dates <- as.Date(unique(bdat$data_df$time))
 day_diff_matrix <- outer(dates, dates, 
                          Vectorize(function(x, y) abs(as.numeric(difftime(x, y, units = "days")))))
 alpha <- 0.2
 similarity_matrix <- exp(-alpha * day_diff_matrix)
 similarity_matrix <- round(similarity_matrix, 5)
 
-print(similarity_matrix)
-sum(similarity_matrix==0)/length(similarity_matrix)
+#print(similarity_matrix)
+#sum(similarity_matrix==0)/length(similarity_matrix)
 time_similarity <- similarity_matrix
 model.dat$sim_col <- time_similarity
 #-----------------------------------------------------------------------
@@ -119,9 +120,9 @@ for (i in 1:nrow(locations)) {
 # Convert distance to similarity: here using an exponential decay
 alpha = 0.2
 similarity_matrix <- exp(-alpha * distance_matrix) 
-summary(as.vector(similarity_matrix))
-sum(similarity_matrix <= .256537)/length(similarity_matrix)
-print(similarity_matrix)
+#summary(as.vector(similarity_matrix))
+#sum(similarity_matrix <= .256537)/length(similarity_matrix)
+#print(similarity_matrix)
 dim(similarity_matrix)
 location_similarity <- similarity_matrix
 model.dat$sim_row <- location_similarity
@@ -166,8 +167,17 @@ length(model.dat$depart)
 # apply models:
 
 # CASMC
+aresults <- list()
+i = 1
 model.dat$X_r <- reduced_hat_decomp(model.dat$X_row)
 model.dat$X_r$X <- model.dat$X_row
+
+for(sparm in list(list(NULL,NULL),
+                  list(model.dat$sim_row, NULL),
+                  list(NULL, model.dat$sim_col),
+                  list(model.dat$sim_row, model.dat$sim_col))){
+
+
 start_time = Sys.time()
 
 best_fit = CASMC_cv_holdout_with_reg(
@@ -175,10 +185,14 @@ best_fit = CASMC_cv_holdout_with_reg(
  model.dat$X_r,
  model.dat$splits$valid@x,
  model.dat$masks$valid ,
- y = model.dat$depart,
+ #y = model.dat$depart,
  trace = F,
  max_cores = 20,
  thresh = 1e-6,
+ lambda.a = 0.01,
+ S.a = sparm[[1]],
+ lambda.b = 0.2,
+ S.b = sparm[[2]],
  #n.lambda = n.lambda,
  #rank.limit = rank.limit,
  maxit = 200,
@@ -196,21 +210,69 @@ sout$estimates = sout$M + model.dat$X_row %*% (sout$beta)
 
 results = list(model = "CASMC_holdout")
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-results$lambda.1 = sout$lambda.beta
-results$lambda.2 = sout$lambda
+results$lambda.1 = sout$lambda.beta |> round(3)
+results$lambda.2 = sout$lambda |> round(3)
 results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
-                                model.dat$splits$test@x)
+                                model.dat$splits$test@x) |> round(5)
 results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 & model.dat$masks$obs == 1],
-                                model.dat$depart[model.dat$masks$test == 1& model.dat$masks$obs == 1])
+                                model.dat$depart[model.dat$masks$test == 1& model.dat$masks$obs == 1]) |> 
+ round(5)
 results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
-                                model.dat$splits$valid@x)
+                                model.dat$splits$valid@x) |> round(5)
 
 
 results$rank = qr(sout$estimates)$rank
 results
+aresults[[i]] <- results
+i = i +1
+}
+#-------------------------------------------------------------------------------
+# Soft Impute
 
+start_time = Sys.time()
+sout <- simpute.cv(
+ as.matrix(model.dat$splits$train),
+ as.matrix(model.dat$depart),
+ trace = FALSE,
+ rank.limit = 30,
+ print.best = FALSE,
+ rank.step = 4
+)
+results = list(model = "SoftImpute")
+results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
+results$lambda.1 = NA
+results$lambda.2 = sout$lambda |> round(3)
+results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
+                                model.dat$splits$test@x) |> round(5)
+results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 & model.dat$masks$obs == 1],
+                                 model.dat$depart[model.dat$masks$test == 1& model.dat$masks$obs == 1]) |> 
+ round(5)
+results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
+                                 model.dat$splits$valid@x) |> round(5)
 
-
-
+results$rank = sout$rank_M
+results
+aresults[[i]] <- results
+i = i +1
+#-----------------------------------------------------------------------------------
+start_time = Sys.time()
+estimates = naive_MC(as.matrix(model.dat$splits$train))
+results = list(model = "Naive")
+results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
+results$lambda.1 = NA
+results$lambda.2 = NA
+results$error.test = test_error(estimates[model.dat$masks$test == 0],
+                                model.dat$splits$test@x) |> round(5)
+results$error.train = test_error(estimates[model.dat$masks$test == 1 & model.dat$masks$obs == 1],
+                                 model.dat$depart[model.dat$masks$test == 1& model.dat$masks$obs == 1]) |> 
+ round(5)
+results$error.valid = test_error(estimates[model.dat$masks$valid == 0],
+                                 model.dat$splits$valid@x) |> round(5)
+results$rank = qr(estimates)$rank
+results
+aresults[[i]] <- results
+i = i +1
+#---------------------------------------------------------------------------------
+do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x)))))
 
 
