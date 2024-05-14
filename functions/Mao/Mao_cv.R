@@ -16,8 +16,8 @@ prepare_fold_data <-
       
       # The following two lines are as shown in (c) and (d)
       X.X = t(X) %*% X
-      P_X = X %*% solve(X.X) %*% t(X)
-      P_bar_X = diag(1, n1) - P_X
+      P_X = X %*% ginv(X.X) %*% t(X)
+      P_bar_X = diag(1, n1, n1) - P_X
       
       theta_hat = theta_estimator(W = W_fold, X = X)
       
@@ -27,9 +27,9 @@ prepare_fold_data <-
       #----------
       if (n1n2_optimized == TRUE) {
          # this one is for equation 8, the product n1n2 is replace with the Eigen value
-         n1n2Im = svd(X.X)$d[1]  * diag(1, m)
+         n1n2Im = svd(X.X)$d[1]  * diag(1, m, m)
       } else{
-         n1n2Im = n1 * n2  * diag(1, m) * 0.5
+         n1n2Im = n1 * n2  * diag(1, m, m) * 0.5
       }
       # the following is the product of W * theta_hat * Y
       W_theta_Y = Y_train * theta_hat
@@ -58,10 +58,10 @@ prepare_fold_data <-
    }
 
 Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha) {
-   beta_hat = solve(data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
+   beta_hat = ginv(data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
    T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda.2, 0) * t(data$svdd$v))
    # B hat as in (11)
-   B_hat = ((1 + 2 * (1 - alpha) * data$n1n2 * lambda.2) ^ (-1)) * T_c_D
+   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda.2)
    # Estimate the matrix as given in the model at the top
    A_hat = data$X %*% beta_hat + B_hat
    
@@ -70,15 +70,17 @@ Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha) {
 
 
 Mao.fit_optimized_part1 <- function(data, lambda.1) {
-   beta_hat = solve(data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
+   # returns Xbeta only. Not used.
+   beta_hat = ginv(data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
    Xbeta = data$X %*% beta_hat
    return(Xbeta[data$W_fold == 0 & data$W == 1])
 }
 
 Mao.fit_optimized_part2 <- function(data, lambda.2, alpha) {
+   # returns Bhat only. Not used.
    T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda.2, 0) * t(data$svdd$v))
    # B hat as in (11)
-   B_hat = ((1 + 2 * (1 - alpha) * data$n1n2 * lambda.2) ^ (-1)) * T_c_D
+   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda.2) 
    return(B_hat[data$W_fold == 0 & data$W == 1])
 }
 
@@ -89,13 +91,14 @@ Mao.cv <-
             Y,
             W,
             n_folds = 5,
-            lambda.1_grid = seq(0, 1, length = 30),
-            lambda.2_grid = seq(0.9, 0.1, length = 30),
+            lambda.1_grid = seq(0, 1, length = 20),
+            lambda.2_grid = seq(0.9, 0.1, length = 20),
             alpha_grid = seq(0.992, 1, length = 20),
             seed = NULL,
             numCores = 1,
             n1n2_optimized = FALSE,
-            theta_estimator = theta_default,
+            test_error = error_metric$rmse,
+            theta_estimator = Mao_weights$binomial,
             sequential = FALSE) {
       #' -------------------------------------------------------------------
       #' Input :
@@ -107,7 +110,7 @@ Mao.cv <-
       #' Output:
       #' list of best parameters and best score (minimum average MSE across folds)
       #' --------------------------------------------------------------------
-      
+      Y[is.na(Y)] <- 0 # insure that missing values are set 0
       if (!is.null(seed))
          set.seed(seed = seed)
       #indices = sample(cut(seq(1, nrow(A)), breaks=n_folds, labels=FALSE))
