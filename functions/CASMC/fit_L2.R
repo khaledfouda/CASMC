@@ -14,7 +14,7 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC_fit_rank <-
+CASMC_fit_L2 <-
   function(y,
            X,
            svdH = NULL,
@@ -22,6 +22,7 @@ CASMC_fit_rank <-
            J = 2,
            r = NULL,
            lambda = 0,
+           lambda.beta = 0,
            # similarity matrix for A
            S.a = NULL,
            lambda.a = 0,
@@ -44,7 +45,7 @@ CASMC_fit_rank <-
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
-    laplace.a = laplace.b = F
+    laplace.a <- laplace.b <- F
     if (!is.null(S.a) & lambda.a > 0) {
       laplace.a = T
       L.a = computeLaplacian(S.a, normalized = TRUE) * lambda.a
@@ -54,8 +55,9 @@ CASMC_fit_rank <-
       L.b = computeLaplacian(S.b, normalized = TRUE) * lambda.b
     }
     #--------------------------------
-    # if svdH is not given but X is given. Only needed if warm.start is not provided
+    # if svdH is not given but X is given. only needed if warm.start is not provided
     if (is.null(warm.start) & is.null(svdH)) {
+      stopifnot(!is.null(X))
       svdH = reduced_hat_decomp(X, 1e-2)
       J_H = svdH$rank
       svdH = svdH$svdH
@@ -65,7 +67,7 @@ CASMC_fit_rank <-
     #---------------------------------------------------
     # if Xterms are not provided but X is given.
     if (is.null(Xterms))
-      Xterms = GetXterms(X)
+      Xterms = GetXterms(X, lambda.beta)
     #---------------------------------------------------
     # warm start or initialize (naive or random)
     warm = FALSE
@@ -74,12 +76,13 @@ CASMC_fit_rank <-
       #must have u,d and v components
       if (!all(match(c("u", "d", "v", "beta"), names(warm.start), 0) >
                0))
-        stop("warm.start does not have components u, d, v, or beta")
+        stop("warm.start does not have components u, d and v")
       warm = TRUE
       D = warm.start$d
       JD = sum(D > 0)
       #J = JD
       beta = warm.start$beta
+      
       if (JD >= J) {
         U = warm.start$u[, seq(J), drop = FALSE]
         V = warm.start$v[, seq(J), drop = FALSE]
@@ -103,8 +106,10 @@ CASMC_fit_rank <-
         # U = matrix(rnorm(n * J), n, J)
         # U = fast.svd(U)$u
         # Dsq = rep(1, J)# we call it Dsq because A=UD and B=VDsq and AB'=U Dsq V^T
+        # xbeta.obs = suvC(svdH$u, t(as.matrix(svdH$v %*% y)), irow, pcol)
       } else if (init == "naive") {
         Y_naive = as.matrix(y)
+        # obs.ind = Y_naive != 0
         Y_naive = naive_MC(Y_naive)
         naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
         naive_fit <- Y_naive - naive_fit
@@ -120,14 +125,9 @@ CASMC_fit_rank <-
       }
     }
     #----------------------------------------
-    yobs <- yobs
+    yobs <- y@x
     ratio <- 1
     iter <- 0
-    
-    if (!is.null(r) && r == 0) {
-      beta <- matrix(0, k, m)
-      xbeta.obs <- rep(0, length(y@x))
-    }
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
       iter <- iter + 1
@@ -139,22 +139,11 @@ CASMC_fit_rank <-
       # updates xbeta.obs and Beta.
       VDsq = t(Dsq * t(V))
       M_obs = suvC(U, VDsq, irow, pcol)
-      
-      if (is.null(r) || r > 0) {
-        if (iter == 1)
-          y@x = yobs - M_obs
-        
-        if (!is.null(r) && r < k) {
-          Beta <- svds(beta, r)
-        } else{
-          Beta = fast.svd(beta)
-        }
-        beta = as.matrix(Xterms$X1 %*% y + (Xterms$X2 %*% Beta$u) %*% (Beta$d * t(Beta$v)))
-        xbeta.obs <- suvC(X, t(beta), irow, pcol)
-      }
-      
+      if (iter == 1)
+        y@x = yobs - M_obs
+      beta = as.matrix(Xterms$X1 %*% y + (Xterms$X2 %*%  beta))
+      xbeta.obs <- suvC(X, t(beta), irow, pcol)
       y@x = yobs - M_obs - xbeta.obs
-      
       ##--------------------------------------------
       # part 2: Update B while A and beta are fixed
       # updates U, Dsq, V

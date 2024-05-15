@@ -37,19 +37,17 @@ CASMC_cv_holdout_with_reg <-
             track_beta = FALSE,
             max_cores = 8,
             # seed
-            seed = NULL
-            ) {
-      
-      if(identical(lambda.beta.grid, "default"))
-         lambda.beta.grid = sqrt((ncol(y_train)*ncol(X))/(nrow(y_train))) *  seq(0, 10, length.out = 20)
+            seed = NULL) {
+      if (identical(lambda.beta.grid, "default"))
+         lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *  seq(0, 10, length.out = 20)
       
       num_cores = length(lambda.beta.grid)
-      if(length(lambda.beta.grid) > max_cores)
-         num_cores <- min(max_cores, ceiling(length(lambda.beta.grid)/2))
+      if (length(lambda.beta.grid) > max_cores)
+         num_cores <-
+         min(max_cores, ceiling(length(lambda.beta.grid) / 2))
       print(paste("Running on", num_cores, "cores."))
       
       results <- mclapply(lambda.beta.grid, function(lambda.beta) {
-         
          Xterms = GetXterms(X, lambda.beta)
          fiti = CASMC_cv_nuclear(
             y_train = y_train,
@@ -91,10 +89,24 @@ CASMC_cv_holdout_with_reg <-
       
       if (track_beta) {
          sapply(results, function(x)
-            print(paste0("lambda.beta = ",x$lambda.beta, " - Val Err = ", round(x$error,5))))
+            print(
+               paste0(
+                  "lambda.beta = ",
+                  x$lambda.beta,
+                  " - Val Err = ",
+                  round(x$error, 5)
+               )
+            ))
       }
-      if(print.best)
-         print(paste("Best fit: lambda_beta = ",best_fit$lambda.beta, " - Validation Error: ", best_fit$error))
+      if (print.best)
+         print(
+            paste(
+               "Best fit: lambda_beta = ",
+               best_fit$lambda.beta,
+               " - Validation Error: ",
+               best_fit$error
+            )
+         )
       
       return(best_fit)
       

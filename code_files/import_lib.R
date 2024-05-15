@@ -59,6 +59,7 @@ file_list <-
   recursive = T
  )
 file_list <- file_list[!grepl("main\\.R$", file_list)]
+file_list <- file_list[!grepl("main[0-9]*\\.R$", file_list)]
 file_list <- file_list[!grepl("/old/", file_list)]
 file_list <- file_list[!grepl("/old.*/", file_list)]
 
