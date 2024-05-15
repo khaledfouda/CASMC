@@ -88,6 +88,9 @@ CASMC_cv_rank <-
     print(paste0("r = ",x$r, " - Val Err = ", round(x$error,5))))
   }
   
+  if(print.best)
+    print(paste("Best fit: r = ",best_fit$r, " - Validation Error: ", best_fit$error))
+  
   return(best_fit)
   
   
