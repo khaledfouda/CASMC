@@ -40,7 +40,7 @@ Mao_weights <- list(
    
 )
 
-Mao.fit <-
+Mao_fit <-
    function(Y,
             X,
             W,

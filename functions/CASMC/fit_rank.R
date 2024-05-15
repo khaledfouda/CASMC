@@ -120,7 +120,7 @@ CASMC_fit_rank <-
       }
     }
     #----------------------------------------
-    yobs <- yobs
+    yobs <- y@x
     ratio <- 1
     iter <- 0
     
@@ -222,6 +222,11 @@ CASMC_fit_rank <-
     # trim in case we reduce the rank of M to be smaller than J.
     J = min(sum(Dsq > 0) + 1, J)
     J = min(J, length(Dsq))
+    if (!is.null(r) && r < k && r > 0) {
+      svd_beta <- svds(beta, r)
+      beta <- svd_beta$u %*% (svd_beta$d * t(svd_beta$v))
+    }
+    
     out = list(
       u = U[, seq(J), drop = FALSE],
       d = Dsq[seq(J)],

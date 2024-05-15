@@ -80,15 +80,14 @@ Mao.fit_optimized_part2 <- function(data, lambda.2, alpha) {
    # returns Bhat only. Not used.
    T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda.2, 0) * t(data$svdd$v))
    # B hat as in (11)
-   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda.2) 
+   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda.2)
    return(B_hat[data$W_fold == 0 & data$W == 1])
 }
 
 
 Mao.cv <-
-   function(A,
+   function(Y,
             X,
-            Y,
             W,
             n_folds = 5,
             lambda.1_grid = seq(0, 1, length = 20),
@@ -102,7 +101,6 @@ Mao.cv <-
             sequential = FALSE) {
       #' -------------------------------------------------------------------
       #' Input :
-      #' A : Complete (True) A matrix as in the model above of size n1 by n2
       #' X :  Covariate matrix of size  n1 by m
       #' W : Binary matrix representing the mask. wij=1 if yij is observed. size similar to A
       #' The rest are cross validation parameters
@@ -143,7 +141,6 @@ Mao.cv <-
       
       # ************************************************************
       if (numCores == 1 & sequential == FALSE) {
-         
          results <-
             foreach(alpha = alpha_grid, .combine = rbind) %:%
             foreach(lambda.2 = lambda.2_grid, .combine = rbind) %do% {
@@ -163,13 +160,15 @@ Mao.cv <-
          min_score <- min(results[, 3])
          
          # Subset to only include results with the minimum score
-         min_results <- results[results[, 3] == min_score, , drop = FALSE] # Keep it as a dataframe
+         min_results <-
+            results[results[, 3] == min_score, , drop = FALSE] # Keep it as a dataframe
          
          # Find the one with the highest lambda.2 in case of multiple results with the same score
          if (nrow(min_results) > 1) {
-            best_result <- min_results[which.max(min_results[, 2]), ]
+            best_result <- min_results[which.max(min_results[, 2]),]
          } else {
-            best_result <- min_results  # If only one row, it's already the best result
+            best_result <-
+               min_results  # If only one row, it's already the best result
          }
          best_params <-
             list(alpha = best_result[1],
@@ -253,7 +252,7 @@ Mao.cv <-
             results[results[, 3] == min_score, , drop = FALSE] # drop to keep it as df
          # In case of multiple results with the same score, find the one with the highest lambda.2
          if (nrow(min_results) > 1) {
-            best_result <- min_results[which.max(min_results[, 2]), ]
+            best_result <- min_results[which.max(min_results[, 2]),]
          } else {
             best_result <-
                min_results  # If only one row, it's already the best result
@@ -289,8 +288,19 @@ Mao.cv <-
             best_params$lambda.1 = lambda.1
          }
       }
-      
       #---------------------------------------------------
-      return(list(best_parameters = best_params, best_score = best_score))
+      
+      best_fit <- Mao_fit(Y = Y,
+                           X = X,
+                           W = W,
+                           lambda.1 = best_params$lambda.1,
+                           lambda.2 = best_params$lambda.2,
+                           alpha = best_params$alpha,
+                           n1n2_optimized = n1n2_optimized,
+                           return_rank = TRUE,
+                           theta_estimator = theta_estimator)
+         #---------------------------------------------------
+      return(list(best_parameters = best_params, best_score = best_score, fit=best_fit))
       
    }
+

@@ -15,6 +15,9 @@ adjusted_unexplained_variance = function(predicted, true, p = 1, n = length(true
 mape = function(predicted, true) {
    mean(abs((true - predicted) / true), na.rm = TRUE) * 100
 },
+mae = function(predicted, true) {
+   mean(abs(true - predicted), na.rm = TRUE)
+},
 
 rmse_normalized = function(predicted, true) {
    sqrt(mean((true - predicted) ^ 2, na.rm = TRUE)) / sd(true, na.rm = TRUE)

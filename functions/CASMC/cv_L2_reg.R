@@ -1,4 +1,4 @@
-CASMC_cv_holdout_with_reg <-
+CASMC_cv_L2 <-
    function(y_train,
             # y_train is expected to be Incomplete
             X,
