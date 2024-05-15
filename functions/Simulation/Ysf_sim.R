@@ -130,7 +130,7 @@ generate_simulation_rows <-
          X[, 2]  <- X[, 1] + rnorm(n, mean = 0, sd = 0.001)
       #---------------------------
       E <- matrix(rnorm(n * m), ncol = m)
-      beta <- matrix(runif(k * m, 0.1, 1), ncol = m)
+      beta <- matrix(runif(k * m, 1.1, 2), ncol = m)
       U <- matrix(runif(n * r), ncol = r)
       V <- matrix(runif(r * m), nrow = r)
       P_X = X %*% solve(t(X) %*% X) %*% t(X)
