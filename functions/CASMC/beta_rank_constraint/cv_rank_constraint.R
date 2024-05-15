@@ -8,10 +8,6 @@ CASMC_cv_rank <-
           W_valid,
           y = NULL,
           # y: a final full-fit if provided. Expected to be Incomplete
-          r = NULL,
-          # provide this if you need rank restriction. if not null, L2 reg will be ignored
-          Xterms = NULL,
-          # provide this if you need L2 regularization.
           error_function = error_metric$rmse,
           # tuning parameters for lambda
           lambda.factor = 1 / 4,
@@ -50,8 +46,6 @@ CASMC_cv_rank <-
   num_cores = min(max_cores, length(r_seq))
   print(paste("Running on", num_cores, "cores."))
   Xterms = GetXterms(X)
-  best_score = Inf
-  best_fit = NULL
   results <- mclapply(r_seq, function(r) {
    CASMC_cv_nuclear(
     y_train = y_train,
