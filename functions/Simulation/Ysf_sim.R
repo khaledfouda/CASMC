@@ -131,10 +131,11 @@ generate_simulation_rows <-
          X[, 2]  <- X[, 1] + rnorm(n, mean = 0, sd = 0.001)
       }
       #---------------------------
-      beta_means <- runif(k, 1, 5) * sample(c(-1,1),k,TRUE)
-      # matrix(runif(k * m, 1, 3), ncol = m)
-      beta <-
-         t(mvrnorm(m, beta_means, diag(1,k,k))) 
+      beta_means <- runif(k, 1, 3) * sample(c(-1,1),k,TRUE)
+      #beta <- matrix(rnorm(k*m, 1, 0.5), nrow=k)
+      #beta <- matrix(runif(k * m, 0, 1)* sample(c(-1,1),k*m,TRUE), ncol = m) 
+       beta <-
+           t(mvrnorm(m, beta_means, diag(0.5^2,k,k))) 
       U <- matrix(runif(n * r), ncol = r)
       V <- matrix(runif(r * m), nrow = r)
       P_X = X %*% solve(t(X) %*% X) %*% t(X)
@@ -150,7 +151,7 @@ generate_simulation_rows <-
          beta <- matrix(0, k, ncol = m)
       } else if (ncov_to_keep < k) {
          sampled_covars_to_remove <-
-            sample(1:k, k - ncov_to_keep, replace = FALSE)
+            sample(1:k, k - ncov_to_keep, replace = FALSE) 
          beta[sampled_covars_to_remove, ] <- 0
       }
       O <- X %*% beta +  M
@@ -158,7 +159,7 @@ generate_simulation_rows <-
       sqrt_signal <-
          sqrt(sum((O - mean(O)) ^ 2) / (n * m - 1)) # set SNR=1
       E <-
-         matrix(rnorm(n * m, mean = 0, sd = sqrt_signal), ncol = m)
+         matrix(rnorm(n * m, mean = 0, sd = 1), ncol = m)
       Y <- (O + E) * W
       rank <- qr(O)$rank
       

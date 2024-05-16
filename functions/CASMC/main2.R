@@ -56,7 +56,7 @@ dat <-
   800,
   900,
   r = 10,
-  k = 10,
+  k = 10, 
   missing_prob = 0.9,
   coll = FALSE,
   prepare_for_fitting = TRUE,
@@ -231,7 +231,8 @@ results  |>
 
 kable( results, format = "simple")
 #----------------------------------------------------------------------------------
-
+fit_l2_backup <- fit_l2 
+fit_l2 <- fit_rank
 
 fit_rank$fit$M <- unsvd(fit_rank$fit)
 dat$xbeta = dat$X %*% dat$beta
