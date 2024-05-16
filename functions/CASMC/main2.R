@@ -233,23 +233,96 @@ kable( results, format = "simple")
 #----------------------------------------------------------------------------------
 
 
+fit_rank$fit$M <- unsvd(fit_rank$fit)
+dat$xbeta = dat$X %*% dat$beta
 
 fit_l2$fit$M <- unsvd(fit_l2$fit)
-fit_rank$fit$M <- unsvd(fit_rank$fit)
+fit_l2$xbeta <- dat$X %*% fit_l2$fit$beta
+fit_l2$O <- fit_l2$xbeta + fit_l2$fit$M
 
+mao.fitB$xbeta <- dat$X %*%  mao.fitB$fit$beta
+mao.fitB$O <- mao.fitB$xbeta +  mao.fitB$fit$M
 
-abs((dat$X %*% dat$beta)[1,1:6] -(dat$X %*%  mao.fit$fit$beta)[1,1:6]) |> round(2) - 
-abs((dat$X %*% dat$beta)[1,1:6] - (dat$X %*% fit_l2$fit$beta)[1,1:6]) |> round(2)
-
-
-abs(dat$M[1,1:6] - mao.fit$fit$M[1,1:6]) |> round(2) - 
- abs(dat$M[1,1:6] - fit_l2$fit$M[1,1:6]) |> round(2)
-
-
- abs((dat$Y)[1,1:6] -(dat$X %*%  mao.fit$fit$beta+ mao.fit$fit$M)[1,1:6]) |> round(2) -
- abs((dat$Y)[1,1:6] - (dat$X %*% fit_l2$fit$beta+fit_l2$fit$M)[1,1:6]) |> round(2)
+abs(dat$xbeta[1,1:6] - mao.fitB$xbeta[1,1:6]) < abs(dat$xbeta[1,1:6] - fit_l2$xbeta[1,1:6])
+abs(dat$M[1,1:6] - mao.fitB$fit$M[1,1:6]) < abs(dat$M[1,1:6] - fit_l2$fit$M[1,1:6])
+abs(dat$O[1,1:6] - mao.fitB$O[1,1:6]) < abs(dat$O[1,1:6] - fit_l2$O[1,1:6])
 
 
 
+library(knitr)
+
+comparison_df <- data.frame(
+  Observation = 1:ncol(dat$xbeta),
+  True_xbeta = dat$xbeta[1, ],
+  Mao_FitB_xbeta = mao.fitB$xbeta[1, ],
+  Fit_L2_xbeta = fit_l2$xbeta[1, ],
+  True_M = dat$M[1, ],
+  Mao_FitB_M = mao.fitB$fit$M[1, ],
+  Fit_L2_M = fit_l2$fit$M[1, ],
+  True_O = dat$O[1, ],
+  Mao_FitB_O = mao.fitB$O[1, ],
+  Fit_L2_O = fit_l2$O[1, ]
+)
+
+comparison_table <- comparison_df[1:10, c("Observation", "True_xbeta", "Mao_FitB_xbeta", "Fit_L2_xbeta",
+                                      "True_M", "Mao_FitB_M", "Fit_L2_M",
+                                      "True_O", "Mao_FitB_O", "Fit_L2_O")]
+kable(comparison_table, format = "html", col.names = c("Obs", "True xbeta", "Mao FitB xbeta", "Fit L2 xbeta",
+                                                       "True M", "Mao FitB M", "Fit L2 M",
+                                                       "True O", "Mao FitB O", "Fit L2 O")) %>%
+  kable_styling() %>%
+  column_spec(2, background = "lightgreen") %>%
+  column_spec(3, background = "lightblue") %>%
+  column_spec(4, background = "lightblue") %>%
+  column_spec(5, background = "lightgreen") %>%
+  column_spec(6, background = "lightyellow") %>%
+  column_spec(7, background = "lightyellow") %>%
+  column_spec(8, background = "lightgreen") %>%
+  column_spec(9, background = "lightpink") %>%
+  column_spec(10, background = "lightpink")
 
 
+
+
+
+library(ggplot2)
+library(gridExtra)
+ncols <- 100
+
+# Create long format data for ggplot
+long_comparison_df <- rbind(
+  data.frame(Observation = 1:ncols, Value = dat$xbeta[1,1:100 ], Type = "True xbeta"),
+  data.frame(Observation = 1:ncols, Value = mao.fitB$xbeta[1,1:100 ], Type = "Mao FitB xbeta"),
+  data.frame(Observation = 1:ncols, Value = fit_l2$xbeta[1, 1:100], Type = "Fit L2 xbeta"),
+  data.frame(Observation = 1:ncols, Value = dat$M[1, 1:100], Type = "True M"),
+  data.frame(Observation = 1:ncols, Value = mao.fitB$fit$M[1,1:100 ], Type = "Mao FitB M"),
+  data.frame(Observation = 1:ncols, Value = fit_l2$fit$M[1,1:100 ], Type = "Fit L2 M"),
+  data.frame(Observation = 1:ncols, Value = dat$O[1,1:100 ], Type = "True O"),
+  data.frame(Observation = 1:ncols, Value = mao.fitB$O[1,1:100 ], Type = "Mao FitB O"),
+  data.frame(Observation = 1:ncols, Value = fit_l2$O[1,1:100 ], Type = "Fit L2 O")
+)
+
+# Create individual plots
+plot_xbeta <- ggplot(long_comparison_df[long_comparison_df$Type %in% c("True xbeta", "Mao FitB xbeta", "Fit L2 xbeta"), ], aes(x = Observation, y = Value, color = Type, linetype = Type)) +
+  geom_line() +
+  scale_color_manual(values = c("True xbeta" = "black", "Mao FitB xbeta" = "blue", "Fit L2 xbeta" = "red")) +
+  scale_linetype_manual(values = c("True xbeta" = "longdash", "Mao FitB xbeta" = "solid", "Fit L2 xbeta" = "solid")) +
+  labs(title = "Comparison of xbeta", y = "Value", x = "Observation") +
+  theme_minimal()
+
+plot_M <- ggplot(long_comparison_df[long_comparison_df$Type %in% c("True M", "Mao FitB M", "Fit L2 M"), ], aes(x = Observation, y = Value, color = Type, linetype = Type)) +
+  geom_line() +
+  scale_color_manual(values = c("True M" = "black", "Mao FitB M" = "blue", "Fit L2 M" = "red")) +
+  scale_linetype_manual(values = c("True M" = "longdash", "Mao FitB M" = "solid", "Fit L2 M" = "solid")) +
+  labs(title = "Comparison of M", y = "Value", x = "Observation") +
+  theme_minimal()
+
+plot_O <- ggplot(long_comparison_df[long_comparison_df$Type %in% c("True O", "Mao FitB O", "Fit L2 O"), ], aes(x = Observation, y = Value, color = Type, linetype = Type)) +
+  geom_line() +
+  scale_color_manual(values = c("True O" = "black", "Mao FitB O" = "blue", "Fit L2 O" = "red")) +
+  scale_linetype_manual(values = c("True O" = "longdash", "Mao FitB O" = "solid", "Fit L2 O" = "solid")) +
+  labs(title = "Comparison of O", y = "Value", x = "Observation") +
+  theme_minimal()
+
+# Combine the plots into one graph with 3 rows and 1 column
+grid.arrange(plot_xbeta, plot_M, plot_O, nrow = 3)

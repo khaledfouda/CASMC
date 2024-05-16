@@ -122,15 +122,19 @@ generate_simulation_rows <-
       X <- matrix(rnorm(n * k), ncol = k)
       if (half_discrete) {
          ndisc = ceiling(k / 2) + 1
-         X[, ndisc:k] <- rbinom(n * (k - ndisc + 1), 1, 0.4)
+         sampled_disc = sample(1:k, ndisc, FALSE)
+         X[, sampled_disc] <- rbinom(n * (k - ndisc + 1), 1, 0.3)
       }
       # if collinearity is needed, make the correlation between the first two columns in X and Z between (.99,1)
       # the actual correlation value is very close to 0.999999%
-      if (coll == TRUE)
+      if (coll == TRUE) {
          X[, 2]  <- X[, 1] + rnorm(n, mean = 0, sd = 0.001)
+      }
       #---------------------------
-      E <- matrix(rnorm(n * m), ncol = m)
-      beta <- matrix(runif(k * m, 1.1, 2), ncol = m)
+      beta_means <- runif(k, 1, 5) * sample(c(-1,1),k,TRUE)
+      # matrix(runif(k * m, 1, 3), ncol = m)
+      beta <-
+         t(mvrnorm(m, beta_means, diag(1,k,k))) 
       U <- matrix(runif(n * r), ncol = r)
       V <- matrix(runif(r * m), nrow = r)
       P_X = X %*% solve(t(X) %*% X) %*% t(X)
@@ -142,27 +146,29 @@ generate_simulation_rows <-
       
       ncov_to_keep = round(informative_cov_prop * k)
       
-      if (ncov_to_keep >= k) {
-         xbeta <- X %*% beta
-      } else if (ncov_to_keep <= 0) {
+      if (ncov_to_keep <= 0) {
          beta <- matrix(0, k, ncol = m)
-         xbeta <- X %*% beta
-      } else{
-         beta[(ncov_to_keep + 1):k, ] <- 0
-         xbeta = X[, 1:ncov_to_keep] %*% beta[1:ncov_to_keep, ]
-         
+      } else if (ncov_to_keep < k) {
+         sampled_covars_to_remove <-
+            sample(1:k, k - ncov_to_keep, replace = FALSE)
+         beta[sampled_covars_to_remove, ] <- 0
       }
-      O <- xbeta +  M
+      O <- X %*% beta +  M
+      # random noise to Y
+      sqrt_signal <-
+         sqrt(sum((O - mean(O)) ^ 2) / (n * m - 1)) # set SNR=1
+      E <-
+         matrix(rnorm(n * m, mean = 0, sd = sqrt_signal), ncol = m)
       Y <- (O + E) * W
       rank <- qr(O)$rank
       
       fit_data <- NULL
-      if(prepare_for_fitting){
+      if (prepare_for_fitting) {
          fit_data <- list()
-         fit_data$W_valid <- matrix.split.train.test(W, testp=0.2)
+         fit_data$W_valid <- matrix.split.train.test(W, testp = 0.2)
          train = (Y * fit_data$W_valid)
          fit_data$train = to_incomplete(train)
-         fit_data$valid = Y[fit_data$W_valid==0]
+         fit_data$valid = Y[fit_data$W_valid == 0]
          fit_data$Y = to_incomplete(Y)
       }
       
@@ -181,4 +187,4 @@ generate_simulation_rows <-
       #-----------------------------------------------------------------------------
       #---------------------------------------------------------------------
       
-}
+   }
