@@ -74,8 +74,8 @@ generate_simulation_data_ysf <-
          } else{
             ncov_to_keep = round(informative_cov_prop * m1)
             if (ncov_to_keep < m1) {
-               beta.x[(ncov_to_keep + 1):m1, ] <- 0
-               xbeta = X[, 1:ncov_to_keep] %*% beta.x[1:ncov_to_keep, ]
+               beta.x[(ncov_to_keep + 1):m1,] <- 0
+               xbeta = X[, 1:ncov_to_keep] %*% beta.x[1:ncov_to_keep,]
             } else{
                beta.x <- matrix(0, m1, ncol = n2)
                xbeta <- X %*% beta.x
@@ -115,6 +115,7 @@ generate_simulation_rows <-
             half_discrete = FALSE,
             informative_cov_prop = 1,
             prepare_for_fitting = FALSE,
+            mv_beta = TRUE,
             seed = NULL) {
       if (!is.null(seed))
          set.seed(seed = seed)
@@ -131,11 +132,13 @@ generate_simulation_rows <-
          X[, 2]  <- X[, 1] + rnorm(n, mean = 0, sd = 0.001)
       }
       #---------------------------
-      beta_means <- runif(k, 1, 3) * sample(c(-1,1),k,TRUE)
-      #beta <- matrix(rnorm(k*m, 1, 0.5), nrow=k)
-      #beta <- matrix(runif(k * m, 0, 1)* sample(c(-1,1),k*m,TRUE), ncol = m) 
-       beta <-
-           t(mvrnorm(m, beta_means, diag(0.5^2,k,k))) 
+      if (mv_beta) {
+         beta_means <- runif(k, 1, 3) * sample(c(-1, 1), k, TRUE)
+         beta_vars <- runif(k, 0.5, 1) ^ 2
+         beta <-
+            t(mvrnorm(m, beta_means, diag(beta_vars, k, k)))
+      } else
+         beta <- matrix(runif(k * m, 1, 2)*sample(c(1,1),k*m,TRUE), nrow = k)
       U <- matrix(runif(n * r), ncol = r)
       V <- matrix(runif(r * m), nrow = r)
       P_X = X %*% solve(t(X) %*% X) %*% t(X)
@@ -151,8 +154,8 @@ generate_simulation_rows <-
          beta <- matrix(0, k, ncol = m)
       } else if (ncov_to_keep < k) {
          sampled_covars_to_remove <-
-            sample(1:k, k - ncov_to_keep, replace = FALSE) 
-         beta[sampled_covars_to_remove, ] <- 0
+            sample(1:k, k - ncov_to_keep, replace = FALSE)
+         beta[sampled_covars_to_remove,] <- 0
       }
       O <- X %*% beta +  M
       # random noise to Y

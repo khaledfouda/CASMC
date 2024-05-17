@@ -1,8 +1,18 @@
-# here we compare/test our implementation
+---
+title: "Analysis"
+output: html_document
+---
+
+# Load Libraries
+
+```{r load-libraries, message=FALSE, warning=FALSE}
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
+```
 
-# 0. prepare the data
+# Prepare Data
+
+```{r prepare-data}
 print_performance <-
  function(inp,
           outp,
@@ -56,7 +66,6 @@ print_performance <-
  return(result_df)
  }
 
-
 dat <-
  generate_simulation_rows(
   800,
@@ -68,14 +77,15 @@ dat <-
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
   informative_cov_prop = 0.7,
-  mv_beta = F,
+  mv_beta = T,
   seed = 2023
  )
 X_r = reduced_hat_decomp(dat$X, 1e-2)
+```
 
-#' # 1
-#+ something
+# Fit Models
 
+```{r fit-models-1}
 fit_rank <- CASMC_cv_rank(
  y_train = dat$fit_data$train,
  X = dat$X,
@@ -108,11 +118,9 @@ fit_rank <- CASMC_cv_rank(
  max_cores = 20,
  seed = 2023
 )
+```
 
-
-
-
-#' # 2
+```{r fit-models-2}
 fit_l2 <- CASMC_cv_L2(
  y_train = dat$fit_data$train,
  X = dat$X,
@@ -143,7 +151,9 @@ fit_l2 <- CASMC_cv_L2(
  max_cores = 23,
  seed = 2023
 )
-#' # 3
+```
+
+```{r fit-models-3}
 fit_l2_ <- CASMC_cv_L2(
  y_train = dat$fit_data$train,
  X = dat$X,
@@ -174,7 +184,9 @@ fit_l2_ <- CASMC_cv_L2(
  max_cores = 23,
  seed = 2023
 )
-#' # 4
+```
+
+```{r fit-models-4}
 simpute_fit <- simpute.cv(
   Y_train = as.matrix(dat$fit_data$train),
   y_valid = dat$fit_data$valid,
@@ -190,10 +202,10 @@ simpute_fit <- simpute.cv(
   rank.step = 2,
   maxit = 300,
   seed= 2023
-
 )
+```
 
-#' # 5
+```{r fit-models-5}
 mao.fitB <- Mao.cv(
  Y = dat$Y,
  X = dat$X,
@@ -201,7 +213,7 @@ mao.fitB <- Mao.cv(
  n_folds = 5,
  lambda.1_grid = seq(0, 1, length = 20),
  lambda.2_grid = seq(0.9, 0.1, length = 20),
- alpha_grid = c(1),#seq(0.992, 1, length = 5),
+ alpha_grid = c(1),
  seed = 2023,
  numCores = 1,
  n1n2_optimized = TRUE,
@@ -209,10 +221,10 @@ mao.fitB <- Mao.cv(
  theta_estimator = Mao_weights$binomial,
  sequential = FALSE
 )
+mao.fitB$best_parameters
+```
 
-
-#' # 6
-
+```{r fit-models-6}
 mao.fit <- Mao.cv(
  Y = dat$Y,
  X = dat$X,
@@ -220,7 +232,7 @@ mao.fit <- Mao.cv(
  n_folds = 5,
  lambda.1_grid = seq(0, 1, length = 20),
  lambda.2_grid = seq(0.9, 0.1, length = 20),
- alpha_grid = c(1),#seq(0.992, 1, length = 5),
+ alpha_grid = c(1),
  seed = 2023,
  numCores = 1,
  n1n2_optimized = TRUE,
@@ -228,12 +240,16 @@ mao.fit <- Mao.cv(
  theta_estimator = Mao_weights$uniform,
  sequential = FALSE
 )
-#' # 7
-mao.fitB$best_parameters
+mao.fit$best_parameters
+```
 
+```{r fit-models-7}
 naive_model <- naive_fit(dat$Y, dat$X)
+```
 
+# Evaluate Models
 
+```{r evaluate-models}
 metric = error_metric$rmse
 results <- rbind(
  print_performance(dat, fit_rank$fit, metric, F, "CASMC(Rank)",F,3),
@@ -241,7 +257,6 @@ results <- rbind(
  print_performance(dat, mao.fit$fit, metric, TRUE, "Mao(Uni)",F,3),
  print_performance(dat, mao.fitB$fit, metric, TRUE, "Mao(Binom)",F,3),
  print_performance(dat, simpute_fit, metric, TRUE, "SoftImpute", F, 3),
- #print_performance(dat, fit_rank_$fit, metric, F, "CASMC(Rank) 1 iter",F,3),
  print_performance(dat, fit_l2_$fit, metric, F, "CASMC(L2) 1 iter",F, 3),
  print_performance(dat, naive_model, metric, TRUE, "Naive", F, 3))
 
@@ -251,20 +266,18 @@ results  |>
  arrange(M) |> 
  mutate(M = paste0("[",1:nrow(results),"]",M)) |> 
  arrange(Y) |> 
- mutate(Y = paste0("[",1:nrow(results),"]",Y)) |> 
- dplyr::select(-Y) |> 
  arrange(train) |> 
  mutate(train = paste0("[",1:nrow(results),"]",train)) |> 
  arrange(test) |> 
  mutate(test = paste0("[",1:nrow(results),"]",test))  ->
  results
 
+kable(results, format = "simple")
+```
 
-kable( results, format = "simple")
-#----------------------------------------------------------------------------------
-#fit_l2_backup <- fit_l2
-#fit_l2 <- fit_rank
+# Update Model Fits and Comparisons
 
+```{r update-models}
 fit_rank$fit$M <- unsvd(fit_rank$fit)
 dat$xbeta = dat$X %*% dat$beta
 
@@ -272,16 +285,23 @@ fit_l2$fit$M <- unsvd(fit_l2$fit)
 fit_l2$xbeta <- dat$X %*% fit_l2$fit$beta
 fit_l2$O <- fit_l2$xbeta + fit_l2$fit$M
 
-mao.fitB$xbeta <- dat$X %*%  mao.fitB$fit$beta
-mao.fitB$O <- mao.fitB$xbeta +  mao.fitB$fit$M
+mao.fitB$xbeta <- dat$X %*% mao.fitB$fit$beta
+mao.fitB$O <- mao.fitB$xbeta + mao.fitB$fit$M
+```
 
+# Compare Errors
+
+```{r compare-errors}
 abs(dat$xbeta[1,1:6] - mao.fitB$xbeta[1,1:6]) < abs(dat$xbeta[1,1:6] - fit_l2$xbeta[1,1:6])
 abs(dat$M[1,1:6] - mao.fitB$fit$M[1,1:6]) < abs(dat$M[1,1:6] - fit_l2$fit$M[1,1:6])
 abs(dat$O[1,1:6] - mao.fitB$O[1,1:6]) < abs(dat$O[1,1:6] - fit_l2$O[1,1:6])
+```
 
-#' #' # 8
-#'
+# Create Comparison Table
+
+```{r create-comparison-table}
 library(knitr)
+library(kableExtra)
 
 comparison_df <- data.frame(
   Observation = 1:ncol(dat$xbeta),
@@ -299,6 +319,7 @@ comparison_df <- data.frame(
 comparison_table <- comparison_df[1:10, c("Observation", "True_xbeta", "Mao_FitB_xbeta", "Fit_L2_xbeta",
                                       "True_M", "Mao_FitB_M", "Fit_L2_M",
                                       "True_O", "Mao_FitB_O", "Fit_L2_O")]
+
 kable(comparison_table, format = "html", col.names = c("Obs", "True xbeta", "Mao FitB xbeta", "Fit L2 xbeta",
                                                        "True M", "Mao FitB M", "Fit L2 M",
                                                        "True O", "Mao FitB O", "Fit L2 O")) %>%
@@ -312,29 +333,28 @@ kable(comparison_table, format = "html", col.names = c("Obs", "True xbeta", "Mao
   column_spec(8, background = "lightgreen") %>%
   column_spec(9, background = "lightpink") %>%
   column_spec(10, background = "lightpink")
+```
 
+# Create Comparison Plot
 
-#' # 9
-#
-#
+```{r create-comparison-plot}
 library(ggplot2)
 library(gridExtra)
+
 ncols <- 100
 
-# Create long format data for ggplot
 long_comparison_df <- rbind(
-  data.frame(Observation = 1:ncols, Value = dat$xbeta[1,1:100 ], Type = "True xbeta"),
-  data.frame(Observation = 1:ncols, Value = mao.fitB$xbeta[1,1:100 ], Type = "Mao FitB xbeta"),
+  data.frame(Observation = 1:ncols, Value = dat$xbeta[1, 1:100], Type = "True xbeta"),
+  data.frame(Observation = 1:ncols, Value = mao.fitB$xbeta[1, 1:100], Type = "Mao FitB xbeta"),
   data.frame(Observation = 1:ncols, Value = fit_l2$xbeta[1, 1:100], Type = "Fit L2 xbeta"),
   data.frame(Observation = 1:ncols, Value = dat$M[1, 1:100], Type = "True M"),
-  data.frame(Observation = 1:ncols, Value = mao.fitB$fit$M[1,1:100 ], Type = "Mao FitB M"),
-  data.frame(Observation = 1:ncols, Value = fit_l2$fit$M[1,1:100 ], Type = "Fit L2 M"),
-  data.frame(Observation = 1:ncols, Value = dat$O[1,1:100 ], Type = "True O"),
-  data.frame(Observation = 1:ncols, Value = mao.fitB$O[1,1:100 ], Type = "Mao FitB O"),
-  data.frame(Observation = 1:ncols, Value = fit_l2$O[1,1:100 ], Type = "Fit L2 O")
+  data.frame(Observation = 1:ncols, Value = mao.fitB$fit$M[1, 1:100], Type = "Mao FitB M"),
+  data.frame(Observation = 1:ncols, Value = fit_l2$fit$M[1, 1:100], Type = "Fit L2 M"),
+  data.frame(Observation = 1:ncols, Value = dat$O[1, 1:100], Type = "True O"),
+  data.frame(Observation = 1:ncols, Value = mao.fitB$O[1, 1:100], Type = "Mao FitB O"),
+  data.frame(Observation = 1:ncols, Value = fit_l2$O[1, 1:100], Type = "Fit L2 O")
 )
 
-# Create individual plots
 plot_xbeta <- ggplot(long_comparison_df[long_comparison_df$Type %in% c("True xbeta", "Mao FitB xbeta", "Fit L2 xbeta"), ], aes(x = Observation, y = Value, color = Type, linetype = Type)) +
   geom_line() +
   scale_color_manual(values = c("True xbeta" = "black", "Mao FitB xbeta" = "blue", "Fit L2 xbeta" = "red")) +
@@ -356,6 +376,5 @@ plot_O <- ggplot(long_comparison_df[long_comparison_df$Type %in% c("True O", "Ma
   labs(title = "Comparison of O", y = "Value", x = "Observation") +
   theme_minimal()
 
-# Combine the plots into one graph with 3 rows and 1 column
 grid.arrange(plot_xbeta, plot_M, plot_O, nrow = 3)
-# 
+```
