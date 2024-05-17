@@ -25,6 +25,7 @@ CASMC_cv_nuclear <-
            r = NULL,
            # provide this if you need rank restriction. if not null, L2 reg will be ignored
            Xterms = NULL,
+           X_r = NULL,
            # provide this if you need L2 regularization.
            error_function = error_metric$rmse,
            # tuning parameters for lambda
@@ -55,6 +56,8 @@ CASMC_cv_nuclear <-
            seed = NULL) {
     if (!is.null(seed))
       set.seed(seed)
+    if(is.null(X_r)) 
+      X_r <-  reduced_hat_decomp(X)
     # prepare the sequence of lambda (nuclear regularization hyperparameter)
     if (is.null(lambda.init))
       lambda.init <-

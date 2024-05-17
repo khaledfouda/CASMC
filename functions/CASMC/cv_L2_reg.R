@@ -46,6 +46,7 @@ CASMC_cv_L2 <-
          num_cores <-
          min(max_cores, ceiling(length(lambda.beta.grid) / 2))
       print(paste("Running on", num_cores, "cores."))
+      X_r <-  reduced_hat_decomp(X)
       
       results <- mclapply(lambda.beta.grid, function(lambda.beta) {
          Xterms = GetXterms(X, lambda.beta)
@@ -56,6 +57,7 @@ CASMC_cv_L2 <-
             W_valid = W_valid,
             y = y,
             Xterms = Xterms,
+            X_r = X_r,
             r = NULL,
             error_function = error_function,
             lambda.factor = lambda.factor,
@@ -80,7 +82,7 @@ CASMC_cv_L2 <-
          )
          fiti$lambda.beta = lambda.beta
          fiti
-      }, mc.cores = num_cores)
+      }, mc.cores = num_cores, mc.cleanup = TRUE)
       
       
       best_fit <-

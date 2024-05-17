@@ -228,7 +228,7 @@ Mao.cv <-
          registerDoParallel(cl)
          # fixing lambda 1 at 0 and optimizing for lambda 2 and alpha using a grid
          # Export the Mao.fit_optimized function and any other necessary objects to each worker
-         clusterExport(cl, varlist = c("Mao.fit_optimized", "test_error"))
+         clusterExport(cl, varlist = c("Mao.fit_optimized", "test_error", "ginv"))
          results <-
             foreach(alpha = alpha_grid, .combine = rbind) %:%
             foreach(lambda.2 = lambda.2_grid, .combine = rbind) %dopar% {

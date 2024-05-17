@@ -45,6 +45,7 @@ CASMC_cv_rank <-
     num_cores = min(max_cores, length(r_seq))
     print(paste("Running on", num_cores, "cores."))
     Xterms = GetXterms(X)
+    X_r = reduced_hat_decomp(X)
     results <- mclapply(r_seq, function(r) {
       CASMC_cv_nuclear(
         y_train = y_train,
@@ -53,6 +54,7 @@ CASMC_cv_rank <-
         W_valid = W_valid,
         y = y,
         Xterms = Xterms,
+        X_r = X_r,
         r = r,
         error_function = error_function,
         lambda.factor = lambda.factor,
@@ -75,7 +77,7 @@ CASMC_cv_rank <-
         quiet = quiet,
         seed = seed
       )
-    }, mc.cores = num_cores)
+    }, mc.cores = num_cores, mc.cleanup = TRUE)
     
     
     best_fit <-
