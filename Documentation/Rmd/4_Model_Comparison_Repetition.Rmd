@@ -48,21 +48,24 @@ note = "_long_"
 ```{r}
 load_data = function(note) {
    Models <- c(
-   "Mao",
    "SoftImpute",
+   "Mao",
    #"CAMC_holdout",
    #"CAMC_kfold",
-   "CASMC",
+   "CASMC_rank_restriction",
+   "CASMC_L2_regularization",
+   "CASMC_one_iteration",
    #"CASMC_kfold",
    "Naive"
 )
    file_list <- list.files(
       path = path_to_data,
       pattern =
+         
          paste0(
             "((Compare_MC_Models_Youssef_Simulation_with_replications_",
-            note,
-            "[0-9]+.*)|(Compare_MC_Models_Mao_Simulation_with_replications",
+            note, # [0-9]+.*
+            ")|(Compare_MC_Models_Mao_Simulation_with_replications",
             note,
             "))\\.csv$"
          ),
@@ -184,56 +187,68 @@ data.frame(
 # Function to color minimum values in green
 
 # results <- results_MaoSim
-missingness=0; coll=FALSE;
+#missingness=0; coll=FALSE;
 print_table <-
    function(results,
-            missingness = NULL,
-            coll = TRUE,
-            prob = NA,
+            #missingness = NULL,
+            #coll = TRUE,
+            #prob = NA,
             caption = "") {
       #$$
+      
+      
       nmodels = length(unique(results$model))
       names(results) = gsub("error\\.", "", names(results))
-      results %>%
-         filter(missinginess == missingness, collinearity == coll) %>%
-         dplyr::rename(
-            O_mean = all_mean,
+      
+      # results %>%
+      #    filter(missinginess == missingness, collinearity == coll) %>%
+      #    dplyr::rename(
+      #       O_mean = all_mean,
+      #       O_sd = all_sd,
+      #       O_test_mean = test_mean,
+      #       O_test_sd = test_sd,
+      #       Method = model,
+      #       missing_prob = missinginess
+      #    ) %>%
+      #    mutate(rank_diff = rank_mean - true_rank) %>%
+      #    select(
+      #       Method,
+      #       true_rank,
+      #       missing_prob,
+      #       rank_diff,
+      #       contains("_mean"),
+      #       contains("_sd"),
+      #       -contains("alpha")
+      #       # lambda.1,
+      #       # lambda.2,
+      #       # O_test,
+      #       # O,
+      #       # M,
+      #       # Beta,
+      #       # rank,
+      #       # seconds
+      #    )   -> combined_results
+      # 
+      combined_results <- results |> 
+         rename(O_mean = all_mean,
             O_sd = all_sd,
             O_test_mean = test_mean,
             O_test_sd = test_sd,
             Method = model,
-            missing_prob = missinginess
-         ) %>%
-         mutate(rank_diff = rank_mean - true_rank) %>%
-         select(
-            Method,
-            true_rank,
-            missing_prob,
-            rank_diff,
-            contains("_mean"),
-            contains("_sd"),
-            -contains("alpha")
-            # lambda.1,
-            # lambda.2,
-            # O_test,
-            # O,
-            # M,
-            # Beta,
-            # rank,
-            # seconds
-         )   -> combined_results
+            missing_prob = missinginess)
+      
       combined_results %<>% 
          mutate(time_mean = ifelse(Method == "Naive", NA, time_mean),
                 time_sd = ifelse(Method == "Naive", NA, time_sd))
       
       #$$
-      test_col = 6
-      if (missingness == 0) {
-         test_col = 6
-         #combined_results$missing_prob = 0.8 #%<>% select(-missing_prob)
-         nfixed = 2
-      } else
-         nfixed = 2
+      # test_col = 6
+      # if (missingness == 0) {
+      #    test_col = 6
+      #    #combined_results$missing_prob = 0.8 #%<>% select(-missing_prob)
+      #    nfixed = 2
+      # } else
+      #    nfixed = 2
       
       
       combined_results %<>%
@@ -241,7 +256,9 @@ print_table <-
             replace_na(as.character(round(x, 4)), ''))
       
       # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
-      error_columns <- c("O_test", "O", "beta", "M", "time", "lambda.1", "lambda.2", "rank")
+      error_columns <- c("O_test", "O", "beta", "M", "time", "lambda.1", "lambda.2",
+                         "rank_beta", "rank_M")
+      
       # for (i in seq(1, 28, nmodels))
       #    combined_results[i:(i + nmodels - 1),] <-
       #    color_min_values(combined_results[i:(i + nmodels - 1),], error_columns)
@@ -251,29 +268,32 @@ print_table <-
       }
       dim = results$dim[1]
       B = results$B[1]
-      coll_type = ifelse(coll==TRUE&missingness!=0, "[w/collinearity]", "")
-      sim_type = ifelse(missingness==0, " [Mao] ", " [Youssef] ")
-      miss_p = ifelse(missingness==0, "[80% missing] ", paste0("[", as.integer(missingness*100),"% missing] "  ))
+      sim_type = "Sim-C"
+      coll_type = ifelse(results$collinearity[1]==TRUE, "[w/collinearity]", "")
+      miss_p = ifelse(results$missinginess[1]==0, "[80% missing] ",
+                      paste0("[", as.integer(results$missinginess[1]*100),"% missing] "  ))
       
-      tb_head = paste0(dim,"x",dim," [",B,"]",sim_type, miss_p, coll_type)
+      tb_head = paste0("Dimension:",dim,"[B=",B,"]",sim_type, miss_p, coll_type)
       combined_results %>%
          dplyr::rename(seconds = time) %>% 
          select(Method,
             true_rank,
-            #missing_prob,
+            missing_prob,
             lambda.1,
             lambda.2,
             O_test,
             O,
             M,
             beta,
-            rank,
-            rank_diff,
+            rank_beta,
+            rank_M,
+            #rank_diff,
             seconds) %>% 
       
          mutate_if(is.numeric, function(x)
             replace_na(as.character(round(x, 4)), '')) %>%
-         
+         mutate(across(everything(), ~ ifelse(.x=="NaN (NaN)","",.x))) |> 
+         arrange(O_test) |> 
          kable("html",
                escape = FALSE,
                align = 'c',
@@ -284,7 +304,7 @@ print_table <-
             position = "center"
          ) %>%
          add_header_above(c(
-            "Fixed" = nfixed,
+            "Fixed" = 3,
             "Hyperparameters" = 2,
             "Error on" = 4,
             "Rank" = 2,
@@ -295,7 +315,7 @@ print_table <-
          #pack_rows("800x800", (nmodels * 2) + 1, nmodels * 3) %>%
          #pack_rows("1000x1000", (nmodels * 3) + 1, nmodels * 4) %>%
          column_spec(
-            test_col,
+            6,
             bold = T,
             background = grDevices::adjustcolor("pink", alpha.f = 0.1)
          ) 
@@ -306,17 +326,49 @@ print_table <-
 
 ## 10 covariates and a low-rank matrix of rank 10 were used for all scenarios
 
-```{r fig.height=15, fig.width=15, results='asis'}
-note = "_long3_"
-results <- load_data(note)
-for(miss_p  in c(0.8,0.9)){
-   for(coll in c(T,F)){
-      print(print_table(results,miss_p,coll, caption = ""))
-      cat("\n")
-   }
-}
- print_table(results,0,FALSE, caption = "")
+```{r}
+res1 <- load_data("_new_90_coll_FALSE_dim_400x500") |>
+   rbind(load_data("_new_90_coll_FALSE_dim_700x800")) |>
+   rbind(load_data("_new18_90_coll_FALSE_dim_700x800")) |> 
+   rbind(load_data("_new25_90_coll_FALSE_dim_700x800")) |> 
+   rbind(load_data("_new47_90_coll_FALSE_dim_700x800"))
+
+
+
+res1 |> 
+   group_by(dim, model) |> 
+   summarise(
+    across(ends_with("_mean") | ends_with("_sd"), ~mean(.x,na.rm=T), .names = "{col}"),
+    B = sum(B),
+    across(!ends_with("_mean") & !ends_with("_sd") & !matches("^B$"), first, .names = "{col}")
+  ) |> 
+   ungroup() |> 
+   as.data.frame() ->
+   res1
+   
+
+res1
+
 ```
+
+
+
+```{r fig.height=15, fig.width=15, results='asis'}
+res1 %>% filter(dim=="(400,500)") |> print_table(caption = "Proportion of informative covariates = 70%")
+```
+
+
+```{r fig.height=15, fig.width=15, results='asis'}
+res1 %>% filter(dim=="(700,800)") |> print_table(caption = "Proportion of informative covariates = 70%")
+```
+
+
+
+
+
+
+
+---------------------------
 
 <!-- ```{r fig.height=15, fig.width=15, results='asis'} -->
 <!-- note="" -->

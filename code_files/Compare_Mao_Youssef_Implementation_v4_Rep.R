@@ -146,7 +146,7 @@ compare_and_save_with_rep2 <- function(missingness,
       colnames(df_stdev) <- paste(colnames(df_stdev), "sd", sep = "_")
       results <- cbind(df_means, df_stdev)
       results$true_rank = dat$rank
-      results$dim = paste0("(",dim[1],",",dim[2],")")
+      results$dim = paste0("(",dim[1],",",dim[2],")") 
       results$k = ncovariates
       results$B = n
       results$missinginess = missingness
@@ -220,7 +220,7 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 
-for (hparams in list(c(0.9, 400,500),
+for (hparams in list(#c(0.9, 400,500),
                      c(0.9, 700, 800)
                      # c(0.9, TRUE),
                      # c(0.8, TRUE)
@@ -241,8 +241,8 @@ for (hparams in list(c(0.9, 400,500),
       weight_function = Mao_weights$uniform,
       error_function = error_metric$rmse, 
       cov_eff = 0.7,
-      first_seed =  2034,
+      first_seed =  10,
       model_flag = c(T,T,T,T,T,T),
-      note = "_new_"
+      note = "_new47_"
    )
 }

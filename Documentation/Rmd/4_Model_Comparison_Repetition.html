@@ -11,7 +11,7 @@
 
 <meta name="author" content="Khaled Fouda" />
 
-<meta name="date" content="2024-05-13" />
+<meta name="date" content="2024-05-20" />
 
 <title>Comparing Model Implementations - Repetition</title>
 
@@ -1848,7 +1848,7 @@ display: none;
 <h1 class="title toc-ignore">Comparing Model Implementations -
 Repetition</h1>
 <h4 class="author">Khaled Fouda</h4>
-<h4 class="date">2024-05-13</h4>
+<h4 class="date">2024-05-20</h4>
 
 </div>
 
@@ -2100,12 +2100,20 @@ No
 <div id="covariates-and-a-low-rank-matrix-of-rank-10-were-used-for-all-scenarios" class="section level2">
 <h2>10 covariates and a low-rank matrix of rank 10 were used for all
 scenarios</h2>
+<pre><code>## `summarise()` has grouped output by &#39;dim&#39;. You can override using the `.groups`
+## argument.</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["dim"],"name":[1],"type":["chr"],"align":["left"]},{"label":["model"],"name":[2],"type":["chr"],"align":["left"]},{"label":["time_mean"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["lambda.1_mean"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["lambda.2_mean"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["error.test_mean"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["error.all_mean"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["error.M_mean"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["error.beta_mean"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["rank_M_mean"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["rank_beta_mean"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["time_sd"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["lambda.1_sd"],"name":[13],"type":["dbl"],"align":["right"]},{"label":["lambda.2_sd"],"name":[14],"type":["dbl"],"align":["right"]},{"label":["error.test_sd"],"name":[15],"type":["dbl"],"align":["right"]},{"label":["error.all_sd"],"name":[16],"type":["dbl"],"align":["right"]},{"label":["error.M_sd"],"name":[17],"type":["dbl"],"align":["right"]},{"label":["error.beta_sd"],"name":[18],"type":["dbl"],"align":["right"]},{"label":["rank_M_sd"],"name":[19],"type":["dbl"],"align":["right"]},{"label":["rank_beta_sd"],"name":[20],"type":["dbl"],"align":["right"]},{"label":["B"],"name":[21],"type":["int"],"align":["right"]},{"label":["true_rank"],"name":[22],"type":["int"],"align":["right"]},{"label":["k"],"name":[23],"type":["int"],"align":["right"]},{"label":["missinginess"],"name":[24],"type":["dbl"],"align":["right"]},{"label":["collinearity"],"name":[25],"type":["lgl"],"align":["right"]},{"label":["simulation"],"name":[26],"type":["chr"],"align":["left"]}],"data":[{"1":"(400,500)","2":"CASMC_L2","3":"16.90000000","4":"2.2329688","5":"5.3730977","6":"0.8007199","7":"0.7840378","8":"2.594442","9":"0.8967883","10":"3.000000","11":"10.00","12":"5.70803229","13":"0.840627059","14":"0.65410862","15":"0.011488034","16":"0.011078332","17":"0.4120572","18":"0.14064745","19":"0.0000000","20":"0.0000000","21":"50","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(400,500)","2":"CASMC_L2_1iter","3":"8.56000000","4":"34.7226646","5":"0.0000000","6":"1.5934506","7":"1.5505816","8":"3.259824","9":"1.2872702","10":"3.000000","11":"10.00","12":"2.18678778","13":"1.224548682","14":"0.00000000","15":"0.084266523","16":"0.081274796","17":"0.3917274","18":"0.14896440","19":"0.0000000","20":"0.0000000","21":"50","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(400,500)","2":"CASMC_rank_restriction","3":"10.86000000","4":"NaN","5":"5.6979846","6":"0.7044564","7":"0.6919731","8":"1.022640","9":"0.3489707","10":"3.160000","11":"6.74","12":"0.98994949","13":"NaN","14":"0.72590301","15":"0.018589928","16":"0.017933092","17":"0.1431801","18":"0.04733791","19":"0.4677344","20":"0.5272183","21":"50","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(400,500)","2":"Mao","3":"4.64000000","4":"0.2231579","5":"0.6448421","6":"3.7422957","7":"4.0033163","8":"2.742076","9":"0.9255817","10":"18.560000","11":"10.00","12":"0.56279187","13":"0.029236424","14":"0.06158294","15":"0.270776316","16":"0.395826141","17":"0.3908736","18":"0.07217791","19":"2.9427184","20":"0.0000000","21":"50","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(400,500)","2":"Naive","3":"0.22000000","4":"NaN","5":"NaN","6":"6.4710258","7":"6.1471758","8":"NaN","9":"NaN","10":"400.000000","11":"NaN","12":"0.93219075","13":"NaN","14":"NaN","15":"0.489123934","16":"0.463196950","17":"NaN","18":"NaN","19":"0.0000000","20":"NaN","21":"50","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(400,500)","2":"SoftImpute","3":"19.14000000","4":"NaN","5":"0.0000000","6":"1.0771433","7":"1.0474681","8":"NaN","9":"NaN","10":"9.260000","11":"NaN","12":"2.12861937","13":"NaN","14":"0.00000000","15":"0.055148370","16":"0.052328880","17":"NaN","18":"NaN","19":"0.6642473","20":"NaN","21":"50","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(700,800)","2":"CASMC_L2","3":"15.33159574","4":"1.7508795","5":"8.7759958","6":"0.5759987","7":"0.5686005","8":"1.296456","9":"0.4514651","10":"3.000000","11":"10.00","12":"1.14241932","13":"0.388995077","14":"0.72231268","15":"0.004802986","16":"0.004608869","17":"0.2837336","18":"0.09500609","19":"0.0000000","20":"0.0000000","21":"115","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(700,800)","2":"CASMC_L2_1iter","3":"8.86063830","4":"32.1767481","5":"0.0000000","6":"1.2200863","7":"1.1966176","8":"1.455675","9":"0.6611396","10":"3.070485","11":"10.00","12":"0.91888712","13":"1.769042781","14":"0.00000000","15":"0.068673403","16":"0.066844740","17":"0.2595191","18":"0.09717665","19":"0.2560626","20":"0.0000000","21":"115","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(700,800)","2":"CASMC_rank_restriction","3":"10.41963357","4":"NaN","5":"9.5443180","6":"0.5170874","7":"0.5116114","8":"1.156812","9":"0.3777844","10":"3.000000","11":"7.00","12":"0.74232246","13":"NaN","14":"1.74750763","15":"0.004277296","16":"0.004120424","17":"0.2412970","18":"0.07565513","19":"0.0000000","20":"0.0000000","21":"115","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(700,800)","2":"Mao","3":"11.27581560","4":"0.1555095","5":"0.6462984","6":"2.9824571","7":"3.0512738","8":"2.036988","9":"0.7213803","10":"12.896809","11":"10.00","12":"0.87534361","13":"0.009205788","14":"0.04397044","15":"0.215394126","16":"0.266380491","17":"0.2222676","18":"0.05747866","19":"3.0379575","20":"0.0000000","21":"115","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(700,800)","2":"Naive","3":"0.01920804","4":"NaN","5":"NaN","6":"6.3174774","7":"6.0017997","8":"NaN","9":"NaN","10":"700.000000","11":"NaN","12":"0.09539181","13":"NaN","14":"NaN","15":"0.486626188","16":"0.460924398","17":"NaN","18":"NaN","19":"0.0000000","20":"NaN","21":"115","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"},{"1":"(700,800)","2":"SoftImpute","3":"40.15343972","4":"NaN","5":"0.0000000","6":"0.6729848","7":"0.6623723","8":"NaN","9":"NaN","10":"9.002163","11":"NaN","12":"3.59375691","13":"NaN","14":"0.00000000","15":"0.023597739","16":"0.022789691","17":"NaN","18":"NaN","19":"0.5587747","20":"NaN","21":"115","22":"17","23":"10","24":"0.9","25":"FALSE","26":"90% Missing"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
+Proportion of informative covariates = 70%
 </caption>
 <thead>
 <tr>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Fixed
 </div>
@@ -2139,6 +2147,9 @@ Method
 true_rank
 </th>
 <th style="text-align:center;">
+missing_prob
+</th>
+<th style="text-align:center;">
 lambda.1
 </th>
 <th style="text-align:center;">
@@ -2157,10 +2168,10 @@ M
 beta
 </th>
 <th style="text-align:center;">
-rank
+rank_beta
 </th>
 <th style="text-align:center;">
-rank_diff
+rank_M
 </th>
 <th style="text-align:center;">
 seconds
@@ -2168,45 +2179,84 @@ seconds
 </tr>
 </thead>
 <tbody>
-<tr grouplength="4">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>(600,700)x(600,700) [39] [Youssef] [80% missing]
-[w/collinearity]</strong>
+<tr grouplength="6">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>Dimension:(400,500)[B=50]Sim-C[90% missing] </strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Mao
+CASMC_rank_restriction
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-0.1053 (0)
+0.9
 </td>
 <td style="text-align:center;">
-0.2842 (0)
 </td>
 <td style="text-align:center;">
-1.0368 (0.0142)
+5.698 (0.7259)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-1.0255 (0.0144)
+0.7045 (0.0186)
 </td>
 <td style="text-align:center;">
-0.8111 (0.0095)
+0.692 (0.0179)
 </td>
 <td style="text-align:center;">
-0.2126 (0.005)
+1.0226 (0.1432)
 </td>
 <td style="text-align:center;">
-14.2308 (1.5468)
+0.349 (0.0473)
 </td>
 <td style="text-align:center;">
--5.7692
+6.74 (0.5272)
 </td>
 <td style="text-align:center;">
-56.2564 (2.9799)
+3.16 (0.4677)
+</td>
+<td style="text-align:center;">
+10.86 (0.9899)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+CASMC_L2
+</td>
+<td style="text-align:center;">
+17
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+2.233 (0.8406)
+</td>
+<td style="text-align:center;">
+5.3731 (0.6541)
+</td>
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
+0.8007 (0.0115)
+</td>
+<td style="text-align:center;">
+0.784 (0.0111)
+</td>
+<td style="text-align:center;">
+2.5944 (0.4121)
+</td>
+<td style="text-align:center;">
+0.8968 (0.1406)
+</td>
+<td style="text-align:center;">
+10 (0)
+</td>
+<td style="text-align:center;">
+3 (0)
+</td>
+<td style="text-align:center;">
+16.9 (5.708)
 </td>
 </tr>
 <tr>
@@ -2214,69 +2264,109 @@ Mao
 SoftImpute
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-()
+0.9
 </td>
 <td style="text-align:center;">
-17.1228 (0.2231)
 </td>
 <td style="text-align:center;">
-0.5875 (0.0041)
+0 (0)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.5762 (0.004)
+1.0771 (0.0551)
 </td>
 <td style="text-align:center;">
-()
+1.0475 (0.0523)
 </td>
 <td style="text-align:center;">
-()
 </td>
 <td style="text-align:center;">
-13 (0)
 </td>
 <td style="text-align:center;">
--7
 </td>
 <td style="text-align:center;">
-22.1795 (1.5706)
+9.26 (0.6642)
+</td>
+<td style="text-align:center;">
+19.14 (2.1286)
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-CASMC_holdout
+CASMC_L2_1iter
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-11.8004 (2.5017)
+0.9
 </td>
 <td style="text-align:center;">
-11.2277 (1.0162)
+34.7227 (1.2245)
 </td>
 <td style="text-align:center;">
-0.4285 (0.0036)
+0 (0)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.4222 (0.0034)
+1.5935 (0.0843)
 </td>
 <td style="text-align:center;">
-1.0006 (0.119)
+1.5506 (0.0813)
 </td>
 <td style="text-align:center;">
-0.3284 (0.0361)
+3.2598 (0.3917)
 </td>
 <td style="text-align:center;">
-13 (0)
+1.2873 (0.149)
 </td>
 <td style="text-align:center;">
--7
+10 (0)
 </td>
 <td style="text-align:center;">
-14.7692 (0.8099)
+3 (0)
+</td>
+<td style="text-align:center;">
+8.56 (2.1868)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Mao
+</td>
+<td style="text-align:center;">
+17
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+0.2232 (0.0292)
+</td>
+<td style="text-align:center;">
+0.6448 (0.0616)
+</td>
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
+3.7423 (0.2708)
+</td>
+<td style="text-align:center;">
+4.0033 (0.3958)
+</td>
+<td style="text-align:center;">
+2.7421 (0.3909)
+</td>
+<td style="text-align:center;">
+0.9256 (0.0722)
+</td>
+<td style="text-align:center;">
+10 (0)
+</td>
+<td style="text-align:center;">
+18.56 (2.9427)
+</td>
+<td style="text-align:center;">
+4.64 (0.5628)
 </td>
 </tr>
 <tr>
@@ -2284,31 +2374,29 @@ CASMC_holdout
 Naive
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-()
+0.9
 </td>
 <td style="text-align:center;">
-()
 </td>
 <td style="text-align:center;">
-3.2383 (0.0344)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-2.9308 (0.0304)
+6.471 (0.4891)
 </td>
 <td style="text-align:center;">
-()
+6.1472 (0.4632)
 </td>
 <td style="text-align:center;">
-()
 </td>
 <td style="text-align:center;">
-600 (0)
 </td>
 <td style="text-align:center;">
-580
+</td>
+<td style="text-align:center;">
+400 (0)
 </td>
 <td style="text-align:center;">
 ()
@@ -2318,10 +2406,11 @@ Naive
 </table>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
+Proportion of informative covariates = 70%
 </caption>
 <thead>
 <tr>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Fixed
 </div>
@@ -2355,219 +2444,7 @@ Method
 true_rank
 </th>
 <th style="text-align:center;">
-lambda.1
-</th>
-<th style="text-align:center;">
-lambda.2
-</th>
-<th style="text-align:center;">
-O_test
-</th>
-<th style="text-align:center;">
-O
-</th>
-<th style="text-align:center;">
-M
-</th>
-<th style="text-align:center;">
-beta
-</th>
-<th style="text-align:center;">
-rank
-</th>
-<th style="text-align:center;">
-rank_diff
-</th>
-<th style="text-align:center;">
-seconds
-</th>
-</tr>
-</thead>
-<tbody>
-<tr grouplength="4">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>(600,700)x(600,700) [39] [Youssef] [80% missing] </strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Mao
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.1053 (0)
-</td>
-<td style="text-align:center;">
-0.2842 (0)
-</td>
-<td style="text-align:center;">
-1.0275 (0.0155)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-1.0192 (0.016)
-</td>
-<td style="text-align:center;">
-0.8081 (0.0109)
-</td>
-<td style="text-align:center;">
-0.1973 (0.0065)
-</td>
-<td style="text-align:center;">
-12.7436 (1.2506)
-</td>
-<td style="text-align:center;">
--7.2564
-</td>
-<td style="text-align:center;">
-56.4615 (2.6935)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SoftImpute
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-13.6685 (6.4789)
-</td>
-<td style="text-align:center;">
-0.6354 (0.0782)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.6201 (0.0706)
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-13.7179 (1.5551)
-</td>
-<td style="text-align:center;">
--6.2821
-</td>
-<td style="text-align:center;">
-22.8718 (1.7499)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-CASMC_holdout
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-11.8004 (2.1743)
-</td>
-<td style="text-align:center;">
-11.2698 (0.8358)
-</td>
-<td style="text-align:center;">
-0.4391 (0.003)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.4323 (0.0029)
-</td>
-<td style="text-align:center;">
-1.0017 (0.0782)
-</td>
-<td style="text-align:center;">
-0.3302 (0.0243)
-</td>
-<td style="text-align:center;">
-13 (0)
-</td>
-<td style="text-align:center;">
--7
-</td>
-<td style="text-align:center;">
-14.2564 (0.7152)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Naive
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-3.1633 (0.0336)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-2.8646 (0.0297)
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-600 (0)
-</td>
-<td style="text-align:center;">
-580
-</td>
-<td style="text-align:center;">
-()
-</td>
-</tr>
-</tbody>
-</table>
-<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<caption>
-</caption>
-<thead>
-<tr>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Fixed
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Hyperparameters
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Error on
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Rank
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="1">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Time
-</div>
-</th>
-</tr>
-<tr>
-<th style="text-align:center;">
-Method
-</th>
-<th style="text-align:center;">
-true_rank
+missing_prob
 </th>
 <th style="text-align:center;">
 lambda.1
@@ -2588,226 +2465,10 @@ M
 beta
 </th>
 <th style="text-align:center;">
-rank
+rank_beta
 </th>
 <th style="text-align:center;">
-rank_diff
-</th>
-<th style="text-align:center;">
-seconds
-</th>
-</tr>
-</thead>
-<tbody>
-<tr grouplength="4">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>(600,700)x(600,700) [39] [Youssef] [90% missing]
-[w/collinearity]</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Mao
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.2105 (0)
-</td>
-<td style="text-align:center;">
-0.4251 (0.0076)
-</td>
-<td style="text-align:center;">
-1.5251 (0.0211)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-1.5511 (0.1191)
-</td>
-<td style="text-align:center;">
-1.232 (0.1332)
-</td>
-<td style="text-align:center;">
-0.3004 (0.0062)
-</td>
-<td style="text-align:center;">
-17.4872 (2.4156)
-</td>
-<td style="text-align:center;">
--2.5128
-</td>
-<td style="text-align:center;">
-54.7692 (2.4651)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SoftImpute
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-8.7299 (0.12)
-</td>
-<td style="text-align:center;">
-0.7607 (0.0064)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.747 (0.0061)
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-13.9231 (0.27)
-</td>
-<td style="text-align:center;">
--6.0769
-</td>
-<td style="text-align:center;">
-32.2051 (2.319)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-CASMC_holdout
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-13.091 (1.842)
-</td>
-<td style="text-align:center;">
-7.4046 (0.4011)
-</td>
-<td style="text-align:center;">
-0.5649 (0.0045)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.5579 (0.0044)
-</td>
-<td style="text-align:center;">
-1.1807 (0.0645)
-</td>
-<td style="text-align:center;">
-0.3915 (0.0176)
-</td>
-<td style="text-align:center;">
-13 (0)
-</td>
-<td style="text-align:center;">
--7
-</td>
-<td style="text-align:center;">
-11.4872 (0.8545)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Naive
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-3.2383 (0.0346)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-3.0883 (0.0326)
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-600 (0)
-</td>
-<td style="text-align:center;">
-580
-</td>
-<td style="text-align:center;">
-()
-</td>
-</tr>
-</tbody>
-</table>
-<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<caption>
-</caption>
-<thead>
-<tr>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Fixed
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Hyperparameters
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Error on
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Rank
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="1">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Time
-</div>
-</th>
-</tr>
-<tr>
-<th style="text-align:center;">
-Method
-</th>
-<th style="text-align:center;">
-true_rank
-</th>
-<th style="text-align:center;">
-lambda.1
-</th>
-<th style="text-align:center;">
-lambda.2
-</th>
-<th style="text-align:center;">
-O_test
-</th>
-<th style="text-align:center;">
-O
-</th>
-<th style="text-align:center;">
-M
-</th>
-<th style="text-align:center;">
-beta
-</th>
-<th style="text-align:center;">
-rank
-</th>
-<th style="text-align:center;">
-rank_diff
+rank_M
 </th>
 <th style="text-align:center;">
 seconds
@@ -2815,259 +2476,84 @@ seconds
 </tr>
 </thead>
 <tbody>
-<tr grouplength="4">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>(600,700)x(600,700) [39] [Youssef] [90% missing] </strong>
+<tr grouplength="6">
+<td colspan="12" style="border-bottom: 1px solid;">
+<strong>Dimension:(700,800)[B=115]Sim-C[90% missing] </strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Mao
+CASMC_rank_restriction
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-0.3158 (0.0241)
+0.9
 </td>
 <td style="text-align:center;">
-0.4215 (0.0146)
 </td>
 <td style="text-align:center;">
-1.5118 (0.0312)
+9.5443 (1.7475)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-1.534 (0.0776)
+0.5171 (0.0043)
 </td>
 <td style="text-align:center;">
-1.2119 (0.0868)
+0.5116 (0.0041)
 </td>
 <td style="text-align:center;">
-0.2978 (0.0074)
+1.1568 (0.2413)
 </td>
 <td style="text-align:center;">
-16.0256 (2.7576)
+0.3778 (0.0757)
 </td>
 <td style="text-align:center;">
--3.9744
+7 (0)
 </td>
 <td style="text-align:center;">
-54.5128 (2.3269)
+3 (0)
+</td>
+<td style="text-align:center;">
+10.4196 (0.7423)
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-SoftImpute
+CASMC_L2
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-()
+0.9
 </td>
 <td style="text-align:center;">
-8.4807 (0.1245)
+1.7509 (0.389)
 </td>
 <td style="text-align:center;">
-0.7806 (0.0087)
+8.776 (0.7223)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.7663 (0.0084)
+0.576 (0.0048)
 </td>
 <td style="text-align:center;">
-()
+0.5686 (0.0046)
 </td>
 <td style="text-align:center;">
-()
+1.2965 (0.2837)
 </td>
 <td style="text-align:center;">
-13.2051 (0.4091)
+0.4515 (0.095)
 </td>
 <td style="text-align:center;">
--6.7949
+10 (0)
 </td>
 <td style="text-align:center;">
-33.2564 (3.0497)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-CASMC_holdout
+3 (0)
 </td>
 <td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-13.1832 (1.8597)
-</td>
-<td style="text-align:center;">
-7.1267 (0.1819)
-</td>
-<td style="text-align:center;">
-0.582 (0.0039)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.5745 (0.0038)
-</td>
-<td style="text-align:center;">
-1.1741 (0.0498)
-</td>
-<td style="text-align:center;">
-0.4 (0.018)
-</td>
-<td style="text-align:center;">
-13 (0)
-</td>
-<td style="text-align:center;">
--7
-</td>
-<td style="text-align:center;">
-11.2308 (0.5832)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Naive
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-3.1634 (0.0335)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-3.0176 (0.0316)
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-()
-</td>
-<td style="text-align:center;">
-600 (0)
-</td>
-<td style="text-align:center;">
-580
-</td>
-<td style="text-align:center;">
-()
-</td>
-</tr>
-</tbody>
-</table>
-<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<caption>
-</caption>
-<thead>
-<tr>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Fixed
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Hyperparameters
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Error on
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Rank
-</div>
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="1">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Time
-</div>
-</th>
-</tr>
-<tr>
-<th style="text-align:center;">
-Method
-</th>
-<th style="text-align:center;">
-true_rank
-</th>
-<th style="text-align:center;">
-lambda.1
-</th>
-<th style="text-align:center;">
-lambda.2
-</th>
-<th style="text-align:center;">
-O_test
-</th>
-<th style="text-align:center;">
-O
-</th>
-<th style="text-align:center;">
-M
-</th>
-<th style="text-align:center;">
-beta
-</th>
-<th style="text-align:center;">
-rank
-</th>
-<th style="text-align:center;">
-rank_diff
-</th>
-<th style="text-align:center;">
-seconds
-</th>
-</tr>
-</thead>
-<tbody>
-<tr grouplength="4">
-<td colspan="11" style="border-bottom: 1px solid;">
-<strong>(600,700)x(600,700) [39] [Mao] [80% missing] </strong>
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-Mao
-</td>
-<td style="text-align:center;">
-20
-</td>
-<td style="text-align:center;">
-0.0108 (0.0529)
-</td>
-<td style="text-align:center;">
-0.0826 (0.0907)
-</td>
-<td style="text-align:center;">
-3.5995 (0.089)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-6.8979 (1.1241)
-</td>
-<td style="text-align:center;">
-6.5605 (1.1525)
-</td>
-<td style="text-align:center;">
-0.6722 (0.042)
-</td>
-<td style="text-align:center;">
-537.0769 (80.6961)
-</td>
-<td style="text-align:center;">
-517.0769
-</td>
-<td style="text-align:center;">
-55.4359 (3.2831)
+15.3316 (1.1424)
 </td>
 </tr>
 <tr>
@@ -3075,69 +2561,109 @@ Mao
 SoftImpute
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-()
+0.9
 </td>
 <td style="text-align:center;">
-55.2599 (3.5739)
 </td>
 <td style="text-align:center;">
-3.1965 (0.0979)
+0 (0)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-3.0796 (0.0992)
+0.673 (0.0236)
 </td>
 <td style="text-align:center;">
-()
+0.6624 (0.0228)
 </td>
 <td style="text-align:center;">
-()
 </td>
 <td style="text-align:center;">
-30 (0)
 </td>
 <td style="text-align:center;">
-10
 </td>
 <td style="text-align:center;">
-65.0769 (7.5651)
+9.0022 (0.5588)
+</td>
+<td style="text-align:center;">
+40.1534 (3.5938)
 </td>
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-CASMC_holdout
+CASMC_L2_1iter
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-20.6967 (2.2161)
+0.9
 </td>
 <td style="text-align:center;">
-36.5495 (2.467)
+32.1767 (1.769)
 </td>
 <td style="text-align:center;">
-2.3841 (0.0846)
+0 (0)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-2.3222 (0.0846)
+1.2201 (0.0687)
 </td>
 <td style="text-align:center;">
-1.921 (0.0688)
+1.1966 (0.0668)
 </td>
 <td style="text-align:center;">
-0.4176 (0.0174)
+1.4557 (0.2595)
 </td>
 <td style="text-align:center;">
-20 (0)
+0.6611 (0.0972)
 </td>
 <td style="text-align:center;">
-0
+10 (0)
 </td>
 <td style="text-align:center;">
-16.7179 (0.793)
+3.0705 (0.2561)
+</td>
+<td style="text-align:center;">
+8.8606 (0.9189)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+Mao
+</td>
+<td style="text-align:center;">
+17
+</td>
+<td style="text-align:center;">
+0.9
+</td>
+<td style="text-align:center;">
+0.1555 (0.0092)
+</td>
+<td style="text-align:center;">
+0.6463 (0.044)
+</td>
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
+2.9825 (0.2154)
+</td>
+<td style="text-align:center;">
+3.0513 (0.2664)
+</td>
+<td style="text-align:center;">
+2.037 (0.2223)
+</td>
+<td style="text-align:center;">
+0.7214 (0.0575)
+</td>
+<td style="text-align:center;">
+10 (0)
+</td>
+<td style="text-align:center;">
+12.8968 (3.038)
+</td>
+<td style="text-align:center;">
+11.2758 (0.8753)
 </td>
 </tr>
 <tr>
@@ -3145,31 +2671,29 @@ CASMC_holdout
 Naive
 </td>
 <td style="text-align:center;">
-20
+17
 </td>
 <td style="text-align:center;">
-()
+0.9
 </td>
 <td style="text-align:center;">
-()
 </td>
 <td style="text-align:center;">
-4.4572 (0.0413)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-4.4576 (0.0422)
+6.3175 (0.4866)
 </td>
 <td style="text-align:center;">
-()
+6.0018 (0.4609)
 </td>
 <td style="text-align:center;">
-()
 </td>
 <td style="text-align:center;">
-600 (0)
 </td>
 <td style="text-align:center;">
-580
+</td>
+<td style="text-align:center;">
+700 (0)
 </td>
 <td style="text-align:center;">
 ()
@@ -3177,6 +2701,7 @@ Naive
 </tr>
 </tbody>
 </table>
+<hr />
 <!-- ```{r fig.height=15, fig.width=15, results='asis'} -->
 <!-- note="" -->
 <!-- results <- load_data(note) -->
