@@ -14,4 +14,4 @@ naive_fit <- function(y, X) {
   M = M,
   beta = beta
  ))
-}
+} 

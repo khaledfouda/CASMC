@@ -11,7 +11,7 @@
 
 <meta name="author" content="kfouda" />
 
-<meta name="date" content="2024-05-20" />
+<meta name="date" content="2024-05-21" />
 
 <title>bktr_bixi_fit.R</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">bktr_bixi_fit.R</h1>
 <h4 class="author">kfouda</h4>
-<h4 class="date">2024-05-20</h4>
+<h4 class="date">2024-05-21</h4>
 
 </div>
 
@@ -641,8 +641,60 @@ for(sparm in list(list(NULL,NULL,&quot;&quot;),
                   )
     ){
 
-X &lt;- model.dat$X_col[,1, drop=FALSE]
-
+  X &lt;- (model.dat$X_col[,-3] )  |&gt; scale()
+  cor(X)
+  start_time = Sys.time()
+  
+  best_fit = CASMC_cv_rank(
+    y_train = model.dat$splits$train,
+    X = X,
+    y_valid = model.dat$splits$valid@x,
+    W_valid = model.dat$masks$valid ,
+    y = model.dat$depart,
+    trace = F,
+    max_cores = 30,
+    thresh = 1e-6,
+    lambda.a = 0.01,
+    S.a = sparm[[1]],
+    lambda.b = 0.2,
+    S.b = sparm[[2]],
+    #n.lambda = n.lambda,
+    #rank.limit = rank.limit,
+    maxit = 200,
+    #rank.step = rank.step,
+    print.best = TRUE,
+    seed = 2023,
+    track_r  = T
+  )
+  test_error &lt;- error_metric$rmse
+  fit1 = best_fit$fit
+  sout = best_fit
+  # get estimates and validate
+  sout$M = unsvd(fit1)
+  sout$beta =  fit1$beta
+  sout$estimates = sout$M + X %*% (sout$beta)
+  
+  results = list(model = paste0(&quot;CASMC_rank_all&quot;,sparm[[3]]))
+  results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
+  results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
+  results$lambda.2 = sout$lambda |&gt; round(3)
+  results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
+                                  model.dat$splits$test@x) |&gt; round(5)
+  results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 &amp; model.dat$masks$obs == 1],
+                                   model.dat$depart[model.dat$masks$test == 1&amp; model.dat$masks$obs == 1]) |&gt; 
+    round(5)
+  results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
+                                   model.dat$splits$valid@x) |&gt; round(5)
+  
+  results$rank = qr(sout$estimates)$rank
+  results
+  
+  aresults[[i]] &lt;- results
+  i = i +1
+  #------------------------------
+  
+  
+X &lt;- model.dat$X_col[,1, drop=FALSE] 
 start_time = Sys.time()
 
 best_fit = CASMC_cv_rank(
@@ -694,6 +746,7 @@ i = i +1
 #-----------------------------
 
 X &lt;- model.dat$X_col[,2, drop=FALSE]
+
 
 start_time = Sys.time()
 
@@ -796,18 +849,32 @@ aresults[[i]] &lt;- results
 i = i +1
 
 }</code></pre>
-<pre><code>## [1] &quot;Running on 2 cores.&quot;
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 0.08801&quot;
+## [1] &quot;r = 1 - Val Err = 0.08908&quot;
+## [1] &quot;r = 2 - Val Err = 0.08761&quot;
+## [1] &quot;r = 3 - Val Err = 0.2105&quot;
+## [1] &quot;r = 4 - Val Err = 0.21641&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  0.087606817193248&quot;
+## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 0.08798&quot;
 ## [1] &quot;r = 1 - Val Err = 0.0849&quot;
 ## [1] &quot;Best fit: r =  1  - Validation Error:  0.0849000366579082&quot;
 ## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 0.08517&quot;
 ## [1] &quot;r = 1 - Val Err = 0.08449&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  0.0844938922420842&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  0.0844938922420843&quot;
 ## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 0.08519&quot;
 ## [1] &quot;r = 1 - Val Err = 0.0848&quot;
 ## [1] &quot;Best fit: r =  1  - Validation Error:  0.0848022413248176&quot;
+## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 0.08799&quot;
+## [1] &quot;r = 1 - Val Err = 0.08906&quot;
+## [1] &quot;r = 2 - Val Err = 0.08752&quot;
+## [1] &quot;r = 3 - Val Err = 0.2105&quot;
+## [1] &quot;r = 4 - Val Err = 0.21641&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  0.0875241279501276&quot;
 ## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 0.08796&quot;
 ## [1] &quot;r = 1 - Val Err = 0.08489&quot;
@@ -815,7 +882,7 @@ i = i +1
 ## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 0.08514&quot;
 ## [1] &quot;r = 1 - Val Err = 0.08444&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  0.0844414853092816&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  0.0844414853092815&quot;
 ## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 0.08515&quot;
 ## [1] &quot;r = 1 - Val Err = 0.08474&quot;
@@ -853,8 +920,8 @@ sout &lt;- simpute.cv(
 ## 16 lambda=   13.414, rank.max = 3  ==&gt; rank = 1, error = 0.17417
 ## 17 lambda=    10.06, rank.max = 3  ==&gt; rank = 1, error = 0.15131
 ## 18 lambda=   6.7069, rank.max = 3  ==&gt; rank = 1, error = 0.13033
-## 19 lambda=   3.3535, rank.max = 5  ==&gt; rank = 3, error = 0.10355
-## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 0.08632</code></pre>
+## 19 lambda=   3.3535, rank.max = 5  ==&gt; rank = 3, error = 0.10356
+## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 0.08660</code></pre>
 <pre class="r"><code>results = list(model = &quot;SoftImpute&quot;)
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 results$lambda.1 = NA
@@ -873,7 +940,7 @@ results</code></pre>
 ## [1] &quot;SoftImpute&quot;
 ## 
 ## $time
-## [1] 9
+## [1] 7
 ## 
 ## $lambda.1
 ## [1] NA
@@ -882,13 +949,13 @@ results</code></pre>
 ## [1] 0
 ## 
 ## $error.test
-## [1] 0.0837
+## [1] 0.08312
 ## 
 ## $error.train
-## [1] 0.07004
+## [1] 0.07
 ## 
 ## $error.valid
-## [1] 0.0709
+## [1] 0.07089
 ## 
 ## $rank
 ## [1] 7</code></pre>
@@ -936,25 +1003,133 @@ results</code></pre>
 <pre class="r"><code>aresults[[i]] &lt;- results
 i = i +1
 #---------------------------------------------------------------------------------
-do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x)))))</code></pre>
-<pre><code>##                                     model time lambda.1 lambda.2 error.test
-## 1                     CASMC_rank_humidity    9     &lt;NA&gt;    0.348      0.081
-## 2                         CASMC_rank_temp   10     &lt;NA&gt;     0.51    0.08119
-## 3                       CASMC_rank_precip   10     &lt;NA&gt;    0.282    0.08138
-## 4 CASMC_rank_humidity_with_time_laplacian   10     &lt;NA&gt;    0.348    0.08099
-## 5     CASMC_rank_temp_with_time_laplacian   11     &lt;NA&gt;     0.51    0.08117
-## 6   CASMC_rank_precip_with_time_laplacian   12     &lt;NA&gt;    0.282    0.08133
-## 7                              SoftImpute    9     &lt;NA&gt;        0     0.0837
-## 8                                   Naive    0     &lt;NA&gt;     &lt;NA&gt;    0.44867
-##   error.train error.valid rank
-## 1     0.07561     0.07674    5
-## 2     0.07246     0.07313    7
-## 3     0.07126     0.07209    7
-## 4     0.07563     0.07675    5
-## 5     0.07248     0.07316    7
-## 6     0.07128      0.0721    7
-## 7     0.07004      0.0709    7
-## 8     0.20298     0.45388  193</code></pre>
+do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kable()</code></pre>
+<table style="width:100%;">
+<colgroup>
+<col width="38%" />
+<col width="4%" />
+<col width="8%" />
+<col width="8%" />
+<col width="10%" />
+<col width="11%" />
+<col width="11%" />
+<col width="4%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">model</th>
+<th align="left">time</th>
+<th align="left">lambda.1</th>
+<th align="left">lambda.2</th>
+<th align="left">error.test</th>
+<th align="left">error.train</th>
+<th align="left">error.valid</th>
+<th align="left">rank</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">CASMC_rank_all</td>
+<td align="left">6</td>
+<td align="left">NA</td>
+<td align="left">0</td>
+<td align="left">0.08389</td>
+<td align="left">0.07753</td>
+<td align="left">0.07906</td>
+<td align="left">5</td>
+</tr>
+<tr class="even">
+<td align="left">CASMC_rank_humidity</td>
+<td align="left">9</td>
+<td align="left">NA</td>
+<td align="left">0.348</td>
+<td align="left">0.081</td>
+<td align="left">0.07561</td>
+<td align="left">0.07674</td>
+<td align="left">5</td>
+</tr>
+<tr class="odd">
+<td align="left">CASMC_rank_temp</td>
+<td align="left">11</td>
+<td align="left">NA</td>
+<td align="left">0.51</td>
+<td align="left">0.08119</td>
+<td align="left">0.07246</td>
+<td align="left">0.07313</td>
+<td align="left">7</td>
+</tr>
+<tr class="even">
+<td align="left">CASMC_rank_precip</td>
+<td align="left">10</td>
+<td align="left">NA</td>
+<td align="left">0.282</td>
+<td align="left">0.08138</td>
+<td align="left">0.07126</td>
+<td align="left">0.07209</td>
+<td align="left">7</td>
+</tr>
+<tr class="odd">
+<td align="left">CASMC_rank_all_with_time_laplacian</td>
+<td align="left">6</td>
+<td align="left">NA</td>
+<td align="left">0</td>
+<td align="left">0.08382</td>
+<td align="left">0.07752</td>
+<td align="left">0.07902</td>
+<td align="left">5</td>
+</tr>
+<tr class="even">
+<td align="left">CASMC_rank_humidity_with_time_laplacian</td>
+<td align="left">10</td>
+<td align="left">NA</td>
+<td align="left">0.348</td>
+<td align="left">0.08099</td>
+<td align="left">0.07563</td>
+<td align="left">0.07675</td>
+<td align="left">5</td>
+</tr>
+<tr class="odd">
+<td align="left">CASMC_rank_temp_with_time_laplacian</td>
+<td align="left">12</td>
+<td align="left">NA</td>
+<td align="left">0.51</td>
+<td align="left">0.08117</td>
+<td align="left">0.07248</td>
+<td align="left">0.07316</td>
+<td align="left">7</td>
+</tr>
+<tr class="even">
+<td align="left">CASMC_rank_precip_with_time_laplacian</td>
+<td align="left">12</td>
+<td align="left">NA</td>
+<td align="left">0.282</td>
+<td align="left">0.08133</td>
+<td align="left">0.07128</td>
+<td align="left">0.0721</td>
+<td align="left">7</td>
+</tr>
+<tr class="odd">
+<td align="left">SoftImpute</td>
+<td align="left">7</td>
+<td align="left">NA</td>
+<td align="left">0</td>
+<td align="left">0.08312</td>
+<td align="left">0.07</td>
+<td align="left">0.07089</td>
+<td align="left">7</td>
+</tr>
+<tr class="even">
+<td align="left">Naive</td>
+<td align="left">0</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">0.44867</td>
+<td align="left">0.20298</td>
+<td align="left">0.45388</td>
+<td align="left">193</td>
+</tr>
+</tbody>
+</table>
 
 
 

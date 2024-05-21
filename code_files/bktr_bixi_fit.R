@@ -195,8 +195,60 @@ for(sparm in list(list(NULL,NULL,""),
                   )
     ){
 
-X <- model.dat$X_col[,1, drop=FALSE]
-
+  X <- (model.dat$X_col[,-3] )  |> scale()
+  cor(X)
+  start_time = Sys.time()
+  
+  best_fit = CASMC_cv_rank(
+    y_train = model.dat$splits$train,
+    X = X,
+    y_valid = model.dat$splits$valid@x,
+    W_valid = model.dat$masks$valid ,
+    y = model.dat$depart,
+    trace = F,
+    max_cores = 30,
+    thresh = 1e-6,
+    lambda.a = 0.01,
+    S.a = sparm[[1]],
+    lambda.b = 0.2,
+    S.b = sparm[[2]],
+    #n.lambda = n.lambda,
+    #rank.limit = rank.limit,
+    maxit = 200,
+    #rank.step = rank.step,
+    print.best = TRUE,
+    seed = 2023,
+    track_r  = T
+  )
+  test_error <- error_metric$rmse
+  fit1 = best_fit$fit
+  sout = best_fit
+  # get estimates and validate
+  sout$M = unsvd(fit1)
+  sout$beta =  fit1$beta
+  sout$estimates = sout$M + X %*% (sout$beta)
+  
+  results = list(model = paste0("CASMC_rank_all",sparm[[3]]))
+  results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
+  results$lambda.1 = NA#sout$lambda.beta |> round(3)
+  results$lambda.2 = sout$lambda |> round(3)
+  results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
+                                  model.dat$splits$test@x) |> round(5)
+  results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 & model.dat$masks$obs == 1],
+                                   model.dat$depart[model.dat$masks$test == 1& model.dat$masks$obs == 1]) |> 
+    round(5)
+  results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
+                                   model.dat$splits$valid@x) |> round(5)
+  
+  results$rank = qr(sout$estimates)$rank
+  results
+  
+  aresults[[i]] <- results
+  i = i +1
+  #------------------------------
+  
+  
+X <- model.dat$X_col[,1, drop=FALSE] 
 start_time = Sys.time()
 
 best_fit = CASMC_cv_rank(
@@ -248,6 +300,7 @@ i = i +1
 #-----------------------------
 
 X <- model.dat$X_col[,2, drop=FALSE]
+
 
 start_time = Sys.time()
 
@@ -402,6 +455,6 @@ results
 aresults[[i]] <- results
 i = i +1
 #---------------------------------------------------------------------------------
-do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x)))))
+do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |> kable()
 
 
