@@ -48,11 +48,11 @@ CASMC_fit_L2 <-
     laplace.a <- laplace.b <- F
     if (!is.null(S.a) & lambda.a > 0) {
       laplace.a = T
-      L.a = computeLaplacian(S.a, normalized = TRUE) * lambda.a
+      L.a = computeLaplacian(S.a, normalized = F) * lambda.a
     }
     if (!is.null(S.b) & lambda.b > 0) {
       laplace.b = T
-      L.b = computeLaplacian(S.b, normalized = TRUE) * lambda.b
+      L.b = computeLaplacian(S.b, normalized = F) * lambda.b
     }
     #--------------------------------
     # if svdH is not given but X is given. only needed if warm.start is not provided

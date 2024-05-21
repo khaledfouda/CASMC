@@ -45,13 +45,13 @@ CASMC_fit_rank <-
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
     laplace.a = laplace.b = F
-    if (!is.null(S.a) & lambda.a > 0) {
+    if (!is.null(S.a) && lambda.a > 0) {
       laplace.a = T
-      L.a = computeLaplacian(S.a, normalized = TRUE) * lambda.a
+      L.a = computeLaplacian(S.a, normalized = F) * lambda.a
     }
-    if (!is.null(S.b) & lambda.b > 0) {
+    if (!is.null(S.b) && lambda.b > 0) {
       laplace.b = T
-      L.b = computeLaplacian(S.b, normalized = TRUE) * lambda.b
+      L.b = computeLaplacian(S.b, normalized = F) * lambda.b
     }
     #--------------------------------
     # if svdH is not given but X is given. Only needed if warm.start is not provided
@@ -144,7 +144,7 @@ CASMC_fit_rank <-
         if (iter == 1)
           y@x = yobs - M_obs
         
-        if (!is.null(r) && r < k) {
+        if (!is.null(r) && r < k && k >= 3) {
           Beta <- svds(beta, r)
         } else{
           Beta = fast.svd(beta)
@@ -222,7 +222,7 @@ CASMC_fit_rank <-
     # trim in case we reduce the rank of M to be smaller than J.
     J = min(sum(Dsq > 0) + 1, J)
     J = min(J, length(Dsq))
-    if (!is.null(r) && r < k && r > 0) {
+    if (!is.null(r) && r < k && r > 0 && k >= 3) {
       svd_beta <- svds(beta, r)
       beta <- svd_beta$u %*% (svd_beta$d * t(svd_beta$v))
     }
