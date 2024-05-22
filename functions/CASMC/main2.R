@@ -68,10 +68,11 @@ dat <-
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
   informative_cov_prop = 0.7,
-  mv_beta = F,
+  mv_beta = T,
   seed = 2023
  )
 X_r = reduced_hat_decomp(dat$X, 1e-2)
+
 
 #' # 1
 #+ something
@@ -96,8 +97,8 @@ fit_rank <- CASMC_cv_rank(
  S.b = NULL,
  early.stopping = 1,
  thresh = 1e-6,
- maxit = 100,
- trace = FALSE,
+ maxit = 30,
+ trace = F,
  print.best = TRUE,
  quiet = FALSE,
  warm = NULL,
@@ -109,7 +110,7 @@ fit_rank <- CASMC_cv_rank(
  seed = 2023
 )
 
-
+print_performance(dat, fit_rank$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
 
 
 #' # 2
