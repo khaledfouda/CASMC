@@ -34,7 +34,7 @@ CASMC_cv_L2 <-
             warm = NULL,
             # L2 parameters
             lambda.beta.grid = "default",
-            track_beta = FALSE,
+            track = FALSE,
             max_cores = 8,
             # seed
             seed = NULL) {
@@ -89,7 +89,7 @@ CASMC_cv_L2 <-
          results[[which.min(sapply(results, function(x)
             x$error))]]
       
-      if (track_beta) {
+      if (track) {
          sapply(results, function(x)
             print(
                paste0(

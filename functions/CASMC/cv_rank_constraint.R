@@ -37,7 +37,7 @@ CASMC_cv_rank <-
            rank_x = qr(X)$rank,
            r_min = 0,
            r_max = rank_x,
-           track_r = FALSE,
+           track = FALSE,
            max_cores = 8,
            # seed
            seed = NULL) {
@@ -84,7 +84,7 @@ CASMC_cv_rank <-
       results[[which.min(sapply(results, function(x)
         x$error))]]
     
-    if (track_r) {
+    if (track) {
       sapply(results, function(x)
         print(paste0(
           "r = ", x$r, " - Val Err = ", round(x$error, 5)
