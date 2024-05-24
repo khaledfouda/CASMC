@@ -102,25 +102,21 @@ CASMC_fit_L2 <-
       stopifnot(init %in% c("random", "naive"))
       if (init == "random") {
         stop("Not implemented yet.")
-        # V = matrix(0, m, J)
-        # U = matrix(rnorm(n * J), n, J)
-        # U = fast.svd(U)$u
-        # Dsq = rep(1, J)# we call it Dsq because A=UD and B=VDsq and AB'=U Dsq V^T
-        # xbeta.obs = suvC(svdH$u, t(as.matrix(svdH$v %*% y)), irow, pcol)
       } else if (init == "naive") {
         Y_naive = as.matrix(y)
-        # obs.ind = Y_naive != 0
         Y_naive = naive_MC(Y_naive)
-        naive_fit <-  svdH$u %*% (svdH$v  %*% Y_naive)
-        naive_fit <- Y_naive - naive_fit
-        naive_fit <- propack.svd(as.matrix(naive_fit), J)
-        U = naive_fit$u
-        V = naive_fit$v
-        Dsq = naive_fit$d
+        beta = Xterms$X1 %*% Y_naive
+        Xbeta <- X %*% beta   #svdH$u %*% (svdH$v  %*% Y_naive)
+        M <- Y_naive - Xbeta
+        M <- propack.svd(as.matrix(M), J)
+        U = M$u
+        V = M$v
+        Dsq = M$d
         #----------------------
         # initialization for beta = X^-1 Y
         # comment for later: shouldn't be X^-1 H Y??
-        beta = as.matrix(ginv(X) %*% Y_naive)
+        #beta = as.matrix(ginv(X) %*% Xbeta)
+        Y_naive <- Xbeta <- M <- NULL
         #---------------------------------------------------------------
       }
     }
@@ -140,7 +136,7 @@ CASMC_fit_L2 <-
       VDsq = t(Dsq * t(V))
       M_obs = suvC(U, VDsq, irow, pcol)
       if (iter == 1)
-        y@x = yobs - M_obs
+        y@x = yobs - M_obs #- suvC(X, t(beta), irow, pcol)
       beta = as.matrix(Xterms$X1 %*% y + (Xterms$X2 %*%  beta))
       xbeta.obs <- suvC(X, t(beta), irow, pcol)
       y@x = yobs - M_obs - xbeta.obs

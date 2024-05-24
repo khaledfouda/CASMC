@@ -144,6 +144,9 @@ fit_l2 <- CASMC_cv_L2(
  max_cores = 23,
  seed = 2023
 )
+
+print_performance(dat, fit_l2$fit, error_metric$rmse, F, "CASMC(L2)",F,3)
+
 #' # 3
 fit_l2_ <- CASMC_cv_L2(
  y_train = dat$fit_data$train,
@@ -360,3 +363,60 @@ plot_O <- ggplot(long_comparison_df[long_comparison_df$Type %in% c("True O", "Ma
 # Combine the plots into one graph with 3 rows and 1 column
 grid.arrange(plot_xbeta, plot_M, plot_O, nrow = 3)
 # 
+
+
+set.seed(42)  # For reproducibility
+
+# User and Movie Data
+nUsers <- 30
+nMovies <- 40
+ageGroups <- c("young", "middle_aged", "senior")
+genres <- c("action", "comedy", "drama", "sci-fi")
+
+Users <- matrix(sample(ageGroups, size = nUsers, replace = TRUE), ncol = 1)
+Movies <- matrix(sample(genres, size = nMovies, replace = TRUE), ncol = 1)
+
+# Ratings
+Yraw <- matrix(0, nrow = nUsers, ncol = nMovies)
+for (i in 1:nUsers) {
+  moviesToRate <- sample(nMovies, size = 20, replace = FALSE)
+  Yraw[i, moviesToRate] <- sample(1:5, size = 20, replace = TRUE)
+}
+R <- Matrix::Matrix(Yraw != 0, sparse = TRUE)
+
+# Features
+featureIDs <- new.env()  # Use environment for dictionary-like functionality
+currentID <- 0
+for (age in ageGroups) {
+  for (genre in genres) {
+    featureIDs[[paste(age, genre)]] <- currentID
+    currentID <- currentID + 1
+  }
+}
+
+flatX <- matrix(0, nrow = nUsers, ncol = nMovies)
+for (i in 1:nUsers) {
+  for (j in 1:nMovies) {
+    flatX[i, j] <- featureIDs[[paste(Users[i, ], Movies[j, ])]]
+  }
+}
+
+# Proportions
+Ps <- sapply(featureIDs, function(id) {
+  mean(flatX == id)
+})
+
+# Convert to Torch tensors if needed (using the 'torch' package)
+# Ps <- torch::torch_tensor(Ps)
+# flatX <- torch::torch_tensor(flatX)
+
+
+# flatX is a 2d Matrix
+
+categs <- sort(unique(as.vector(flatX)))
+
+Ps <- vector(length=length(categs))
+for(i in 1:length(categs))
+  Ps[i] <- mean(flatX==categs[i])
+
+
