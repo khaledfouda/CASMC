@@ -426,8 +426,9 @@ for(sparm in list(list(NULL,NULL,&quot;&quot;),
   X &lt;- model.dat$X |&gt; scale()
   X = cbind(X[,1:4]^2)
   cor(X)
+  for(b in 1:5){
+  model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
   start_time = Sys.time()
-  
   best_fit = CASMC_cv_rank(
     y_train = model.dat$splits$train,
     X = X,#[,1:5, drop=FALSE],
@@ -456,15 +457,16 @@ for(sparm in list(list(NULL,NULL,&quot;&quot;),
   # get estimates and validate
   sout$M = unsvd(fit1)
   sout$beta =  fit1$beta
-  apply(sout$beta, 1, summary)
+  apply(sout$beta, 1, summary) |&gt; print()
   sout$estimates = sout$M + X %*% (sout$beta)
   
   #plot(1:ncol(sout$beta), sout$beta[3,])
   
+  if(b &gt; 1) old_results = results
   results = list(model = paste0(&quot;CASMC_rank_all&quot;,sparm[[3]]))
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
-  results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
-  results$lambda.2 = sout$lambda |&gt; round(3)
+  #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
+  #results$lambda.2 = sout$lambda |&gt; round(3)
   results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
                                   model.dat$splits$test@x) |&gt; round(5)
   results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 &amp; model.dat$masks$obs == 1],
@@ -474,7 +476,11 @@ for(sparm in list(list(NULL,NULL,&quot;&quot;),
                                    model.dat$splits$valid@x) |&gt; round(5)
   
   results$rank = qr(sout$estimates)$rank
-  results
+  if(b &gt; 1)
+  results[-1] = mapply(sum, old_results[-1], results[-1])
+  }
+  results[-1] = mapply(function(x)x/5, results[-1])
+  
   
   aresults[[i]] &lt;- results
   i = i +1
@@ -482,6 +488,8 @@ for(sparm in list(list(NULL,NULL,&quot;&quot;),
   
   
 X &lt;- X[,1:3]
+  for(b in 1:5){
+    model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
 best_fit = CASMC_cv_rank(
@@ -511,13 +519,14 @@ sout = best_fit
 # get estimates and validate
 sout$M = unsvd(fit1)
 sout$beta =  fit1$beta
-apply(sout$beta, 1, summary)
+apply(sout$beta, 1, summary) |&gt; print()
 sout$estimates = sout$M + X %*% (sout$beta)
+if(b &gt; 1) old_results = results
 
-results = list(model = paste0(&quot;CASMC_rank_humidity&quot;,sparm[[3]]))
+results = list(model = paste0(&quot;CASMC_rank_1:3_&quot;,sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
-results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
-results$lambda.2 = sout$lambda |&gt; round(3)
+#results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
+#results$lambda.2 = sout$lambda |&gt; round(3)
 results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
                                 model.dat$splits$test@x) |&gt; round(5)
 results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 &amp; model.dat$masks$obs == 1],
@@ -527,7 +536,11 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                 model.dat$splits$valid@x) |&gt; round(5)
 
 results$rank = qr(sout$estimates)$rank
-results
+if(b &gt; 1)
+  results[-1] = mapply(sum, old_results[-1], results[-1])
+  }
+  results[-1] = mapply(function(x)x/5, results[-1])
+  
 
 aresults[[i]] &lt;- results
 i = i +1
@@ -535,7 +548,8 @@ i = i +1
 
 X &lt;- X[,2, drop=FALSE]
 
-
+for(b in 1:5){
+  model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
 best_fit = CASMC_cv_rank(
@@ -566,11 +580,12 @@ sout = best_fit
 sout$M = unsvd(fit1)
 sout$beta =  fit1$beta
 sout$estimates = sout$M + X %*% (sout$beta)
+if(b &gt; 1) old_results = results
 
-results = list(model = paste0(&quot;CASMC_rank_temp&quot;,sparm[[3]]))
+results = list(model = paste0(&quot;CASMC_rank_2_&quot;,sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
-results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
-results$lambda.2 = sout$lambda |&gt; round(3)
+#results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
+#results$lambda.2 = sout$lambda |&gt; round(3)
 results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
                                 model.dat$splits$test@x) |&gt; round(5)
 results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 &amp; model.dat$masks$obs == 1],
@@ -580,7 +595,11 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |&gt; round(5)
 
 results$rank = qr(sout$estimates)$rank
-results
+if(b &gt; 1)
+  results[-1] = mapply(sum, old_results[-1], results[-1])
+}
+results[-1] = mapply(function(x)x/5, results[-1])
+
 
 aresults[[i]] &lt;- results
 i = i +1
@@ -588,6 +607,8 @@ i = i +1
 X &lt;- model.dat$X |&gt; scale()
 X = cbind(X[,1:4]^2)
 
+for(b in 1:5){
+  model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
 best_fit = CASMC_cv_L2(
@@ -617,13 +638,14 @@ sout = best_fit
 # get estimates and validate
 sout$M = unsvd(fit1)
 sout$beta =  fit1$beta
-apply(sout$beta, 1, summary)
+apply(sout$beta, 1, summary) |&gt; print()
 sout$estimates = sout$M + X %*% (sout$beta)
+if(b &gt; 1) old_results = results
 
-results = list(model = paste0(&quot;CASMC_rank_precip&quot;,sparm[[3]]))
+results = list(model = paste0(&quot;CASMC_rank_L2_all_&quot;,sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
-results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
-results$lambda.2 = sout$lambda |&gt; round(3)
+#results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
+#results$lambda.2 = sout$lambda |&gt; round(3)
 results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
                                 model.dat$splits$test@x) |&gt; round(5)
 results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 &amp; model.dat$masks$obs == 1],
@@ -633,12 +655,21 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |&gt; round(5)
 
 results$rank = qr(sout$estimates)$rank
-results
+if(b &gt; 1)
+  results[-1] = mapply(sum, old_results[-1], results[-1])
+}
+results[-1] = mapply(function(x)x/5, results[-1])
+
 
 aresults[[i]] &lt;- results
 i = i +1
 
 }</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
 <pre><code>## [1] &quot;Running on 5 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 8.89459&quot;
 ## [1] &quot;r = 1 - Val Err = 20.64489&quot;
@@ -646,17 +677,230 @@ i = i +1
 ## [1] &quot;r = 3 - Val Err = 9.14285&quot;
 ## [1] &quot;r = 4 - Val Err = 9.50097&quot;
 ## [1] &quot;Best fit: r =  2  - Validation Error:  8.89024860689497&quot;
-## [1] &quot;Running on 4 cores.&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.780200 -75.112205 -63.09355 -2.1775540
+## 1st Qu.  4.999599  -8.130273  10.33417 -1.2759716
+## Median   8.913804  -4.590932  18.03976 -0.8542530
+## Mean     9.668544  -6.017466  20.91021 -0.9124029
+## 3rd Qu. 13.538798  -2.317182  28.64798 -0.4831588
+## Max.    23.624501  56.810771 105.17834 -0.1011687</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89459&quot;
+## [1] &quot;r = 1 - Val Err = 20.64489&quot;
+## [1] &quot;r = 2 - Val Err = 8.89025&quot;
+## [1] &quot;r = 3 - Val Err = 9.14285&quot;
+## [1] &quot;r = 4 - Val Err = 9.50097&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89024860689497&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.780200 -75.112205 -63.09355 -2.1775540
+## 1st Qu.  4.999599  -8.130273  10.33417 -1.2759716
+## Median   8.913804  -4.590932  18.03976 -0.8542530
+## Mean     9.668544  -6.017466  20.91021 -0.9124029
+## 3rd Qu. 13.538798  -2.317182  28.64798 -0.4831588
+## Max.    23.624501  56.810771 105.17834 -0.1011687</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89459&quot;
+## [1] &quot;r = 1 - Val Err = 20.64489&quot;
+## [1] &quot;r = 2 - Val Err = 8.89025&quot;
+## [1] &quot;r = 3 - Val Err = 9.14285&quot;
+## [1] &quot;r = 4 - Val Err = 9.50097&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89024860689497&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.780200 -75.112205 -63.09355 -2.1775540
+## 1st Qu.  4.999599  -8.130273  10.33417 -1.2759716
+## Median   8.913804  -4.590932  18.03976 -0.8542530
+## Mean     9.668544  -6.017466  20.91021 -0.9124029
+## 3rd Qu. 13.538798  -2.317182  28.64798 -0.4831588
+## Max.    23.624501  56.810771 105.17834 -0.1011687</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89459&quot;
+## [1] &quot;r = 1 - Val Err = 20.64489&quot;
+## [1] &quot;r = 2 - Val Err = 8.89025&quot;
+## [1] &quot;r = 3 - Val Err = 9.14285&quot;
+## [1] &quot;r = 4 - Val Err = 9.50097&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89024860689497&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.780200 -75.112205 -63.09355 -2.1775540
+## 1st Qu.  4.999599  -8.130273  10.33417 -1.2759716
+## Median   8.913804  -4.590932  18.03976 -0.8542530
+## Mean     9.668544  -6.017466  20.91021 -0.9124029
+## 3rd Qu. 13.538798  -2.317182  28.64798 -0.4831588
+## Max.    23.624501  56.810771 105.17834 -0.1011687</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89459&quot;
+## [1] &quot;r = 1 - Val Err = 20.64489&quot;
+## [1] &quot;r = 2 - Val Err = 8.89025&quot;
+## [1] &quot;r = 3 - Val Err = 9.14285&quot;
+## [1] &quot;r = 4 - Val Err = 9.50097&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89024860689497&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.780200 -75.112205 -63.09355 -2.1775540
+## 1st Qu.  4.999599  -8.130273  10.33417 -1.2759716
+## Median   8.913804  -4.590932  18.03976 -0.8542530
+## Mean     9.668544  -6.017466  20.91021 -0.9124029
+## 3rd Qu. 13.538798  -2.317182  28.64798 -0.4831588
+## Max.    23.624501  56.810771 105.17834 -0.1011687</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 8.89443&quot;
 ## [1] &quot;r = 1 - Val Err = 9.9481&quot;
 ## [1] &quot;r = 2 - Val Err = 8.87824&quot;
 ## [1] &quot;r = 3 - Val Err = 9.09761&quot;
 ## [1] &quot;Best fit: r =  2  - Validation Error:  8.87824217480868&quot;
-## [1] &quot;Running on 2 cores.&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8779205 -66.312993 -5.777336
+## 1st Qu.  4.2588255  -9.682000 11.176999
+## Median   7.5156595  -5.614925 19.672416
+## Mean     8.2282714  -7.293181 22.651436
+## 3rd Qu. 11.5594650  -2.986845 31.127228
+## Max.    19.1787208  20.275976 94.365430</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89443&quot;
+## [1] &quot;r = 1 - Val Err = 9.9481&quot;
+## [1] &quot;r = 2 - Val Err = 8.87824&quot;
+## [1] &quot;r = 3 - Val Err = 9.09761&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.87824217480868&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8779205 -66.312993 -5.777336
+## 1st Qu.  4.2588255  -9.682000 11.176999
+## Median   7.5156595  -5.614925 19.672416
+## Mean     8.2282714  -7.293181 22.651436
+## 3rd Qu. 11.5594650  -2.986845 31.127228
+## Max.    19.1787208  20.275976 94.365430</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89443&quot;
+## [1] &quot;r = 1 - Val Err = 9.9481&quot;
+## [1] &quot;r = 2 - Val Err = 8.87824&quot;
+## [1] &quot;r = 3 - Val Err = 9.09761&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.87824217480868&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8779205 -66.312993 -5.777336
+## 1st Qu.  4.2588255  -9.682000 11.176999
+## Median   7.5156595  -5.614925 19.672416
+## Mean     8.2282714  -7.293181 22.651436
+## 3rd Qu. 11.5594650  -2.986845 31.127228
+## Max.    19.1787208  20.275976 94.365430</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89443&quot;
+## [1] &quot;r = 1 - Val Err = 9.9481&quot;
+## [1] &quot;r = 2 - Val Err = 8.87824&quot;
+## [1] &quot;r = 3 - Val Err = 9.09761&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.87824217480868&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8779205 -66.312993 -5.777336
+## 1st Qu.  4.2588255  -9.682000 11.176999
+## Median   7.5156595  -5.614925 19.672416
+## Mean     8.2282714  -7.293181 22.651436
+## 3rd Qu. 11.5594650  -2.986845 31.127228
+## Max.    19.1787208  20.275976 94.365430</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89443&quot;
+## [1] &quot;r = 1 - Val Err = 9.9481&quot;
+## [1] &quot;r = 2 - Val Err = 8.87824&quot;
+## [1] &quot;r = 3 - Val Err = 9.09761&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.87824217480868&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8779205 -66.312993 -5.777336
+## 1st Qu.  4.2588255  -9.682000 11.176999
+## Median   7.5156595  -5.614925 19.672416
+## Mean     8.2282714  -7.293181 22.651436
+## 3rd Qu. 11.5594650  -2.986845 31.127228
+## Max.    19.1787208  20.275976 94.365430</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 8.89522&quot;
 ## [1] &quot;r = 1 - Val Err = 8.82571&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  8.82570585158708&quot;
-## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82570585158708&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89522&quot;
+## [1] &quot;r = 1 - Val Err = 8.82571&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82570585158708&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89522&quot;
+## [1] &quot;r = 1 - Val Err = 8.82571&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82570585158708&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89522&quot;
+## [1] &quot;r = 1 - Val Err = 8.82571&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82570585158708&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89522&quot;
+## [1] &quot;r = 1 - Val Err = 8.82571&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82570585158708&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
 ## [1] &quot;lambda.beta = 0 - Val Err = 10.09104&quot;
 ## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37558&quot;
 ## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26676&quot;
@@ -678,24 +922,385 @@ i = i +1
 ## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.13075&quot;
 ## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12269&quot;
 ## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12269257547323&quot;
-## [1] &quot;Running on 5 cores.&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5208894 -1.5239924 -1.8699020 -0.5891905
+## 1st Qu. -0.2132531 -0.1120787 -0.1746700  0.4932137
+## Median   0.2351800  0.1902680  0.1459388  0.8806700
+## Mean     0.2988296  0.2597983  0.2232254  1.0459270
+## 3rd Qu.  0.8117655  0.5830365  0.5577559  1.5348327
+## Max.     4.0912417  3.3538498  4.1057305  3.7072995</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09104&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37558&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26676&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39827&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26267&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15994&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24893&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22578&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.2054&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.1865&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.16978&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15325&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18518&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17502&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.166&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.1574&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14783&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13896&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.13075&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12269&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12269257547323&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5208894 -1.5239924 -1.8699020 -0.5891905
+## 1st Qu. -0.2132531 -0.1120787 -0.1746700  0.4932137
+## Median   0.2351800  0.1902680  0.1459388  0.8806700
+## Mean     0.2988296  0.2597983  0.2232254  1.0459270
+## 3rd Qu.  0.8117655  0.5830365  0.5577559  1.5348327
+## Max.     4.0912417  3.3538498  4.1057305  3.7072995</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09104&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37558&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26676&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39827&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26267&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15994&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24893&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22578&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.2054&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.1865&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.16978&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15325&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18518&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17502&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.166&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.1574&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14783&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13896&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.13075&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12269&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12269257547323&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5208894 -1.5239924 -1.8699020 -0.5891905
+## 1st Qu. -0.2132531 -0.1120787 -0.1746700  0.4932137
+## Median   0.2351800  0.1902680  0.1459388  0.8806700
+## Mean     0.2988296  0.2597983  0.2232254  1.0459270
+## 3rd Qu.  0.8117655  0.5830365  0.5577559  1.5348327
+## Max.     4.0912417  3.3538498  4.1057305  3.7072995</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09104&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37558&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26676&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39827&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26267&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15994&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24893&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22578&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.2054&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.1865&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.16978&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15325&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18518&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17502&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.166&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.1574&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14783&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13896&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.13075&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12269&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12269257547323&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5208894 -1.5239924 -1.8699020 -0.5891905
+## 1st Qu. -0.2132531 -0.1120787 -0.1746700  0.4932137
+## Median   0.2351800  0.1902680  0.1459388  0.8806700
+## Mean     0.2988296  0.2597983  0.2232254  1.0459270
+## 3rd Qu.  0.8117655  0.5830365  0.5577559  1.5348327
+## Max.     4.0912417  3.3538498  4.1057305  3.7072995</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09104&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37558&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26676&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39827&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26267&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15994&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24893&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22578&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.2054&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.1865&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.16978&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15325&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18518&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17502&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.166&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.1574&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14783&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13896&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.13075&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12269&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12269257547323&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5208894 -1.5239924 -1.8699020 -0.5891905
+## 1st Qu. -0.2132531 -0.1120787 -0.1746700  0.4932137
+## Median   0.2351800  0.1902680  0.1459388  0.8806700
+## Mean     0.2988296  0.2597983  0.2232254  1.0459270
+## 3rd Qu.  0.8117655  0.5830365  0.5577559  1.5348327
+## Max.     4.0912417  3.3538498  4.1057305  3.7072995</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 8.89456&quot;
 ## [1] &quot;r = 1 - Val Err = 20.64482&quot;
 ## [1] &quot;r = 2 - Val Err = 8.89021&quot;
 ## [1] &quot;r = 3 - Val Err = 9.14281&quot;
 ## [1] &quot;r = 4 - Val Err = 9.50095&quot;
 ## [1] &quot;Best fit: r =  2  - Validation Error:  8.89021455258775&quot;
-## [1] &quot;Running on 4 cores.&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.779854 -75.112214 -63.09201 -2.1775774
+## 1st Qu.  4.999261  -8.129446  10.33387 -1.2759879
+## Median   8.913214  -4.590481  18.03941 -0.8542563
+## Mean     9.667918  -6.016937  20.90981 -0.9124077
+## 3rd Qu. 13.538067  -2.316920  28.64783 -0.4831624
+## Max.    23.623089  56.810683 105.17866 -0.1011677</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89456&quot;
+## [1] &quot;r = 1 - Val Err = 20.64482&quot;
+## [1] &quot;r = 2 - Val Err = 8.89021&quot;
+## [1] &quot;r = 3 - Val Err = 9.14281&quot;
+## [1] &quot;r = 4 - Val Err = 9.50095&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89021455258775&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.779854 -75.112214 -63.09201 -2.1775774
+## 1st Qu.  4.999261  -8.129446  10.33387 -1.2759879
+## Median   8.913214  -4.590481  18.03941 -0.8542563
+## Mean     9.667918  -6.016937  20.90981 -0.9124077
+## 3rd Qu. 13.538067  -2.316920  28.64783 -0.4831624
+## Max.    23.623089  56.810683 105.17866 -0.1011677</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89456&quot;
+## [1] &quot;r = 1 - Val Err = 20.64482&quot;
+## [1] &quot;r = 2 - Val Err = 8.89021&quot;
+## [1] &quot;r = 3 - Val Err = 9.14281&quot;
+## [1] &quot;r = 4 - Val Err = 9.50095&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89021455258775&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.779854 -75.112214 -63.09201 -2.1775774
+## 1st Qu.  4.999261  -8.129446  10.33387 -1.2759879
+## Median   8.913214  -4.590481  18.03941 -0.8542563
+## Mean     9.667918  -6.016937  20.90981 -0.9124077
+## 3rd Qu. 13.538067  -2.316920  28.64783 -0.4831624
+## Max.    23.623089  56.810683 105.17866 -0.1011677</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89456&quot;
+## [1] &quot;r = 1 - Val Err = 20.64482&quot;
+## [1] &quot;r = 2 - Val Err = 8.89021&quot;
+## [1] &quot;r = 3 - Val Err = 9.14281&quot;
+## [1] &quot;r = 4 - Val Err = 9.50095&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89021455258775&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.779854 -75.112214 -63.09201 -2.1775774
+## 1st Qu.  4.999261  -8.129446  10.33387 -1.2759879
+## Median   8.913214  -4.590481  18.03941 -0.8542563
+## Mean     9.667918  -6.016937  20.90981 -0.9124077
+## 3rd Qu. 13.538067  -2.316920  28.64783 -0.4831624
+## Max.    23.623089  56.810683 105.17866 -0.1011677</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89456&quot;
+## [1] &quot;r = 1 - Val Err = 20.64482&quot;
+## [1] &quot;r = 2 - Val Err = 8.89021&quot;
+## [1] &quot;r = 3 - Val Err = 9.14281&quot;
+## [1] &quot;r = 4 - Val Err = 9.50095&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.89021455258775&quot;
+##              [,1]       [,2]      [,3]       [,4]
+## Min.    -2.779854 -75.112214 -63.09201 -2.1775774
+## 1st Qu.  4.999261  -8.129446  10.33387 -1.2759879
+## Median   8.913214  -4.590481  18.03941 -0.8542563
+## Mean     9.667918  -6.016937  20.90981 -0.9124077
+## 3rd Qu. 13.538067  -2.316920  28.64783 -0.4831624
+## Max.    23.623089  56.810683 105.17866 -0.1011677</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 8.89441&quot;
 ## [1] &quot;r = 1 - Val Err = 9.94764&quot;
 ## [1] &quot;r = 2 - Val Err = 8.87822&quot;
 ## [1] &quot;r = 3 - Val Err = 9.09759&quot;
 ## [1] &quot;Best fit: r =  2  - Validation Error:  8.8782166241653&quot;
-## [1] &quot;Running on 2 cores.&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8778523 -66.313003 -5.776204
+## 1st Qu.  4.2584513  -9.681054 11.176676
+## Median   7.5150239  -5.614835 19.672221
+## Mean     8.2275934  -7.292643 22.651034
+## 3rd Qu. 11.5585734  -2.986298 31.126442
+## Max.    19.1773704  20.275886 94.365754</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89441&quot;
+## [1] &quot;r = 1 - Val Err = 9.94764&quot;
+## [1] &quot;r = 2 - Val Err = 8.87822&quot;
+## [1] &quot;r = 3 - Val Err = 9.09759&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.8782166241653&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8778523 -66.313003 -5.776204
+## 1st Qu.  4.2584513  -9.681054 11.176676
+## Median   7.5150239  -5.614835 19.672221
+## Mean     8.2275934  -7.292643 22.651034
+## 3rd Qu. 11.5585734  -2.986298 31.126442
+## Max.    19.1773704  20.275886 94.365754</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89441&quot;
+## [1] &quot;r = 1 - Val Err = 9.94764&quot;
+## [1] &quot;r = 2 - Val Err = 8.87822&quot;
+## [1] &quot;r = 3 - Val Err = 9.09759&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.8782166241653&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8778523 -66.313003 -5.776204
+## 1st Qu.  4.2584513  -9.681054 11.176676
+## Median   7.5150239  -5.614835 19.672221
+## Mean     8.2275934  -7.292643 22.651034
+## 3rd Qu. 11.5585734  -2.986298 31.126442
+## Max.    19.1773704  20.275886 94.365754</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89441&quot;
+## [1] &quot;r = 1 - Val Err = 9.94764&quot;
+## [1] &quot;r = 2 - Val Err = 8.87822&quot;
+## [1] &quot;r = 3 - Val Err = 9.09759&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.8782166241653&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8778523 -66.313003 -5.776204
+## 1st Qu.  4.2584513  -9.681054 11.176676
+## Median   7.5150239  -5.614835 19.672221
+## Mean     8.2275934  -7.292643 22.651034
+## 3rd Qu. 11.5585734  -2.986298 31.126442
+## Max.    19.1773704  20.275886 94.365754</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89441&quot;
+## [1] &quot;r = 1 - Val Err = 9.94764&quot;
+## [1] &quot;r = 2 - Val Err = 8.87822&quot;
+## [1] &quot;r = 3 - Val Err = 9.09759&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  8.8782166241653&quot;
+##               [,1]       [,2]      [,3]
+## Min.     0.8778523 -66.313003 -5.776204
+## 1st Qu.  4.2584513  -9.681054 11.176676
+## Median   7.5150239  -5.614835 19.672221
+## Mean     8.2275934  -7.292643 22.651034
+## 3rd Qu. 11.5585734  -2.986298 31.126442
+## Max.    19.1773704  20.275886 94.365754</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
 ## [1] &quot;r = 0 - Val Err = 8.89519&quot;
 ## [1] &quot;r = 1 - Val Err = 8.82565&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  8.82565407623736&quot;
-## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82565407623736&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89519&quot;
+## [1] &quot;r = 1 - Val Err = 8.82565&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82565407623736&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89519&quot;
+## [1] &quot;r = 1 - Val Err = 8.82565&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82565407623736&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89519&quot;
+## [1] &quot;r = 1 - Val Err = 8.82565&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82565407623736&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 2 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 8.89519&quot;
+## [1] &quot;r = 1 - Val Err = 8.82565&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  8.82565407623736&quot;</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
 ## [1] &quot;lambda.beta = 0 - Val Err = 10.09091&quot;
 ## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37556&quot;
 ## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26675&quot;
@@ -716,10 +1321,154 @@ i = i +1
 ## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13891&quot;
 ## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.1307&quot;
 ## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12264&quot;
-## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12264323272366&quot;</code></pre>
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12264323272366&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5210505 -1.5240238 -1.8700067 -0.5894020
+## 1st Qu. -0.2133064 -0.1120988 -0.1746737  0.4930520
+## Median   0.2351586  0.1902812  0.1459195  0.8804527
+## Mean     0.2987750  0.2597847  0.2232143  1.0456698
+## 3rd Qu.  0.8116704  0.5830117  0.5577261  1.5342070
+## Max.     4.0912551  3.3536245  4.1055828  3.7070306</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09091&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37556&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26675&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39826&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26269&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15989&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24874&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22559&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.20521&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.18631&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.1696&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15307&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18517&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17501&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.16599&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.15735&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14778&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13891&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.1307&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12264&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12264323272366&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5210505 -1.5240238 -1.8700067 -0.5894020
+## 1st Qu. -0.2133064 -0.1120988 -0.1746737  0.4930520
+## Median   0.2351586  0.1902812  0.1459195  0.8804527
+## Mean     0.2987750  0.2597847  0.2232143  1.0456698
+## 3rd Qu.  0.8116704  0.5830117  0.5577261  1.5342070
+## Max.     4.0912551  3.3536245  4.1055828  3.7070306</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09091&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37556&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26675&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39826&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26269&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15989&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24874&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22559&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.20521&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.18631&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.1696&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15307&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18517&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17501&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.16599&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.15735&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14778&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13891&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.1307&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12264&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12264323272366&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5210505 -1.5240238 -1.8700067 -0.5894020
+## 1st Qu. -0.2133064 -0.1120988 -0.1746737  0.4930520
+## Median   0.2351586  0.1902812  0.1459195  0.8804527
+## Mean     0.2987750  0.2597847  0.2232143  1.0456698
+## 3rd Qu.  0.8116704  0.5830117  0.5577261  1.5342070
+## Max.     4.0912551  3.3536245  4.1055828  3.7070306</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09091&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37556&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26675&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39826&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26269&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15989&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24874&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22559&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.20521&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.18631&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.1696&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15307&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18517&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17501&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.16599&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.15735&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14778&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13891&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.1307&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12264&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12264323272366&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5210505 -1.5240238 -1.8700067 -0.5894020
+## 1st Qu. -0.2133064 -0.1120988 -0.1746737  0.4930520
+## Median   0.2351586  0.1902812  0.1459195  0.8804527
+## Mean     0.2987750  0.2597847  0.2232143  1.0456698
+## 3rd Qu.  0.8116704  0.5830117  0.5577261  1.5342070
+## Max.     4.0912551  3.3536245  4.1055828  3.7070306</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>## [1] &quot;Running on 20 cores.&quot;
+## [1] &quot;lambda.beta = 0 - Val Err = 10.09091&quot;
+## [1] &quot;lambda.beta = 1.83576375440762 - Val Err = 9.37556&quot;
+## [1] &quot;lambda.beta = 3.67152750881524 - Val Err = 9.26675&quot;
+## [1] &quot;lambda.beta = 5.50729126322286 - Val Err = 9.39826&quot;
+## [1] &quot;lambda.beta = 7.34305501763047 - Val Err = 9.26269&quot;
+## [1] &quot;lambda.beta = 9.17881877203809 - Val Err = 9.15989&quot;
+## [1] &quot;lambda.beta = 11.0145825264457 - Val Err = 9.24874&quot;
+## [1] &quot;lambda.beta = 12.8503462808533 - Val Err = 9.22559&quot;
+## [1] &quot;lambda.beta = 14.6861100352609 - Val Err = 9.20521&quot;
+## [1] &quot;lambda.beta = 16.5218737896686 - Val Err = 9.18631&quot;
+## [1] &quot;lambda.beta = 18.3576375440762 - Val Err = 9.1696&quot;
+## [1] &quot;lambda.beta = 20.1934012984838 - Val Err = 9.15307&quot;
+## [1] &quot;lambda.beta = 22.0291650528914 - Val Err = 9.18517&quot;
+## [1] &quot;lambda.beta = 23.864928807299 - Val Err = 9.17501&quot;
+## [1] &quot;lambda.beta = 25.7006925617067 - Val Err = 9.16599&quot;
+## [1] &quot;lambda.beta = 27.5364563161143 - Val Err = 9.15735&quot;
+## [1] &quot;lambda.beta = 29.3722200705219 - Val Err = 9.14778&quot;
+## [1] &quot;lambda.beta = 31.2079838249295 - Val Err = 9.13891&quot;
+## [1] &quot;lambda.beta = 33.0437475793371 - Val Err = 9.1307&quot;
+## [1] &quot;lambda.beta = 34.8795113337448 - Val Err = 9.12264&quot;
+## [1] &quot;Best fit: lambda_beta =  34.8795113337448  - Validation Error:  9.12264323272366&quot;
+##               [,1]       [,2]       [,3]       [,4]
+## Min.    -4.5210505 -1.5240238 -1.8700067 -0.5894020
+## 1st Qu. -0.2133064 -0.1120988 -0.1746737  0.4930520
+## Median   0.2351586  0.1902812  0.1459195  0.8804527
+## Mean     0.2987750  0.2597847  0.2232143  1.0456698
+## 3rd Qu.  0.8116704  0.5830117  0.5577261  1.5342070
+## Max.     4.0912551  3.3536245  4.1055828  3.7070306</code></pre>
 <pre class="r"><code>#-------------------------------------------------------------------------------
 # Soft Impute
-
+for(b in 1:5){
+  model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 sout &lt;- simpute.cv(
  Y_train = as.matrix(model.dat$splits$train),
@@ -732,31 +1481,14 @@ sout &lt;- simpute.cv(
  print.best = FALSE,
  rank.step = 2,
  maxit = 700
-)</code></pre>
-<pre><code>##  1 lambda=   5152.6, rank.max = 2  ==&gt; rank = 0, error = 45.52984
-##  2 lambda=   4881.5, rank.max = 2  ==&gt; rank = 0, error = 45.52984
-##  3 lambda=   4610.3, rank.max = 2  ==&gt; rank = 0, error = 45.52984
-##  4 lambda=   4339.1, rank.max = 2  ==&gt; rank = 0, error = 45.52984
-##  5 lambda=   4067.9, rank.max = 3  ==&gt; rank = 1, error = 44.93310
-##  6 lambda=   3796.7, rank.max = 3  ==&gt; rank = 1, error = 42.43743
-##  7 lambda=   3525.5, rank.max = 3  ==&gt; rank = 1, error = 39.93003
-##  8 lambda=   3254.3, rank.max = 3  ==&gt; rank = 1, error = 37.41260
-##  9 lambda=   2983.1, rank.max = 3  ==&gt; rank = 1, error = 34.88865
-## 10 lambda=   2711.9, rank.max = 3  ==&gt; rank = 1, error = 32.35626
-## 11 lambda=   2440.7, rank.max = 3  ==&gt; rank = 1, error = 29.82715
-## 12 lambda=   2169.5, rank.max = 3  ==&gt; rank = 1, error = 27.30694
-## 13 lambda=   1898.3, rank.max = 3  ==&gt; rank = 1, error = 24.79518
-## 14 lambda=   1627.2, rank.max = 3  ==&gt; rank = 1, error = 22.30283
-## 15 lambda=     1356, rank.max = 3  ==&gt; rank = 1, error = 19.85596
-## 16 lambda=   1084.8, rank.max = 3  ==&gt; rank = 1, error = 17.48424
-## 17 lambda=   813.58, rank.max = 3  ==&gt; rank = 1, error = 15.22580
-## 18 lambda=   542.38, rank.max = 3  ==&gt; rank = 1, error = 13.18165
-## 19 lambda=   271.19, rank.max = 5  ==&gt; rank = 3, error = 10.51427
-## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 9.00412</code></pre>
-<pre class="r"><code>results = list(model = &quot;SoftImpute&quot;)
+)
+
+if(b &gt; 1) old_results = results
+
+results = list(model = &quot;SoftImpute&quot;)
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
-results$lambda.1 = NA
-results$lambda.2 = sout$lambda |&gt; round(3)
+#results$lambda.1 = NA
+#results$lambda.2 = sout$lambda |&gt; round(3)
 results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
                                 model.dat$splits$test@x) |&gt; round(5)
 results$error.train = test_error(sout$estimates[model.dat$masks$test == 1 &amp; model.dat$masks$obs == 1],
@@ -766,39 +1498,149 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |&gt; round(5)
 
 results$rank = sout$rank_M
-results</code></pre>
-<pre><code>## $model
-## [1] &quot;SoftImpute&quot;
-## 
-## $time
-## [1] 10
-## 
-## $lambda.1
-## [1] NA
-## 
-## $lambda.2
-## [1] 0
-## 
-## $error.test
-## [1] 8.74751
-## 
-## $error.train
-## [1] 6.90007
-## 
-## $error.valid
-## [1] 6.96455
-## 
-## $rank
-## [1] 7</code></pre>
-<pre class="r"><code>aresults[[i]] &lt;- results
+if(b &gt; 1)
+  results[-1] = mapply(sum, old_results[-1], results[-1])
+}</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>##  1 lambda=   5152.6, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  2 lambda=   4881.5, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  3 lambda=   4610.3, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  4 lambda=   4339.1, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  5 lambda=   4067.9, rank.max = 3  ==&gt; rank = 1, error = 44.93326
+##  6 lambda=   3796.7, rank.max = 3  ==&gt; rank = 1, error = 42.43743
+##  7 lambda=   3525.5, rank.max = 3  ==&gt; rank = 1, error = 39.93003
+##  8 lambda=   3254.3, rank.max = 3  ==&gt; rank = 1, error = 37.41261
+##  9 lambda=   2983.1, rank.max = 3  ==&gt; rank = 1, error = 34.88864
+## 10 lambda=   2711.9, rank.max = 3  ==&gt; rank = 1, error = 32.35624
+## 11 lambda=   2440.7, rank.max = 3  ==&gt; rank = 1, error = 29.82720
+## 12 lambda=   2169.5, rank.max = 3  ==&gt; rank = 1, error = 27.30699
+## 13 lambda=   1898.3, rank.max = 3  ==&gt; rank = 1, error = 24.79524
+## 14 lambda=   1627.2, rank.max = 3  ==&gt; rank = 1, error = 22.30283
+## 15 lambda=     1356, rank.max = 3  ==&gt; rank = 1, error = 19.85598
+## 16 lambda=   1084.8, rank.max = 3  ==&gt; rank = 1, error = 17.48420
+## 17 lambda=   813.58, rank.max = 3  ==&gt; rank = 1, error = 15.22582
+## 18 lambda=   542.38, rank.max = 3  ==&gt; rank = 1, error = 13.18173
+## 19 lambda=   271.19, rank.max = 5  ==&gt; rank = 3, error = 10.51644
+## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 8.89957</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>##  1 lambda=   5152.6, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  2 lambda=   4881.5, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  3 lambda=   4610.3, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  4 lambda=   4339.1, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  5 lambda=   4067.9, rank.max = 3  ==&gt; rank = 1, error = 44.93326
+##  6 lambda=   3796.7, rank.max = 3  ==&gt; rank = 1, error = 42.43743
+##  7 lambda=   3525.5, rank.max = 3  ==&gt; rank = 1, error = 39.93003
+##  8 lambda=   3254.3, rank.max = 3  ==&gt; rank = 1, error = 37.41261
+##  9 lambda=   2983.1, rank.max = 3  ==&gt; rank = 1, error = 34.88864
+## 10 lambda=   2711.9, rank.max = 3  ==&gt; rank = 1, error = 32.35624
+## 11 lambda=   2440.7, rank.max = 3  ==&gt; rank = 1, error = 29.82720
+## 12 lambda=   2169.5, rank.max = 3  ==&gt; rank = 1, error = 27.30699
+## 13 lambda=   1898.3, rank.max = 3  ==&gt; rank = 1, error = 24.79524
+## 14 lambda=   1627.2, rank.max = 3  ==&gt; rank = 1, error = 22.30283
+## 15 lambda=     1356, rank.max = 3  ==&gt; rank = 1, error = 19.85598
+## 16 lambda=   1084.8, rank.max = 3  ==&gt; rank = 1, error = 17.48420
+## 17 lambda=   813.58, rank.max = 3  ==&gt; rank = 1, error = 15.22582
+## 18 lambda=   542.38, rank.max = 3  ==&gt; rank = 1, error = 13.18173
+## 19 lambda=   271.19, rank.max = 5  ==&gt; rank = 3, error = 10.51644
+## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 8.89957</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>##  1 lambda=   5152.6, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  2 lambda=   4881.5, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  3 lambda=   4610.3, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  4 lambda=   4339.1, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  5 lambda=   4067.9, rank.max = 3  ==&gt; rank = 1, error = 44.93326
+##  6 lambda=   3796.7, rank.max = 3  ==&gt; rank = 1, error = 42.43743
+##  7 lambda=   3525.5, rank.max = 3  ==&gt; rank = 1, error = 39.93003
+##  8 lambda=   3254.3, rank.max = 3  ==&gt; rank = 1, error = 37.41261
+##  9 lambda=   2983.1, rank.max = 3  ==&gt; rank = 1, error = 34.88864
+## 10 lambda=   2711.9, rank.max = 3  ==&gt; rank = 1, error = 32.35624
+## 11 lambda=   2440.7, rank.max = 3  ==&gt; rank = 1, error = 29.82720
+## 12 lambda=   2169.5, rank.max = 3  ==&gt; rank = 1, error = 27.30699
+## 13 lambda=   1898.3, rank.max = 3  ==&gt; rank = 1, error = 24.79524
+## 14 lambda=   1627.2, rank.max = 3  ==&gt; rank = 1, error = 22.30283
+## 15 lambda=     1356, rank.max = 3  ==&gt; rank = 1, error = 19.85598
+## 16 lambda=   1084.8, rank.max = 3  ==&gt; rank = 1, error = 17.48420
+## 17 lambda=   813.58, rank.max = 3  ==&gt; rank = 1, error = 15.22582
+## 18 lambda=   542.38, rank.max = 3  ==&gt; rank = 1, error = 13.18173
+## 19 lambda=   271.19, rank.max = 5  ==&gt; rank = 3, error = 10.51644
+## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 8.89957</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>##  1 lambda=   5152.6, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  2 lambda=   4881.5, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  3 lambda=   4610.3, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  4 lambda=   4339.1, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  5 lambda=   4067.9, rank.max = 3  ==&gt; rank = 1, error = 44.93326
+##  6 lambda=   3796.7, rank.max = 3  ==&gt; rank = 1, error = 42.43743
+##  7 lambda=   3525.5, rank.max = 3  ==&gt; rank = 1, error = 39.93003
+##  8 lambda=   3254.3, rank.max = 3  ==&gt; rank = 1, error = 37.41261
+##  9 lambda=   2983.1, rank.max = 3  ==&gt; rank = 1, error = 34.88864
+## 10 lambda=   2711.9, rank.max = 3  ==&gt; rank = 1, error = 32.35624
+## 11 lambda=   2440.7, rank.max = 3  ==&gt; rank = 1, error = 29.82720
+## 12 lambda=   2169.5, rank.max = 3  ==&gt; rank = 1, error = 27.30699
+## 13 lambda=   1898.3, rank.max = 3  ==&gt; rank = 1, error = 24.79524
+## 14 lambda=   1627.2, rank.max = 3  ==&gt; rank = 1, error = 22.30283
+## 15 lambda=     1356, rank.max = 3  ==&gt; rank = 1, error = 19.85598
+## 16 lambda=   1084.8, rank.max = 3  ==&gt; rank = 1, error = 17.48420
+## 17 lambda=   813.58, rank.max = 3  ==&gt; rank = 1, error = 15.22582
+## 18 lambda=   542.38, rank.max = 3  ==&gt; rank = 1, error = 13.18173
+## 19 lambda=   271.19, rank.max = 5  ==&gt; rank = 3, error = 10.51644
+## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 8.89957</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre><code>##  1 lambda=   5152.6, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  2 lambda=   4881.5, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  3 lambda=   4610.3, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  4 lambda=   4339.1, rank.max = 2  ==&gt; rank = 0, error = 45.52984
+##  5 lambda=   4067.9, rank.max = 3  ==&gt; rank = 1, error = 44.93326
+##  6 lambda=   3796.7, rank.max = 3  ==&gt; rank = 1, error = 42.43743
+##  7 lambda=   3525.5, rank.max = 3  ==&gt; rank = 1, error = 39.93003
+##  8 lambda=   3254.3, rank.max = 3  ==&gt; rank = 1, error = 37.41261
+##  9 lambda=   2983.1, rank.max = 3  ==&gt; rank = 1, error = 34.88864
+## 10 lambda=   2711.9, rank.max = 3  ==&gt; rank = 1, error = 32.35624
+## 11 lambda=   2440.7, rank.max = 3  ==&gt; rank = 1, error = 29.82720
+## 12 lambda=   2169.5, rank.max = 3  ==&gt; rank = 1, error = 27.30699
+## 13 lambda=   1898.3, rank.max = 3  ==&gt; rank = 1, error = 24.79524
+## 14 lambda=   1627.2, rank.max = 3  ==&gt; rank = 1, error = 22.30283
+## 15 lambda=     1356, rank.max = 3  ==&gt; rank = 1, error = 19.85598
+## 16 lambda=   1084.8, rank.max = 3  ==&gt; rank = 1, error = 17.48420
+## 17 lambda=   813.58, rank.max = 3  ==&gt; rank = 1, error = 15.22582
+## 18 lambda=   542.38, rank.max = 3  ==&gt; rank = 1, error = 13.18173
+## 19 lambda=   271.19, rank.max = 5  ==&gt; rank = 3, error = 10.51644
+## 20 lambda=        0, rank.max = 7  ==&gt; rank = 5, error = 8.89957</code></pre>
+<pre class="r"><code>results[-1] = mapply(function(x)x/5, results[-1])
+
+aresults[[i]] &lt;- results
 i = i +1
 #-----------------------------------------------------------------------------------
+for(b in 1:5){
+  model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 estimates = naive_MC(as.matrix(model.dat$splits$train))
+if(b &gt; 1) old_results = results
+
 results = list(model = &quot;Naive&quot;)
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
-results$lambda.1 = NA
-results$lambda.2 = NA
+#results$lambda.1 = NA
+#results$lambda.2 = NA
 results$error.test = test_error(estimates[model.dat$masks$test == 0],
                                 model.dat$splits$test@x) |&gt; round(5)
 results$error.train = test_error(estimates[model.dat$masks$test == 1 &amp; model.dat$masks$obs == 1],
@@ -807,51 +1649,53 @@ results$error.train = test_error(estimates[model.dat$masks$test == 1 &amp; model
 results$error.valid = test_error(estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |&gt; round(5)
 results$rank = qr(estimates)$rank
-results</code></pre>
-<pre><code>## $model
-## [1] &quot;Naive&quot;
-## 
-## $time
-## [1] 0
-## 
-## $lambda.1
-## [1] NA
-## 
-## $lambda.2
-## [1] NA
-## 
-## $error.test
-## [1] 45.3654
-## 
-## $error.train
-## [1] 20.36156
-## 
-## $error.valid
-## [1] 45.52984
-## 
-## $rank
-## [1] 193</code></pre>
-<pre class="r"><code>aresults[[i]] &lt;- results
+if(b &gt; 1)
+  results[-1] = mapply(sum, old_results[-1], results[-1])
+}</code></pre>
+<pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.
+## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.
+## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.
+## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.
+## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
+## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
+## all of the same type. By order of hierarchy, the molten data value column will
+## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
+## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
+<pre class="r"><code>results[-1] = mapply(function(x)x/5, results[-1])
+
+aresults[[i]] &lt;- results
 i = i +1
 #---------------------------------------------------------------------------------
 do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kable()</code></pre>
-<table style="width:100%;">
+<table>
 <colgroup>
-<col width="38%" />
-<col width="4%" />
-<col width="8%" />
-<col width="8%" />
-<col width="10%" />
-<col width="11%" />
-<col width="11%" />
-<col width="4%" />
+<col width="46%" />
+<col width="5%" />
+<col width="13%" />
+<col width="14%" />
+<col width="14%" />
+<col width="5%" />
 </colgroup>
 <thead>
 <tr class="header">
 <th align="left">model</th>
 <th align="left">time</th>
-<th align="left">lambda.1</th>
-<th align="left">lambda.2</th>
 <th align="left">error.test</th>
 <th align="left">error.train</th>
 <th align="left">error.valid</th>
@@ -861,39 +1705,31 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <tbody>
 <tr class="odd">
 <td align="left">CASMC_rank_all</td>
-<td align="left">4</td>
-<td align="left">NA</td>
-<td align="left">38.98</td>
+<td align="left">4.6</td>
 <td align="left">8.64099</td>
 <td align="left">7.58195</td>
 <td align="left">7.66626</td>
 <td align="left">6</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_humidity</td>
-<td align="left">4</td>
-<td align="left">NA</td>
-<td align="left">39.252</td>
+<td align="left">CASMC_rank_1:3_</td>
+<td align="left">4.4</td>
 <td align="left">8.58593</td>
 <td align="left">7.56228</td>
 <td align="left">7.66521</td>
 <td align="left">6</td>
 </tr>
 <tr class="odd">
-<td align="left">CASMC_rank_temp</td>
-<td align="left">3</td>
-<td align="left">NA</td>
-<td align="left">0</td>
+<td align="left">CASMC_rank_2_</td>
+<td align="left">4</td>
 <td align="left">8.47672</td>
 <td align="left">7.51128</td>
 <td align="left">7.60102</td>
 <td align="left">5</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_precip</td>
-<td align="left">12</td>
-<td align="left">NA</td>
-<td align="left">0</td>
+<td align="left">CASMC_rank_L2_all_</td>
+<td align="left">18.2</td>
 <td align="left">8.89795</td>
 <td align="left">7.80002</td>
 <td align="left">7.86306</td>
@@ -901,39 +1737,31 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 </tr>
 <tr class="odd">
 <td align="left">CASMC_rank_all_with_time_laplacian</td>
-<td align="left">4</td>
-<td align="left">NA</td>
-<td align="left">38.98</td>
+<td align="left">5</td>
 <td align="left">8.64097</td>
 <td align="left">7.58196</td>
 <td align="left">7.66626</td>
 <td align="left">6</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_humidity_with_time_laplacian</td>
-<td align="left">4</td>
-<td align="left">NA</td>
-<td align="left">39.252</td>
+<td align="left">CASMC_rank_1:3__with_time_laplacian</td>
+<td align="left">4.8</td>
 <td align="left">8.58591</td>
 <td align="left">7.56229</td>
 <td align="left">7.66522</td>
 <td align="left">6</td>
 </tr>
 <tr class="odd">
-<td align="left">CASMC_rank_temp_with_time_laplacian</td>
+<td align="left">CASMC_rank_2__with_time_laplacian</td>
 <td align="left">3</td>
-<td align="left">NA</td>
-<td align="left">0</td>
 <td align="left">8.47667</td>
 <td align="left">7.51128</td>
 <td align="left">7.601</td>
 <td align="left">5</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_precip_with_time_laplacian</td>
-<td align="left">13</td>
-<td align="left">NA</td>
-<td align="left">0</td>
+<td align="left">CASMC_rank_L2_all__with_time_laplacian</td>
+<td align="left">20</td>
 <td align="left">8.89785</td>
 <td align="left">7.80001</td>
 <td align="left">7.86305</td>
@@ -941,19 +1769,15 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 </tr>
 <tr class="odd">
 <td align="left">SoftImpute</td>
-<td align="left">10</td>
-<td align="left">NA</td>
-<td align="left">0</td>
-<td align="left">8.74751</td>
-<td align="left">6.90007</td>
-<td align="left">6.96455</td>
+<td align="left">12.8</td>
+<td align="left">8.90851</td>
+<td align="left">6.90904</td>
+<td align="left">6.96909</td>
 <td align="left">7</td>
 </tr>
 <tr class="even">
 <td align="left">Naive</td>
 <td align="left">0</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
 <td align="left">45.3654</td>
 <td align="left">20.36156</td>
 <td align="left">45.52984</td>

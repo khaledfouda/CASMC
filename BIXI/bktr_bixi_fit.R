@@ -25,11 +25,20 @@ for(sparm in list(list(NULL,NULL,""),
                   )
     ){
 
-  X <- model.dat$X |> scale()
-  X = cbind(X[,1:4]^2)
+  X <- model.dat$X #|> scale()
+  #X = cbind(X[,1:4]^2)
+  #------------------------
+  X <- cbind(
+    #X,
+    scale(X[,1:3])^2,
+    log(X[,1, drop=FALSE]+abs(min(X[,1]))+1)
+    #matrix(X[,4]>0,ncol= 1)
+  )  
+  
+  #---------------------
   cor(X)
-  for(i in 1:5){
-  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=i)$model
+  for(b in 1:5){
+  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
   start_time = Sys.time()
   best_fit = CASMC_cv_rank(
     y_train = model.dat$splits$train,
@@ -64,7 +73,7 @@ for(sparm in list(list(NULL,NULL,""),
   
   #plot(1:ncol(sout$beta), sout$beta[3,])
   
-  if(i>1) old_results = results
+  if(b > 1) old_results = results
   results = list(model = paste0("CASMC_rank_all",sparm[[3]]))
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   #results$lambda.1 = NA#sout$lambda.beta |> round(3)
@@ -78,7 +87,7 @@ for(sparm in list(list(NULL,NULL,""),
                                    model.dat$splits$valid@x) |> round(5)
   
   results$rank = qr(sout$estimates)$rank
-  if(i > 1)
+  if(b > 1)
   results[-1] = mapply(sum, old_results[-1], results[-1])
   }
   results[-1] = mapply(function(x)x/5, results[-1])
@@ -90,8 +99,8 @@ for(sparm in list(list(NULL,NULL,""),
   
   
 X <- X[,1:3]
-  for(i in 1:5){
-    model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=i)$model
+  for(b in 1:5){
+    model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
 best_fit = CASMC_cv_rank(
@@ -123,7 +132,7 @@ sout$M = unsvd(fit1)
 sout$beta =  fit1$beta
 apply(sout$beta, 1, summary) |> print()
 sout$estimates = sout$M + X %*% (sout$beta)
-if(i>1) old_results = results
+if(b > 1) old_results = results
 
 results = list(model = paste0("CASMC_rank_1:3_",sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
@@ -138,7 +147,7 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                 model.dat$splits$valid@x) |> round(5)
 
 results$rank = qr(sout$estimates)$rank
-if(i > 1)
+if(b > 1)
   results[-1] = mapply(sum, old_results[-1], results[-1])
   }
   results[-1] = mapply(function(x)x/5, results[-1])
@@ -150,8 +159,8 @@ i = i +1
 
 X <- X[,2, drop=FALSE]
 
-for(i in 1:5){
-  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=i)$model
+for(b in 1:5){
+  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
 best_fit = CASMC_cv_rank(
@@ -182,7 +191,7 @@ sout = best_fit
 sout$M = unsvd(fit1)
 sout$beta =  fit1$beta
 sout$estimates = sout$M + X %*% (sout$beta)
-if(i>1) old_results = results
+if(b > 1) old_results = results
 
 results = list(model = paste0("CASMC_rank_2_",sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
@@ -197,7 +206,7 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |> round(5)
 
 results$rank = qr(sout$estimates)$rank
-if(i > 1)
+if(b > 1)
   results[-1] = mapply(sum, old_results[-1], results[-1])
 }
 results[-1] = mapply(function(x)x/5, results[-1])
@@ -209,8 +218,8 @@ i = i +1
 X <- model.dat$X |> scale()
 X = cbind(X[,1:4]^2)
 
-for(i in 1:5){
-  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=i)$model
+for(b in 1:5){
+  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
 best_fit = CASMC_cv_L2(
@@ -242,7 +251,7 @@ sout$M = unsvd(fit1)
 sout$beta =  fit1$beta
 apply(sout$beta, 1, summary) |> print()
 sout$estimates = sout$M + X %*% (sout$beta)
-if(i>1) old_results = results
+if(b > 1) old_results = results
 
 results = list(model = paste0("CASMC_rank_L2_all_",sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
@@ -257,7 +266,7 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |> round(5)
 
 results$rank = qr(sout$estimates)$rank
-if(i > 1)
+if(b > 1)
   results[-1] = mapply(sum, old_results[-1], results[-1])
 }
 results[-1] = mapply(function(x)x/5, results[-1])
@@ -269,8 +278,8 @@ i = i +1
 }
 #-------------------------------------------------------------------------------
 # Soft Impute
-for(i in 1:5){
-  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=i)$model
+for(b in 1:5){
+  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 sout <- simpute.cv(
  Y_train = as.matrix(model.dat$splits$train),
@@ -285,7 +294,7 @@ sout <- simpute.cv(
  maxit = 700
 )
 
-if(i>1) old_results = results
+if(b > 1) old_results = results
 
 results = list(model = "SoftImpute")
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
@@ -300,7 +309,7 @@ results$error.valid = test_error(sout$estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |> round(5)
 
 results$rank = sout$rank_M
-if(i > 1)
+if(b > 1)
   results[-1] = mapply(sum, old_results[-1], results[-1])
 }
 results[-1] = mapply(function(x)x/5, results[-1])
@@ -308,11 +317,11 @@ results[-1] = mapply(function(x)x/5, results[-1])
 aresults[[i]] <- results
 i = i +1
 #-----------------------------------------------------------------------------------
-for(i in 1:5){
-  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=i)$model
+for(b in 1:5){
+  model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 estimates = naive_MC(as.matrix(model.dat$splits$train))
-if(i>1) old_results = results
+if(b > 1) old_results = results
 
 results = list(model = "Naive")
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
@@ -326,7 +335,7 @@ results$error.train = test_error(estimates[model.dat$masks$test == 1 & model.dat
 results$error.valid = test_error(estimates[model.dat$masks$valid == 0],
                                  model.dat$splits$valid@x) |> round(5)
 results$rank = qr(estimates)$rank
-if(i > 1)
+if(b > 1)
   results[-1] = mapply(sum, old_results[-1], results[-1])
 }
 results[-1] = mapply(function(x)x/5, results[-1])
