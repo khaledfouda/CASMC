@@ -6,6 +6,63 @@ source("./BIXI/data-raw/bixi_data.R")
 #----
 model.dat <- load_bixi_dat(transpose = T, scale_response = F)$model
 #-----------------
+generate_fake_bixi <- function(dat, r=5, missing_prob=0.9,
+                               informative_cov_prop = 1,
+                               prepare_for_fitting = TRUE,
+                               seed = NULL){
+  if(! is.null(seed)) set.seed(seed)
+X <- dat$X
+k = ncol(X)
+n = nrow(X)
+m = ncol(dat$depart)
+beta_means <- runif(k, 1, 3) * sample(c(-1, 1), k, TRUE)
+beta_vars <- runif(k, 0.5, 1) ^ 2
+beta <-
+  t(mvrnorm(m, beta_means, diag(beta_vars, k, k)))
+U <- matrix(runif(n * r), ncol = r)
+V <- matrix(runif(r * m), nrow = r)
+P_X = X %*% solve(t(X) %*% X) %*% t(X)
+P_bar_X = diag(1, n, n) - P_X
+
+M <- P_bar_X %*% U %*% V
+
+W <- matrix(rbinom(n * m, 1, (1 - missing_prob)) , nrow = n)
+ncov_to_keep = round(informative_cov_prop * k)
+
+if (ncov_to_keep <= 0) {
+  beta <- matrix(0, k, ncol = m)
+} else if (ncov_to_keep < k) {
+  sampled_covars_to_remove <-
+    sample(1:k, k - ncov_to_keep, replace = FALSE)
+  beta[sampled_covars_to_remove,] <- 0
+}
+O <- X %*% beta +  M
+E <-
+  matrix(rnorm(n * m, mean = 0, sd = 1), ncol = m)
+Y <- (O + E) * W
+rank <- qr(O)$rank
+
+fit_data <- NULL
+if (prepare_for_fitting) {
+  fit_data <- list()
+  fit_data$W_valid <- matrix.split.train.test(W, testp = 0.2)
+  train = (Y * fit_data$W_valid)
+  fit_data$train = to_incomplete(train)
+  fit_data$valid = Y[fit_data$W_valid == 0]
+  fit_data$Y = to_incomplete(Y)
+}
+
+return(list(
+  O = O,
+  W = W,
+  X = X,
+  Y = Y,
+  beta = beta,
+  M = M,
+  fit_data = fit_data,
+  rank = rank
+))
+}
 
 #----------------------------------------------------------------------------------
 # apply models:
@@ -14,8 +71,6 @@ model.dat$X[1,]
 aresults <- list()
 i = 1
 
-X_r <- reduced_hat_decomp(model.dat$X, 1)
-X_r$rank
 
 sparm = list(NULL,NULL,"")
 for(sparm in list(list(NULL,NULL,""),
@@ -25,56 +80,35 @@ for(sparm in list(list(NULL,NULL,""),
                   )
     ){
 
-  X <- model.dat$X[,c(1), drop=FALSE]|> scale()
   #X = cbind(X[,1:4]^2)
   #------------------------
-  X <- cbind(
-    #X,
-    scale(X[,1:3])^2,
-    log(X[,1, drop=FALSE]+abs(min(X[,1]))+1)
-    #matrix(X[,4]>0,ncol= 1)
-  )  
-  
-  #-----------
-  ss = svds(X, 2)
-  ifelse(ss$d[1:2] < 1e-5, 0, ss$d[1:2])
-  
-  (ss$u %*% Diagonal(x=ss$d) %*% t(ss$v))[1:5,]
-  unsvd(ss)[1:5,]
-  
-  
-  svd_result <- svds(t(X),3)
-  
-  X_reduced <- unsvd(svd_result)
-  row_contributions <- rowSums(svd_result$u^2)
-  threshold <- sort(row_contributions, decreasing = TRUE)[3]
-  rows_to_keep <- row_contributions >= threshold
-  X_final <- X_reduced
-  X_final[!rows_to_keep, ] <- 0
-  
-  print(X_final[,1:5])
-  
+  # X <- cbind(
+  #   #X,
+  #   scale(X[,1:3])^2,
+  #   log(X[,1, drop=FALSE]+abs(min(X[,1]))+1)
+  #   #matrix(X[,4]>0,ncol= 1)
+  # )  
   
   #---------------------
   cor(X)
   for(b in 1:5){
-  model.dat <- load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
-                             testp = 0.1, validp = 0.2, seed=b)$model
-  
-  X_r = reduced_hat_decomp(model.dat$X,.01)
-  svd(X)$d
-  model.dat$X[1,]
-  dim(X_r$X)
-  X_r$rank
-  X <- model.dat$X[,c(2,3,4,6,7,8,9)]
+  #model.dat <- load_bixi_dat(transpose = T, scale_response = T, seed=b)$model
   start_time = Sys.time()
+  
+  bixi.dat <- load_bixi_dat(transpose = T, scale_covariates = T)$model
+  bixi.dat$X <- bixi.dat$X#[,1:4]
+  model.dat <- generate_fake_bixi(bixi.dat, 15, 0.3)
+  # model.dat <- generate_simulation_rows(300,460,5,7,0.9,FALSE,FALSE,.7,T)
+  X_r <- reduced_hat_decomp(model.dat$X, 1)
+  X_r$rank
+  X <-  X_r$X#model.dat$X#[,c(1), drop=FALSE]|> scale()
   best_fit = CASMC_cv_rank(
-    y_train = model.dat$splits$train,
+    y_train = model.dat$fit_data$train,
     X = X,#[,1:5, drop=FALSE],
     
-    y_valid = model.dat$splits$valid@x,
-    W_valid = model.dat$masks$valid ,
-    y = model.dat$depart,
+    y_valid = model.dat$fit_data$valid,
+    W_valid = model.dat$fit_data$W_valid,
+    y = model.dat$fit_data$Y,
     trace = F,
     max_cores = 30,
     thresh = 1e-6,
@@ -82,11 +116,12 @@ for(sparm in list(list(NULL,NULL,""),
     S.a = sparm[[1]],
     lambda.b = 0.2,
     S.b = sparm[[2]],
+    rank_x = X_r$rank,
     #n.lambda = n.lambda,
-    #rank.limit = rank.limit,
-    maxit = 200,
+    #rank.limit = 30,
+    maxit = 600,
     r_min = 0,
-    rank.init = 7,
+    rank.init = 10,
     rank.step = 4,
     print.best = TRUE,
     seed = 2023,

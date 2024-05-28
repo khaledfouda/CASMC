@@ -11,6 +11,8 @@ load_bixi_dat <-
     function(scale_response = F,
              scale_covariates = F,
              transpose = F,
+             testp = 0.6,
+             validp = 0.2,
              seed = NULL) {
         if(! is.null(seed)) set.seed(seed)
         bixi_folder <- "./BIXI/"
@@ -112,8 +114,37 @@ load_bixi_dat <-
             filter(location %in% locations) |>
             arrange(location) |>
             dplyr::select(-location) |>
+        transmute(
+                  walkscore_sq_scaled = med_scale(walkscore^2),
+                  walkscore_scaled = med_scale(walkscore),
+                  len_minor_road_scaled = med_scale(len_minor_road),
+                  num_restaurants_scaled = med_scale(num_restaurants),
+                  num_restaurants_sq_scaled = med_scale(num_restaurants^2),
+                  capacity_scaled = med_scale(capacity),
+                  area_park_log = log1p(area_park),
+                  len_major_road_scaled = med_scale(len_major_road),
+                  num_other_commercial_scaled = med_scale(num_other_commercial),
+                  num_bus_stations_scaled = med_scale(num_bus_stations),
+                  num_pop_log = log1p(num_pop),
+                  num_university_bin = num_university,
+                  num_metro_stations_log = log1p(num_metro_stations),
+                  num_bus_routes_scaled = med_scale(num_bus_routes),
+                  len_cycle_path_log = log1p(len_cycle_path),
+                  num_bus_routes_sq_scaled = med_scale(num_bus_routes^2)
+                  ) |> 
             as.matrix() ->
             model.dat$X
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         #-----------------------------------------------------------
         # time covariates
@@ -159,11 +190,10 @@ load_bixi_dat <-
         
         masks <- list()
         masks$obs <- as.matrix(model.dat$depart != 0)
-        split_p <- list(test = 0.6, valid = 0.2)
         masks$test <-
-            matrix.split.train.test(masks$obs, split_p$test)
+            matrix.split.train.test(masks$obs, testp)
         masks$valid <-
-            matrix.split.train.test(masks$obs * masks$test, split_p$valid)
+            matrix.split.train.test(masks$obs * masks$test, validp)
         model.dat$masks <-  masks
         
         
