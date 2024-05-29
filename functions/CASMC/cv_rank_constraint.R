@@ -41,12 +41,14 @@ CASMC_cv_rank <-
            max_cores = 8,
            # seed
            seed = NULL) {
+    if(!is.null(seed)) set.seed(seed)
     r_seq <- (max(r_min, 0)):(min(rank_x, r_max))
     num_cores = min(max_cores, length(r_seq))
     print(paste("Running on", num_cores, "cores."))
     Xterms = GetXterms(X)
-    X_r = reduced_hat_decomp(X)
+    X_r = reduced_hat_decomp(X, pct = 0.99)
     results <- mclapply(r_seq, function(r) {
+    fiti <- tryCatch({
       CASMC_cv_nuclear(
         y_train = y_train,
         X = X,
@@ -77,13 +79,14 @@ CASMC_cv_rank <-
         quiet = quiet,
         seed = seed
       )
+    }, error = function(e) list(em=e, error=999999, r=r))
+    fiti
     }, mc.cores = num_cores, mc.cleanup = TRUE)
-    
-    
+
+    sapply(results, function(x) if(!is.null(x$em)) print(x$em))
     best_fit <-
       results[[which.min(sapply(results, function(x)
         x$error))]]
-    
     if (track) {
       sapply(results, function(x)
         print(paste0(

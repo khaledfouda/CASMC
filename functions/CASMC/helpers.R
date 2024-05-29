@@ -1,11 +1,26 @@
-reduced_hat_decomp <- function(X, tol = 1e-2) {
+reduced_hat_decomp <- function(X, tol = 1e-2, pct=NULL) {
    X_svd = fast.svd(X, tol)
+   if(! is.null(pct)){
+      stopifnot(pct >= 0.5 && pct < 1)
+      var_contrib = cumsum(X_svd$d / sum(X_svd$d))
+      n_d <- sum(var_contrib < pct)
+      X_svd$d <- X_svd$d[1:n_d]
+      X_svd$u <- X_svd$u[,1:n_d]
+      X_svd$v <- X_svd$v[,1:n_d]
+   }
    X = X_svd$u %*% (X_svd$d * t(X_svd$v))
    rank = length(X_svd$d)
+   print(paste("Rank of X changed from", min(dim(X)),"to",rank))
    Q <- qr.Q(Matrix::qr(X))
    H <- Q %*% t(Q)
    #svdH <- fast.svd(H, tol)
-   svdH <- irlba(H, nu = rank, nv = rank, tol = tol)
+   svdH <- tryCatch({
+   irlba(H, nu = rank, nv = rank, tol = tol)
+   },
+   error = function(e){
+      message(paste("SvdH:", e))
+      svd_trunc_simple(H, rank)
+   })
    svdH$u = svdH$u
    svdH$v = svdH$d * t(svdH$v)
    svdH$d <- H <- Q <- NULL

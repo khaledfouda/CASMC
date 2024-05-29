@@ -35,38 +35,21 @@ for(sparm in list(list(NULL,NULL,""),
     #matrix(X[,4]>0,ncol= 1)
   )  
   
-  #-----------
-  ss = svds(X, 2)
-  ifelse(ss$d[1:2] < 1e-5, 0, ss$d[1:2])
-  
-  (ss$u %*% Diagonal(x=ss$d) %*% t(ss$v))[1:5,]
-  unsvd(ss)[1:5,]
-  
-  
-  svd_result <- svds(t(X),3)
-  
-  X_reduced <- unsvd(svd_result)
-  row_contributions <- rowSums(svd_result$u^2)
-  threshold <- sort(row_contributions, decreasing = TRUE)[3]
-  rows_to_keep <- row_contributions >= threshold
-  X_final <- X_reduced
-  X_final[!rows_to_keep, ] <- 0
-  
-  print(X_final[,1:5])
-  
-  
   #---------------------
   cor(X)
   for(b in 1:5){
   model.dat <- load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
                              testp = 0.1, validp = 0.2, seed=b)$model
   
-  X_r = reduced_hat_decomp(model.dat$X,.01)
-  svd(X)$d
+  X_r = reduced_hat_decomp(model.dat$X,.01, 0.99)
+  
   model.dat$X[1,]
   dim(X_r$X)
   X_r$rank
-  X <- model.dat$X[,c(2,3,4,6,7,8,9)]
+  X <- model.dat$X[,c(1,2, 3,4,6,7,8)]
+  cumsum(svd(X)$d/sum(svd(X)$d)) 
+  X <- reduced_hat_decomp(X, 0.01, 0.99)$X
+  X <- X_r$X[,1:6]
   start_time = Sys.time()
   best_fit = CASMC_cv_rank(
     y_train = model.dat$splits$train,
@@ -76,7 +59,7 @@ for(sparm in list(list(NULL,NULL,""),
     W_valid = model.dat$masks$valid ,
     y = model.dat$depart,
     trace = F,
-    max_cores = 30,
+    max_cores = 1,
     thresh = 1e-6,
     lambda.a = 0.01,
     S.a = sparm[[1]],
@@ -86,7 +69,7 @@ for(sparm in list(list(NULL,NULL,""),
     #rank.limit = rank.limit,
     maxit = 200,
     r_min = 0,
-    rank.init = 7,
+    rank.init = 2,
     rank.step = 4,
     print.best = TRUE,
     seed = 2023,
@@ -100,6 +83,7 @@ for(sparm in list(list(NULL,NULL,""),
   sout$M = unsvd(fit1)
   sout$beta =  fit1$beta
   apply(sout$beta, 1, summary) |> print()
+  
   sout$estimates = sout$M + X %*% (sout$beta)
   
   hist(sout$beta[1,])

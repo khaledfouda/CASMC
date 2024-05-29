@@ -64,7 +64,7 @@ dat <-
   r = 10,
   k = 10, 
   missing_prob = 0.9,
-  coll = FALSE,
+  coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
   informative_cov_prop = 0.7,
@@ -79,7 +79,7 @@ X_r = reduced_hat_decomp(dat$X, 1e-2)
 
 fit_rank <- CASMC_cv_rank(
  y_train = dat$fit_data$train,
- X = dat$X,
+ X = X_r$X,
  y_valid = dat$fit_data$valid,
  W_valid = dat$fit_data$W_valid,
  y = dat$fit_data$Y,
@@ -105,18 +105,20 @@ fit_rank <- CASMC_cv_rank(
  rank_x = X_r$rank,
  r_min = 0,
  r_max = X_r$rank,
- track_r = TRUE,
- max_cores = 20,
+ track = TRUE,
+ max_cores = 30,
  seed = 2023
 )
-
+fit_rank$fit$beta[,1:4]
+dat$beta[,1:4]
+fit_rank$rank_M
 print_performance(dat, fit_rank$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
 
 
 #' # 2
 fit_l2 <- CASMC_cv_L2(
  y_train = dat$fit_data$train,
- X = dat$X,
+ X = X_r$X,
  y_valid = dat$fit_data$valid,
  W_valid = dat$fit_data$W_valid,
  y = dat$fit_data$Y,
@@ -140,10 +142,12 @@ fit_l2 <- CASMC_cv_L2(
  quiet = FALSE,
  warm = NULL,
  lambda.beta.grid = "default",
- track_beta = TRUE,
+ track = TRUE,
  max_cores = 23,
  seed = 2023
 )
+fit_l2$fit$beta[,1:4]
+dat$beta[,1:4]
 
 print_performance(dat, fit_l2$fit, error_metric$rmse, F, "CASMC(L2)",F,3)
 
@@ -174,7 +178,7 @@ fit_l2_ <- CASMC_cv_L2(
  quiet = FALSE,
  warm = NULL,
  lambda.beta.grid = "default",
- track_beta = TRUE,
+ track = TRUE,
  max_cores = 23,
  seed = 2023
 )

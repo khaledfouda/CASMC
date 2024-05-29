@@ -95,13 +95,16 @@ for(sparm in list(list(NULL,NULL,""),
   #model.dat <- load_bixi_dat(transpose = T, scale_response = T, seed=b)$model
   start_time = Sys.time()
   
-  bixi.dat <- load_bixi_dat(transpose = T, scale_covariates = T)$model
+  bixi.dat <- load_bixi_dat(transpose = F, scale_covariates = F)$model
   bixi.dat$X <- bixi.dat$X#[,1:4]
   model.dat <- generate_fake_bixi(bixi.dat, 15, 0.3)
   # model.dat <- generate_simulation_rows(300,460,5,7,0.9,FALSE,FALSE,.7,T)
-  X_r <- reduced_hat_decomp(model.dat$X, 1)
+  bixi.dat$X[1:3,] |> t() |> as.data.frame() |>  mutate(id=1:ncol(bixi.dat$X)) |>  kable()
+  X <-  model.dat$X[,-c(1,4,12,16)]
+  X_r <- reduced_hat_decomp(X, 1, 0.99)
   X_r$rank
-  X <-  X_r$X#model.dat$X#[,c(1), drop=FALSE]|> scale()
+  X <- X_r$X
+  X[1,]
   best_fit = CASMC_cv_rank(
     y_train = model.dat$fit_data$train,
     X = X,#[,1:5, drop=FALSE],
@@ -110,7 +113,7 @@ for(sparm in list(list(NULL,NULL,""),
     W_valid = model.dat$fit_data$W_valid,
     y = model.dat$fit_data$Y,
     trace = F,
-    max_cores = 30,
+    max_cores = 100,
     thresh = 1e-6,
     lambda.a = 0.01,
     S.a = sparm[[1]],
