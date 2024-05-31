@@ -46,7 +46,7 @@ CASMC_cv_rank <-
     num_cores = min(max_cores, length(r_seq))
     print(paste("Running on", num_cores, "cores."))
     Xterms = GetXterms(X)
-    X_r = reduced_hat_decomp(X, pct = 0.99)
+    svdH = reduced_hat_decomp.H(X)
     results <- mclapply(r_seq, function(r) {
     fiti <- tryCatch({
       CASMC_cv_nuclear(
@@ -56,7 +56,7 @@ CASMC_cv_rank <-
         W_valid = W_valid,
         y = y,
         Xterms = Xterms,
-        X_r = X_r,
+        svdH = svdH,
         r = r,
         error_function = error_function,
         lambda.factor = lambda.factor,

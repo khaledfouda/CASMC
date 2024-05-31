@@ -90,18 +90,22 @@ for(sparm in list(list(NULL,NULL,""),
   # )  
   
   #---------------------
-  cor(X)
+  corr <- cor(model.dat$X) |> round(2); corr[corr<0.5] = diag(corr) = corr[upper.tri(corr)] = NA; corr
+  
   for(b in 1:5){
   #model.dat <- load_bixi_dat(transpose = T, scale_response = T, seed=b)$model
   start_time = Sys.time()
   
   bixi.dat <- load_bixi_dat(transpose = F, scale_covariates = F)$model
-  bixi.dat$X <- bixi.dat$X#[,1:4]
-  model.dat <- generate_fake_bixi(bixi.dat, 15, 0.3)
+  #bixi.dat$X <- apply(bixi.dat$X, 2, function(x) (x - min(x)) / (max(x) - min(x)))
+  model.dat <- generate_fake_bixi(bixi.dat, 15, 0.3,seed = 2023)
+  model.dat$Xo <- model.dat$X
+  model.dat$X <- apply(model.dat$X, 2, function(x) (x - min(x)) / (max(x) - min(x)))
   # model.dat <- generate_simulation_rows(300,460,5,7,0.9,FALSE,FALSE,.7,T)
   bixi.dat$X[1:3,] |> t() |> as.data.frame() |>  mutate(id=1:ncol(bixi.dat$X)) |>  kable()
-  X <-  model.dat$X[,-c(1,4,12,16)]
-  X_r <- reduced_hat_decomp(X, 1, 0.99)
+  X <-  model.dat$Xo[,-c(1,5,9,12,16)]
+  X <- X[,-c(8,11)]
+  X_r <- reduced_hat_decomp(X, .02, 0.99)
   X_r$rank
   X <- X_r$X
   X[1,]
@@ -119,7 +123,6 @@ for(sparm in list(list(NULL,NULL,""),
     S.a = sparm[[1]],
     lambda.b = 0.2,
     S.b = sparm[[2]],
-    rank_x = X_r$rank,
     #n.lambda = n.lambda,
     #rank.limit = 30,
     maxit = 600,
@@ -131,13 +134,13 @@ for(sparm in list(list(NULL,NULL,""),
     track  = T
   )
   best_fit$rank_M
+  apply(best_fit$fit$beta, 1, summary) |> print()
   test_error <- error_metric$rmse
   fit1 = best_fit$fit
   sout = best_fit
   # get estimates and validate
   sout$M = unsvd(fit1)
   sout$beta =  fit1$beta
-  apply(sout$beta, 1, summary) |> print()
   sout$estimates = sout$M + X %*% (sout$beta)
   
   hist(sout$beta[1,])

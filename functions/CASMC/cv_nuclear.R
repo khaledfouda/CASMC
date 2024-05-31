@@ -25,7 +25,7 @@ CASMC_cv_nuclear <-
            r = NULL,
            # provide this if you need rank restriction. if not null, L2 reg will be ignored
            Xterms = NULL,
-           X_r = NULL,
+           svdH = NULL,
            # provide this if you need L2 regularization.
            error_function = error_metric$rmse,
            # tuning parameters for lambda
@@ -56,12 +56,12 @@ CASMC_cv_nuclear <-
            seed = NULL) {
     if (!is.null(seed))
       set.seed(seed)
-    if(is.null(X_r)) 
-      X_r <-  reduced_hat_decomp(X)
+    if(is.null(svdH)) 
+      svdH <-  reduced_hat_decomp.H(X)
     # prepare the sequence of lambda (nuclear regularization hyperparameter)
     if (is.null(lambda.init))
       lambda.init <-
-        lambda0.cov_splr(y_train, X_r$svdH) * lambda.factor
+        lambda0.cov_splr(y_train, svdH) * lambda.factor
     lamseq <- seq(from = lambda.init,
                   to = 0,
                   length = n.lambda)
@@ -81,7 +81,7 @@ CASMC_cv_nuclear <-
     W_valid = NULL
     #------------------------------------------------
     if (is.null(Xterms))
-      Xterms = GetXterms(X_r$X)
+      Xterms = GetXterms(X)
     #-----------------------------------------------------------------------
     rank.max <- rank.init
     best_fit <- list(error = Inf, r = r)
@@ -110,7 +110,7 @@ CASMC_cv_nuclear <-
       
       #--------------------------------------------------------------
       # predicting validation set and xbetas for next fit:
-      XbetaValid = suvC(X_r$X , t(fiti$beta), virow, vpcol)
+      XbetaValid = suvC(X , t(fiti$beta), virow, vpcol)
       MValid = suvC(fiti$u, t(fiti$d * t(fiti$v)), virow, vpcol)
       #--------------------------------------------
       err = error_function(MValid + XbetaValid, y_valid)

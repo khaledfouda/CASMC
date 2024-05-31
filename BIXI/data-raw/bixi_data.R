@@ -181,7 +181,9 @@ load_bixi_dat <-
         }
         if (scale_response) {
             scaled_response <-
-                (model.dat$depart@x - mean(model.dat$depart@x)) / sd(model.dat$depart@x)
+                (model.dat$depart@x - min(model.dat$depart@x)+1e-10) / 
+                (max(model.dat$depart@x) - min(model.dat$depart@x))
+                # (model.dat$depart@x - mean(model.dat$depart@x)) / sd(model.dat$depart@x)
             stopifnot(sum(scaled_response == 0) == 0)
             model.dat$depart@x <- scaled_response
         }

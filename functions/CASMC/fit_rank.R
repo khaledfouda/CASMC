@@ -57,11 +57,7 @@ CASMC_fit_rank <-
     #--------------------------------
     # if svdH is not given but X is given. Only needed if warm.start is not provided
     if (is.null(warm.start) & is.null(svdH)) {
-      svdH = reduced_hat_decomp(X, 1e-2)
-      J_H = svdH$rank
-      svdH = svdH$svdH
-      if (trace.it)
-        print(paste("Rank of H is ", J_H))
+      svdH = reduced_hat_decomp.H(X)
     }
     #---------------------------------------------------
     # if Xterms are not provided but X is given.

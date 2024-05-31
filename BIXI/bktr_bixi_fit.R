@@ -41,15 +41,15 @@ for(sparm in list(list(NULL,NULL,""),
   model.dat <- load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
                              testp = 0.1, validp = 0.2, seed=b)$model
   
-  X_r = reduced_hat_decomp(model.dat$X,.01, 0.99)
-  
-  model.dat$X[1,]
+  X <-  model.dat$X[,-c(1,5,9,12,16)] |> scalers("minmax")
+  X <- X[,-c(5,7,9)]
+  X_r = reduced_hat_decomp(X,.01, 0.99)
+  X = X[,1:5]
+  X[1,]
   dim(X_r$X)
   X_r$rank
-  X <- model.dat$X[,c(1,2, 3,4,6,7,8)]
-  cumsum(svd(X)$d/sum(svd(X)$d)) 
-  X <- reduced_hat_decomp(X, 0.01, 0.99)$X
-  X <- X_r$X[,1:6]
+  #X <- model.dat$X[,c(1,2, 3,4,6,7,8)]
+  
   start_time = Sys.time()
   best_fit = CASMC_cv_rank(
     y_train = model.dat$splits$train,
@@ -59,7 +59,7 @@ for(sparm in list(list(NULL,NULL,""),
     W_valid = model.dat$masks$valid ,
     y = model.dat$depart,
     trace = F,
-    max_cores = 1,
+    max_cores = 30,
     thresh = 1e-6,
     lambda.a = 0.01,
     S.a = sparm[[1]],

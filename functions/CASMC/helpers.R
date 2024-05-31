@@ -26,6 +26,27 @@ reduced_hat_decomp <- function(X, tol = 1e-2, pct=NULL) {
    svdH$d <- H <- Q <- NULL
    return(list(X = X, svdH = svdH, rank = rank))
 }
+
+
+reduced_hat_decomp.H <- function(X) {
+   qrX = Matrix::qr(X)
+   rank = qrX$rank
+   Q <- qr.Q(qrX)
+   H <- Q %*% t(Q)
+   svdH <- tryCatch({
+      irlba(H, nu = rank, nv = rank, tol = 1e-5)
+   },
+   error = function(e){
+      message(paste("SvdH:", e))
+      svd_trunc_simple(H, rank)
+   })
+   list(
+      u = svdH$u,
+      v = svdH$d * t(svdH$v),
+      rank = rank
+   )
+}
+
 UD = function(U, D, n = nrow(U)) {
    U * outer(rep(1, n), D, "*")
 }
@@ -102,6 +123,9 @@ generate_similarity_matrix <- function(n, seed = NULL) {
    diag(matrix) <- 1
    return(matrix)
 }
+
+
+
 
 # sparse_prod <-
 #   function(n,m,r,H,sp,si,sx){
