@@ -26,7 +26,7 @@ reduced_hat_decomp <- function(X, tol = 1e-2, pct=NULL) {
    svdH$d <- H <- Q <- NULL
    return(list(X = X, svdH = svdH, rank = rank))
 }
-
+med_scale <- function(x) (x - median(x)) / IQR(x)
 
 reduced_hat_decomp.H <- function(X) {
    qrX = Matrix::qr(X)

@@ -32,9 +32,11 @@ for(sparm in list(list(NULL,NULL,""),
   #---------------------
   cor(X)
   # for(b in 1:5){
-  model.dat <- load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
-                             testp = 0.1, validp = 0.2, seed=b)$model
+  model.dat <- load_bixi_dat(transpose = F, scale_response = F, scale_covariates = F,
+                             testp = 0.5, validp = 0.2, seed=b)$model
   model.dat$X <- model.dat$X |> scalers("minmax")
+  model.dat$X <- remove_collinear_cols(model.dat$X, 0.7)
+  model.dat$X <- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
   #X <-  model.dat$X[,-c(1,5,9,12,16)] |> scalers("minmax")
   #X <- X[,-c(5,7,9)]
   #X_r = reduced_hat_decomp(X,.01, 0.99)

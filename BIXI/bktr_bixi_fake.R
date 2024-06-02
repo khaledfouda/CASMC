@@ -3,68 +3,131 @@ library(BKTR)
 source("./code_files/import_lib.R")
 source("./BIXI/data-raw/bixi_data.R")
 
-#----
 model.dat <- load_bixi_dat(transpose = T, scale_response = F)$model
 #-----------------
 generate_fake_bixi <- function(dat, r=5, missing_prob=0.9,
                                informative_cov_prop = 1,
                                prepare_for_fitting = TRUE,
+                               beta_is_cor = FALSE,
                                seed = NULL){
   if(! is.null(seed)) set.seed(seed)
-X <- dat$X
-k = ncol(X)
-n = nrow(X)
-m = ncol(dat$depart)
-beta_means <- runif(k, 1, 3) * sample(c(-1, 1), k, TRUE)
-beta_vars <- runif(k, 0.5, 1) ^ 2
-beta <-
-  t(mvrnorm(m, beta_means, diag(beta_vars, k, k)))
-U <- matrix(runif(n * r), ncol = r)
-V <- matrix(runif(r * m), nrow = r)
-P_X = X %*% solve(t(X) %*% X) %*% t(X)
-P_bar_X = diag(1, n, n) - P_X
-
-M <- P_bar_X %*% U %*% V
-
-W <- matrix(rbinom(n * m, 1, (1 - missing_prob)) , nrow = n)
-ncov_to_keep = round(informative_cov_prop * k)
-
-if (ncov_to_keep <= 0) {
-  beta <- matrix(0, k, ncol = m)
-} else if (ncov_to_keep < k) {
-  sampled_covars_to_remove <-
-    sample(1:k, k - ncov_to_keep, replace = FALSE)
-  beta[sampled_covars_to_remove,] <- 0
-}
-O <- X %*% beta +  M
-E <-
-  matrix(rnorm(n * m, mean = 0, sd = 1), ncol = m)
-Y <- (O + E) * W
-rank <- qr(O)$rank
-
-fit_data <- NULL
-if (prepare_for_fitting) {
-  fit_data <- list()
-  fit_data$W_valid <- matrix.split.train.test(W, testp = 0.2)
-  train = (Y * fit_data$W_valid)
-  fit_data$train = to_incomplete(train)
-  fit_data$valid = Y[fit_data$W_valid == 0]
-  fit_data$Y = to_incomplete(Y)
-}
-
-return(list(
-  O = O,
-  W = W,
-  X = X,
-  Y = Y,
-  beta = beta,
-  M = M,
-  fit_data = fit_data,
-  rank = rank
-))
+  X <- dat$X
+  Y <- naive_MC(as.matrix(dat$depart))
+  k = ncol(X)
+  n = nrow(X)
+  m = ncol(dat$depart)
+  if(beta_is_cor){
+    beta <- matrix(0, k, m)
+    for(i in 1:k){
+      for(j in 1:m)
+        beta[i,j] <- cor(X[,i], Y[,j])
+    }
+    
+  }else{
+    beta_means <- runif(k, 1, 3) * sample(c(-1, 1), k, TRUE)
+    beta_vars <- runif(k, 0.5, 1) ^ 2
+    beta <-
+      t(mvrnorm(m, beta_means, diag(beta_vars, k, k)))
+  }
+  U <- matrix(runif(n * r), ncol = r)
+  V <- matrix(runif(r * m), nrow = r)
+  P_X = X %*% solve(t(X) %*% X) %*% t(X)
+  P_bar_X = diag(1, n, n) - P_X
+  
+  M <- P_bar_X %*% U %*% V
+  
+  W <- matrix(rbinom(n * m, 1, (1 - missing_prob)) , nrow = n)
+  ncov_to_keep = round(informative_cov_prop * k)
+  
+  if (ncov_to_keep <= 0) {
+    beta <- matrix(0, k, ncol = m)
+  } else if (ncov_to_keep < k) {
+    sampled_covars_to_remove <-
+      sample(1:k, k - ncov_to_keep, replace = FALSE)
+    beta[sampled_covars_to_remove,] <- 0
+  }
+  O <- X %*% beta +  M
+  E <-
+    matrix(rnorm(n * m, mean = 0, sd = 1), ncol = m)
+  Y <- (O + E) * W
+  rank <- qr(O)$rank
+  
+  fit_data <- NULL
+  if (prepare_for_fitting) {
+    fit_data <- list()
+    fit_data$W_valid <- matrix.split.train.test(W, testp = 0.2)
+    train = (Y * fit_data$W_valid)
+    fit_data$train = to_incomplete(train)
+    fit_data$valid = Y[fit_data$W_valid == 0]
+    fit_data$Y = to_incomplete(Y)
+  }
+  
+  return(list(
+    O = O,
+    W = W,
+    X = X,
+    Y = Y,
+    beta = beta,
+    M = M,
+    fit_data = fit_data,
+    rank = rank
+  ))
 }
 
 #----------------------------------------------------------------------------------
+
+
+bixi.dat <- load_bixi_dat(transpose = F, scale_covariates = F, seed = 2023)$model
+model.dat <- generate_fake_bixi(bixi.dat,r =  15,missing_prob =  0.3,informative_cov_prop = 0.7,
+                                seed = 2023)
+
+case = 1
+for(case in 2:3){
+  
+if(case==0){
+   X <- model.dat$X
+}else if(case==1){
+  X <- model.dat$X |> 
+    scalers("minmax") |> 
+    remove_collinear_cols(thresh=0.7)
+}else if(case==2){
+  X <- remove_collinear_cols(model.dat$X, 0.7)
+}else if(case==3){
+  X <- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
+}
+
+results <- CASMC_var_selection(
+  y_train = model.dat$fit_data$train,
+  y_valid = model.dat$fit_data$valid,
+  Y = model.dat$Y,
+  X = X,
+  W_valid = model.dat$fit_data$W_valid,
+  track = F
+) 
+
+results |> 
+  select(-variables) |> 
+  arrange(validation_error) |> 
+  kable() |> 
+  print()
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#----
 # apply models:
 model.dat$X[1,]
 # CASMC
@@ -91,7 +154,7 @@ for(sparm in list(list(NULL,NULL,""),
   
   #---------------------
   corr <- cor(model.dat$X) |> round(2); corr[corr<0.5] = diag(corr) = corr[upper.tri(corr)] = NA; corr
-  
+  #------------------------------------------------------------------------
   for(b in 1:5){
   #model.dat <- load_bixi_dat(transpose = T, scale_response = T, seed=b)$model
   start_time = Sys.time()
