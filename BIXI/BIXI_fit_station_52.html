@@ -450,17 +450,14 @@ print_performance &lt;-
 #----------------------------------------------
 model.dat &lt;-
   load_bixi_dat(transpose = F, scale_response = F, scale_covariates = F,
-                testp = 0.1, validp = 0.2, seed=2023)$model</code></pre>
+                testp = 0.5, validp = 0.2, seed=2023)$model</code></pre>
 <pre><code>## Warning in melt.data.table((bixi.dat$departures), id.vars = &quot;location&quot;, :
 ## &#39;measure.vars&#39; [2019-04-15, 2019-04-16, 2019-04-17, 2019-04-18, ...] are not
 ## all of the same type. By order of hierarchy, the molten data value column will
 ## be of type &#39;double&#39;. All measure variables not of type &#39;double&#39; will be coerced
 ## too. Check DETAILS in ?melt.data.table for more on coercion.</code></pre>
-<pre><code>## &#39;as(&lt;dgeMatrix&gt;, &quot;dgCMatrix&quot;)&#39; is deprecated.
-## Use &#39;as(., &quot;CsparseMatrix&quot;)&#39; instead.
-## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
 <pre class="r"><code>all_res = data.frame()
-case =4
+case =2
 for (case in 0:4) {
   if (case == 0) {
     X &lt;- model.dat$X
@@ -474,9 +471,7 @@ for (case in 0:4) {
   } else if (case == 3) {
     X &lt;- remove_collinear_cols(model.dat$X, 0.7)
   } else if (case == 4) {
-    X &lt;- model.dat$X |&gt;
-    scalers(&quot;standard&quot;) |&gt;
-      remove_collinear_cols(thresh = 0.7)
+    X &lt;- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
   }
   
   results &lt;- CASMC_var_selection(
@@ -512,292 +507,296 @@ for (case in 0:4) {
 <pre><code>## [1] &quot;Running on 17 cores.&quot;
 ## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
 ## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.6423434162308&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  36.4200074472645&quot;
 ## [1] &quot;Running on 16 cores.&quot;
-## [1] &quot;Best fit: r =  2  - Validation Error:  35.745834242624&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  2  - Validation Error:  37.0242825529152&quot;
 ## [1] &quot;Running on 15 cores.&quot;
-## [1] &quot;Best fit: r =  2  - Validation Error:  35.7196914429623&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0717049787023&quot;
 ## [1] &quot;Running on 14 cores.&quot;
-## [1] &quot;Best fit: r =  2  - Validation Error:  35.7186298267488&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0704196185231&quot;
 ## [1] &quot;Running on 13 cores.&quot;
-## [1] &quot;Best fit: r =  10  - Validation Error:  33.2749723348263&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0473587935038&quot;
 ## [1] &quot;Running on 12 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7902340412289&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.151654691332&quot;
 ## [1] &quot;Running on 11 cores.&quot;
-## [1] &quot;Best fit: r =  8  - Validation Error:  34.7309884045006&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1472504868887&quot;
 ## [1] &quot;Running on 10 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7863374894686&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1464777940404&quot;
 ## [1] &quot;Running on 9 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7700007116852&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1354642025714&quot;
 ## [1] &quot;Running on 8 cores.&quot;
-## [1] &quot;Best fit: r =  2  - Validation Error:  35.6979269117075&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.130813375495&quot;
 ## [1] &quot;Running on 7 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7071929465456&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1261008745789&quot;
 ## [1] &quot;Running on 6 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7150186106904&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  37.0993737088896&quot;
 ## [1] &quot;Running on 5 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7048219523858&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0923347757544&quot;
 ## [1] &quot;Running on 4 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7067803932994&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.086803280974&quot;
 ## [1] &quot;Running on 3 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.6987812842633&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0746644793416&quot;
 ## [1] &quot;Running on 2 cores.&quot;</code></pre>
 <pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
 <pre><code>## 
 ## 
 ## | rank_beta| rank_M|   lambda|  J| validation_error|var_id                                 |
 ## |---------:|------:|--------:|--:|----------------:|:--------------------------------------|
-## |        10|      1| 873.9279|  3|         33.27497|1,2,3,4,5,6,7,8,9,10,11,12             |
-## |         8|      1| 874.3855|  4|         34.73099|1,2,3,4,5,6,7,8,9,10                   |
-## |         1|      1| 940.5086|  2|         35.64234|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 |
-## |         2|      1| 930.3430|  2|         35.69793|1,2,3,4,5,6,7                          |
-## |         0|      1| 935.5128|  2|         35.69878|1,2                                    |
-## |         1|      1| 931.8509|  2|         35.70482|1,2,3,4                                |
-## |         0|      1| 934.3898|  2|         35.70678|1,2,3                                  |
-## |         1|      1| 930.8358|  2|         35.70719|1,2,3,4,5,6                            |
-## |         1|      1| 931.2914|  2|         35.71502|1,2,3,4,5                              |
-## |         2|      1| 922.4461|  2|         35.71863|1,2,3,4,5,6,7,8,9,10,11,12,13          |
-## |         2|      1| 922.3454|  2|         35.71969|1,2,3,4,5,6,7,8,9,10,11,12,13,14       |
-## |         2|      1| 918.2145|  2|         35.74583|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15    |
-## |         0|      1| 925.3808|  2|         35.77000|1,2,3,4,5,6,7,8                        |
-## |         0|      1| 923.1269|  2|         35.78634|1,2,3,4,5,6,7,8,9                      |
-## |         0|      1| 922.5502|  2|         35.79023|1,2,3,4,5,6,7,8,9,10,11                |
+## |         2|      1| 587.7762|  2|         36.42001|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 |
+## |         2|      1| 532.9374|  2|         37.02428|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15    |
+## |         1|      1| 534.8771|  2|         37.04736|1,2,3,4,5,6,7,8,9,10,11,12             |
+## |         1|      1| 532.9435|  2|         37.07042|1,2,3,4,5,6,7,8,9,10,11,12,13          |
+## |         1|      1| 532.9383|  2|         37.07171|1,2,3,4,5,6,7,8,9,10,11,12,13,14       |
+## |         0|      1| 541.3109|  2|         37.07466|1,2                                    |
+## |         0|      1| 540.4713|  2|         37.08680|1,2,3                                  |
+## |         0|      1| 539.9735|  2|         37.09233|1,2,3,4                                |
+## |         2|      1| 538.9868|  2|         37.09937|1,2,3,4,5                              |
+## |         0|      1| 537.1920|  2|         37.12610|1,2,3,4,5,6                            |
+## |         0|      1| 536.7537|  2|         37.13081|1,2,3,4,5,6,7                          |
+## |         0|      1| 536.3274|  2|         37.13546|1,2,3,4,5,6,7,8                        |
+## |         0|      1| 535.3872|  2|         37.14648|1,2,3,4,5,6,7,8,9                      |
+## |         0|      1| 535.3216|  2|         37.14725|1,2,3,4,5,6,7,8,9,10                   |
+## |         0|      1| 534.9058|  2|         37.15165|1,2,3,4,5,6,7,8,9,10,11                |
 ##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA(10) NaN( 2) 23.227 24.118 NaN
+## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
 ## [1] &quot;Running on 17 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  34.2203123865559&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  36.5625201542423&quot;
 ## [1] &quot;Running on 16 cores.&quot;
 ## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.815614013011&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1712987025593&quot;
 ## [1] &quot;Running on 15 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7839386924629&quot;
-## [1] &quot;Running on 14 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7833202078764&quot;
-## [1] &quot;Running on 13 cores.&quot;
-## [1] &quot;Best fit: r =  4  - Validation Error:  28.2152231538577&quot;
-## [1] &quot;Running on 12 cores.&quot;
-## [1] &quot;Best fit: r =  5  - Validation Error:  32.9680064290705&quot;
-## [1] &quot;Running on 11 cores.&quot;
-## [1] &quot;Best fit: r =  5  - Validation Error:  27.3945051987242&quot;
-## [1] &quot;Running on 10 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7751745693709&quot;
-## [1] &quot;Running on 9 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.756693545421&quot;
-## [1] &quot;Running on 8 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7210037498951&quot;
-## [1] &quot;Running on 7 cores.&quot;
 ## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7157404827286&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1712142771596&quot;
+## [1] &quot;Running on 14 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1711936366502&quot;
+## [1] &quot;Running on 13 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1449171819702&quot;
+## [1] &quot;Running on 12 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1446818298946&quot;
+## [1] &quot;Running on 11 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1366518361033&quot;
+## [1] &quot;Running on 10 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1356096181234&quot;
+## [1] &quot;Running on 9 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1232331196938&quot;
+## [1] &quot;Running on 8 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1167047376297&quot;
+## [1] &quot;Running on 7 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.11014725286&quot;
 ## [1] &quot;Running on 6 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.713383843803&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0890991259687&quot;
 ## [1] &quot;Running on 5 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7088127625285&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0763532722702&quot;
 ## [1] &quot;Running on 4 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.6921729980395&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0703572230557&quot;
 ## [1] &quot;Running on 3 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.6872571297541&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0642427823922&quot;
+## [1] &quot;Running on 2 cores.&quot;</code></pre>
+<pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
+<pre><code>## 
+## 
+## | rank_beta| rank_M|   lambda|  J| validation_error|var_id                                 |
+## |---------:|------:|--------:|--:|----------------:|:--------------------------------------|
+## |         0|      1| 586.0973|  2|         36.56252|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 |
+## |         0|      1| 542.2549|  2|         37.06424|1,2                                    |
+## |         0|      1| 541.7060|  2|         37.07036|1,2,3                                  |
+## |         0|      1| 541.1657|  2|         37.07635|1,2,3,4                                |
+## |         0|      1| 540.2755|  2|         37.08910|1,2,3,4,5                              |
+## |         0|      1| 538.3859|  2|         37.11015|1,2,3,4,5,6                            |
+## |         0|      1| 538.0266|  2|         37.11670|1,2,3,4,5,6,7                          |
+## |         0|      1| 537.4297|  2|         37.12323|1,2,3,4,5,6,7,8                        |
+## |         0|      1| 536.3694|  2|         37.13561|1,2,3,4,5,6,7,8,9                      |
+## |         0|      1| 536.2805|  2|         37.13665|1,2,3,4,5,6,7,8,9,10                   |
+## |         0|      1| 535.5382|  2|         37.14468|1,2,3,4,5,6,7,8,9,10,11                |
+## |         0|      1| 535.5056|  2|         37.14492|1,2,3,4,5,6,7,8,9,10,11,12             |
+## |         0|      1| 533.3595|  2|         37.17119|1,2,3,4,5,6,7,8,9,10,11,12,13          |
+## |         0|      1| 533.3543|  2|         37.17121|1,2,3,4,5,6,7,8,9,10,11,12,13,14       |
+## |         0|      1| 533.3508|  2|         37.17130|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15    |
+##       Metric    model  XBeta       M   test  train   Y
+## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## Compare row 1  and column  2 with corr  0.982 
+##   Means:  0.265 vs 0.174 so flagging column 1 
+## Compare row 4  and column  5 with corr  0.911 
+##   Means:  0.23 vs 0.165 so flagging column 4 
+## Compare row 14  and column  16 with corr  0.896 
+##   Means:  0.25 vs 0.152 so flagging column 14 
+## All correlations &lt;= 0.7 
+## [1] &quot;Running on 14 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1592633364793&quot;
+## [1] &quot;Running on 13 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1592590782384&quot;
+## [1] &quot;Running on 12 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1592153570317&quot;
+## [1] &quot;Running on 11 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.133357780254&quot;
+## [1] &quot;Running on 10 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.132935276826&quot;
+## [1] &quot;Running on 9 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1200735667211&quot;
+## [1] &quot;Running on 8 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.1041369968653&quot;
+## [1] &quot;Running on 7 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0955271702872&quot;
+## [1] &quot;Running on 6 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0789046793241&quot;
+## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0776816065074&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.07767261641&quot;
+## [1] &quot;Running on 3 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0673422569402&quot;
+## [1] &quot;Running on 2 cores.&quot;</code></pre>
+<pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
+<pre><code>## 
+## 
+## | rank_beta| rank_M|   lambda|  J| validation_error|var_id                        |
+## |---------:|------:|--------:|--:|----------------:|:-----------------------------|
+## |         0|      1| 541.9670|  2|         37.06734|1,2                           |
+## |         0|      1| 541.0385|  2|         37.07767|1,2,3                         |
+## |         0|      1| 541.0310|  2|         37.07768|1,2,3,4                       |
+## |         0|      1| 540.9088|  2|         37.07890|1,2,3,4,5                     |
+## |         0|      1| 539.6510|  2|         37.09553|1,2,3,4,5,6                   |
+## |         0|      1| 538.9106|  2|         37.10414|1,2,3,4,5,6,7                 |
+## |         0|      1| 537.7438|  2|         37.12007|1,2,3,4,5,6,7,8               |
+## |         0|      1| 536.6000|  2|         37.13294|1,2,3,4,5,6,7,8,9             |
+## |         0|      1| 536.5534|  2|         37.13336|1,2,3,4,5,6,7,8,9,10          |
+## |         0|      1| 534.4485|  2|         37.15922|1,2,3,4,5,6,7,8,9,10,11       |
+## |         0|      1| 534.4469|  2|         37.15926|1,2,3,4,5,6,7,8,9,10,11,12    |
+## |         0|      1| 534.4433|  2|         37.15926|1,2,3,4,5,6,7,8,9,10,11,12,13 |
+##       Metric    model  XBeta       M   test  train   Y
+## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
+## Compare row 1  and column  2 with corr  0.982 
+##   Means:  0.265 vs 0.174 so flagging column 1 
+## Compare row 4  and column  5 with corr  0.911 
+##   Means:  0.23 vs 0.165 so flagging column 4 
+## Compare row 14  and column  16 with corr  0.896 
+##   Means:  0.25 vs 0.152 so flagging column 14 
+## All correlations &lt;= 0.7 
+## [1] &quot;Running on 14 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  2  - Validation Error:  37.0433666570839&quot;
+## [1] &quot;Running on 13 cores.&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  37.0407312886123&quot;
+## [1] &quot;Running on 12 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0575568560646&quot;
+## [1] &quot;Running on 11 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0371067547744&quot;
+## [1] &quot;Running on 10 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.139853196833&quot;
+## [1] &quot;Running on 9 cores.&quot;
+## [1] &quot;Best fit: r =  2  - Validation Error:  37.1207206357394&quot;
+## [1] &quot;Running on 8 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0889370918486&quot;
+## [1] &quot;Running on 7 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0821071902774&quot;
+## [1] &quot;Running on 6 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0625521335575&quot;
+## [1] &quot;Running on 5 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.075085425289&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  1  - Validation Error:  37.0708067775874&quot;
+## [1] &quot;Running on 3 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  37.0852563623679&quot;
+## [1] &quot;Running on 2 cores.&quot;</code></pre>
+<pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
+<pre><code>## 
+## 
+## | rank_beta| rank_M|   lambda|  J| validation_error|var_id                        |
+## |---------:|------:|--------:|--:|----------------:|:-----------------------------|
+## |         1|      1| 535.9192|  2|         37.03711|1,2,3,4,5,6,7,8,9,10          |
+## |         2|      1| 533.9865|  2|         37.04073|1,2,3,4,5,6,7,8,9,10,11,12    |
+## |         2|      1| 533.9826|  2|         37.04337|1,2,3,4,5,6,7,8,9,10,11,12,13 |
+## |         1|      1| 533.9907|  2|         37.05756|1,2,3,4,5,6,7,8,9,10,11       |
+## |         1|      1| 539.3206|  2|         37.06255|1,2,3,4,5                     |
+## |         1|      1| 539.5234|  2|         37.07081|1,2,3                         |
+## |         1|      1| 539.5226|  2|         37.07509|1,2,3,4                       |
+## |         1|      1| 538.3707|  2|         37.08211|1,2,3,4,5,6                   |
+## |         0|      1| 540.5983|  2|         37.08526|1,2                           |
+## |         1|      1| 537.8066|  2|         37.08894|1,2,3,4,5,6,7                 |
+## |         2|      1| 536.7665|  2|         37.12072|1,2,3,4,5,6,7,8               |
+## |         0|      1| 535.9676|  2|         37.13985|1,2,3,4,5,6,7,8,9             |
+##       Metric    model  XBeta       M   test  train   Y
+## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
+## 4 rmse(rank) CASMC(3) NA( 1) NaN( 1) 12.901 28.031 NaN
+## [1] &quot;Rank of X changed from 16 to 3&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.4726524451375&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  1  - Validation Error:  30.8006730692151&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.8771152920719&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.9597835212658&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  30.2053304333382&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.2333427883627&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  30.1737842336948&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.2852492428302&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.5313957247015&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  30.4201008888601&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.3199418561096&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  29.1784538382751&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  36.9401596200982&quot;
+## [1] &quot;Running on 4 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  36.9758008554783&quot;
+## [1] &quot;Running on 3 cores.&quot;
+## [1] &quot;Best fit: r =  0  - Validation Error:  36.965364496865&quot;
 ## [1] &quot;Running on 2 cores.&quot;</code></pre>
 <pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
 <pre><code>## 
 ## 
 ## | rank_beta| rank_M|    lambda|  J| validation_error|var_id                                 |
 ## |---------:|------:|---------:|--:|----------------:|:--------------------------------------|
-## |         5|      1|  827.1916|  3|         27.39451|1,2,3,4,5,6,7,8,9,10                   |
-## |         4|      1|  923.5366|  2|         28.21522|1,2,3,4,5,6,7,8,9,10,11,12             |
-## |         5|      2|  875.0042|  2|         32.96801|1,2,3,4,5,6,7,8,9,10,11                |
-## |         0|      1| 1148.6061|  2|         34.22031|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 |
-## |         0|      1|  937.1487|  2|         35.68726|1,2                                    |
-## |         0|      1|  936.4664|  2|         35.69217|1,2,3                                  |
-## |         0|      1|  934.0994|  2|         35.70881|1,2,3,4                                |
-## |         0|      1|  933.4604|  2|         35.71338|1,2,3,4,5                              |
-## |         0|      1|  933.1138|  2|         35.71574|1,2,3,4,5,6                            |
-## |         0|      1|  932.3600|  2|         35.72100|1,2,3,4,5,6,7                          |
-## |         0|      1|  927.2705|  2|         35.75669|1,2,3,4,5,6,7,8                        |
-## |         0|      1|  924.7213|  2|         35.77517|1,2,3,4,5,6,7,8,9                      |
-## |         0|      1|  923.5191|  2|         35.78332|1,2,3,4,5,6,7,8,9,10,11,12,13          |
-## |         0|      1|  923.4234|  2|         35.78394|1,2,3,4,5,6,7,8,9,10,11,12,13,14       |
-## |         0|      1|  918.8879|  2|         35.81561|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15    |
+## |         0|      1| 1263.4557|  1|         29.17845|1,2,3,4,5                              |
+## |         0|      1| 1258.4670|  1|         29.23334|1,2,3,4,5,6,7,8,9,10,11                |
+## |         0|      1| 1253.4162|  1|         29.28525|1,2,3,4,5,6,7,8,9                      |
+## |         0|      1| 1250.0539|  1|         29.31994|1,2,3,4,5,6                            |
+## |         0|      1| 1235.5852|  1|         29.47265|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 |
+## |         0|      1| 1229.9169|  1|         29.53140|1,2,3,4,5,6,7,8                        |
+## |         0|      1| 1197.4054|  1|         29.87712|1,2,3,4,5,6,7,8,9,10,11,12,13,14       |
+## |         0|      1| 1189.6010|  1|         29.95978|1,2,3,4,5,6,7,8,9,10,11,12,13          |
+## |         0|      1| 1169.5632|  1|         30.17378|1,2,3,4,5,6,7,8,9,10                   |
+## |         0|      1| 1166.4781|  1|         30.20533|1,2,3,4,5,6,7,8,9,10,11,12             |
+## |         0|      1| 1146.4779|  1|         30.42010|1,2,3,4,5,6,7                          |
+## |         1|      1| 1109.9860|  1|         30.80067|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15    |
+## |         0|      1|  551.3971|  2|         36.94016|1,2,3,4                                |
+## |         0|      1|  550.1859|  2|         36.96536|1,2                                    |
+## |         0|      1|  549.5029|  2|         36.97580|1,2,3                                  |
 ##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA(10) NaN( 2) 23.227 24.118 NaN
-## 2 rmse(rank) CASMC(1) NA( 5) NaN( 2) 31.755 30.877 NaN
-## Compare row 1  and column  2 with corr  0.982 
-##   Means:  0.265 vs 0.174 so flagging column 1 
-## Compare row 4  and column  5 with corr  0.911 
-##   Means:  0.23 vs 0.165 so flagging column 4 
-## Compare row 14  and column  16 with corr  0.896 
-##   Means:  0.25 vs 0.152 so flagging column 14 
-## All correlations &lt;= 0.7 
-## [1] &quot;Running on 14 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.792264132637&quot;
-## [1] &quot;Running on 13 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7922329068545&quot;
-## [1] &quot;Running on 12 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7616017501297&quot;
-## [1] &quot;Running on 11 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7610208996318&quot;
-## [1] &quot;Running on 10 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7603144015367&quot;
-## [1] &quot;Running on 9 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7512676973816&quot;
-## [1] &quot;Running on 8 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7303278639229&quot;
-## [1] &quot;Running on 7 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7162251096022&quot;
-## [1] &quot;Running on 6 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7160048834975&quot;
-## [1] &quot;Running on 5 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7073651594999&quot;
-## [1] &quot;Running on 4 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.706344411975&quot;
-## [1] &quot;Running on 3 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.6915662719815&quot;
-## [1] &quot;Running on 2 cores.&quot;</code></pre>
-<pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
-<pre><code>## 
-## 
-## | rank_beta| rank_M|   lambda|  J| validation_error|var_id                        |
-## |---------:|------:|--------:|--:|----------------:|:-----------------------------|
-## |         0|      1| 936.5654|  2|         35.69157|1,2                           |
-## |         0|      1| 934.4643|  2|         35.70634|1,2,3                         |
-## |         0|      1| 934.3035|  2|         35.70737|1,2,3,4                       |
-## |         0|      1| 933.0684|  2|         35.71600|1,2,3,4,5                     |
-## |         0|      1| 933.0388|  2|         35.71623|1,2,3,4,5,6                   |
-## |         0|      1| 931.0975|  2|         35.73033|1,2,3,4,5,6,7                 |
-## |         0|      1| 928.1462|  2|         35.75127|1,2,3,4,5,6,7,8               |
-## |         0|      1| 926.8586|  2|         35.76031|1,2,3,4,5,6,7,8,9             |
-## |         0|      1| 926.7436|  2|         35.76102|1,2,3,4,5,6,7,8,9,10          |
-## |         0|      1| 926.6471|  2|         35.76160|1,2,3,4,5,6,7,8,9,10,11       |
-## |         0|      1| 922.2717|  2|         35.79223|1,2,3,4,5,6,7,8,9,10,11,12    |
-## |         0|      1| 922.2659|  2|         35.79226|1,2,3,4,5,6,7,8,9,10,11,12,13 |
-##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA(10) NaN( 2) 23.227 24.118 NaN
-## 2 rmse(rank) CASMC(1) NA( 5) NaN( 2) 31.755 30.877 NaN
-## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 13.056 17.017 NaN
-## Compare row 1  and column  2 with corr  0.982 
-##   Means:  0.265 vs 0.174 so flagging column 1 
-## Compare row 4  and column  5 with corr  0.911 
-##   Means:  0.23 vs 0.165 so flagging column 4 
-## Compare row 14  and column  16 with corr  0.896 
-##   Means:  0.25 vs 0.152 so flagging column 14 
-## All correlations &lt;= 0.7 
-## [1] &quot;Running on 14 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  2  - Validation Error:  35.7269779345357&quot;
-## [1] &quot;Running on 13 cores.&quot;
-## [1] &quot;Best fit: r =  2  - Validation Error:  35.7277355197886&quot;
-## [1] &quot;Running on 12 cores.&quot;
-## [1] &quot;Best fit: r =  2  - Validation Error:  35.6987446293823&quot;
-## [1] &quot;Running on 11 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7008260230566&quot;
-## [1] &quot;Running on 10 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7680924724344&quot;
-## [1] &quot;Running on 9 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.762291561363&quot;
-## [1] &quot;Running on 8 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7201880275109&quot;
-## [1] &quot;Running on 7 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7130097146811&quot;
-## [1] &quot;Running on 6 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7127468515992&quot;
-## [1] &quot;Running on 5 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.7023500004388&quot;
-## [1] &quot;Running on 4 cores.&quot;
-## [1] &quot;Best fit: r =  1  - Validation Error:  35.712957597398&quot;
-## [1] &quot;Running on 3 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  35.7067677762818&quot;
-## [1] &quot;Running on 2 cores.&quot;</code></pre>
-<pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
-<pre><code>## 
-## 
-## | rank_beta| rank_M|   lambda|  J| validation_error|var_id                        |
-## |---------:|------:|--------:|--:|----------------:|:-----------------------------|
-## |         2|      1| 925.4939|  2|         35.69874|1,2,3,4,5,6,7,8,9,10,11       |
-## |         1|      1| 925.6197|  2|         35.70083|1,2,3,4,5,6,7,8,9,10          |
-## |         1|      1| 931.7083|  2|         35.70235|1,2,3,4                       |
-## |         0|      1| 934.3987|  2|         35.70677|1,2                           |
-## |         1|      1| 930.8993|  2|         35.71275|1,2,3,4,5                     |
-## |         1|      1| 932.0023|  2|         35.71296|1,2,3                         |
-## |         1|      1| 930.8496|  2|         35.71301|1,2,3,4,5,6                   |
-## |         1|      1| 929.2552|  2|         35.72019|1,2,3,4,5,6,7                 |
-## |         2|      1| 921.4455|  2|         35.72698|1,2,3,4,5,6,7,8,9,10,11,12,13 |
-## |         2|      1| 921.4515|  2|         35.72774|1,2,3,4,5,6,7,8,9,10,11,12    |
-## |         0|      1| 926.5614|  2|         35.76229|1,2,3,4,5,6,7,8               |
-## |         0|      1| 925.7397|  2|         35.76809|1,2,3,4,5,6,7,8,9             |
-##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA(10) NaN( 2) 23.227 24.118 NaN
-## 2 rmse(rank) CASMC(1) NA( 5) NaN( 2) 31.755 30.877 NaN
-## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 13.056 17.017 NaN
-## 4 rmse(rank) CASMC(3) NA( 2) NaN( 1) 13.154 17.001 NaN
-## Compare row 1  and column  2 with corr  0.982 
-##   Means:  0.265 vs 0.174 so flagging column 1 
-## Compare row 4  and column  5 with corr  0.911 
-##   Means:  0.23 vs 0.165 so flagging column 4 
-## Compare row 14  and column  16 with corr  0.896 
-##   Means:  0.25 vs 0.152 so flagging column 14 
-## All correlations &lt;= 0.7 
-## [1] &quot;Running on 14 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.1620780139598&quot;
-## [1] &quot;Running on 13 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.1620633727489&quot;
-## [1] &quot;Running on 12 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.1526662339843&quot;
-## [1] &quot;Running on 11 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.1520324468764&quot;
-## [1] &quot;Running on 10 cores.&quot;
-## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0753364481524&quot;
-## [1] &quot;Running on 9 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0752922683767&quot;
-## [1] &quot;Running on 8 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0725437766934&quot;
-## [1] &quot;Running on 7 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0672704713767&quot;
-## [1] &quot;Running on 6 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0663127750785&quot;
-## [1] &quot;Running on 5 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0655653853812&quot;
-## [1] &quot;Running on 4 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0609947540486&quot;
-## [1] &quot;Running on 3 cores.&quot;
-## [1] &quot;Best fit: r =  0  - Validation Error:  27.0538368486231&quot;
-## [1] &quot;Running on 2 cores.&quot;</code></pre>
-<pre><code>## Variable Selection (i= 1 ): Error in if (n &gt; EDGE.RATIO * p) {: argument is of length zero</code></pre>
-<pre><code>## 
-## 
-## | rank_beta| rank_M|   lambda|  J| validation_error|var_id                        |
-## |---------:|------:|--------:|--:|----------------:|:-----------------------------|
-## |         0|      1| 2255.479|  2|         27.05384|1,2                           |
-## |         0|      1| 2254.302|  2|         27.06099|1,2,3                         |
-## |         0|      1| 2253.535|  2|         27.06557|1,2,3,4                       |
-## |         0|      1| 2253.412|  2|         27.06631|1,2,3,4,5                     |
-## |         0|      1| 2253.249|  2|         27.06727|1,2,3,4,5,6                   |
-## |         0|      1| 2252.401|  2|         27.07254|1,2,3,4,5,6,7                 |
-## |         0|      1| 2251.957|  2|         27.07529|1,2,3,4,5,6,7,8               |
-## |         0|      1| 2251.950|  2|         27.07534|1,2,3,4,5,6,7,8,9             |
-## |         0|      1| 2239.165|  2|         27.15203|1,2,3,4,5,6,7,8,9,10          |
-## |         0|      1| 2239.063|  2|         27.15267|1,2,3,4,5,6,7,8,9,10,11       |
-## |         0|      1| 2237.498|  2|         27.16206|1,2,3,4,5,6,7,8,9,10,11,12    |
-## |         0|      1| 2237.496|  2|         27.16208|1,2,3,4,5,6,7,8,9,10,11,12,13 |
-##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA(10) NaN( 2) 23.227 24.118 NaN
-## 2 rmse(rank) CASMC(1) NA( 5) NaN( 2) 31.755 30.877 NaN
-## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 13.056 17.017 NaN
-## 4 rmse(rank) CASMC(3) NA( 2) NaN( 1) 13.154 17.001 NaN
-## 5 rmse(rank) CASMC(4) NA( 0) NaN( 1) 21.240 21.764 NaN</code></pre>
+## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
+## 4 rmse(rank) CASMC(3) NA( 1) NaN( 1) 12.901 28.031 NaN
+## 5 rmse(rank) CASMC(4) NA( 0) NaN( 1) 19.191 24.495 NaN</code></pre>
 <pre class="r"><code>simpute_fit &lt;- simpute.cv(
   Y_train = as.matrix(model.dat$splits$train),
   y_valid = model.dat$splits$valid,
@@ -836,17 +835,15 @@ for (case in 0:4) {
 ## Warning in r - e2: longer object length is not a multiple of shorter object
 ## length
 ## Warning in r - e2: longer object length is not a multiple of shorter object
-## length
-## Warning in r - e2: longer object length is not a multiple of shorter object
 ## length</code></pre>
 <pre><code>## Performance didn&#39;t improve for the last 5 iterations.$error
-## [1] 17.34429
+## [1] 13.1887
 ## 
 ## $rank_M
 ## [1] 1
 ## 
 ## $lambda
-## [1] 7861.144
+## [1] 4734.564
 ## 
 ## $rank.max
 ## [1] 3</code></pre>
@@ -871,12 +868,12 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 ## 
 ## Metric       model        test        train     
 ## -----------  -----------  ----------  ----------
-## rmse(rank)   CASMC(2)     [1]13.056   [2]17.017 
-## rmse(rank)   CASMC(3)     [2]13.154   [1]17.001 
-## rmse(rank)   CASMC(4)     [3]21.240   [3]21.764 
-## rmse(rank)   CASMC(0)     [4]23.227   [4]24.118 
-## rmse(rank)   CASMC(1)     [5]31.755   [5]30.877 
-## rmse(rank)   SoftImpute   [1]33.050   [1]31.523</code></pre>
+## rmse(rank)   CASMC(2)     [1]12.820   [1]28.043 
+## rmse(rank)   CASMC(3)     [2]12.901   [5]28.031 
+## rmse(rank)   CASMC(1)     [3]13.161   [4]27.759 
+## rmse(rank)   CASMC(0)     [4]13.323   [3]27.677 
+## rmse(rank)   CASMC(4)     [5]19.191   [1]24.495 
+## rmse(rank)   SoftImpute   [1]35.197   [2]26.002</code></pre>
 <pre class="r"><code># 
 # 
 # 

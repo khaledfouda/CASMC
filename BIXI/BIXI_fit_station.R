@@ -62,11 +62,11 @@ print_performance <-
 #----------------------------------------------
 model.dat <-
   load_bixi_dat(transpose = F, scale_response = F, scale_covariates = F,
-                testp = 0.5, validp = 0.2, seed=2023)$model
+                testp = 0.1, validp = 0.2, seed=2023)$model
 
 
 all_res = data.frame()
-case =2
+case =4
 for (case in 0:4) {
   if (case == 0) {
     X <- model.dat$X
@@ -80,7 +80,9 @@ for (case in 0:4) {
   } else if (case == 3) {
     X <- remove_collinear_cols(model.dat$X, 0.7)
   } else if (case == 4) {
-    X <- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
+    X <- model.dat$X |>
+    scalers("standard") |>
+      remove_collinear_cols(thresh = 0.7)
   }
   
   results <- CASMC_var_selection(
