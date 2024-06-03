@@ -4,7 +4,170 @@ source("./code_files/import_lib.R")
 source("./BIXI/data-raw/bixi_data.R")
 
 #----------------------------------------------------------------------------------
-# CASMC
+print_performance <-
+  function(inp,
+           outp,
+           test_error = error_metric$rmse,
+           mao = FALSE,
+           name = "",
+           showres = T,
+           rdig = 4) {
+    error_function_name <-
+      names(which(sapply(error_metric, identical, test_error)))
+    
+    if (mao) {
+      M = outp$M
+      O = outp$estimates
+    } else{
+      M = outp$u %*% (outp$d * t(outp$v))
+      O = M + outp$X %*% outp$beta
+    }
+    
+    error_xbeta <- error_M <- rank_beta <- rank_M <- NA
+    if (!is.null(outp$beta))
+      error_xbeta <-
+      tryCatch(round(test_error(outp$X %*% outp$beta, inp$X %*% inp$beta), rdig),error=function(e)NA)
+    if (!is.null(M))
+      error_M <- 
+      tryCatch(round(test_error(M, inp$M), rdig),error=function(e)NA)
+    error_test <-
+      tryCatch(round(test_error(O[inp$masks$test == 0], inp$splits$test[inp$masks$test==0]), rdig),error=function(e)NA)
+    error_train <-
+      tryCatch(round(test_error(O[inp$masks$obs != 0], inp$depart[inp$masks$obs != 0]), rdig),error=function(e)NA)
+    error_Y <-
+      tryCatch(round(test_error(O[inp$W != 0], inp$Y[inp$W != 0]), rdig),error=function(e)NA)
+    
+    if (!is.null(outp$beta))
+      rank_beta <- qr(outp$beta)$rank
+    if (!is.null(M))
+      rank_M <- qr(M)$rank
+    
+    result_df <- data.frame(
+      Metric = c(paste0(error_function_name, "(rank)")),
+      model = name,
+      XBeta = tryCatch(sprintf(paste0("%.", rdig, "f(%2d)"), error_xbeta, rank_beta),error=function(e)NA),
+      M = tryCatch(sprintf(paste0("%.", rdig, "f(%2d)"), error_M, rank_M),error=function(e)NA),
+      test = tryCatch(sprintf(paste0("%.", rdig, "f"), error_test),error=function(e)NA),
+      train = tryCatch(sprintf(paste0("%.", rdig, "f"), error_train),error=function(e)NA),
+      Y = tryCatch(sprintf(paste0("%.", rdig, "f"), error_Y),error=function(e)NA)
+    )
+    
+    if (showres) {
+      print(knitr::kable(result_df, format = "simple"))
+    } else
+      return(result_df)
+  }
+
+
+#----------------------------------------------
+model.dat <-
+  load_bixi_dat(transpose = F, scale_response = F, scale_covariates = F,
+                testp = 0.5, validp = 0.2, seed=2023)$model
+
+
+all_res = data.frame()
+case =2
+for (case in 0:4) {
+  if (case == 0) {
+    X <- model.dat$X
+  } else if (case == 1) {
+    X <- model.dat$X |>
+      scalers("minmax")
+  } else if (case == 2) {
+    X <- model.dat$X |>
+      scalers("minmax") |>
+      remove_collinear_cols(thresh = 0.7)
+  } else if (case == 3) {
+    X <- remove_collinear_cols(model.dat$X, 0.7)
+  } else if (case == 4) {
+    X <- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
+  }
+  
+  results <- CASMC_var_selection(
+    y_train = model.dat$splits$train,
+    y_valid = model.dat$splits$valid,
+    Y = model.dat$depart,
+    X = X,
+    W_valid = model.dat$masks$valid,
+    track = F,
+    return_best_model = TRUE,
+  )
+  
+  results$res |>
+    select(-variables) |>
+    arrange(validation_error) |>
+    kable() |>
+    print()
+  fiti <- results$fit$fit
+  fiti$X <- results$fit$X
+  
+  all_res <- rbind(all_res,
+                   print_performance(
+                     model.dat,
+                     fiti,
+                     error_metric$rmse,
+                     F,
+                     paste0("CASMC(", case, ")"),
+                     F,
+                     3
+                   ))
+  print(all_res)
+}
+
+
+simpute_fit <- simpute.cv(
+  Y_train = as.matrix(model.dat$fit_data$train),
+  y_valid = model.dat$fit_data$valid,
+  W_valid = model.dat$fit_data$W_valid,
+  y = model.dat$Y,
+  n.lambda = 20,
+  trace = FALSE,
+  print.best = TRUE,
+  tol = 5,
+  thresh = 1e-6,
+  rank.init = 2,
+  rank.limit = 30,
+  rank.step = 2,
+  maxit = 300,
+  seed= 2023
+  
+)
+
+
+all_res  |>
+  rbind(print_performance(model.dat, simpute_fit, error_metric$rmse, TRUE, "SoftImpute", F, 3)) |> 
+  arrange(XBeta) |>
+  mutate(XBeta = paste0("[", 1:nrow(all_res), "]", XBeta)) |>
+  arrange(M) |>
+  mutate(M = paste0("[", 1:nrow(all_res), "]", M)) |>
+  arrange(Y) |>
+  mutate(Y = paste0("[", 1:nrow(all_res), "]", Y)) |>
+  dplyr::select(-Y) |>
+  arrange(train) |>
+  mutate(train = paste0("[", 1:nrow(all_res), "]", train)) |>
+  arrange(test) |>
+  mutate(test = paste0("[", 1:nrow(all_res), "]", test))  ->
+  all_res
+
+
+kable(all_res, format = "simple") |>  print()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-----------------------------------------------------------------------------
 aresults <- list()
 i = b = 1
 

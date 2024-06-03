@@ -31,6 +31,7 @@ CASMC_var_selection <-
           r_min = 0,
           track = FALSE,
           max_cores = 20,
+          return_best_model = FALSE,
           # seed
           seed = NULL) {
   k <-  ncol(X)
@@ -53,7 +54,7 @@ CASMC_var_selection <-
     lambda = numeric(),
     J = numeric()
    )
-  
+  best_score <- Inf
   for (i in k:1) {
    X_subset <- X[, 1:i]
    
@@ -97,9 +98,16 @@ CASMC_var_selection <-
      var_id = paste(1:i, collapse = ",")
     )
    )
+   if(return_best_model && best_score > fiti$error){
+     best_score <- fiti$error
+     best_model <- fiti
+     best_model$X = X_subset
+   }
     }, error = function(e) message(paste("Variable Selection (i=",i,"):",e))
    )
   }
+  if(return_best_model)
+    return(list(fit=best_model, res=results))
   return(results)
  }
 

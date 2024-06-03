@@ -107,7 +107,7 @@ load_bixi_dat <-
         #location covariates
         # bixi.dat$spatial_features |> as.data.frame() |>
         #     head()
-        
+        med_scale <- function(x) x
         bixi.dat$spatial_features |>
             as.data.frame() |>
             mutate(location = as.character(location)) |>
