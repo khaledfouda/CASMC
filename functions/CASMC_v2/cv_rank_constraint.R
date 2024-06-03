@@ -1,11 +1,11 @@
 #------------------------------------------------------------------------------------------
-CASMC_cv_rank <-
+CASMC2_cv <-
   function(y_train,
            # y_train is expected to be Incomplete
            X,
-           y_valid,
-           # y_valid is a vector
            W_valid,
+           # y_valid is a vector
+           y_valid,
            y = NULL,
            # y: a final full-fit if provided. Expected to be Incomplete
            error_function = error_metric$rmse,
@@ -26,7 +26,7 @@ CASMC_cv_rank <-
            # stopping criteria
            early.stopping = 1,
            thresh = 1e-6,
-           maxit = 100,
+           maxit = 300,
            # trace parameters
            trace = FALSE,
            print.best = TRUE,
@@ -37,6 +37,8 @@ CASMC_cv_rank <-
            rank_x = qr(X)$rank,
            r_min = 0,
            r_max = rank_x,
+           # L2 parameters
+           lambda.beta.grid = "default",
            track = FALSE,
            max_cores = 8,
            # seed
