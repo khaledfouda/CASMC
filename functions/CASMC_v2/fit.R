@@ -14,7 +14,7 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC2_fit_rank <-
+CASMC2_fit <-
   function(y,
            X,
            svdH = NULL,

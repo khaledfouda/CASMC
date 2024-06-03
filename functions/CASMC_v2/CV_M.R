@@ -23,6 +23,7 @@ CASMC2_cv_M <-
           y = NULL,
           # y: a final full-fit if provided. Expected to be Incomplete
           r = NULL,
+          lambda.beta = 0,
           # provide this if you need rank restriction. if not null, L2 reg will be ignored
           Xterms = NULL,
           svdH = NULL,
@@ -66,10 +67,10 @@ CASMC2_cv_M <-
                 to = 0,
                 length = n.lambda)
   #---------------------------------------------------
-  if (!is.null(r) || is.null(Xterms)) {
-   fit_function = CASMC_fit_rank
-  } else
-   fit_function = CASMC_fit_L2
+  # if (!is.null(r) || is.null(Xterms)) {
+  #  fit_function = CASMC_fit_rank
+  # } else
+  #  fit_function = CASMC_fit_L2
   #----------------------------------------------------
   stopifnot(inherits(y_train, "dgCMatrix"))
   # we only need the indices for validation from W_valid
@@ -81,7 +82,7 @@ CASMC2_cv_M <-
   W_valid = NULL
   #------------------------------------------------
   if (is.null(Xterms))
-   Xterms = GetXterms(X)
+   Xterms = GetXterms(X, lambda.beta)
   #-----------------------------------------------------------------------
   rank.max <- rank.init
   best_fit <- list(error = Inf, r = r)
@@ -89,14 +90,15 @@ CASMC2_cv_M <-
   #---------------------------------------------------------------------
   for (i in seq(along = lamseq)) {
    fiti <-
-    fit_function(
+    CASMC2_fit(
      y = y_train,
      X = X,
      J = rank.max,
-     lambda = lamseq[i],
-     r = r,
-     svdH = NULL,
+     lambda.M = lamseq[i],
+     lambda.beta = lambda.beta,
      Xterms = Xterms,
+     svdH = NULL,
+     r = r,
      lambda.a = lambda.a,
      S.a = S.a,
      lambda.b = lambda.b,
@@ -125,7 +127,7 @@ CASMC2_cv_M <-
    if (trace == TRUE)
     print(sprintf(
      paste0(
-      "%2d lambda=%9.5g, rank.max = %d  ==>",
+      "%2d lambda.M=%9.5g, rank.max = %d  ==>",
       " rank = %d, error = %.5f, niter/fit = %d"
      ),
      i,
@@ -140,7 +142,7 @@ CASMC2_cv_M <-
    if (err < best_fit$error) {
     best_fit$error = err
     best_fit$rank_M = rank
-    best_fit$lambda = lamseq[i]
+    best_fit$lambda.M = lamseq[i]
     best_fit$rank.max = rank.max
     best_fit$fit = fiti
     best_fit$iter = i
@@ -164,14 +166,15 @@ CASMC2_cv_M <-
   if (!is.null(y)) {
    stopifnot(inherits(y, "dgCMatrix"))
    best_fit$fit <-
-    fit_function(
+    CASMC2_fit(
      y = y,
      X = X,
      J = best_fit$rank.max,
-     lambda = best_fit$lambda,
+     lambda.M = best_fit$lambda.M,
      r = r,
      svdH = NULL,
      Xterms = Xterms,
+     lambda.beta = lambda.beta,
      lambda.a = lambda.a,
      S.a = S.a,
      lambda.b = lambda.b,
@@ -184,6 +187,9 @@ CASMC2_cv_M <-
     )
    
   }
+  best_fit$lambda.beta = lambda.beta
+  best_fit$lambda.a = lambda.a
+  best_fit$lambda.b = lambda.b
   return(best_fit)
  }
 #---
