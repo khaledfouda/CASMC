@@ -14,27 +14,28 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC_fit_rank <-
+CASMC2_fit_rank <-
   function(y,
            X,
            svdH = NULL,
            Xterms = NULL,
            J = 2,
            r = NULL,
-           lambda = 0,
+           lambda.M = 0,
+           lambda.beta = 0,
            # similarity matrix for A
            S.a = NULL,
            lambda.a = 0,
            # similarity matrix for B
            S.b = NULL,
            lambda.b = 0,
-           maxit = 100,
+           maxit = 300,
            thresh = 1e-05,
            trace.it = FALSE,
            warm.start = NULL,
            final.svd = TRUE,
            init = "naive",
-           eps = 1e-17) {
+           min_eigv = 1e-17) {
     stopifnot(inherits(y, "dgCMatrix"))
     irow = y@i
     pcol = y@p
@@ -60,9 +61,9 @@ CASMC_fit_rank <-
       svdH = reduced_hat_decomp.H(X)
     }
     #---------------------------------------------------
-    # if Xterms are not provided but X is given.
+    # if Xterms are not provided.
     if (is.null(Xterms))
-      Xterms = GetXterms(X)
+      Xterms = GetXterms(X, lambda.beta)
     #---------------------------------------------------
     # warm start or initialize (naive or random)
     warm = FALSE
@@ -74,7 +75,7 @@ CASMC_fit_rank <-
         stop("warm.start does not have components u, d, v, or beta")
       warm = TRUE
       D = warm.start$d
-      JD = sum(D > eps)
+      JD = sum(D > min_eigv)
       beta = warm.start$beta
       if (JD >= J) {
         U = warm.start$u[, seq(J), drop = FALSE]
@@ -82,20 +83,17 @@ CASMC_fit_rank <-
         Dsq = D[seq(J)]
       } else{
         Ja = J - JD
-        #Dsq = c(D, rep(0, Ja))
         Dsq = c(D, rep(D[JD], Ja))
         U = warm.start$u
         Ua = matrix(rnorm(n * Ja), n, Ja)
         Ua = Ua - U %*% (t(U) %*% Ua)
-        Ua = tryCatch(fast.svd(Ua)$u, error = function(e) svd(Ua)$u)
+        Ua = tryCatch(
+          fast.svd(Ua)$u,
+          error = function(e)
+            svd(Ua)$u
+        )
         U = cbind(U, Ua)
         V = cbind(warm.start$v, matrix(0, m, Ja))
-        # U_aug = matrix(rnorm(n*Ja), n, Ja)
-        # U_aug = qr.Q(qr(cbind(warm.start$u, U_aug)))[,(JD+1):J]
-        # V_aug = matrix(rnorm(m*Ja), m, Ja)
-        # V_aug = qr.Q(qr(cbind(warm.start$v, V_aug)))[,(JD+1):J]
-        # U = cbind(warm.start$u, U_aug)
-        # V = cbind(warm.start$v, V_aug)
       }
     } else{
       # initialize. Warm start is not provided
@@ -107,28 +105,30 @@ CASMC_fit_rank <-
         Y_naive = naive_MC(Y_naive)
         Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
         M <- as.matrix(Y_naive - Xbeta)
-        M <-  tryCatch(propack.svd(M, J),
-                       error = function(e){
-                         message(paste("Naive Init:",e))
-                         svd_trunc_simple(M, J)
-                       })
+        M <-  tryCatch(
+          propack.svd(M, J),
+          error = function(e) {
+            message(paste("Naive Init:", e))
+            svd_trunc_simple(M, J)
+          }
+        )
         U = M$u
         V = M$v
-        Dsq = pmax(M$d, eps)
+        Dsq = pmax(M$d, min_eigv)
         #----------------------
         # initialization for beta = X^-1 Y
         # comment for later: shouldn't be X^-1 H Y??
         beta = as.matrix(ginv(X) %*% Xbeta)
         Y_naive <- Xbeta <- M <- NULL
-    print(r)
+        print(r)
         #---------------------------------------------------------------
       }
     }
     #----------------------------------------
-    yobs <- y@x
+    yobs <- y@x # y will hold the model residuals
     ratio <- 1
     iter <- 0
-
+    
     if (!is.null(r) && r == 0) {
       beta <- matrix(0, k, m)
       xbeta.obs <- rep(0, length(y@x))
@@ -145,26 +145,22 @@ CASMC_fit_rank <-
       VDsq = t(Dsq * t(V))
       M_obs = suvC(U, VDsq, irow, pcol)
       
-      if (is.null(r) || r > 0) {
-        if (!is.null(r) && r < k && k >= 3) {
-          tryCatch({
-            beta <- unsvd(svds(beta, r), make_sparse = T)
+      if (is.null(r) || r > 0) { # ==> if r != 0
+        if (!is.null(r) && r < k && k >= 3) { # reduce the rank of beta to r
+          # maybe consider removing this part??
+          beta <- tryCatch({
+            unsvd(svds(beta, r), make_sparse = FALSE)
           }, error = function(e) {
-            message(e)
-            message(". svds() failed, switching to svd()")
-            beta_svd = svd(beta)
-            beta_svd$d <- beta_svd$d[1:r, drop=FALSE]
-            beta_svd$u <- beta_svd$u[, 1:r, drop=FALSE]
-            beta_svd$v <- beta_svd$v[, 1:r, drop=FALSE]
-            beta <- unsvd(beta_svd, make_sparse = T)
+            message(paste("Loop/beta:",e))
+            unsvd(svd_trunc_simple(beta, r), make_sparse = FALSE)
           })
           
-        } else{
-          beta = unsvd(tryCatch(fast.svd(beta), error = function(e) svd(beta)))
-        }
+        } else # r is null, r = k or k = 1,2
+          # do nothing
         if (iter == 1)
           y@x = yobs - M_obs - suvC(X, t(beta), irow, pcol)
-        xbeta.obs <- suvC(X, t(beta), irow, pcol)
+        
+        xbeta.obs <- suvC(X, t(beta), irow, pcol) # do we switch this and the one below?
         beta = as.matrix(beta + Xterms$X1 %*% y)
       }
       
@@ -177,12 +173,15 @@ CASMC_fit_rank <-
       B = t(U) %*% y + t(VDsq)
       if (laplace.b)
         B = B - t(V)  %*% L.b
-      B = t((B) * (Dsq / (Dsq + lambda)))
-      tryCatch({
-      Bsvd = fast.svd(as.matrix(B))
-      }, error = function(e) message(paste("Bsvd:",e)))
+      B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
+      Bsvd = tryCatch({
+        fast.svd(B)
+      }, error = function(e){
+        message(paste("Loop/B:", e))
+        svd(B)
+      })
       V = Bsvd$u
-      Dsq = pmax(Bsvd$d, eps)
+      Dsq = pmax(Bsvd$d, min_eigv)
       U = U %*% (Bsvd$v)
       #-------------------------------------------------------------
       # part 3: Update A while B and beta are fixed
@@ -190,18 +189,21 @@ CASMC_fit_rank <-
       A = (y %*% V) + t(Dsq * t(U))
       if (laplace.a)
         A = A - L.a %*% U
-      A = t(t(A) * (Dsq / (Dsq + lambda)))
-      tryCatch({
-      Asvd =  fast.svd(as.matrix(A))
-      }, error = function(e) message(paste("Asvd:",e)))
+      A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
+      Asvd = tryCatch({
+        fast.svd(A)
+      }, error = function(e){
+        message(paste("Loop/A:", e))
+        svd(A)
+      })
       U = Asvd$u
-      Dsq = pmax(Asvd$d,eps)
+      Dsq = pmax(Asvd$d, min_eigv)
       V = V %*% (Asvd$v)
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
       if (trace.it) {
-        obj = (.5 * sum(y@x ^ 2) + lambda * sum(Dsq)) / nz
+        obj = (.5 * sum(y@x ^ 2) + lambda.M * sum(Dsq)) / nz
         cat(iter, ":", "obj", format(round(obj, 5)), "ratio", ratio, "\n")
       }
       #-----------------------------------------------------------------------------------
@@ -216,26 +218,27 @@ CASMC_fit_rank <-
           "iterations. Consider increasing the number of iterations."
         )
       )
-    #print("e")
     # one final fit for one of the parameters (A) has proved to improve the performance significantly.
     if (final.svd) {
       #---- update A
       A = (y %*% V) + t(Dsq * t(U))
       if (laplace.a)
         A = A - L.a %*% U
-      A = t(t(A) * (Dsq / (Dsq + lambda)))
-      tryCatch({
-        Asvd =  fast.svd(as.matrix(A))
-      }, error = function(e) message(paste("Asvd:",e)))
+      A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
+      Asvd = tryCatch({
+        fast.svd(A)
+      }, error = function(e){
+        message(paste("Final/A:", e))
+        svd(A)
+      })
       U = Asvd$u
-      Dsq = pmax(Asvd$d, eps)
-      V = V %*% (Asvd$v)
-      Dsq = pmax(Dsq - lambda, eps)
+      V = V %*% Asvd$v
+      Dsq = pmax(Asvd$d - lambda.M, min_eigv)
       #------------------
       if (trace.it) {
         M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
         y@x = yobs - M_obs - xbeta.obs
-        obj = (.5 * sum(y@x ^ 2) + lambda * sum(Dsq)) / nz
+        obj = (.5 * sum(y@x ^ 2) + lambda.M * sum(Dsq)) / nz
         cat("final SVD:", "obj", format(round(obj, 5)), "\n")
         cat("Number of Iterations for covergence is ", iter, "\n")
       }
@@ -244,30 +247,27 @@ CASMC_fit_rank <-
     # trim in case we reduce the rank of M to be smaller than J.
     J = min(sum(Dsq > 0) + 1, J)
     J = min(J, length(Dsq))
+    # trim beta. 
     if (!is.null(r) && r < k && r > 0 && k >= 3) {
-      #beta <- unsvd(svds(beta, r), make_sparse = T)
-      tryCatch({
-        beta <- unsvd(svds(beta, r), make_sparse = T)
+      beta <- tryCatch({
+        unsvd(svds(beta, r))
       }, error = function(e) {
-        message(e)
-        message(". svds() failed, switching to svd()")
-        beta_svd = svd(beta)
-        beta_svd$d <- beta_svd$d[1:r, drop=FALSE]
-        beta_svd$u <- beta_svd$u[, 1:r, drop=FALSE]
-        beta_svd$v <- beta_svd$v[, 1:r, drop=FALSE]
-        beta <- unsvd(beta_svd, make_sparse = T)
+        message(paste("Final/beta",e))
+        unsvd(svd_trunc_simple(beta, r))
       })
     }
-    #print("ee")
     
     out = list(
       u = U[, seq(J), drop = FALSE],
       d = Dsq[seq(J)],
       v = V[, seq(J), drop = FALSE],
-      lambda = lambda,
+      beta = beta,
+      lambda.M = lambda.M,
       J = J,
-      n_iter = iter,
-      beta = beta
+      lambda.beta = lambda.beta,
+      lambda.a = lambda.a,
+      lambda.b = lambda.b,
+      n_iter = iter
     )
     out
   }
