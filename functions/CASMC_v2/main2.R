@@ -74,6 +74,10 @@ dat <-
 X_r = reduced_hat_decomp(dat$X, 1e-2)
 
 
+(900*10/800) * 10
+svd(dat$X %*% naive_fit(as.matrix(dat$Y), dat$X)$beta)$d[1]
+
+
 #' # 1
 #+ something
 
