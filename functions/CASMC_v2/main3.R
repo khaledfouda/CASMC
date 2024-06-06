@@ -6,13 +6,13 @@ dat <-
  generate_simulation_rows(
   800,
   900,
-  r = 10,
-  k = 10, 
+  r = 5,
+  k = 5, 
   missing_prob = 0.9,
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = 0.7,
+  informative_cov_prop = 1,
   mv_beta = T,
   seed = 2023
  )
@@ -27,8 +27,8 @@ CASMC2_fit2(y = dat$fit_data$train,
             Xterms = NULL,
             J = 2,
             r = 3,
-            lambda.M = 0,
-            lambda.beta = 0,
+            lambda.M = 10,
+            lambda.beta = 10,
             # similarity matrix for A
             S.a = NULL,
             lambda.a = 0,
