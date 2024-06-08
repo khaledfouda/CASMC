@@ -1,3 +1,22 @@
+compute_partial_XQD <- function(X, D, k, r){
+  partial <- matrix(0, k, r)
+  for(i in 1:k){
+    for(j in 1:r){
+      for(l in 1:k){
+        partial[i,j] <- partial[i,j] + X[i,l] * D[j,j]
+      }
+    }
+  }
+  return(partial)
+}
+
+
+
+
+
+
+
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
 #'
@@ -148,15 +167,21 @@ CASMC2_fit2 <-
         # initialization for beta = X^-1 Y
         # comment for later: shouldn't be X^-1 H Y??
         beta = as.matrix(ginv(X) %*% Xbeta)
-        QRsvd = fast.svd(beta)
-        QRsvd$d <- diag(sqrt(QRsvd$d[seq(r)]), r, r)
-        Q = QRsvd$u[, 1:r, drop=FALSE]  %*% sqrt(QRsvd$d)
-        R = QRsvd$v[, 1:r, drop=FALSE] %*% sqrt(QRsvd$d)
+        QRsvd = svd_trunc_simple(beta, r)
+        Ub <- QRsvd$u
+        Db <- diag(sqrt(QRsvd$d), r, r)
+        Vb <- QRsvd$v
+        
+        #QRsvd$d <- diag(sqrt(QRsvd$d[seq(r)]), r, r)
+        #Q = QRsvd$u[, 1:r, drop=FALSE]  %*% sqrt(QRsvd$d)
+        #R = QRsvd$v[, 1:r, drop=FALSE] %*% sqrt(QRsvd$d)
         Y_naive <- Xbeta <- M <- NULL
         print(r)
         #---------------------------------------------------------------
       }
-      Qsvd = fast.svd(Q)
+      #Qsvd = fast.svd(Q)
+      Q = Ub %*% Db
+      R = Vb %*% Db
       XtX = t(X) %*% X
     }
     #----------------------------------------
@@ -168,7 +193,7 @@ CASMC2_fit2 <-
       beta <- matrix(0, k, m)
       xbeta.obs <- rep(0, length(y@x))
     }
-    print(paste("Q-d", paste(Qsvd$d, collapse = " ")))
+    #print(paste("Q-d", paste(Qsvd$d, collapse = " ")))
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
       iter <- iter + 1
@@ -188,17 +213,24 @@ CASMC2_fit2 <-
       print(paste("b0end", iter))
       #----------------------------------------------
       # part 1: Update R
-      # prereq: Q, R, XtX, lambda.beta, y, X, r, Qsvd
+      # prereq: Q, R, XtX, lambda.beta, y, X, r
       # updates: Q, R
       part1 = t(Q) %*% XtX %*% Q + lambda.beta * diag(1, r, r)
       part2 =  t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R)
       
-      R = as.matrix(ginv(part1) %*% part2)
-      R = diag(sqrt(Qsvd$d),r,r) %*% R 
-      Rsvd = fast.svd(t(R))
+      RD = t(as.matrix(ginv(part1) %*% part2)) %*% Db
+      Rsvd = fast.svd(RD)
+      Ub = Ub %*% Rsvd$v
+      Db[cbind(1:r,1:r)] <- sqrt(Rsvd$d)
+      Vb = Rsvd$u
+      
+      Q = Ub %*% Db 
+      R = Vb %*% Db
+      
+      
       print(paste("R-d", paste(Rsvd$d, collapse = " ")))
-      Q = Qsvd$u %*% Rsvd$v %*% diag(sqrt(Rsvd$d), r, r)
-      R = Rsvd$u %*% diag(sqrt(Rsvd$d), r, r)
+      # Q = Qsvd$u %*% Rsvd$v %*% diag(sqrt(Rsvd$d), r, r)
+      # R = Rsvd$u %*% diag(sqrt(Rsvd$d), r, r)
       print(paste("R1-d", paste(fast.svd(R)$d, collapse = " ")))
       print(paste("Q1-d", paste(fast.svd(Q)$d, collapse = " ")))
       print(paste("p1end", iter))
@@ -206,26 +238,59 @@ CASMC2_fit2 <-
       # part 2: update Q
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
-      #Q0 = Q
-      # for(itt in 1:10)
-      Q = (1/ (1+lambda.beta)) * 
-        as.matrix(Q + t(X) %*% y %*% R)
-      Q = Q %*% diag(sqrt(Rsvd$d),r,r) # QD
-      # Q = (1/ (1+lambda.beta)) * 
-      #   as.matrix(Q + t(X) %*% y %*% R + XtX %*% (Q0-Q) %*% diag(Rsvd$d^2,r,r))
+      # Q0 = Qold = Q
+      # for(itt in 1:60){
+      # #y@x = yobs
+      # #gradient = t(X) %*% y %*% R - XtX %*% Q %*% t(R) %*% R - t(X) %*% U %*% t(VDsq) %*% R
+      # 
+      # #Q = (1/ (1+0.1*lambda.beta)) * 
+      # #  as.matrix(Q + 0.1*gradient)
+      #   # as.matrix(Q + t(X) %*% y %*% R)
+      # 
+      # #Q = Q %*% diag(sqrt(Rsvd$d),r,r) # QD
+      # #print(paste(paste(dim(R),collapse=" "),paste(dim(Q),collapse=" ")))
+      # 
+      #    Q = (1/ (1+lambda.beta)) * 
+      #    as.matrix(Q + t(X) %*% y %*% R + XtX %*% (Q0-Q) %*% (Db^2) )
+      #    print(round(sum( (Q-Qold)^2 ),3))
+      #    Qold  = Q
+      # }
+      Q0 =  Q
+      Qold = matrix(0, nrow(Q), ncol(Q))
+      qiter = 1
+      Dbsq = Db^2
+      # newton!!
+      while(sqrt(sum((Q - Qold)^2)) > 1e-3 & qiter <= 10 ){
+        Qold <- Q
+        gradient = - t(X) %*% y %*% R + XtX %*% (Q-Q0) %*% (Dbsq) + lambda.beta * Q
+        # hessian = kronecker(XtX, Dbsq) + diag(lambda.beta, k*r, k*r)
+        hessian = compute_partial_XQD(XtX, Dbsq, k, r) + diag(lambda.beta, k, r)
+        Q <- Q -  gradient / (hessian)   #matrix(solve(hessian, gradient), k, r)
+        # Q <- Q -   gradient 
+        print(paste(qiter, "-",sqrt(sum((Q - Qold)^2))))
+        qiter <- qiter + 1
+        
+      }
+      
+      # Q = (1/ (1+lambda.beta)) * as.matrix(Q + t(X) %*% y %*% R )
+      
         #(XtX %*% Q) %*% (t(R) %*% R) 
       print(paste("P2Mid",iter))
-      Qsvd = fast.svd(Q)
-      print(paste("Q-d", paste(Qsvd$d, collapse = " ")))
+      Qsvd = fast.svd(Q %*% Db)
+
+      Ub = Qsvd$u
+      Db[cbind(1:r,1:r)] <- sqrt(Qsvd$d)
+      Vb = Vb %*% Qsvd$v
       
-      Q = Qsvd$u * sqrt(Qsvd$d) #%*% diag(Qsvd$d, r, r)
-      R = (Rsvd$v %*% Qsvd$v) * sqrt(Qsvd$d) #diag(Qsvd$d, r, r)
+      Q = Ub %*% Db 
+      R = Vb %*% Db
+      
       print(paste("R2-d", paste(fast.svd(R)$d, collapse = " ")))
       print(paste("Q2-d", paste(fast.svd(Q)$d, collapse = " ")))
       #-------------------------------------------------------------------
       # part extra: re-update y 
-      # xbeta.obs <- suvC(as.matrix(X %*% Q), as.matrix(t(R)), irow, pcol)
-      # y@x = yobs - M_obs - xbeta.obs
+       xbeta.obs <- suvC(as.matrix(X %*% Q), as.matrix(t(R)), irow, pcol)
+       y@x = yobs - M_obs - xbeta.obs
       print(paste("p2end", iter))
       #--------------------------------------------------------------------
       ##--------------------------------------------
@@ -266,6 +331,7 @@ CASMC2_fit2 <-
       print(paste("p4end", iter))
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
+      
       print(paste("ratio:", ratio))
       #------------------------------------------------------------------------------
       if (trace.it) {

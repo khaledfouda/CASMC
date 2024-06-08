@@ -18,7 +18,15 @@ dat <-
  )
 X_r = reduced_hat_decomp(dat$X, 1e-2)
 
+Xs$d2 = Xs$d <- diag(Xs$d)
 
+system.time({for(i in 1:1000)diag(Xs$d2) = diag(Xs$d)^2})
+system.time({for(i in 1:1000)Xs$d2 = Xs$d^2})
+system.time({for(i in 1:1000)ss=sweep(Xs$u,2,Xs$d,`*`)})
+
+
+dg = diag(Xs$d)
+all(round(Xs$u %*% diag(Xs$d), 5) == round(UD(Xs$u,Xs$d), 5))
 
 
 CASMC2_fit2(y = dat$fit_data$train,
@@ -26,7 +34,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             svdH = NULL,
             Xterms = NULL,
             J = 2,
-            r = 3,
+            r = 5,
             lambda.M = 10,
             lambda.beta = 10,
             # similarity matrix for A
@@ -35,7 +43,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             # similarity matrix for B
             S.b = NULL,
             lambda.b = 0,
-            maxit = 300,
+            maxit = 4,
             thresh = 1e-05,
             trace.it = FALSE,
             warm.start = NULL,
