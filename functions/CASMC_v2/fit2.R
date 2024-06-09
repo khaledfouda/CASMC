@@ -1,20 +1,3 @@
-compute_partial_XQD <- function(X, D, k, r){
-  partial <- matrix(0, k, r)
-  for(i in 1:k){
-    for(j in 1:r){
-      for(l in 1:k){
-        partial[i,j] <- partial[i,j] + X[i,l] * D[j,j]
-      }
-    }
-  }
-  return(partial)
-}
-
-
-
-
-
-
 
 
 #' Covariate-Adjusted-Sparse-Matrix-completion
@@ -200,7 +183,7 @@ CASMC2_fit2 <-
       U.old = U
       V.old = V
       Dsq.old = Dsq
-      print(paste("b0begin", iter))
+      # print(paste("b0begin", iter))
       #----------------------------------------------
       # part 0: Update y (training residulas)
       # prereq: U, Dsq, V, Q, R, yobs
@@ -208,9 +191,10 @@ CASMC2_fit2 <-
       VDsq = t(Dsq * t(V))
       XQ = X %*% Q
       M_obs = suvC(U, VDsq, irow, pcol)
+      if(iter == 1){
       xbeta.obs <- suvC(XQ, t(R), irow, pcol)
-      y@x = yobs - M_obs - xbeta.obs
-      print(paste("b0end", iter))
+      y@x = yobs - M_obs - xbeta.obs}
+      # print(paste("b0end", iter))
       #----------------------------------------------
       # part 1: Update R
       # prereq: Q, R, XtX, lambda.beta, y, X, r
@@ -228,12 +212,12 @@ CASMC2_fit2 <-
       R = Vb %*% Db
       
       
-      print(paste("R-d", paste(Rsvd$d, collapse = " ")))
-      # Q = Qsvd$u %*% Rsvd$v %*% diag(sqrt(Rsvd$d), r, r)
-      # R = Rsvd$u %*% diag(sqrt(Rsvd$d), r, r)
-      print(paste("R1-d", paste(fast.svd(R)$d, collapse = " ")))
-      print(paste("Q1-d", paste(fast.svd(Q)$d, collapse = " ")))
-      print(paste("p1end", iter))
+      # print(paste("R-d", paste(Rsvd$d, collapse = " ")))
+      # # Q = Qsvd$u %*% Rsvd$v %*% diag(sqrt(Rsvd$d), r, r)
+      # # R = Rsvd$u %*% diag(sqrt(Rsvd$d), r, r)
+      # print(paste("R1-d", paste(fast.svd(R)$d, collapse = " ")))
+      # print(paste("Q1-d", paste(fast.svd(Q)$d, collapse = " ")))
+      # print(paste("p1end", iter))
       #-----------------------------------------------------------------
       # part 2: update Q
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
@@ -260,22 +244,23 @@ CASMC2_fit2 <-
       qiter = 1
       Dbsq = Db^2
       # newton!!
+      hessian <- matrix(0,k,r)
       while(sqrt(sum((Q - Qold)^2)) > 1e-3 & qiter <= 10 ){
         Qold <- Q
         gradient = - t(X) %*% y %*% R + XtX %*% (Q-Q0) %*% (Dbsq) + lambda.beta * Q
         # hessian = kronecker(XtX, Dbsq) + diag(lambda.beta, k*r, k*r)
-        hessian = compute_partial_XQD(XtX, Dbsq, k, r) + diag(lambda.beta, k, r)
+        for(ih in 1:k){
+          hessian[ih,] <- sum(XtX[ih,]) * diag(Dbsq)
+        }
+        hessian = hessian + diag(lambda.beta, k, r)
+        
+        
         Q <- Q -  gradient / (hessian)   #matrix(solve(hessian, gradient), k, r)
         # Q <- Q -   gradient 
-        print(paste(qiter, "-",sqrt(sum((Q - Qold)^2))))
+        #print(paste(qiter, "-",sqrt(sum((Q - Qold)^2))))
         qiter <- qiter + 1
         
       }
-      
-      # Q = (1/ (1+lambda.beta)) * as.matrix(Q + t(X) %*% y %*% R )
-      
-        #(XtX %*% Q) %*% (t(R) %*% R) 
-      print(paste("P2Mid",iter))
       Qsvd = fast.svd(Q %*% Db)
 
       Ub = Qsvd$u
@@ -285,13 +270,18 @@ CASMC2_fit2 <-
       Q = Ub %*% Db 
       R = Vb %*% Db
       
-      print(paste("R2-d", paste(fast.svd(R)$d, collapse = " ")))
-      print(paste("Q2-d", paste(fast.svd(Q)$d, collapse = " ")))
+      # Q = (1/ (1+lambda.beta)) * as.matrix(Q + t(X) %*% y %*% R )
+      
+        #(XtX %*% Q) %*% (t(R) %*% R) 
+      # print(paste("P2Mid",iter))
+      
+      # print(paste("R2-d", paste(fast.svd(R)$d, collapse = " ")))
+      # print(paste("Q2-d", paste(fast.svd(Q)$d, collapse = " ")))
       #-------------------------------------------------------------------
       # part extra: re-update y 
-       xbeta.obs <- suvC(as.matrix(X %*% Q), as.matrix(t(R)), irow, pcol)
-       y@x = yobs - M_obs - xbeta.obs
-      print(paste("p2end", iter))
+      xbeta.obs <- suvC(as.matrix(X %*% Q), as.matrix(t(R)), irow, pcol)
+      y@x = yobs - M_obs - xbeta.obs
+      #print(paste("p2end", iter))
       #--------------------------------------------------------------------
       ##--------------------------------------------
       # part 3: Update B 
@@ -310,7 +300,7 @@ CASMC2_fit2 <-
       V = Bsvd$u
       Dsq = pmax(Bsvd$d, min_eigv)
       U = U %*% (Bsvd$v)
-      print(paste("p3end", iter))
+      #print(paste("p3end", iter))
       #-------------------------------------------------------------
       # part 4: Update A 
       # prereq: U, D, VDsq, y, lambda.M, L.a
@@ -328,15 +318,13 @@ CASMC2_fit2 <-
       U = Asvd$u
       Dsq = pmax(Asvd$d, min_eigv)
       V = V %*% (Asvd$v)
-      print(paste("p4end", iter))
+      #print(paste("p4end", iter))
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
-      
-      print(paste("ratio:", ratio))
       #------------------------------------------------------------------------------
       if (trace.it) {
         obj = (.5 * sum(y@x ^ 2) + lambda.M * sum(Dsq)) / nz
-        cat(iter, ":", "obj", format(round(obj, 5)), "ratio", ratio, "\n")
+        cat(iter, ":", "obj", format(round(obj, 5)), "ratio", ratio, "qiter",qiter, "\n")
       }
       #-----------------------------------------------------------------------------------
       
@@ -379,6 +367,8 @@ CASMC2_fit2 <-
     # trim in case we reduce the rank of M to be smaller than J.
     J = min(sum(Dsq > 0) + 1, J)
     J = min(J, length(Dsq))
+    r = min(sum(Db>0) + 1, r)
+    r = min(J, length(Db))
     
     out = list(
       u = U[, seq(J), drop = FALSE],
