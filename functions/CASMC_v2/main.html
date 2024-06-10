@@ -373,8 +373,9 @@ display: none;
 ## [1] &quot;Package Matrix loaded.&quot;
 ## [1] &quot;Package knitr loaded.&quot;
 ## [1] &quot;Package roxygen2 loaded.&quot;</code></pre>
-<div id="r-will-be-set-to-16-for-all-tests-and-dimensions-800x900" class="section level2">
-<h2>r will be set to 16 for all tests and dimensions 800x900</h2>
+<div id="r-will-be-set-to-15-for-all-tests-and-dimensions-800x900-and-90-missingness" class="section level2">
+<h2>r will be set to 15 for all tests and dimensions 800x900 and 90%
+missingness</h2>
 </div>
 <div id="test-1-5-covariates-no-collineatity.-100-informative" class="section level2">
 <h2>Test 1: 5 covariates, no collineatity. 100% informative</h2>
@@ -382,7 +383,7 @@ display: none;
  generate_simulation_rows(
   800,
   900,
-  r = 5,
+  r = 15,
   k = 5, 
   missing_prob = 0.9,
   coll = F,
@@ -426,13 +427,13 @@ fit_rank &lt;- CASMC_cv_rank(
  seed = 2023
 )</code></pre>
 <pre><code>## [1] &quot;Running on 6 cores.&quot;
-## [1] &quot;r = 0 - Val Err = 1.11447&quot;
-## [1] &quot;r = 1 - Val Err = 1.10976&quot;
-## [1] &quot;r = 2 - Val Err = 1.10724&quot;
-## [1] &quot;r = 3 - Val Err = 1.10658&quot;
-## [1] &quot;r = 4 - Val Err = 1.09488&quot;
-## [1] &quot;r = 5 - Val Err = 1.08485&quot;
-## [1] &quot;Best fit: r =  5  - Validation Error:  1.08485327973858&quot;</code></pre>
+## [1] &quot;r = 0 - Val Err = 1.29887&quot;
+## [1] &quot;r = 1 - Val Err = 1.15306&quot;
+## [1] &quot;r = 2 - Val Err = 1.14842&quot;
+## [1] &quot;r = 3 - Val Err = 1.13056&quot;
+## [1] &quot;r = 4 - Val Err = 1.1268&quot;
+## [1] &quot;r = 5 - Val Err = 1.11694&quot;
+## [1] &quot;Best fit: r =  5  - Validation Error:  1.11693891847033&quot;</code></pre>
 <pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
             svdH = NULL,
@@ -460,69 +461,50 @@ fit_rank &lt;- CASMC_cv_rank(
 <pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
 ## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
 ## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre><code>## 1 : obj 2.54999 ratio 0.0126594 qiter 5 
-## 2 : obj 1.82489 ratio 0.007039375 qiter 4 
-## 3 : obj 1.40779 ratio 0.003925707 qiter 4 
-## 4 : obj 1.16157 ratio 0.002203472 qiter 4 
-## 5 : obj 1.01164 ratio 0.001274967 qiter 4 
-## 6 : obj 0.91664 ratio 0.0007771592 qiter 4 
-## 7 : obj 0.85366 ratio 0.0005047946 qiter 4 
-## 8 : obj 0.80993 ratio 0.0003496054 qiter 4 
-## 9 : obj 0.77824 ratio 0.0002563492 qiter 4 
-## 10 : obj 0.75438 ratio 0.0001969651 qiter 3 
-## 11 : obj 0.73586 ratio 0.000156977 qiter 3 
-## 12 : obj 0.7211 ratio 0.0001286894 qiter 3 
-## 13 : obj 0.70908 ratio 0.0001078424 qiter 3 
-## 14 : obj 0.69914 ratio 9.196345e-05 qiter 3 
-## 15 : obj 0.69079 ratio 7.954378e-05 qiter 3 
-## 16 : obj 0.68369 ratio 6.961721e-05 qiter 3 
-## 17 : obj 0.6776 ratio 6.153802e-05 qiter 3 
-## 18 : obj 0.67233 ratio 5.485894e-05 qiter 3 
-## 19 : obj 0.66774 ratio 4.92612e-05 qiter 3 
-## 20 : obj 0.66371 ratio 4.451234e-05 qiter 3 
-## 21 : obj 0.66015 ratio 4.043974e-05 qiter 3 
-## 22 : obj 0.65699 ratio 3.691326e-05 qiter 3 
-## 23 : obj 0.65418 ratio 3.383345e-05 qiter 3 
-## 24 : obj 0.65167 ratio 3.112335e-05 qiter 3 
-## 25 : obj 0.64941 ratio 2.872272e-05 qiter 3 
-## 26 : obj 0.64737 ratio 2.658388e-05 qiter 3 
-## 27 : obj 0.64553 ratio 2.466864e-05 qiter 3 
-## 28 : obj 0.64386 ratio 2.294606e-05 qiter 3 
-## 29 : obj 0.64234 ratio 2.139085e-05 qiter 3 
-## 30 : obj 0.64095 ratio 1.998068e-05 qiter 2 
-## 31 : obj 0.63968 ratio 1.869992e-05 qiter 2 
-## 32 : obj 0.63852 ratio 1.753363e-05 qiter 2 
-## 33 : obj 0.63746 ratio 1.646914e-05 qiter 2 
-## 34 : obj 0.63647 ratio 1.549555e-05 qiter 2 
-## 35 : obj 0.63557 ratio 1.460344e-05 qiter 2 
-## 36 : obj 0.63473 ratio 1.378459e-05 qiter 2 
-## 37 : obj 0.63396 ratio 1.303179e-05 qiter 2 
-## 38 : obj 0.63324 ratio 1.23387e-05 qiter 2 
-## 39 : obj 0.63257 ratio 1.169967e-05 qiter 2 
-## 40 : obj 0.63195 ratio 1.110971e-05 qiter 2 
-## 41 : obj 0.63137 ratio 1.056432e-05 qiter 2 
-## 42 : obj 0.63083 ratio 1.005951e-05 qiter 2 
-## 43 : obj 0.63033 ratio 9.59167e-06 qiter 2</code></pre>
+<pre><code>## 1 : obj 2.96822 ratio 0.001507744 qiter 5 
+## 2 : obj 2.20901 ratio 0.0008712148 qiter 4 
+## 3 : obj 1.7652 ratio 0.0005177368 qiter 4 
+## 4 : obj 1.49872 ratio 0.000319427 qiter 4 
+## 5 : obj 1.3331 ratio 0.0002070917 qiter 4 
+## 6 : obj 1.22583 ratio 0.0001417682 qiter 4 
+## 7 : obj 1.15321 ratio 0.0001021611 qiter 4 
+## 8 : obj 1.10188 ratio 7.690619e-05 qiter 4 
+## 9 : obj 1.06412 ratio 5.994827e-05 qiter 4 
+## 10 : obj 1.03536 ratio 4.800622e-05 qiter 3 
+## 11 : obj 1.01281 ratio 3.924758e-05 qiter 3 
+## 12 : obj 0.99472 ratio 3.260739e-05 qiter 3 
+## 13 : obj 0.97993 ratio 2.743885e-05 qiter 3 
+## 14 : obj 0.96764 ratio 2.333092e-05 qiter 3 
+## 15 : obj 0.95731 ratio 2.001105e-05 qiter 3 
+## 16 : obj 0.94853 ratio 1.72915e-05 qiter 3 
+## 17 : obj 0.94101 ratio 1.503861e-05 qiter 3 
+## 18 : obj 0.93452 ratio 1.315454e-05 qiter 3 
+## 19 : obj 0.92888 ratio 1.156599e-05 qiter 3 
+## 20 : obj 0.92397 ratio 1.021695e-05 qiter 3 
+## 21 : obj 0.91965 ratio 9.063952e-06 qiter 3</code></pre>
 <pre class="r"><code>fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
 print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt; 
 rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
 <pre><code>##       Metric       model      Beta         M  test train     Y
-## 1 rmse(rank) New Version 0.253( 5) 0.521( 3) 0.431 0.398 0.971
-## 2 rmse(rank) Old Version 0.120( 5) 0.288( 3) 0.395 0.365 0.944</code></pre>
+## 1 rmse(rank) New Version 0.313( 5) 0.661( 3) 0.574 0.512 1.030
+## 2 rmse(rank) Old Version 0.135( 5) 0.406( 3) 0.493 0.444 0.972</code></pre>
 <pre class="r"><code>fiti$beta[,1:5]</code></pre>
-<pre><code>##            [,1]       [,2]       [,3]      [,4]       [,5]
-## [1,] -1.2082643 -1.4193859 -0.6297199 -1.902981 -1.4880565
-## [2,] -1.7456440 -0.1585679 -1.4504423 -1.627162 -2.0421110
-## [3,]  0.4572403  1.3383523  0.6810083  1.267463  0.8450251
-## [4,] -1.7222568 -2.0441001 -2.1578506 -1.598287 -1.4993833
-## [5,] -2.5204443 -1.7652381 -2.0864849 -1.298757 -1.0936276</code></pre>
+<pre><code>##            [,1]      [,2]       [,3]      [,4]       [,5]
+## [1,] -1.3665722 -1.527559 -0.5095371 -1.955975 -1.5523633
+## [2,] -1.7033330 -0.359706 -1.0475262 -1.866937 -2.1234214
+## [3,]  0.4452178  1.099654  0.6416250  1.106503  0.8452732
+## [4,] -1.7762533 -1.837526 -2.1896490 -1.676876 -1.4771020
+## [5,] -2.8338281 -1.816528 -1.8918728 -1.049520 -1.1301982</code></pre>
 <pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
 <pre><code>##            [,1]       [,2]       [,3]      [,4]      [,5]
-## [1,] -1.4979824 -1.5074941 -0.6961911 -2.049392 -1.749698
-## [2,] -2.0683551 -0.2919956 -1.5535522 -1.787948 -2.281474
-## [3,]  0.7208332  1.4092969  0.8698585  1.408542  1.018815
-## [4,] -1.8825163 -2.1125223 -2.3483565 -1.732975 -1.809896
-## [5,] -3.0347718 -1.9376679 -2.2466785 -1.495906 -1.340114</code></pre>
+## [1,] -1.5999612 -1.5875431 -0.5712232 -2.022905 -1.735628
+## [2,] -1.9615572 -0.4152036 -1.3137340 -2.271427 -2.282629
+## [3,]  0.5113085  1.2657566  0.7369559  1.292286  1.052361
+## [4,] -1.9021625 -1.9848339 -2.3212755 -1.722773 -1.630933
+## [5,] -3.2379046 -2.0607103 -2.1334502 -1.259637 -1.142044</code></pre>
+</div>
+<div id="test-2-10-covariates-no-collineatity.-70-informative" class="section level2">
+<h2>Test 2: 10 covariates, no collineatity. 70% informative</h2>
 <pre class="r"><code>dat &lt;-
  generate_simulation_rows(
   800,
@@ -659,6 +641,142 @@ rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Versi
 ##  [8,] -1.8745527 -1.7863913 -1.834548 -1.3127843 -0.6089388
 ##  [9,]  1.3820971  0.4154524  1.341356  1.0044226  1.1420449
 ## [10,]  1.8714142  4.2969879  1.085011  1.3269022  1.2986487</code></pre>
+</div>
+<div id="test-3-6-covariates-with-collineatity.-100-informative" class="section level2">
+<h2>Test 3: 6 covariates, with collineatity. 100% informative</h2>
+<pre class="r"><code>dat &lt;-
+ generate_simulation_rows(
+  800,
+  900,
+  r = 15,
+  k = 6, 
+  missing_prob = 0.9,
+  coll = T,
+  prepare_for_fitting = TRUE,
+  half_discrete = FALSE,
+  informative_cov_prop = 1,
+  mv_beta = T,
+  seed = 2023
+ )
+#---------------
+
+fit_rank &lt;- CASMC_cv_rank(
+ y_train = dat$fit_data$train,
+ X = dat$X,
+ y_valid = dat$fit_data$valid,
+ W_valid = dat$fit_data$W_valid,
+ y = dat$fit_data$Y,
+ error_function = error_metric$rmse,
+ lambda.factor = 1 / 4,
+ lambda.init = NULL,
+ n.lambda = 20,
+ rank.init = 2,
+ rank.limit = 30,
+ rank.step = 2,
+ pct = 0.98,
+ lambda.a = 0,
+ S.a = NULL,
+ lambda.b = 0,
+ S.b = NULL,
+ early.stopping = 1,
+ thresh = 1e-6,
+ maxit = 30,
+ trace = F,
+ print.best = TRUE,
+ quiet = FALSE,
+ warm = NULL,
+ r_min = 0,
+ track = TRUE,
+ max_cores = 30,
+ seed = 2023
+)</code></pre>
+<pre><code>## [1] &quot;Running on 7 cores.&quot;
+## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
+## [1] &quot;r = 0 - Val Err = 1.50078&quot;
+## [1] &quot;r = 1 - Val Err = 9.06947109714425e+25&quot;
+## [1] &quot;r = 2 - Val Err = 999999&quot;
+## [1] &quot;r = 3 - Val Err = 1.16823&quot;
+## [1] &quot;r = 4 - Val Err = 1.16229&quot;
+## [1] &quot;r = 5 - Val Err = 1.15554&quot;
+## [1] &quot;r = 6 - Val Err = 1.14851&quot;
+## [1] &quot;Best fit: r =  6  - Validation Error:  1.14850806648221&quot;</code></pre>
+<pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
+            X = dat$X,
+            svdH = NULL,
+            Xterms = NULL,
+            J = fit_rank$rank.max,
+            r = fit_rank$r-1,
+            lambda.M = fit_rank$lambda,
+            lambda.beta = fit_rank$lambda,
+            # similarity matrix for A
+            S.a = NULL,
+            lambda.a = 0,
+            # similarity matrix for B
+            S.b = NULL,
+            lambda.b = 0,
+            maxit = 400,
+            thresh = 1e-05,
+            trace.it = T,
+            warm.start = NULL,
+            final.svd = F,
+            init = &quot;naive&quot;,
+            Qtype = 1,
+            qiter.max = 10,
+            min_eigv = 1e-17) -&gt;
+  fiti</code></pre>
+<pre><code>## 1 : obj 4.54334 ratio 0.002878993 qiter 5 
+## 2 : obj 3.20416 ratio 0.001621899 qiter 5 
+## 3 : obj 2.40809 ratio 0.0009080278 qiter 5 
+## 4 : obj 1.93331 ratio 0.0005302697 qiter 4 
+## 5 : obj 1.64108 ratio 0.0003285649 qiter 4 
+## 6 : obj 1.45358 ratio 0.0002159826 qiter 4 
+## 7 : obj 1.32798 ratio 0.0001498795 qiter 4 
+## 8 : obj 1.24027 ratio 0.0001090004 qiter 4 
+## 9 : obj 1.17665 ratio 8.239702e-05 qiter 4 
+## 10 : obj 1.12894 ratio 6.424112e-05 qiter 4 
+## 11 : obj 1.09212 ratio 5.13209e-05 qiter 4 
+## 12 : obj 1.06301 ratio 4.179716e-05 qiter 3 
+## 13 : obj 1.03955 ratio 3.457375e-05 qiter 3 
+## 14 : obj 1.02031 ratio 2.896765e-05 qiter 3 
+## 15 : obj 1.00432 ratio 2.453557e-05 qiter 3 
+## 16 : obj 0.99088 ratio 2.097844e-05 qiter 3 
+## 17 : obj 0.97947 ratio 1.808749e-05 qiter 3 
+## 18 : obj 0.96971 ratio 1.571266e-05 qiter 3 
+## 19 : obj 0.9613 ratio 1.374339e-05 qiter 3 
+## 20 : obj 0.954 ratio 1.209659e-05 qiter 3 
+## 21 : obj 0.94764 ratio 1.070872e-05 qiter 3 
+## 22 : obj 0.94205 ratio 9.530571e-06 qiter 3</code></pre>
+<pre class="r"><code>fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
+
+print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt; 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
+<pre><code>##       Metric       model       Beta         M  test train     Y
+## 1 rmse(rank) New Version  5.282( 5) 0.830( 3) 0.615 0.539 1.050
+## 2 rmse(rank) Old Version 73.929( 6) 0.410( 3) 0.508 0.460 0.973</code></pre>
+<pre class="r"><code>fiti$beta[,1:5]</code></pre>
+<pre><code>##             [,1]        [,2]       [,3]       [,4]      [,5]
+## [1,] -0.04718193  12.1840651 -4.9416446 -3.5920557 -0.285495
+## [2,] -3.80316309 -15.6505275  1.6246652  0.1038648 -3.960810
+## [3,]  0.88493268   0.6269987  0.2510463  0.0308980  1.344091
+## [4,]  2.67233403   1.1420034  2.8140795  2.9288419  2.566885
+## [5,] -0.96928405  -1.8912371 -1.5645467 -0.9937274 -4.029868
+## [6,] -2.68302176  -2.0429927 -1.8732172 -1.7962190 -2.921081</code></pre>
+<pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
+<pre><code>##             [,1]         [,2]         [,3]       [,4]        [,5]
+## [1,]  22.6842248  153.1034018  198.2092592  92.460824 -253.423969
+## [2,] -26.8068068 -156.8923327 -202.2569825 -96.465961  248.656319
+## [3,]   0.8623629    0.6529091    0.3511791   0.123476    1.620940
+## [4,]   2.8786088    1.3060359    3.1081587   3.487298    3.071691
+## [5,]  -1.2207281   -1.9607676   -1.5492407  -1.145325   -4.408651
+## [6,]  -3.1608325   -2.2623728   -2.4574237  -2.226408   -3.314042</code></pre>
+<pre class="r"><code>dat$beta[,1:5]</code></pre>
+<pre><code>##            [,1]       [,2]       [,3]      [,4]      [,5]
+## [1,] -2.2605087 -1.1225995 -3.0489860 -2.939398 -2.945278
+## [2,] -1.9020515 -2.5829902 -0.9119708 -1.230545 -1.907237
+## [3,]  0.7489833  0.8462216  0.3048621  0.178085  1.551455
+## [4,]  2.9807324  1.4704025  3.1806321  3.298564  2.839327
+## [5,] -1.2266692 -1.9829920 -1.6385659 -1.138986 -4.378930
+## [6,] -3.2165106 -2.4005482 -2.6215256 -2.163315 -3.390803</code></pre>
 </div>
 </div>
 
