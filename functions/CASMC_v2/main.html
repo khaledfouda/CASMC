@@ -437,7 +437,6 @@ fit_rank &lt;- CASMC_cv_rank(
 <pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
             svdH = NULL,
-            Xterms = NULL,
             J = fit_rank$rank.max,
             r = fit_rank$r,
             lambda.M = fit_rank$lambda,
@@ -567,7 +566,6 @@ fit_rank &lt;- CASMC_cv_rank(
 <pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
             svdH = NULL,
-            Xterms = NULL,
             J = fit_rank$rank.max,
             r = fit_rank$r,
             lambda.M = fit_rank$lambda,
@@ -703,7 +701,6 @@ fit_rank &lt;- CASMC_cv_rank(
 <pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
             svdH = NULL,
-            Xterms = NULL,
             J = fit_rank$rank.max,
             r = fit_rank$r-1,
             lambda.M = fit_rank$lambda,
@@ -777,6 +774,188 @@ rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Versi
 ## [4,]  2.9807324  1.4704025  3.1806321  3.298564  2.839327
 ## [5,] -1.2266692 -1.9829920 -1.6385659 -1.138986 -4.378930
 ## [6,] -3.2165106 -2.4005482 -2.6215256 -2.163315 -3.390803</code></pre>
+</div>
+<div id="test-4-10-covariates-no-collineatity.-70-informative---cv" class="section level2">
+<h2>Test 4: 10 covariates, no collineatity. 70% informative - cv</h2>
+<pre class="r"><code>dat &lt;-
+ generate_simulation_rows(
+  800,
+  900,
+  r = 15,
+  k = 10, 
+  missing_prob = 0.9,
+  coll = F,
+  prepare_for_fitting = TRUE,
+  half_discrete = FALSE,
+  informative_cov_prop = 0.7,
+  mv_beta = T,
+  seed = 2023
+ )
+#---------------
+
+fit_rank &lt;- CASMC_cv_rank(
+ y_train = dat$fit_data$train,
+ X = dat$X,
+ y_valid = dat$fit_data$valid,
+ W_valid = dat$fit_data$W_valid,
+ y = dat$fit_data$Y,
+ error_function = error_metric$rmse,
+ lambda.factor = 1 / 4,
+ lambda.init = NULL,
+ n.lambda = 20,
+ rank.init = 2,
+ rank.limit = 30,
+ rank.step = 2,
+ pct = 0.98,
+ lambda.a = 0,
+ S.a = NULL,
+ lambda.b = 0,
+ S.b = NULL,
+ early.stopping = 1,
+ thresh = 1e-6,
+ maxit = 30,
+ trace = F,
+ print.best = TRUE,
+ quiet = FALSE,
+ warm = NULL,
+ r_min = 0,
+ track = TRUE,
+ max_cores = 30,
+ seed = 2023
+)</code></pre>
+<pre><code>## [1] &quot;Running on 11 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 1.69262&quot;
+## [1] &quot;r = 1 - Val Err = 1.33695&quot;
+## [1] &quot;r = 2 - Val Err = 1.30801&quot;
+## [1] &quot;r = 3 - Val Err = 1.2997&quot;
+## [1] &quot;r = 4 - Val Err = 1.1858&quot;
+## [1] &quot;r = 5 - Val Err = 1.16716&quot;
+## [1] &quot;r = 6 - Val Err = 1.16119&quot;
+## [1] &quot;r = 7 - Val Err = 1.15471&quot;
+## [1] &quot;r = 8 - Val Err = 1.16603&quot;
+## [1] &quot;r = 9 - Val Err = 1.179&quot;
+## [1] &quot;r = 10 - Val Err = 1.74602&quot;
+## [1] &quot;Best fit: r =  7  - Validation Error:  1.15470819280678&quot;</code></pre>
+<pre class="r"><code>CASMC2_cv_beta(
+  y_train = dat$fit_data$train,
+  X = dat$X,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  trace = F,
+  print.best = T,
+  warm = NULL,
+  quiet = F,
+  seed = 2023,
+  lambda.beta.grid = &quot;default1&quot;
+) -&gt;
+  fiti.cv</code></pre>
+<pre><code>## [1] &quot;Running on 8 cores.&quot;</code></pre>
+<pre class="r"><code>fiti.cv$fit -&gt; fiti
+fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
+
+print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt; 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
+<pre><code>##       Metric       model      Beta         M  test train     Y
+## 1 rmse(rank) New Version 0.110( 7) 0.399( 3) 0.529 0.471 0.960
+## 2 rmse(rank) Old Version 0.114( 7) 0.410( 3) 0.528 0.471 0.960</code></pre>
+<pre class="r"><code>fiti$beta[,1:5]</code></pre>
+<pre><code>##               [,1]         [,2]         [,3]         [,4]         [,5]
+##  [1,]  0.011949833 -0.020953191 -0.006694734 -0.019914464 -0.002403744
+##  [2,]  0.751318585  0.614421408  1.935426633  0.882628837  2.138163716
+##  [3,] -0.006126924 -0.002470515 -0.026508619 -0.011547244 -0.019567504
+##  [4,] -0.007297265  0.006416036 -0.012474915 -0.009539126 -0.007381420
+##  [5,] -2.247702713 -2.983957337 -3.666557753 -2.247585328 -1.893186149
+##  [6,]  1.510764947  1.929599656  1.672407791  0.262091017  1.585026325
+##  [7,] -3.254928585 -2.096978483 -2.904844902 -0.893344816 -3.081045961
+##  [8,] -1.899451881 -1.795355477 -1.888030674 -1.327521727 -0.608367043
+##  [9,]  1.407554126  0.437237302  1.343860427  1.016444475  1.176450643
+## [10,]  1.876508514  4.305627518  1.129362729  1.333549386  1.315424506</code></pre>
+<pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
+<pre><code>##             [,1]       [,2]      [,3]       [,4]       [,5]
+##  [1,]  0.0000000  0.0000000  0.000000  0.0000000  0.0000000
+##  [2,]  0.7402914  0.5983016  1.928890  0.8486581  2.1322245
+##  [3,]  0.0000000  0.0000000  0.000000  0.0000000  0.0000000
+##  [4,]  0.0000000  0.0000000  0.000000  0.0000000  0.0000000
+##  [5,] -2.1893413 -2.9447013 -3.627898 -2.1913102 -1.8430326
+##  [6,]  1.4854947  1.8782096  1.648907  0.2337407  1.5576231
+##  [7,] -3.2479824 -2.0245852 -2.882036 -0.8512149 -3.0680738
+##  [8,] -1.8745527 -1.7863913 -1.834548 -1.3127843 -0.6089388
+##  [9,]  1.3820971  0.4154524  1.341356  1.0044226  1.1420449
+## [10,]  1.8714142  4.2969879  1.085011  1.3269022  1.2986487</code></pre>
+<pre class="r"><code>print(diag(fiti$db^2) |&gt; round(3))</code></pre>
+<pre><code>## [1] 164.418  27.699  24.894  24.158  21.473  18.132  16.270</code></pre>
+<pre class="r"><code>print(svd(fit_rank$fit$beta)$d |&gt; round(3))</code></pre>
+<pre><code>##  [1] 162.445  27.810  24.995  24.263  21.566  18.259  16.422   0.000   0.000
+## [10]   0.000</code></pre>
+<!-- ## Test 5: 6 covariates, with collineatity. 100% informative with CV -->
+<!-- ```{r} -->
+<!-- dat <- -->
+<!--  generate_simulation_rows( -->
+<!--   800, -->
+<!--   900, -->
+<!--   r = 15, -->
+<!--   k = 6,  -->
+<!--   missing_prob = 0.9, -->
+<!--   coll = T, -->
+<!--   prepare_for_fitting = TRUE, -->
+<!--   half_discrete = FALSE, -->
+<!--   informative_cov_prop = 1, -->
+<!--   mv_beta = T, -->
+<!--   seed = 2023 -->
+<!--  ) -->
+<!-- #--------------- -->
+<!-- fit_rank <- CASMC_cv_rank( -->
+<!--  y_train = dat$fit_data$train, -->
+<!--  X = dat$X, -->
+<!--  y_valid = dat$fit_data$valid, -->
+<!--  W_valid = dat$fit_data$W_valid, -->
+<!--  y = dat$fit_data$Y, -->
+<!--  error_function = error_metric$rmse, -->
+<!--  lambda.factor = 1 / 4, -->
+<!--  lambda.init = NULL, -->
+<!--  n.lambda = 20, -->
+<!--  rank.init = 2, -->
+<!--  rank.limit = 30, -->
+<!--  rank.step = 2, -->
+<!--  pct = 0.98, -->
+<!--  lambda.a = 0, -->
+<!--  S.a = NULL, -->
+<!--  lambda.b = 0, -->
+<!--  S.b = NULL, -->
+<!--  early.stopping = 1, -->
+<!--  thresh = 1e-6, -->
+<!--  maxit = 30, -->
+<!--  trace = F, -->
+<!--  print.best = TRUE, -->
+<!--  quiet = FALSE, -->
+<!--  warm = NULL, -->
+<!--  r_min = 0, -->
+<!--  track = TRUE, -->
+<!--  max_cores = 30, -->
+<!--  seed = 2023 -->
+<!-- ) -->
+<!-- CASMC2_cv_beta( -->
+<!--   y_train = dat$fit_data$train, -->
+<!--   X = dat$X, -->
+<!--   y_valid = dat$fit_data$valid, -->
+<!--   W_valid = dat$fit_data$W_valid, -->
+<!--   y = dat$fit_data$Y, -->
+<!--   trace = F, -->
+<!--   print.best = T, -->
+<!--   warm = NULL, -->
+<!--   quiet = F, -->
+<!--   seed = 2023, -->
+<!--   lambda.beta.grid = "default1" -->
+<!-- ) -> -->
+<!--   fiti.cv -->
+<!-- fiti.cv$fit -> fiti -->
+<!-- fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb)) -->
+<!-- print_performance(dat, fiti, error_metric$rmse, F, "New Version",F,3) |>  -->
+<!-- rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, "Old Version",F,3)) -->
+<!-- fiti$beta[,1:5] -->
+<!-- fit_rank$fit$beta[,1:5] -->
+<!-- ``` -->
 </div>
 </div>
 

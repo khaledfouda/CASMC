@@ -248,7 +248,7 @@ fit_rank$fit$beta[,1:5]
 
 ## Test 3: 6 covariates, with collineatity. 100% informative
 
-```{r}
+```{r long1}
 
 dat <-
  generate_simulation_rows(
@@ -341,7 +341,7 @@ dat$beta[,1:5]
 
 ## Test 4: 10 covariates, no collineatity. 70% informative - cv
 
-```{r}
+```{r long2}
 
 dat <-
  generate_simulation_rows(
@@ -417,87 +417,90 @@ fiti$beta[,1:5]
 
 fit_rank$fit$beta[,1:5]
 
-```
-
-
-
-
-## Test 5: 6 covariates, with collineatity. 100% informative with CV
-
-```{r}
-
-dat <-
- generate_simulation_rows(
-  800,
-  900,
-  r = 15,
-  k = 6, 
-  missing_prob = 0.9,
-  coll = T,
-  prepare_for_fitting = TRUE,
-  half_discrete = FALSE,
-  informative_cov_prop = 1,
-  mv_beta = T,
-  seed = 2023
- )
-#---------------
-
-fit_rank <- CASMC_cv_rank(
- y_train = dat$fit_data$train,
- X = dat$X,
- y_valid = dat$fit_data$valid,
- W_valid = dat$fit_data$W_valid,
- y = dat$fit_data$Y,
- error_function = error_metric$rmse,
- lambda.factor = 1 / 4,
- lambda.init = NULL,
- n.lambda = 20,
- rank.init = 2,
- rank.limit = 30,
- rank.step = 2,
- pct = 0.98,
- lambda.a = 0,
- S.a = NULL,
- lambda.b = 0,
- S.b = NULL,
- early.stopping = 1,
- thresh = 1e-6,
- maxit = 30,
- trace = F,
- print.best = TRUE,
- quiet = FALSE,
- warm = NULL,
- r_min = 0,
- track = TRUE,
- max_cores = 30,
- seed = 2023
-)
-
-
-
-CASMC2_cv_beta(
-  y_train = dat$fit_data$train,
-  X = dat$X,
-  y_valid = dat$fit_data$valid,
-  W_valid = dat$fit_data$W_valid,
-  y = dat$fit_data$Y,
-  trace = F,
-  print.best = T,
-  warm = NULL,
-  quiet = F,
-  seed = 2023,
-  lambda.beta.grid = "default1"
-) ->
-  fiti.cv
-
-fiti.cv$fit -> fiti
-fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
-
-print_performance(dat, fiti, error_metric$rmse, F, "New Version",F,3) |> 
-rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, "Old Version",F,3))
-
-fiti$beta[,1:5]
-
-fit_rank$fit$beta[,1:5]
+print(diag(fiti$db^2) |> round(3))
+print(svd(fit_rank$fit$beta)$d |> round(3))
 
 ```
+
+
+
+
+<!-- ## Test 5: 6 covariates, with collineatity. 100% informative with CV -->
+
+<!-- ```{r} -->
+
+<!-- dat <- -->
+<!--  generate_simulation_rows( -->
+<!--   800, -->
+<!--   900, -->
+<!--   r = 15, -->
+<!--   k = 6,  -->
+<!--   missing_prob = 0.9, -->
+<!--   coll = T, -->
+<!--   prepare_for_fitting = TRUE, -->
+<!--   half_discrete = FALSE, -->
+<!--   informative_cov_prop = 1, -->
+<!--   mv_beta = T, -->
+<!--   seed = 2023 -->
+<!--  ) -->
+<!-- #--------------- -->
+
+<!-- fit_rank <- CASMC_cv_rank( -->
+<!--  y_train = dat$fit_data$train, -->
+<!--  X = dat$X, -->
+<!--  y_valid = dat$fit_data$valid, -->
+<!--  W_valid = dat$fit_data$W_valid, -->
+<!--  y = dat$fit_data$Y, -->
+<!--  error_function = error_metric$rmse, -->
+<!--  lambda.factor = 1 / 4, -->
+<!--  lambda.init = NULL, -->
+<!--  n.lambda = 20, -->
+<!--  rank.init = 2, -->
+<!--  rank.limit = 30, -->
+<!--  rank.step = 2, -->
+<!--  pct = 0.98, -->
+<!--  lambda.a = 0, -->
+<!--  S.a = NULL, -->
+<!--  lambda.b = 0, -->
+<!--  S.b = NULL, -->
+<!--  early.stopping = 1, -->
+<!--  thresh = 1e-6, -->
+<!--  maxit = 30, -->
+<!--  trace = F, -->
+<!--  print.best = TRUE, -->
+<!--  quiet = FALSE, -->
+<!--  warm = NULL, -->
+<!--  r_min = 0, -->
+<!--  track = TRUE, -->
+<!--  max_cores = 30, -->
+<!--  seed = 2023 -->
+<!-- ) -->
+
+
+
+<!-- CASMC2_cv_beta( -->
+<!--   y_train = dat$fit_data$train, -->
+<!--   X = dat$X, -->
+<!--   y_valid = dat$fit_data$valid, -->
+<!--   W_valid = dat$fit_data$W_valid, -->
+<!--   y = dat$fit_data$Y, -->
+<!--   trace = F, -->
+<!--   print.best = T, -->
+<!--   warm = NULL, -->
+<!--   quiet = F, -->
+<!--   seed = 2023, -->
+<!--   lambda.beta.grid = "default1" -->
+<!-- ) -> -->
+<!--   fiti.cv -->
+
+<!-- fiti.cv$fit -> fiti -->
+<!-- fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb)) -->
+
+<!-- print_performance(dat, fiti, error_metric$rmse, F, "New Version",F,3) |>  -->
+<!-- rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, "Old Version",F,3)) -->
+
+<!-- fiti$beta[,1:5] -->
+
+<!-- fit_rank$fit$beta[,1:5] -->
+
+<!-- ``` -->
