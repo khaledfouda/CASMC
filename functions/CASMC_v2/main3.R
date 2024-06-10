@@ -43,18 +43,20 @@ CASMC2_fit2(y = dat$fit_data$train,
             # similarity matrix for B
             S.b = NULL,
             lambda.b = 0,
-            maxit = 400,
+            maxit = 50,
             thresh = 1e-05,
-            trace.it = FALSE,
+            trace.it = T,
             warm.start = NULL,
             final.svd = F,
             init = "naive",
+            Qtype = 1,
+            qiter.max = 10,
             min_eigv = 1e-17) ->
   fiti
 
 
 
-fiti$beta = as.matrix(fiti$Q %*% t(fiti$R))
+fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
 print_performance(dat, fiti, error_metric$rmse, F, "CASMC(Rank)",F,3)
 
 
