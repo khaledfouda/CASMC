@@ -104,7 +104,7 @@ CASMC2_fit2 <-
         Db = Db[seq(r),seq(r), drop = FALSE]
       } else{
         ra = r - rD
-        Db = c(diag(Db), rep(diag(Db)[rD], ra))
+        Db = diag(c(diag(Db), rep(diag(Db)[rD], ra)), r, r)
         Ub = warm.start$ub
         Uba = matrix(rnorm(k * ra), k, ra)
         Uba = Uba - Ub %*% (t(Ub) %*% Uba)
@@ -115,6 +115,9 @@ CASMC2_fit2 <-
         )
         Ub = cbind(Ub, Uba)
         Vb = cbind(warm.start$vb, matrix(0, m, ra))
+        # print(dim(Ub))
+        # print(dim(Vb))
+        # print(dim(Db))
         }
       
       
@@ -188,8 +191,10 @@ CASMC2_fit2 <-
       part2 =  t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R)
       
       RD = t(as.matrix(ginv(part1) %*% part2)) %*% Db
-      Rsvd = fast.svd(RD)
+      Rsvd = svd(RD)
       Ub = Ub %*% Rsvd$v
+      # print(dim(Db))
+      # print(length(Rsvd$d))
       Db[cbind(1:r,1:r)] <- sqrt(Rsvd$d)
       Vb = Rsvd$u
       
@@ -247,8 +252,11 @@ CASMC2_fit2 <-
         }
         qiter <- qiter + 1
       }
-      Qsvd = fast.svd(Q %*% Db)
-
+      Qsvd = svd(Q %*% Db)
+      
+      # print(dim(Db))
+      # print(length(Qsvd$d))
+      
       Ub = Qsvd$u
       Db[cbind(1:r,1:r)] <- sqrt(Qsvd$d)
       Vb = Vb %*% Qsvd$v
@@ -269,7 +277,7 @@ CASMC2_fit2 <-
         B = B - t(V)  %*% L.b
       B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
       Bsvd = tryCatch({
-        fast.svd(B)
+        svd(B)
       }, error = function(e){
         message(paste("Loop/B:", e))
         svd(B)
@@ -287,7 +295,7 @@ CASMC2_fit2 <-
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
       Asvd = tryCatch({
-        fast.svd(A)
+        svd(A)
       }, error = function(e){
         message(paste("Loop/A:", e))
         svd(A)

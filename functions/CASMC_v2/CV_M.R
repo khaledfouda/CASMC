@@ -108,7 +108,7 @@ CASMC2_cv_M <-
    
    #--------------------------------------------------------------
    # predicting validation set and xbetas for next fit:
-   XbetaValid = suvC(X%*%fiti$ub, fiti$vb %*% fiti$db, virow, vpcol)
+   XbetaValid = suvC(X%*%fiti$ub, fiti$vb %*% (fiti$db^2), virow, vpcol)
    MValid = suvC(fiti$u, t(fiti$d * t(fiti$v)), virow, vpcol)
    #--------------------------------------------
    err = error_function(MValid + XbetaValid, y_valid)

@@ -22,7 +22,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
             svdH = NULL,
             J = 3,
-            r = 5,
+            r = 7,
             lambda.M = 8.7,
             lambda.beta = 10,
             # similarity matrix for A
@@ -34,7 +34,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             maxit = 50,
             thresh = 1e-05,
             trace.it = T,
-            warm.start = NULL,
+            warm.start = fiti,
             final.svd = T,
             init = "naive",
             Qtype = 1,
@@ -55,7 +55,7 @@ CASMC2_cv_M(
   y = dat$fit_data$Y,
   r = 5,
   lambda.beta = 10,
-  trace = F,
+  trace = T,
   print.best = T,
   warm = NULL,
   quiet = F,
@@ -67,12 +67,33 @@ fiti2$beta = as.matrix(fiti2$ub %*% (fiti2$db^2) %*% t(fiti2$vb))
 print_performance(dat, fiti2, error_metric$rmse, F, "CASMC(Rank)",F,3)
 
 #============================================================================
+CASMC2_cv_beta(
+  y_train = dat$fit_data$train,
+  X = dat$X,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  trace = T,
+  print.best = T,
+  warm = NULL,
+  quiet = F,
+  seed = 2023
+) -> fit3
+
+fit3$fit -> fiti3
+fiti3$beta = as.matrix(fiti3$ub %*% (fiti3$db^2) %*% t(fiti3$vb))
+print_performance(dat, fiti3, error_metric$rmse, F, "CASMC(Rank)",F,3)
+
+#============================================================================
+
+
+
 #' # 1
 #+ something
 
 fit_rank <- CASMC_cv_rank(
  y_train = dat$fit_data$train,
- X = X_r$X,
+ X = dat$X,
  y_valid = dat$fit_data$valid,
  W_valid = dat$fit_data$W_valid,
  y = dat$fit_data$Y,
@@ -95,9 +116,9 @@ fit_rank <- CASMC_cv_rank(
  print.best = TRUE,
  quiet = FALSE,
  warm = NULL,
- rank_x = X_r$rank,
+ #rank_x = X_r$rank,
  r_min = 0,
- r_max = X_r$rank,
+ #r_max = X_r$rank,
  track = TRUE,
  max_cores = 30,
  seed = 2023
