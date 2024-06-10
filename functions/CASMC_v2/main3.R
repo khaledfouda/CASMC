@@ -16,23 +16,11 @@ dat <-
   mv_beta = T,
   seed = 2023
  )
-X_r = reduced_hat_decomp(dat$X, 1e-2)
-
-Xs$d2 = Xs$d <- diag(Xs$d)
-
-system.time({for(i in 1:1000)diag(Xs$d2) = diag(Xs$d)^2})
-system.time({for(i in 1:1000)Xs$d2 = Xs$d^2})
-system.time({for(i in 1:1000)ss=sweep(Xs$u,2,Xs$d,`*`)})
-
-
-dg = diag(Xs$d)
-all(round(Xs$u %*% diag(Xs$d), 5) == round(UD(Xs$u,Xs$d), 5))
 
 
 CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
             svdH = NULL,
-            Xterms = NULL,
             J = 3,
             r = 5,
             lambda.M = 8.7,
@@ -47,7 +35,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             thresh = 1e-05,
             trace.it = T,
             warm.start = NULL,
-            final.svd = F,
+            final.svd = T,
             init = "naive",
             Qtype = 1,
             qiter.max = 10,
@@ -58,24 +46,27 @@ CASMC2_fit2(y = dat$fit_data$train,
 
 fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
 print_performance(dat, fiti, error_metric$rmse, F, "CASMC(Rank)",F,3)
+#=============================================================================
+CASMC2_cv_M(
+  y_train = dat$fit_data$train,
+  X = dat$X,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  r = 5,
+  lambda.beta = 10,
+  trace = F,
+  print.best = T,
+  warm = NULL,
+  quiet = F,
+  seed = 2023
+) -> fit2
 
+fit2$fit -> fiti2
+fiti2$beta = as.matrix(fiti2$ub %*% (fiti2$db^2) %*% t(fiti2$vb))
+print_performance(dat, fiti2, error_metric$rmse, F, "CASMC(Rank)",F,3)
 
-
-
-
-fit_rank$rank_M
-
-
-
-
-
-
-
-
-(900*10/800) * 10
-svd(dat$X %*% naive_fit(as.matrix(dat$Y), dat$X)$beta)$d[1]
-
-
+#============================================================================
 #' # 1
 #+ something
 

@@ -25,7 +25,6 @@ CASMC2_cv_M <-
           r = NULL,
           lambda.beta = 0,
           # provide this if you need rank restriction. if not null, L2 reg will be ignored
-          Xterms = NULL,
           svdH = NULL,
           # provide this if you need L2 regularization.
           error_function = error_metric$rmse,
@@ -81,8 +80,6 @@ CASMC2_cv_M <-
   vpcol = W_valid@p
   W_valid = NULL
   #------------------------------------------------
-  if (is.null(Xterms))
-   Xterms = GetXterms(X, lambda.beta)
   #-----------------------------------------------------------------------
   rank.max <- rank.init
   best_fit <- list(error = Inf, r = r)
@@ -90,13 +87,12 @@ CASMC2_cv_M <-
   #---------------------------------------------------------------------
   for (i in seq(along = lamseq)) {
    fiti <-
-    CASMC2_fit(
+    CASMC2_fit2(
      y = y_train,
      X = X,
      J = rank.max,
      lambda.M = lamseq[i],
      lambda.beta = lambda.beta,
-     Xterms = Xterms,
      svdH = NULL,
      r = r,
      lambda.a = lambda.a,
@@ -112,7 +108,7 @@ CASMC2_cv_M <-
    
    #--------------------------------------------------------------
    # predicting validation set and xbetas for next fit:
-   XbetaValid = suvC(X , t(fiti$beta), virow, vpcol)
+   XbetaValid = suvC(X%*%fiti$ub, fiti$vb %*% fiti$db, virow, vpcol)
    MValid = suvC(fiti$u, t(fiti$d * t(fiti$v)), virow, vpcol)
    #--------------------------------------------
    err = error_function(MValid + XbetaValid, y_valid)
@@ -166,14 +162,13 @@ CASMC2_cv_M <-
   if (!is.null(y)) {
    stopifnot(inherits(y, "dgCMatrix"))
    best_fit$fit <-
-    CASMC2_fit(
+    CASMC2_fit2(
      y = y,
      X = X,
      J = best_fit$rank.max,
      lambda.M = best_fit$lambda.M,
      r = r,
      svdH = NULL,
-     Xterms = Xterms,
      lambda.beta = lambda.beta,
      lambda.a = lambda.a,
      S.a = S.a,

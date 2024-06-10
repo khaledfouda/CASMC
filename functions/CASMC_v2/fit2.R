@@ -20,7 +20,6 @@ CASMC2_fit2 <-
   function(y,
            X,
            svdH = NULL,
-           Xterms = NULL,
            J = 2,
            r = 2,
            lambda.M = 0,
@@ -64,10 +63,6 @@ CASMC2_fit2 <-
     if (is.null(warm.start) & is.null(svdH)) {
       svdH = reduced_hat_decomp.H(X)
     }
-    #---------------------------------------------------
-    # if Xterms are not provided.
-    if (is.null(Xterms))
-      Xterms = GetXterms(X, lambda.beta)
     #---------------------------------------------------
     # warm start or initialize (naive or random)
     warm = FALSE
@@ -154,11 +149,10 @@ CASMC2_fit2 <-
         Y_naive <- Xbeta <- M <- NULL
         #---------------------------------------------------------------
       }
-      #Qsvd = fast.svd(Q)
-      Q = Ub %*% Db
-      R = Vb %*% Db
-      XtX = t(X) %*% X
     }
+    Q = Ub %*% Db
+    R = Vb %*% Db
+    XtX = t(X) %*% X
     #----------------------------------------
     yobs <- y@x # y will hold the model residuals
     ratio <- 1
@@ -337,6 +331,17 @@ CASMC2_fit2 <-
       U = Asvd$u
       V = V %*% Asvd$v
       Dsq = pmax(Asvd$d - lambda.M, min_eigv)
+      #---------------------------------------------
+      # part1 = t(Q) %*% XtX %*% Q + lambda.beta * diag(1, r, r)
+      # part2 =  t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R)
+      # 
+      # RD = t(as.matrix(ginv(part1) %*% part2)) %*% Db
+      # Rsvd = fast.svd(RD)
+      # Ub = Ub %*% Rsvd$v
+      # Db[cbind(1:r,1:r)] <- sqrt(Rsvd$d)
+      # Vb = Rsvd$u
+      
+      #Db[cbind(1:r,1:r)] <- pmax(Db[cbind(1:r,1:r)] - lambda.beta, 0)
       #------------------
       if (trace.it) {
         M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
