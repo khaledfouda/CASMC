@@ -87,7 +87,7 @@ CASMC2_fit2 <-
         Ua = matrix(rnorm(n * Ja), n, Ja)
         Ua = Ua - U %*% (t(U) %*% Ua)
         Ua = tryCatch(
-          fast.svd(Ua)$u,
+          fast.svd(Ua, trim = FALSE)$u,
           error = function(e)
             svd(Ua)$u
         )
@@ -109,7 +109,7 @@ CASMC2_fit2 <-
         Uba = matrix(rnorm(k * ra), k, ra)
         Uba = Uba - Ub %*% (t(Ub) %*% Uba)
         Uba = tryCatch(
-          fast.svd(Uba)$u,
+          fast.svd(Uba, trim=FALSE)$u,
           error = function(e)
             svd(Uba)$u
         )
@@ -191,7 +191,7 @@ CASMC2_fit2 <-
       part2 =  t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R)
       
       RD = t(as.matrix(ginv(part1) %*% part2)) %*% Db
-      Rsvd = svd(RD)
+      Rsvd = fast.svd(RD, trim=FALSE)
       Ub = Ub %*% Rsvd$v
       # print(dim(Db))
       # print(length(Rsvd$d))
@@ -252,7 +252,7 @@ CASMC2_fit2 <-
         }
         qiter <- qiter + 1
       }
-      Qsvd = svd(Q %*% Db)
+      Qsvd = fast.svd(Q %*% Db, trim=FALSE)
       
       # print(dim(Db))
       # print(length(Qsvd$d))
@@ -277,7 +277,7 @@ CASMC2_fit2 <-
         B = B - t(V)  %*% L.b
       B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
       Bsvd = tryCatch({
-        svd(B)
+        fast.svd(B, trim=FALSE)
       }, error = function(e){
         message(paste("Loop/B:", e))
         svd(B)
@@ -295,7 +295,8 @@ CASMC2_fit2 <-
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
       Asvd = tryCatch({
-        svd(A)
+        #svd(A)
+        fast.svd(A, trim=FALSE)
       }, error = function(e){
         message(paste("Loop/A:", e))
         svd(A)
@@ -331,7 +332,7 @@ CASMC2_fit2 <-
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
       Asvd = tryCatch({
-        fast.svd(A)
+        fast.svd(A, trim=FALSE)
       }, error = function(e){
         message(paste("Final/A:", e))
         svd(A)
@@ -361,9 +362,9 @@ CASMC2_fit2 <-
     }
     #-------------------------------------------------------
     # trim in case we reduce the rank of M to be smaller than J.
-    J = min(sum(Dsq > 0) + 1, J)
+    J = min(sum(Dsq > 1e-5) + 1, J)
     J = min(J, length(Dsq))
-    r = min(sum(Db>0) + 1, r)
+    r = min(sum(Db>1e-5) + 1, r)
     r = min(r, length(Db))
     
     out = list(

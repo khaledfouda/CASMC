@@ -33,7 +33,7 @@ CASMC2_cv_beta <-
             # initial values.
             warm = NULL,
             # L2 parameters
-            lambda.beta.grid = "default2",
+            lambda.beta.grid = "default1",
             track = FALSE,
             max_cores = 8,
             # seed
@@ -41,7 +41,7 @@ CASMC2_cv_beta <-
       
       
       if(identical(lambda.beta.grid, "default1"))
-         lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *  seq(0, 10, length.out = 20)
+         lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *  seq(10, 0, length.out = 20)
       if(identical(lambda.beta.grid, "default2"))
          lambda.beta.grid = seq(propack.svd(naive_fit(y, X, TRUE),1)$d/4,
                                 0,
@@ -56,7 +56,7 @@ CASMC2_cv_beta <-
 
       results = list()
       rank.beta = 3
-      rank.beta.max = qr(X)$rank
+      rank.beta.max = reduced_hat_decomp(dat$X, pct = 0.999)$rank #qr(X)$rank
       counter = 0
       best_fit <- list(error = Inf)
       fiti <- NULL
@@ -85,7 +85,7 @@ CASMC2_cv_beta <-
             # rank.limit = rank.limit,
             # rank.step = rank.step,
             # pct = pct,
-            warm = warm,
+            warm = NULL,#warm,
             # lambda.a = lambda.a,
             # S.a = S.a,
             # lambda.b = lambda.b,
