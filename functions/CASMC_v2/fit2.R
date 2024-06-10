@@ -152,7 +152,6 @@ CASMC2_fit2 <-
         Db <- diag(sqrt(QRsvd$d), r, r)
         Vb <- QRsvd$v
         Y_naive <- Xbeta <- M <- NULL
-        print(r)
         #---------------------------------------------------------------
       }
       #Qsvd = fast.svd(Q)
@@ -164,7 +163,6 @@ CASMC2_fit2 <-
     yobs <- y@x # y will hold the model residuals
     ratio <- 1
     iter <- 0
-    print("hi")
     if (!is.null(r) && r == 0) {
       beta <- matrix(0, k, m)
       xbeta.obs <- rep(0, length(y@x))

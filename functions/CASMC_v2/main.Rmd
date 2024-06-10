@@ -5,12 +5,66 @@ output: html_document
 
 # Load Libraries
 
-```{r load-libraries, message=FALSE, warning=FALSE}
+```{r load-libraries, message=FALSE, warning=FALSE, eval=TRUE, echo=FALSE}
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
+
+# 0. prepare the data
+print_performance <-
+ function(inp,
+          outp,
+          test_error = error_metric$rmse,
+          mao = FALSE,
+          name = "",
+          showres=T,
+          rdig = 4) {
+  error_function_name <-
+   names(which(sapply(error_metric, identical, test_error)))
+  
+  if (mao) {
+   M = outp$M
+   O = outp$estimates
+  } else{
+   M = outp$u %*% (outp$d * t(outp$v))
+   O = M + inp$X %*% outp$beta
+  }
+  
+  error_beta <- error_M <- rank_beta <- rank_M <- NA
+  
+  if(!is.null(outp$beta))
+    error_beta <- round(test_error(outp$beta, inp$beta), rdig)
+  if(!is.null(M))
+    error_M <- round(test_error(M, inp$M), rdig)
+  error_test <-
+   round(test_error(O[inp$W == 0], inp$O[inp$W == 0]), rdig)
+  error_train <-
+   round(test_error(O[inp$W != 0], inp$O[inp$W != 0]), rdig)
+  error_Y <- 
+   round(test_error(O[inp$W != 0], inp$Y[inp$W != 0]), rdig)
+  
+  if(!is.null(outp$beta))
+    rank_beta <- qr(outp$beta)$rank
+  if(!is.null(M))
+    rank_M <- qr(M)$rank
+  
+  result_df <- data.frame(
+   Metric = c(paste0(error_function_name, "(rank)")),
+   model = name,
+   Beta = sprintf(paste0("%.",rdig,"f(%2d)"), error_beta, rank_beta),
+   M = sprintf(paste0("%.",rdig,"f(%2d)"), error_M, rank_M),
+   test = sprintf(paste0("%.",rdig,"f"), error_test),
+   train = sprintf(paste0("%.",rdig,"f"), error_train),
+   Y = sprintf(paste0("%.",rdig,"f"), error_Y)
+  )
+  
+  if(showres){
+  print(knitr::kable(result_df, format = "simple" ))
+  }else
+ return(result_df)
+ }
 ```
 
-## r will be set to 16 for all tests and dimensions 800x900
+## r will be set to 15 for all tests and dimensions 800x900 and 90% missingness
 
 ## Test 1: 5 covariates, no collineatity. 100% informative
 
@@ -20,7 +74,7 @@ dat <-
  generate_simulation_rows(
   800,
   900,
-  r = 5,
+  r = 15,
   k = 5, 
   missing_prob = 0.9,
   coll = F,
@@ -30,6 +84,39 @@ dat <-
   mv_beta = T,
   seed = 2023
  )
+#---------------
+
+
+fit_rank <- CASMC_cv_rank(
+ y_train = dat$fit_data$train,
+ X = dat$X,
+ y_valid = dat$fit_data$valid,
+ W_valid = dat$fit_data$W_valid,
+ y = dat$fit_data$Y,
+ error_function = error_metric$rmse,
+ lambda.factor = 1 / 4,
+ lambda.init = NULL,
+ n.lambda = 20,
+ rank.init = 2,
+ rank.limit = 30,
+ rank.step = 2,
+ pct = 0.98,
+ lambda.a = 0,
+ S.a = NULL,
+ lambda.b = 0,
+ S.b = NULL,
+ early.stopping = 1,
+ thresh = 1e-6,
+ maxit = 30,
+ trace = F,
+ print.best = TRUE,
+ quiet = FALSE,
+ warm = NULL,
+ r_min = 0,
+ track = TRUE,
+ max_cores = 30,
+ seed = 2023
+)
 
 
 
@@ -37,17 +124,17 @@ CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
             svdH = NULL,
             Xterms = NULL,
-            J = 3,
-            r = 5,
-            lambda.M = 8.7,
-            lambda.beta = 10,
+            J = fit_rank$rank.max,
+            r = fit_rank$r,
+            lambda.M = fit_rank$lambda,
+            lambda.beta = fit_rank$lambda,
             # similarity matrix for A
             S.a = NULL,
             lambda.a = 0,
             # similarity matrix for B
             S.b = NULL,
             lambda.b = 0,
-            maxit = 50,
+            maxit = 400,
             thresh = 1e-05,
             trace.it = T,
             warm.start = NULL,
@@ -61,9 +148,194 @@ CASMC2_fit2(y = dat$fit_data$train,
 
 
 fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
-print_performance(dat, fiti, error_metric$rmse, F, "CASMC(Rank)",F,3)
+print_performance(dat, fiti, error_metric$rmse, F, "New Version",F,3) |> 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, "Old Version",F,3))
 
+fiti$beta[,1:5]
 
+fit_rank$fit$beta[,1:5]
 
 ```
 
+## Test 2: 10 covariates, no collineatity. 70% informative
+
+```{r}
+
+dat <-
+ generate_simulation_rows(
+  800,
+  900,
+  r = 15,
+  k = 10, 
+  missing_prob = 0.9,
+  coll = F,
+  prepare_for_fitting = TRUE,
+  half_discrete = FALSE,
+  informative_cov_prop = 0.7,
+  mv_beta = T,
+  seed = 2023
+ )
+#---------------
+
+fit_rank <- CASMC_cv_rank(
+ y_train = dat$fit_data$train,
+ X = dat$X,
+ y_valid = dat$fit_data$valid,
+ W_valid = dat$fit_data$W_valid,
+ y = dat$fit_data$Y,
+ error_function = error_metric$rmse,
+ lambda.factor = 1 / 4,
+ lambda.init = NULL,
+ n.lambda = 20,
+ rank.init = 2,
+ rank.limit = 30,
+ rank.step = 2,
+ pct = 0.98,
+ lambda.a = 0,
+ S.a = NULL,
+ lambda.b = 0,
+ S.b = NULL,
+ early.stopping = 1,
+ thresh = 1e-6,
+ maxit = 30,
+ trace = F,
+ print.best = TRUE,
+ quiet = FALSE,
+ warm = NULL,
+ r_min = 0,
+ track = TRUE,
+ max_cores = 30,
+ seed = 2023
+)
+
+
+
+CASMC2_fit2(y = dat$fit_data$train,
+            X = dat$X,
+            svdH = NULL,
+            Xterms = NULL,
+            J = fit_rank$rank.max,
+            r = fit_rank$r,
+            lambda.M = fit_rank$lambda,
+            lambda.beta = fit_rank$lambda,
+            # similarity matrix for A
+            S.a = NULL,
+            lambda.a = 0,
+            # similarity matrix for B
+            S.b = NULL,
+            lambda.b = 0,
+            maxit = 400,
+            thresh = 1e-05,
+            trace.it = T,
+            warm.start = NULL,
+            final.svd = F,
+            init = "naive",
+            Qtype = 1,
+            qiter.max = 10,
+            min_eigv = 1e-17) ->
+  fiti
+
+fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
+
+print_performance(dat, fiti, error_metric$rmse, F, "New Version",F,3) |> 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, "Old Version",F,3))
+
+fiti$beta[,1:5]
+
+fit_rank$fit$beta[,1:5]
+
+```
+
+
+
+## Test 3: 6 covariates, with collineatity. 100% informative
+
+```{r}
+
+dat <-
+ generate_simulation_rows(
+  800,
+  900,
+  r = 15,
+  k = 6, 
+  missing_prob = 0.9,
+  coll = T,
+  prepare_for_fitting = TRUE,
+  half_discrete = FALSE,
+  informative_cov_prop = 1,
+  mv_beta = T,
+  seed = 2023
+ )
+#---------------
+
+fit_rank <- CASMC_cv_rank(
+ y_train = dat$fit_data$train,
+ X = dat$X,
+ y_valid = dat$fit_data$valid,
+ W_valid = dat$fit_data$W_valid,
+ y = dat$fit_data$Y,
+ error_function = error_metric$rmse,
+ lambda.factor = 1 / 4,
+ lambda.init = NULL,
+ n.lambda = 20,
+ rank.init = 2,
+ rank.limit = 30,
+ rank.step = 2,
+ pct = 0.98,
+ lambda.a = 0,
+ S.a = NULL,
+ lambda.b = 0,
+ S.b = NULL,
+ early.stopping = 1,
+ thresh = 1e-6,
+ maxit = 30,
+ trace = F,
+ print.best = TRUE,
+ quiet = FALSE,
+ warm = NULL,
+ r_min = 0,
+ track = TRUE,
+ max_cores = 30,
+ seed = 2023
+)
+
+
+
+CASMC2_fit2(y = dat$fit_data$train,
+            X = dat$X,
+            svdH = NULL,
+            Xterms = NULL,
+            J = fit_rank$rank.max,
+            r = fit_rank$r-1,
+            lambda.M = fit_rank$lambda,
+            lambda.beta = fit_rank$lambda,
+            # similarity matrix for A
+            S.a = NULL,
+            lambda.a = 0,
+            # similarity matrix for B
+            S.b = NULL,
+            lambda.b = 0,
+            maxit = 400,
+            thresh = 1e-05,
+            trace.it = T,
+            warm.start = NULL,
+            final.svd = F,
+            init = "naive",
+            Qtype = 1,
+            qiter.max = 10,
+            min_eigv = 1e-17) ->
+  fiti
+
+fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
+
+print_performance(dat, fiti, error_metric$rmse, F, "New Version",F,3) |> 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, "Old Version",F,3))
+
+fiti$beta[,1:5]
+
+fit_rank$fit$beta[,1:5]
+
+
+dat$beta[,1:5]
+
+```
