@@ -20,9 +20,8 @@ dat <-
 
 CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
-            svdH = NULL,
             J = 3,
-            r = 3,
+            r = 1,
             lambda.M = 8.7,
             lambda.beta = 10,
             # similarity matrix for A
@@ -36,10 +35,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             trace.it = T,
             warm.start = NULL,
             final.svd = T,
-            init = "naive",
-            Qtype = 1,
-            qiter.max = 10,
-            min_eigv = 1e-17) ->
+            min_eigv = 0) ->
   fiti
 
 
@@ -78,7 +74,8 @@ CASMC2_cv_beta(
   warm = NULL,
   quiet = F,
   seed = 2023,
-  lambda.beta.grid = "default1"
+  rank.beta.init = 1,
+  lambda.beta.grid = "default2"
 ) -> fit3
 
 fit3$fit -> fiti3

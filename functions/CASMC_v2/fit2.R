@@ -1,5 +1,6 @@
 
 
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
 #'
@@ -19,7 +20,6 @@
 CASMC2_fit2 <-
   function(y,
            X,
-           svdH = NULL,
            J = 2,
            r = 2,
            lambda.M = 0,
@@ -30,15 +30,18 @@ CASMC2_fit2 <-
            # similarity matrix for B
            S.b = NULL,
            lambda.b = 0,
+           normalized_laplacian = TRUE,
+           # convergence parameters
            maxit = 300,
            thresh = 1e-05,
            trace.it = FALSE,
            warm.start = NULL,
+           # the following should not be modified
            final.svd = TRUE,
-           init = "naive",
            Qtype = 1,
            qiter.max = 10,
-           min_eigv = 1e-17) {
+           init = "naive",
+           min_eigv = 0) {
     stopifnot(inherits(y, "dgCMatrix"))
     irow = y@i
     pcol = y@p
@@ -52,16 +55,11 @@ CASMC2_fit2 <-
     laplace.a = laplace.b = F
     if (!is.null(S.a) && lambda.a > 0) {
       laplace.a = T
-      L.a = computeLaplacian(S.a, normalized = F) * lambda.a
+      L.a = computeLaplacian(S.a, normalized = normalized_laplacian) * lambda.a
     }
     if (!is.null(S.b) && lambda.b > 0) {
       laplace.b = T
-      L.b = computeLaplacian(S.b, normalized = F) * lambda.b
-    }
-    #--------------------------------
-    # if svdH is not given but X is given. Only needed if warm.start is not provided
-    if (is.null(warm.start) & is.null(svdH)) {
-      svdH = reduced_hat_decomp.H(X)
+      L.b = computeLaplacian(S.b, normalized = normalized_laplacian) * lambda.b
     }
     #---------------------------------------------------
     # warm start or initialize (naive or random)
@@ -71,7 +69,7 @@ CASMC2_fit2 <-
       #must have u,d and v components
       if (!all(match(c("u", "d", "v", "ub", "db", "vb"), names(warm.start), 0) >
                0))
-        stop("warm.start does not have components u, d, v, or beta")
+        stop("warm.start is missing some or all of the components.")
       warm = TRUE
       # prepare U, Dsq, V
       D = warm.start$d
@@ -81,6 +79,7 @@ CASMC2_fit2 <-
         V = warm.start$v[, seq(J), drop = FALSE]
         Dsq = D[seq(J)]
       } else{
+        # upscale
         Ja = J - JD
         Dsq = c(D, rep(D[JD], Ja))
         U = warm.start$u
@@ -101,7 +100,7 @@ CASMC2_fit2 <-
       if (rD >= r) {
         Ub = warm.start$ub[, seq(r), drop = FALSE]
         Vb = warm.start$vb[, seq(r), drop = FALSE]
-        Db = Db[seq(r),seq(r), drop = FALSE]
+        Db = Db[seq(r), seq(r), drop = FALSE]
       } else{
         ra = r - rD
         Db = diag(c(diag(Db), rep(diag(Db)[rD], ra)), r, r)
@@ -109,16 +108,13 @@ CASMC2_fit2 <-
         Uba = matrix(rnorm(k * ra), k, ra)
         Uba = Uba - Ub %*% (t(Ub) %*% Uba)
         Uba = tryCatch(
-          fast.svd(Uba, trim=FALSE)$u,
+          fast.svd(Uba, trim = FALSE)$u,
           error = function(e)
             svd(Uba)$u
         )
         Ub = cbind(Ub, Uba)
         Vb = cbind(warm.start$vb, matrix(0, m, ra))
-        # print(dim(Ub))
-        # print(dim(Vb))
-        # print(dim(Db))
-        }
+      }
       
       
     } else{
@@ -129,6 +125,7 @@ CASMC2_fit2 <-
       } else if (init == "naive") {
         Y_naive = as.matrix(y)
         Y_naive = naive_MC(Y_naive)
+        svdH = reduced_hat_decomp.H(X)
         Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
         M <- as.matrix(Y_naive - Xbeta)
         M <-  tryCatch(
@@ -146,9 +143,9 @@ CASMC2_fit2 <-
         # comment for later: shouldn't be X^-1 H Y??
         beta = as.matrix(ginv(X) %*% Xbeta)
         QRsvd = svd_trunc_simple(beta, r)
-        Ub <- QRsvd$u
+        Ub <- as.matrix(QRsvd$u, k, r)
         Db <- diag(sqrt(QRsvd$d), r, r)
-        Vb <- QRsvd$v
+        Vb <- as.matrix(QRsvd$v, m, r)
         Y_naive <- Xbeta <- M <- NULL
         #---------------------------------------------------------------
       }
@@ -164,112 +161,74 @@ CASMC2_fit2 <-
       beta <- matrix(0, k, m)
       xbeta.obs <- rep(0, length(y@x))
     }
-    #print(paste("Q-d", paste(Qsvd$d, collapse = " ")))
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
       iter <- iter + 1
       U.old = U
       V.old = V
       Dsq.old = Dsq
-      # print(paste("b0begin", iter))
       #----------------------------------------------
       # part 0: Update y (training residulas)
       # prereq: U, Dsq, V, Q, R, yobs
       # updates: y; VDsq; XQ
       VDsq = t(Dsq * t(V))
-      XQ = X %*% Q
+      XQ = as.matrix(X %*% Q)
       M_obs = suvC(U, VDsq, irow, pcol)
-      if(iter == 1){
-      xbeta.obs <- suvC(XQ, R, irow, pcol)
-      y@x = yobs - M_obs - xbeta.obs}
-      # print(paste("b0end", iter))
+      if (iter == 1) {
+        xbeta.obs <- suvC(XQ, R, irow, pcol)
+        y@x = yobs - M_obs - xbeta.obs
+      }
       #----------------------------------------------
       # part 1: Update R
       # prereq: Q, R, XtX, lambda.beta, y, X, r
       # updates: Q, R
-      part1 = t(Q) %*% XtX %*% Q + lambda.beta * diag(1, r, r)
-      part2 =  t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R)
-      
+      part1 = as.matrix(t(Q) %*% XtX %*% Q + diag(lambda.beta, r, r))
+      part2 =  as.matrix(t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R))
       RD = t(as.matrix(ginv(part1) %*% part2)) %*% Db
-      Rsvd = fast.svd(RD, trim=FALSE)
+      
+      Rsvd = fast.svd(RD, trim = FALSE)
       Ub = Ub %*% Rsvd$v
-      # print(dim(Db))
-      # print(length(Rsvd$d))
-      Db[cbind(1:r,1:r)] <- sqrt(Rsvd$d)
+      Db[cbind(1:r, 1:r)] <- sqrt(Rsvd$d)
       Vb = Rsvd$u
-      
-      Q = Ub %*% Db 
+      Q = Ub %*% Db
       R = Vb %*% Db
-      
-      
-      # print(paste("R-d", paste(Rsvd$d, collapse = " ")))
-      # # Q = Qsvd$u %*% Rsvd$v %*% diag(sqrt(Rsvd$d), r, r)
-      # # R = Rsvd$u %*% diag(sqrt(Rsvd$d), r, r)
-      # print(paste("R1-d", paste(fast.svd(R)$d, collapse = " ")))
-      # print(paste("Q1-d", paste(fast.svd(Q)$d, collapse = " ")))
-      # print(paste("p1end", iter))
       #-----------------------------------------------------------------
       # part 2: update Q
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
-      # Q0 = Qold = Q
-      # for(itt in 1:60){
-      # #y@x = yobs
-      # #gradient = t(X) %*% y %*% R - XtX %*% Q %*% t(R) %*% R - t(X) %*% U %*% t(VDsq) %*% R
-      # 
-      # #Q = (1/ (1+0.1*lambda.beta)) * 
-      # #  as.matrix(Q + 0.1*gradient)
-      #   # as.matrix(Q + t(X) %*% y %*% R)
-      # 
-      # #Q = Q %*% diag(sqrt(Rsvd$d),r,r) # QD
-      # #print(paste(paste(dim(R),collapse=" "),paste(dim(Q),collapse=" ")))
-      # 
-      #    Q = (1/ (1+lambda.beta)) * 
-      #    as.matrix(Q + t(X) %*% y %*% R + XtX %*% (Q0-Q) %*% (Db^2) )
-      #    print(round(sum( (Q-Qold)^2 ),3))
-      #    Qold  = Q
-      # }
-      Q0 =  Q
-      Qold = matrix(0, nrow(Q), ncol(Q))
+      
+      Qold = Q
       qiter = 0
-      Dbsq = Db^2
+      Dbsq = Db ^ 2
       # newton!!
-      hessian <- matrix(0,k,r)
-      while(sqrt(sum((Q - Qold)^2)) > 1e-3 & qiter < qiter.max ){
+      hessian <- matrix(0, k, r)
+      for (ih in 1:k)
+        hessian[ih, ] <- sum(XtX[ih, ]) * diag(Dbsq)
+      hessian = hessian + diag(lambda.beta, k, r)
+      partial_gradient = -t(X) %*% y %*% R - XtX %*% Qold %*% Dbsq
+      
+      while (sqrt(sum((Q - Qold) ^ 2)) > 1e-3 & qiter < qiter.max) {
         Qold <- Q
-        if(Qtype == 1){
-          
-        gradient = - t(X) %*% y %*% R + XtX %*% (Q-Q0) %*% (Dbsq) + lambda.beta * Q
-        for(ih in 1:k)
-          hessian[ih,] <- sum(XtX[ih,]) * diag(Dbsq)
-        hessian = hessian + diag(lambda.beta, k, r)
-
+        gradient = partial_gradient +  XtX %*% Q %*% Dbsq + lambda.beta * Q
         Q <- Q -  gradient / hessian
-        }else{
-          # proximal descent
-          Q = (1/ (1+lambda.beta)) * 
-                as.matrix(Q + t(X) %*% y %*% R + XtX %*% (Q0-Q) %*% (Dbsq) )
-        }
         qiter <- qiter + 1
       }
-      Qsvd = fast.svd(Q %*% Db, trim=FALSE)
       
-      # print(dim(Db))
-      # print(length(Qsvd$d))
-      
+      Qsvd = fast.svd(Q %*% Db, trim = FALSE)
       Ub = Qsvd$u
-      Db[cbind(1:r,1:r)] <- sqrt(Qsvd$d)
+      Db[cbind(1:r, 1:r)] <- sqrt(Qsvd$d)
       Vb = Vb %*% Qsvd$v
-      
-      Q = Ub %*% Db 
+      Q = Ub %*% Db
       R = Vb %*% Db
       #-------------------------------------------------------------------
-      # part extra: re-update y 
-      xbeta.obs <- suvC(as.matrix(X %*% Q), as.matrix((R)), irow, pcol)
+      # part extra: re-update y
+      xbeta.obs <-
+        suvC(as.matrix(X %*% Q), as.matrix((R)), irow, pcol)
       y@x = yobs - M_obs - xbeta.obs
       #--------------------------------------------------------------------
+      # print("hi2")
       ##--------------------------------------------
-      # part 3: Update B 
+      # part 3: Update B
       # prereq: U, VDsq, y, Dsq, lambda.M, L.b
       # updates U, Dsq, V
       B = t(U) %*% y + t(VDsq)
@@ -277,17 +236,16 @@ CASMC2_fit2 <-
         B = B - t(V)  %*% L.b
       B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
       Bsvd = tryCatch({
-        fast.svd(B, trim=FALSE)
-      }, error = function(e){
+        fast.svd(B, trim = FALSE)
+      }, error = function(e) {
         message(paste("Loop/B:", e))
         svd(B)
       })
       V = Bsvd$u
       Dsq = pmax(Bsvd$d, min_eigv)
       U = U %*% (Bsvd$v)
-      #print(paste("p3end", iter))
       #-------------------------------------------------------------
-      # part 4: Update A 
+      # part 4: Update A
       # prereq: U, D, VDsq, y, lambda.M, L.a
       # updates U, Dsq, V
       A = (y %*% V) + t(Dsq * t(U))
@@ -296,21 +254,28 @@ CASMC2_fit2 <-
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
       Asvd = tryCatch({
         #svd(A)
-        fast.svd(A, trim=FALSE)
-      }, error = function(e){
+        fast.svd(A, trim = FALSE)
+      }, error = function(e) {
         message(paste("Loop/A:", e))
         svd(A)
       })
       U = Asvd$u
       Dsq = pmax(Asvd$d, min_eigv)
       V = V %*% (Asvd$v)
-      #print(paste("p4end", iter))
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
       if (trace.it) {
         obj = (.5 * sum(y@x ^ 2) + lambda.M * sum(Dsq)) / nz
-        cat(iter, ":", "obj", format(round(obj, 5)), "ratio", ratio, "qiter",qiter, "\n")
+        cat(iter,
+            ":",
+            "obj",
+            format(round(obj, 5)),
+            "ratio",
+            ratio,
+            "qiter",
+            qiter,
+            "\n")
       }
       #-----------------------------------------------------------------------------------
       
@@ -332,26 +297,16 @@ CASMC2_fit2 <-
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
       Asvd = tryCatch({
-        fast.svd(A, trim=FALSE)
-      }, error = function(e){
+        fast.svd(A, trim = FALSE)
+      }, error = function(e) {
         message(paste("Final/A:", e))
         svd(A)
       })
       U = Asvd$u
       V = V %*% Asvd$v
+      # is this good?
       Dsq = pmax(Asvd$d - lambda.M, min_eigv)
       #---------------------------------------------
-      # part1 = t(Q) %*% XtX %*% Q + lambda.beta * diag(1, r, r)
-      # part2 =  t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R)
-      # 
-      # RD = t(as.matrix(ginv(part1) %*% part2)) %*% Db
-      # Rsvd = fast.svd(RD)
-      # Ub = Ub %*% Rsvd$v
-      # Db[cbind(1:r,1:r)] <- sqrt(Rsvd$d)
-      # Vb = Rsvd$u
-      
-      #Db[cbind(1:r,1:r)] <- pmax(Db[cbind(1:r,1:r)] - lambda.beta, 0)
-      #------------------
       if (trace.it) {
         M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
         y@x = yobs - M_obs - xbeta.obs
@@ -360,11 +315,12 @@ CASMC2_fit2 <-
         cat("Number of Iterations for covergence is ", iter, "\n")
       }
     }
+    
     #-------------------------------------------------------
     # trim in case we reduce the rank of M to be smaller than J.
-    J = min(sum(Dsq > 1e-5) + 1, J)
+    J = min(sum(Dsq > min_eigv) + 1, J)
     J = min(J, length(Dsq))
-    r = min(sum(Db>1e-5) + 1, r)
+    r = min(sum(Db > 0) + 1, r)
     r = min(r, length(Db))
     
     out = list(
@@ -372,7 +328,7 @@ CASMC2_fit2 <-
       d = Dsq[seq(J)],
       v = V[, seq(J), drop = FALSE],
       ub = Ub[, seq(r), drop = FALSE],
-      db = Db[seq(r),seq(r), drop=FALSE],
+      db = Db[seq(r), seq(r), drop = FALSE],
       vb = Vb[, seq(r), drop = FALSE],
       #---------------------
       # hyperparameters
@@ -388,4 +344,3 @@ CASMC2_fit2 <-
     )
     out
   }
-

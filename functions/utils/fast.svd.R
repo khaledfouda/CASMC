@@ -32,7 +32,7 @@ positive.svd = function(m, tol, trim = TRUE)
  if (!trim)
   return(s)
  
- if (missing(tol))
+ if (is.null(missing))
   tol = max(dim(m)) * max(s$d) * .Machine$double.eps
  
  Positive = s$d > tol
@@ -43,20 +43,21 @@ positive.svd = function(m, tol, trim = TRUE)
 
 # fast computation of svd(m) if n << p
 # (n are the rows, p are columns)
-nsmall.svd = function(m, tol, trim = TRUE)
+nsmall.svd = function(m, tol, trim, n)
 {
- B = m %*% t(m)     # nxn matrix
+ B = as.matrix(m %*% t(m), n, n)     # nxn matrix
  s = svd(B, nv = 0)    # of which svd is easy..
  if (!trim) {
   d = pmax(sqrt(s$d), .Machine$double.eps)
+  u = as.matrix(s$u, n)
   return(list(
    d = d,
-   u = s$u,
-   v = crossprod(m, s$u) %*% diag(1 / d)
+   u = u,
+   v = crossprod(m, u) %*% diag(1 / d, length(d))
   ))
  }
  # determine rank of B  (= rank of m)
- if (missing(tol))
+ if (is.null(missing))
   tol = dim(B)[1] * max(s$d) * .Machine$double.eps
  Positive = s$d > tol
  
@@ -72,20 +73,21 @@ nsmall.svd = function(m, tol, trim = TRUE)
 
 # fast computation of svd(m) if n >> p
 # (n are the rows, p are columns)
-psmall.svd = function(m, tol, trim = TRUE)
+psmall.svd = function(m, tol, trim, p)
 {
- B = crossprod(m)   # pxp matrix
+ B = as.matrix(crossprod(m),p,p)   # pxp matrix
  s = svd(B, nu = 0)    # of which svd is easy..
  if (!trim) {
   d = pmax(sqrt(s$d), .Machine$double.eps)
+  v = as.matrix(s$v, nrow = p)
   return(list(
    d = d,
-   v = s$v,
-   u = m %*% s$v %*% diag(1 / d)
+   v = v,
+   u = m %*% v %*% diag(1 / d, length(d))
   ))
  }
  # determine rank of B  (= rank of m)
- if (missing(tol))
+ if (is.null(missing))
   tol = dim(B)[1] * max(s$d) * .Machine$double.eps
  Positive = s$d > tol
  
@@ -109,7 +111,7 @@ psmall.svd = function(m, tol, trim = TRUE)
 
 # note that also only positive singular values are returned
 
-fast.svd = function(m, tol, trim = FALSE)
+fast.svd = function(m, tol = NULL, trim = FALSE)
 {
  n = dim(m)[1]
  p = dim(m)[2]
@@ -118,11 +120,11 @@ fast.svd = function(m, tol, trim = FALSE)
  EDGE.RATIO = 2 # use standard SVD if matrix almost square
  if (n > EDGE.RATIO * p)
  {
-  return(psmall.svd(m, tol, trim))
+  return(psmall.svd(m, tol, trim, p))
  }
  else if (EDGE.RATIO * n < p)
  {
-  return(nsmall.svd(m, tol, trim))
+  return(nsmall.svd(m, tol, trim, n))
  }
  else
   # if p and n are approximately the same
