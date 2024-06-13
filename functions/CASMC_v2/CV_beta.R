@@ -75,7 +75,7 @@ CASMC2_cv_beta <-
             n.lambda = n.lambda,
             trace = trace,
             print.best = print.best,
-            early.stopping = early.stopping,
+            #early.stopping = early.stopping,
             thresh = thresh,
             maxit = maxit,
             rank.init = rank.M.init,

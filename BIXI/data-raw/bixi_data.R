@@ -11,7 +11,7 @@ load_bixi_dat <-
     function(scale_response = F,
              scale_covariates = F,
              transpose = F,
-             testp = 0.6,
+             testp = 0.2,
              validp = 0.2,
              seed = NULL) {
         if(! is.null(seed)) set.seed(seed)
@@ -75,34 +75,50 @@ load_bixi_dat <-
             as.data.frame() |>
             filter(!is.na(departures)) |>
             mutate(location = as.character(location),
-                   date = as.character(date)) |>
-            arrange(location, as.Date(date))
+                   date = as.Date(date)) |>
+            arrange(location, date)
         
         
         #long_departures |> head()
         
-        location_factor <- factor(long_departures$location)
-        date_factor <- factor(long_departures$date)
-        locations <- as.character(unique(long_departures$location))
-        dates <- as.character(unique(long_departures$date))
+        # location_factor <- factor(long_departures$location)
+        # date_factor <- factor(long_departures$date)
+        # locations <- as.character(unique(long_departures$location))
+        # dates <- as.character(unique(long_departures$date))
         
-        sparse_mat <- sparseMatrix(
-            i = as.integer(location_factor),
-            j = as.integer(date_factor),
-            x = long_departures$departures,
-            dimnames = list(levels(location_factor), levels(date_factor))
-        )
+        # sparse_mat <- sparseMatrix(
+        #     i = as.integer(location_factor),
+        #     j = as.integer(date_factor),
+        #     x = long_departures$departures,
+        #     dimnames = list(levels(location_factor), levels(date_factor))
+        # )
+        
+        depart.mat <- pivot_wider(long_departures, 
+                               names_from = location,
+                               values_from = departures) |> 
+            mutate(date = as.Date(date)) |> 
+            arrange(date) 
+        dates <- depart.mat$date
+        depart.mat <-
+            depart.mat |> 
+            select(-date) |> 
+            as.matrix() |> 
+            t()
+        locations <- rownames(depart.mat)
+        colnames(depart.mat) <- as.character(dates) 
+        summary(as.vector(depart.mat))
+        
+        depart.mat <- as(depart.mat, "Incomplete")
+        model.dat$depart <- depart.mat
+        #depart.mat[1:5,1:5]
         # length(sparse_mat@x)
         # dim(sparse_mat)
         # nrow(long_departures)
         # summary(sparse_mat@x)
         # length(unique(date_factor))
         
-        depart.mat <- as.matrix(sparse_mat)
-        summary(as.vector(depart.mat))
-        depart.mat[depart.mat == 0] = NA
-        depart.mat <- as(depart.mat, "Incomplete")
-        model.dat$depart <- depart.mat
+        #depart.mat <- as.matrix(sparse_mat)
+        #depart.mat[depart.mat == 0] = NA
         #---------------------------------------------------------
         #location covariates
         # bixi.dat$spatial_features |> as.data.frame() |>
@@ -110,10 +126,11 @@ load_bixi_dat <-
         med_scale <- function(x) x
         bixi.dat$spatial_features |>
             as.data.frame() |>
-            mutate(location = as.character(location)) |>
+            mutate(location = as.character(location)) |> 
             filter(location %in% locations) |>
-            arrange(location) |>
-            dplyr::select(-location) |>
+            mutate(order_vec = match(location, locations)) |> 
+            arrange(order_vec) |>
+            dplyr::select(-location, - order_vec) |>
         transmute(
                   walkscore_sq_scaled = med_scale(walkscore^2),
                   walkscore_scaled = med_scale(walkscore),
@@ -135,16 +152,30 @@ load_bixi_dat <-
             as.matrix() ->
             model.dat$X
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        bixi.dat$spatial_features |>
+            as.data.frame() |>
+            mutate(location = as.character(location)) |> 
+            filter(location %in% locations) |>
+            mutate(order_vec = match(location, locations)) |> 
+            arrange(order_vec) |>
+            dplyr::select(-location, - order_vec) |>
+            transmute(
+                walkscore = (walkscore),
+                len_minor_road = (len_minor_road),
+                num_restaurants = (num_restaurants),
+                capacity = (capacity),
+                area_park = (area_park),
+                len_major_road = (len_major_road),
+                num_other_commercial = (num_other_commercial),
+                num_bus_stations = (num_bus_stations),
+                num_pop = (num_pop),
+                num_university = num_university,
+                num_metro_stations = (num_metro_stations),
+                num_bus_routes = (num_bus_routes),
+                len_cycle_path = (len_cycle_path)
+            ) |> 
+            as.matrix() ->
+            model.dat$spatial_simple
         
         #-----------------------------------------------------------
         # time covariates
@@ -153,10 +184,11 @@ load_bixi_dat <-
         
         bixi.dat$temporal_features |>
             as.data.frame() |>
-            mutate(time = as.character(time)) |>
+            mutate(time = as.Date(time)) |>
             filter(time %in% dates) |>
-            arrange(as.Date(time)) |>
-            dplyr::select(-time) |>
+            mutate(order_vec = match(time, dates)) |> 
+            arrange(order_vec) |>
+            dplyr::select(-time, -order_vec) |>
             as.matrix() ->
             model.dat$Z
         #-------------------------------------------------
@@ -181,8 +213,9 @@ load_bixi_dat <-
         }
         if (scale_response) {
             scaled_response <-
-                (model.dat$depart@x - min(model.dat$depart@x)+1e-10) / 
-                (max(model.dat$depart@x) - min(model.dat$depart@x))
+                scalers(model.dat$depart@x, "standard")
+            #    (model.dat$depart@x - min(model.dat$depart@x)+1e-10) / 
+            #    (max(model.dat$depart@x) - min(model.dat$depart@x))
                 # (model.dat$depart@x - mean(model.dat$depart@x)) / sd(model.dat$depart@x)
             stopifnot(sum(scaled_response == 0) == 0)
             model.dat$depart@x <- scaled_response
@@ -213,8 +246,9 @@ load_bixi_dat <-
             as("dgCMatrix")
         model.dat$splits$valid = (model.dat$depart * (1 - masks$valid)) |> 
             as("dgCMatrix")
-        model.dat$depart <- (model.dat$depart * masks$test) |> 
-            as("dgCMatrix")
+        model.dat$depart <- (as.matrix(model.dat$depart) * masks$test)
+        model.dat$depart[model.dat$depart == 0] <- NA
+        model.dat$depart %<>% as("Incomplete")
         
         length(model.dat$splits$train@x)
         length(model.dat$splits$test@x)

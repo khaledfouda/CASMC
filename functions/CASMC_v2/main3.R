@@ -4,11 +4,11 @@ source("./code_files/import_lib.R")
 
 dat <-
  generate_simulation_rows(
-  800,
-  900,
+  500,
+  500,
   r = 5,
   k = 5, 
-  missing_prob = 0.9,
+  missing_prob = 0.1,
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
@@ -75,9 +75,10 @@ CASMC2_cv_beta(
   quiet = F,
   seed = 2023,
   rank.beta.init = 1,
-  lambda.beta.grid = "default2"
+  lambda.beta.grid = "default1"
 ) -> fit3
 
+fit3$hparams
 fit3$fit -> fiti3
 fiti3$beta = as.matrix(fiti3$ub %*% (fiti3$db^2) %*% t(fiti3$vb))
 print_performance(dat, fiti3, error_metric$rmse, F, "CASMC(Rank)",F,3)

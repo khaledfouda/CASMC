@@ -61,13 +61,13 @@ print_performance <-
 
 #----------------------------------------------
 model.dat <-
-  load_bixi_dat(transpose = F, scale_response = F, scale_covariates = F,
-                testp = 0.1, validp = 0.2, seed=2023)$model
+  load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
+                testp = 0.6, validp = 0.1, seed=2023)$model
 
-
+model.dat$X <- model.dat$spatial_simple
 all_res = data.frame()
-case =2
-for (case in 0:4) {
+case =1
+#for (case in 0:4) {
   if (case == 0) {
     X <- model.dat$X
   } else if (case == 1) {
@@ -80,11 +80,43 @@ for (case in 0:4) {
   } else if (case == 3) {
     X <- remove_collinear_cols(model.dat$X, 0.7)
   } else if (case == 4) {
-    X <- model.dat$X |>
-    scalers("standard") |>
-      remove_collinear_cols(thresh = 0.7)
+    X <- model.dat$X
+    X[,colnames(X)[colnames(X) !="num_metro_stations"]] <- 
+      X[,colnames(X)[colnames(X) !="num_metro_stations"]] |> 
+    scalers("median") #|>
+      #remove_collinear_cols(thresh = 0.7)
   }
   
+  CASMC2_cv_beta(
+    y_train = model.dat$splits$train,
+    X = X,
+    y_valid = model.dat$splits$valid@x,
+    W_valid = model.dat$masks$valid,
+    #y = model.dat$depart,
+    trace = T,
+    quiet = F,
+    seed = 2023,
+    rank.beta.init = 1,
+    early.stopping = 1,
+    lambda.beta.grid = "default1"
+  ) -> fit_bixi
+  
+  fit_bixi$hparams
+  fit_bixi$fit -> fiti3
+  fiti3$beta = as.matrix(fiti3$ub %*% (fiti3$db^2) %*% t(fiti3$vb))
+  fiti3$X = X
+  fiti3$beta[,1:5]
+  print_performance(model.dat, fiti3, error_metric$rmse, F, "SoftImpute", F, 3)
+  apply(fiti3$beta, 1, summary) |> as.data.frame() |> round(2) |>
+    t() |> as.data.frame() |>  arrange(desc(Median)) |>  kable()
+  
+  
+  length(model.dat$depart@x)
+  length(model.dat$splits$train@x)
+  length(model.dat$splits$test@x)
+  sum(model.dat$masks$valid==0)
+  sum(model.dat$masks$test==0)
+  #------------------------------------------------
   results <- CASMC_var_selection(
     y_train = model.dat$splits$train,
     y_valid = model.dat$splits$valid,
