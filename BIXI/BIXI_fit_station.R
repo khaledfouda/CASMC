@@ -66,7 +66,7 @@ model.dat <-
 
 
 all_res = data.frame()
-case =4
+case =2
 for (case in 0:4) {
   if (case == 0) {
     X <- model.dat$X

@@ -122,7 +122,6 @@ fit_rank <- CASMC_cv_rank(
 
 CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
-            svdH = NULL,
             J = fit_rank$rank.max,
             r = fit_rank$r,
             lambda.M = fit_rank$lambda,
@@ -141,7 +140,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             init = "naive",
             Qtype = 1,
             qiter.max = 10,
-            min_eigv = 1e-17) ->
+            min_eigv = 0) ->
   fiti
 
 
@@ -211,7 +210,7 @@ fit_rank <- CASMC_cv_rank(
 
 CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
-            svdH = NULL,
+            
             J = fit_rank$rank.max,
             r = fit_rank$r,
             lambda.M = fit_rank$lambda,
@@ -230,7 +229,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             init = "naive",
             Qtype = 1,
             qiter.max = 10,
-            min_eigv = 1e-17) ->
+            min_eigv = 0) ->
   fiti
 
 fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
@@ -301,7 +300,7 @@ fit_rank <- CASMC_cv_rank(
 
 CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
-            svdH = NULL,
+            
             J = fit_rank$rank.max,
             r = fit_rank$r-1,
             lambda.M = fit_rank$lambda,
@@ -320,7 +319,7 @@ CASMC2_fit2(y = dat$fit_data$train,
             init = "naive",
             Qtype = 1,
             qiter.max = 10,
-            min_eigv = 1e-17) ->
+            min_eigv = 0) ->
   fiti
 
 fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
@@ -413,6 +412,7 @@ fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
 print_performance(dat, fiti, error_metric$rmse, F, "New Version",F,3) |> 
 rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, "Old Version",F,3))
 
+fiti.cv$hparams
 fiti$beta[,1:5]
 
 fit_rank$fit$beta[,1:5]
@@ -434,14 +434,14 @@ dat <-
   800,
   900,
   r = 15,
-  k = 6,
+  k = 10,
   missing_prob = 0.9,
   coll = T,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = 1,
+  informative_cov_prop = 0.7,
   mv_beta = T,
-  seed = 2023
+  seed = 2022
  )
 #---------------
 
@@ -484,7 +484,7 @@ CASMC2_cv_beta(
   y_valid = dat$fit_data$valid,
   W_valid = dat$fit_data$W_valid,
   y = dat$fit_data$Y,
-  trace = F,
+  trace = T,
   print.best = T,
   warm = NULL,
   quiet = F,
@@ -503,4 +503,5 @@ fiti$beta[,1:5]
 
 fit_rank$fit$beta[,1:5]
 
+dat$beta[,1:5]
 ```

@@ -6,7 +6,7 @@ CASMC2_cv_beta <-
             # y_valid is a vector
             W_valid,
             y = NULL,
-            rank.beta.init = 3,
+            rank.beta.init = 1,
             rank.beta.limit = qr(X)$rank,
             # y: a final full-fit if provided. Expected to be Incomplete
             error_function = error_metric$rmse,
@@ -139,6 +139,10 @@ CASMC2_cv_beta <-
          rank.max <- min(rank + 1, rank.beta.limit)
          
       }
+      best_fit$hparams = data.frame(lambda.beta = best_fit$lambda.beta,
+                              lambda.M = best_fit$fit$lambda.M,
+                              rank.beta = best_fit$rank_beta,
+                              rank.M = best_fit$fit$J)
       
       return(best_fit)
       

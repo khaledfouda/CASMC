@@ -167,6 +167,9 @@ CASMC2_fit2 <-
       U.old = U
       V.old = V
       Dsq.old = Dsq
+      Ub.old = Ub
+      Vb.old = Vb
+      Db.old = Db[cbind(1:r,1:r)]
       #----------------------------------------------
       # part 0: Update y (training residulas)
       # prereq: U, Dsq, V, Q, R, yobs
@@ -197,7 +200,7 @@ CASMC2_fit2 <-
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
       
-      Qold = Q
+      Qold = Q + 10
       qiter = 0
       Dbsq = Db ^ 2
       # newton!!
@@ -205,7 +208,7 @@ CASMC2_fit2 <-
       for (ih in 1:k)
         hessian[ih, ] <- sum(XtX[ih, ]) * diag(Dbsq)
       hessian = hessian + diag(lambda.beta, k, r)
-      partial_gradient = -t(X) %*% y %*% R - XtX %*% Qold %*% Dbsq
+      partial_gradient = -t(X) %*% y %*% R - XtX %*% Q %*% Dbsq
       
       while (sqrt(sum((Q - Qold) ^ 2)) > 1e-3 & qiter < qiter.max) {
         Qold <- Q
@@ -264,9 +267,13 @@ CASMC2_fit2 <-
       V = V %*% (Asvd$v)
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
+      ratio = ratio + Frob(Ub.old, Db.old, Vb.old, Ub, Db[cbind(1:r,1:r)], Vb)
+      ratio = ratio/2
       #------------------------------------------------------------------------------
       if (trace.it) {
-        obj = (.5 * sum(y@x ^ 2) + lambda.M * sum(Dsq)) / nz
+        obj = (.5 * sum(y@x ^ 2) + 
+                 lambda.M * sum(Dsq) + 
+                 lambda.beta * sum(Db[cbind(1:r,1:r)]^2)) / nz
         cat(iter,
             ":",
             "obj",
