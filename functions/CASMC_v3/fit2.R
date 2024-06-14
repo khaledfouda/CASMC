@@ -1,6 +1,7 @@
 
 
 
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
 #'
@@ -21,7 +22,6 @@ CASMC3_fit <-
   function(y,
            X,
            J = 2,
-           r = 2,
            lambda.M = 0,
            lambda.beta = 0,
            # similarity matrix for A
@@ -38,8 +38,8 @@ CASMC3_fit <-
            warm.start = NULL,
            # the following should not be modified
            final.svd = TRUE,
-           Qtype = 1,
-           qiter.max = 10,
+           beta.iter.max = 10,
+           learning.rate = 0.001,
            init = "naive",
            min_eigv = 0) {
     stopifnot(inherits(y, "dgCMatrix"))
@@ -67,7 +67,7 @@ CASMC3_fit <-
     clean.warm.start(warm.start)
     if (!is.null(warm.start)) {
       #must have u,d and v components
-      if (!all(match(c("u", "d", "v", "ub", "db", "vb"), names(warm.start), 0) >
+      if (!all(match(c("u", "d", "v", "beta"), names(warm.start), 0) >
                0))
         stop("warm.start is missing some or all of the components.")
       warm = TRUE
@@ -94,28 +94,9 @@ CASMC3_fit <-
         V = cbind(warm.start$v, matrix(0, m, Ja))
       }
       #----------------
-      # prepare Q, and R
-      Db = warm.start$db
-      rD = sum(diag(Db) > 0)
-      if (rD >= r) {
-        Ub = warm.start$ub[, seq(r), drop = FALSE]
-        Vb = warm.start$vb[, seq(r), drop = FALSE]
-        Db = Db[seq(r), seq(r), drop = FALSE]
-      } else{
-        ra = r - rD
-        Db = diag(c(diag(Db), rep(diag(Db)[rD], ra)), r, r)
-        Ub = warm.start$ub
-        Uba = matrix(rnorm(k * ra), k, ra)
-        Uba = Uba - Ub %*% (t(Ub) %*% Uba)
-        Uba = tryCatch(
-          fast.svd(Uba, trim = FALSE)$u,
-          error = function(e)
-            svd(Uba)$u
-        )
-        Ub = cbind(Ub, Uba)
-        Vb = cbind(warm.start$vb, matrix(0, m, ra))
-      }
-      
+      # prepare beta
+      beta = warm.start$beta
+      stopifnot(all(dim(beta) == c(k, m)))
       
     } else{
       # initialize. Warm start is not provided
@@ -142,25 +123,15 @@ CASMC3_fit <-
         # initialization for beta = X^-1 Y
         # comment for later: shouldn't be X^-1 H Y??
         beta = as.matrix(ginv(X) %*% Xbeta)
-        QRsvd = svd_trunc_simple(beta, r)
-        Ub <- as.matrix(QRsvd$u, k, r)
-        Db <- diag(sqrt(QRsvd$d), r, r)
-        Vb <- as.matrix(QRsvd$v, m, r)
         Y_naive <- Xbeta <- M <- NULL
         #---------------------------------------------------------------
       }
     }
-    Q = Ub %*% Db
-    R = Vb %*% Db
     XtX = t(X) %*% X
     #----------------------------------------
     yobs <- y@x # y will hold the model residuals
     ratio <- 1
     iter <- 0
-    if (!is.null(r) && r == 0) {
-      beta <- matrix(0, k, m)
-      xbeta.obs <- rep(0, length(y@x))
-    }
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
       iter <- iter + 1
@@ -174,29 +145,31 @@ CASMC3_fit <-
       VDsq = t(Dsq * t(V))
       M_obs = suvC(U, VDsq, irow, pcol)
       if (iter == 1) {
-        xbeta.obs <- suvC(X, as.matrix(t(beta)), irow, pcol)
+        xbeta.obs <- suvC(X, (t(beta)), irow, pcol)
         y@x = yobs - M_obs - xbeta.obs
       }
       #----------------------------------------------
       # part 1: update beta
-      beta.old <- beta + 10
-      step.size = 1
-      beta.thresh = step.size * lambda.beta
+      beta.old <- matrix(0, k, m)
+      
+      beta.thresh = learning.rate * lambda.beta
       beta.iter = 0
-      partial.update = step.size * ( t(X) %*% y + XtX %*% beta) 
-      while(sqrt(sum((beta-beta.old)^2)) > 1e-3 & beta.iter < beta.iter.max){
+      partial.update = learning.rate * as.matrix(t(X) %*% y + XtX %*% beta)
+      while (sqrt(sum((beta - beta.old) ^ 2)) > 1e-3 &
+             beta.iter < beta.iter.max) {
         beta.old <- beta
-        update = beta.old + partial.update - step.size * XtX %*% beta.old
+        update = beta + partial.update - learning.rate * XtX %*% beta
         beta <- matrix(0, k, m)
         beta[update > beta.thresh] = update[update > beta.thresh] - beta.thresh
         beta[update < -beta.thresh] = update[update < -beta.thresh] + beta.thresh
         beta.iter <- beta.iter + 1
+        #print(sqrt(sum((beta - beta.old) ^ 2)))
       }
       
       #-------------------------------------------------------------------
       # part extra: re-update y
       xbeta.obs <-
-        suvC(X, as.matrix(t(beta)), irow, pcol)
+        suvC(X, (t(beta)), irow, pcol)
       y@x = yobs - M_obs - xbeta.obs
       #--------------------------------------------------------------------
       # print("hi2")
@@ -239,7 +212,7 @@ CASMC3_fit <-
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
       if (trace.it) {
-        obj = (.5 * sum(y@x ^ 2) + 
+        obj = (.5 * sum(y@x ^ 2) +
                  lambda.M * sum(Dsq)) / nz
         cat(iter,
             ":",
@@ -305,7 +278,6 @@ CASMC3_fit <-
       lambda.M = lambda.M,
       lambda.beta = lambda.beta,
       J = J,
-      r = r,
       lambda.a = lambda.a,
       lambda.b = lambda.b,
       #--------------------------

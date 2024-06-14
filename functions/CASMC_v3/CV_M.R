@@ -13,17 +13,18 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC2_cv_M <-
+CASMC3_cv_M <-
   function(y_train,
            # y_train is expected to be Incomplete
            X,
            y_valid,
            # y_valid is a vector
            W_valid,
-           r,
            y = NULL,
            # y: a final full-fit if provided. Expected to be Incomplete
            lambda.beta = .Machine$double.eps,
+           learning.rate = 0.001,
+           beta.iter.max = 20,
            # provide this if you need L2 regularization.
            error_function = error_metric$rmse,
            # tuning parameters for lambda
@@ -74,17 +75,18 @@ CASMC2_cv_M <-
     #------------------------------------------------
     #-----------------------------------------------------------------------
     rank.max <- rank.init
-    best_fit <- list(error = Inf, r = r)
+    best_fit <- list(error = Inf)
     counter <- 0
     #---------------------------------------------------------------------
     for (i in seq(along = lamseq)) {
       fiti <-
-        CASMC2_fit2(
+        CASMC3_fit(
           y = y_train,
           X = X,
           J = rank.max,
           lambda.M = lamseq[i],
-          r = r,
+          learning.rate = learning.rate,
+          beta.iter.max = beta.iter.max,
           lambda.beta = lambda.beta,
           lambda.a = lambda.a,
           S.a = S.a,
@@ -98,10 +100,7 @@ CASMC2_cv_M <-
       
       #--------------------------------------------------------------
       # predicting validation set and xbetas for next fit:
-      XbetaValid = suvC(as.matrix(X %*% fiti$ub),
-                        as.matrix(fiti$vb %*% (fiti$db ^ 2)),
-                        virow,
-                        vpcol)
+      XbetaValid = suvC(X, t(fiti$beta), virow, vpcol)
       MValid = suvC(fiti$u, t(fiti$d * t(fiti$v)), virow, vpcol)
       #--------------------------------------------
       err = error_function(MValid + XbetaValid, y_valid)
@@ -116,8 +115,8 @@ CASMC2_cv_M <-
       if (trace == TRUE)
         print(sprintf(
           paste0(
-            "%2d lambda.M=%9.5g, rank.max = %d  ==>",
-            " rank = %d, error = %.5f, niter/fit = %d [Beta(r=%d, lambda=%.3f)]"
+            "%2d lambda.M = %.3f, rank.max = %d  ==>",
+            " rank = %d, error = %.5f, niter/fit = %d [Beta(lambda=%.3f)]"
           ),
           i,
           lamseq[i],
@@ -125,7 +124,6 @@ CASMC2_cv_M <-
           rank,
           err,
           fiti$n_iter,
-          r,
           lambda.beta
         ))
       #-------------------------
@@ -157,12 +155,13 @@ CASMC2_cv_M <-
     if (!is.null(y)) {
       stopifnot(inherits(y, "dgCMatrix"))
       best_fit$fit <-
-        CASMC2_fit2(
+        CASMC3_fit(
           y = y,
           X = X,
           J = best_fit$rank.max,
           lambda.M = best_fit$lambda.M,
-          r = r,
+          learning.rate = learning.rate,
+          beta.iter.max = beta.iter.max,
           lambda.beta = lambda.beta,
           lambda.a = lambda.a,
           S.a = S.a,
@@ -178,6 +177,7 @@ CASMC2_cv_M <-
     best_fit$lambda.beta = lambda.beta
     best_fit$lambda.a = lambda.a
     best_fit$lambda.b = lambda.b
+    best_fit$learning.rate = learning.rate
     return(best_fit)
   }
 #---

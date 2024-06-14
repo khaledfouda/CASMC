@@ -1,4 +1,4 @@
-CASMC2_cv_beta <-
+CASMC3_cv_beta <-
    function(y_train,
             # y_train is expected to be Incomplete
             X,
@@ -6,8 +6,6 @@ CASMC2_cv_beta <-
             # y_valid is a vector
             W_valid,
             y = NULL,
-            rank.beta.init = 1,
-            rank.beta.limit = qr(X)$rank,
             # y: a final full-fit if provided. Expected to be Incomplete
             error_function = error_metric$rmse,
             # tuning parameters for lambda
@@ -29,13 +27,15 @@ CASMC2_cv_beta <-
             thresh = 1e-6,
             maxit = 100,
             # trace parameters
-            trace = FALSE,
+            trace = 0,
             print.best = TRUE,
             quiet = FALSE,
             # initial values.
             warm = NULL,
-            # L2 parameters
+            # L1 parameters
             lambda.beta.grid = "default1",
+            learning.rate = .001,
+            beta.iter.max = 20,
             track = FALSE,
             max_cores = 8,
             # seed
@@ -55,27 +55,27 @@ CASMC2_cv_beta <-
       #    min(max_cores, ceiling(length(lambda.beta.grid) / 2))
       # print(paste("Running on", num_cores, "cores."))
       
-      rank.max = rank.beta.init
       counter = 0
       best_fit <- list(error = Inf)
-      
-      for (i in seq(along = lambda.beta.grid)) {
-         fiti = CASMC2_cv_M(
+      results <- mclapply(lambda.beta.grid, function(lambda.beta){
+         
+      #for (i in seq(along = lambda.beta.grid)) {
+         fiti = tryCatch({
+            CASMC3_cv_M(
             y_train = y_train,
             X = X,
             y_valid = y_valid,
             W_valid = W_valid,
             y = y,
-            r = rank.max,
-            lambda.beta = lambda.beta.grid[i],
-            
+            learning.rate = learning.rate,
+            lambda.beta = lambda.beta,
+            beta.iter.max = beta.iter.max,
             error_function = error_function,
             lambda.factor = lambda.factor,
             lambda.init = lambda.init,
             n.lambda = n.lambda,
-            trace = trace,
+            trace = ifelse(trace == 2, TRUE, FALSE),
             print.best = print.best,
-            #early.stopping = early.stopping,
             thresh = thresh,
             maxit = maxit,
             rank.init = rank.M.init,
@@ -83,7 +83,6 @@ CASMC2_cv_beta <-
             rank.step = rank.step,
             pct = pct,
             warm = NULL,
-            #warm,
             lambda.a = lambda.a,
             S.a = S.a,
             lambda.b = lambda.b,
@@ -91,42 +90,38 @@ CASMC2_cv_beta <-
             quiet = quiet,
             seed = seed
          )
+         }, error = function(e) list(error_message = e, error = 999999, lambda.beta = lambda.beta))
+         fiti
+      }, mc.cores = num_cores, mc.cleanup = TRUE)
+      
          err = fiti$error
          fiti = fiti$fit
-         rank <- sum(round(diag(fiti$db), 4) > 0)
-         # var_explained = diag(fiti$db) ^ 2 / sum(diag(fiti$db) ^ 2)
-         # cum_var = cumsum(var_explained)
-         # rank  <- which(cum_var >= pct)[1]
-         
-         warm <- fiti # warm start for next
-         
-         if (trace == TRUE)
-            print(sprintf(
-               paste0(
-                  "%2d lambda.beta=%9.5g, rank.max.beta = %d  ==>",
-                  " rank.max = %d, error = %.5f, niter/fit = %d"
-               ),
-               i,
-               lambda.beta.grid[i],
-               rank.max,
-               rank,
-               err,
-               fiti$n_iter
-            ))
+         if (trace > 0)
+            print(
+               sprintf(
+                  paste0(
+                     "<< %2d lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] >> "
+                  ),
+                  i,
+                  lambda.beta.grid[i],
+                  err,
+                  fiti$n_iter,
+                  fiti$J,
+                  fiti$lambda.M
+               )
+            )
          #-------------------------
          # register best fir
          if (err < best_fit$error) {
             best_fit$error = err
-            best_fit$rank_beta = rank
             best_fit$lambda.beta = lambda.beta.grid[i]
-            best_fit$rank.beta.max = rank.max
             best_fit$fit = fiti
             best_fit$iter = i
             counter = 0
          } else
             counter = counter + 1
          if (counter >= early.stopping) {
-            if (trace)
+            if (trace > 0)
                print(
                   sprintf(
                      "Early stopping. Reached Peak point. Performance didn't improve for the last %d iterations.",
@@ -135,14 +130,14 @@ CASMC2_cv_beta <-
                )
             break
          }
-         # compute rank.max for next iteration
-         rank.max <- min(rank + 1, rank.beta.limit)
          
       }
-      best_fit$hparams = data.frame(lambda.beta = best_fit$lambda.beta,
-                              lambda.M = best_fit$fit$lambda.M,
-                              rank.beta = best_fit$rank_beta,
-                              rank.M = best_fit$fit$J)
+      best_fit$hparams = data.frame(
+         lambda.beta = best_fit$lambda.beta,
+         lambda.M = best_fit$fit$lambda.M,
+         learning.rate = learning.rate,
+         rank.M = best_fit$fit$J
+      )
       
       return(best_fit)
       
