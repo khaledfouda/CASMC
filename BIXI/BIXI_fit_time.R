@@ -61,17 +61,17 @@ print_performance <-
 
 #----------------------------------------------
 model.dat <-
-  load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
-                testp = 0.3, validp = 0.1, seed=2023)$model
+  load_bixi_dat(transpose = T, scale_response = T, scale_covariates = F,
+                testp = 0.1, validp = 0.1, seed=2023)$model
 
-model.dat$X <- model.dat$spatial_simple
+#model.dat$X <- model.dat$spatial_simple
 all_res = data.frame()
 case =1
 #for (case in 0:4) {
   if (case == 0) {
     X <- model.dat$X
   } else if (case == 1) {
-    X <- model.dat$X |>
+    X <- model.dat$X[,c(1,2,5)] |>
       scalers("minmax")
   } else if (case == 2) {
     X <- model.dat$X |>
@@ -92,7 +92,7 @@ case =1
     X = X,
     y_valid = model.dat$splits$valid@x,
     W_valid = model.dat$masks$valid,
-    y = model.dat$depart,
+    #y = model.dat$depart,
     trace = T,
     quiet = F,
     seed = 2023,
@@ -106,7 +106,7 @@ case =1
   fiti3$beta = as.matrix(fiti3$ub %*% (fiti3$db^2) %*% t(fiti3$vb))
   fiti3$X = X
   fiti3$beta[,1:5]
-  print_performance(model.dat, fiti3, error_metric$rmse, F, "SoftImpute", F, 3)
+  print_performance(model.dat, fiti3, error_metric$rmse, F, "CASMC2", F, 3)
   apply(fiti3$beta, 1, summary) |> as.data.frame() |> round(2) |>
     t() |> as.data.frame() |>  arrange(desc(Median)) |>  kable()
   
@@ -123,19 +123,19 @@ case =1
     X = X,
     y_valid = model.dat$splits$valid@x,
     W_valid = model.dat$masks$valid,
-    y = model.dat$depart,
+    #y = model.dat$depart,
     trace = 2,
     quiet = F,
     seed = 2023,
     early.stopping = 1,
     lambda.beta.grid = seq(10,0,length.out=20),
-    max_cores = 5
+    max_cores = 10
   ) -> fit_bixi2
   
   fit_bixi2$hparams
   fit_bixi2$fit$X = X
   fit_bixi2$fit$beta[,1:5]
-  print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "SoftImpute", F, 3)
+  print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3)
   apply(fit_bixi2$fit$beta, 1, summary) |> as.data.frame() |> 
     setNames(colnames(X)) |>  round(2) |>
     t() |> as.data.frame() |>  
@@ -146,7 +146,7 @@ case =1
     arrange(desc(Median)) |>  kable()
   
   Prop_non_zero = rowSums(round(fit_bixi2$fit$beta,6) > 0) / ncol(fit_bixi2$fit$beta)
-  sig_cols <- colnames(X)[Prop_non_zero>.2]
+  sig_cols <- colnames(X)[Prop_non_zero>.1]
   
   fit_bixi2$fit$beta |> 
     as.data.frame() |> 
@@ -154,15 +154,15 @@ case =1
     t() |> 
     as.data.frame() |> 
     setNames(colnames(X)) |> 
-    mutate(Time = model.dat$dates) |> 
-    pivot_longer(-Time, names_to="Covariate", values_to="Value") |> 
+    mutate(Station = 1:ncol(model.dat$depart)) |> 
+    pivot_longer(-Station, names_to="Covariate", values_to="Value") |> 
     filter(Covariate %in% sig_cols) |> 
-    ggplot(aes(Time, Value, color=Covariate)) +
-    geom_line() +
-    facet_wrap(~Covariate, scales = "free_y") +
+    ggplot(aes(Station, Value, color=Covariate)) +
+    geom_point() +
+    facet_wrap(~Covariate, scales = "free_y",nrow = 2) +
     labs(
-      title = "Station Covariate Coefficients",
-      x = "Time",
+      title = "Time Covariate Coefficients",
+      x = "Station",
       y = "Beta Coefficient"
     ) +
     theme_minimal() +
@@ -170,48 +170,26 @@ case =1
       plot.title = element_text(hjust = 0.5),
       legend.title = element_text(face = "bold"),
       legend.position = "none"
-    ) + 
-    scale_x_date(date_breaks = "1 month", date_labels = "%b")
-    
+    ) 
+
   
-    model.dat$Z |> 
-      scale() |> 
-      as.data.frame() |> 
-      select(-holiday) |> 
-      mutate(Time = model.dat$dates) |> 
-      pivot_longer(-Time, names_to="Covariate", values_to="Value") |>  
-      ggplot(aes(Time, Value, color=Covariate)) +
-      geom_line() +
-      facet_wrap(~Covariate, scales = "free_y") +
-      labs(
-        title = "Time Covariates",
-        x = "Time",
-        y = "Covariate Value"
-      ) +
-      theme_minimal() +
-      theme(
-        plot.title = element_text(hjust = 0.5),
-        legend.title = element_text(face = "bold"),
-        legend.position = "none"
-      ) + 
-      scale_x_date(date_breaks = "1 month", date_labels = "%b")
-    
     
     fit_bixi2$fit$M = unsvd(fit_bixi2$fit)
     M_melted <- melt(fit_bixi2$fit$M)
-    M_melted$Date <- rep(model.dat$dates, each = nrow(model.dat$depart))
+    M_melted$Date <- rep(model.dat$dates, length = nrow(model.dat$depart))
+    
     
     # Create a heatmap using ggplot2
-    ggplot(data = M_melted, aes(x = Var1, y = Date, fill = value)) +
+    ggplot(data = M_melted, aes(x = Date, y = Var2, fill = value)) +
       geom_tile() +
       scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                            midpoint = 0, limit = c(min(M_melted$value), max(M_melted$value)), 
                            space = "Lab", name="Value") +
       theme_minimal() +
-      labs(title = "Heatmap of Low-Rank Matrix M", x = "Station", y = "Date") +
+      labs(title = "Heatmap of Low-Rank Matrix M", x = "Date", y = "Station") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      coord_flip() +
-      scale_y_date(date_breaks = "7 days", date_labels = "%d/%m")
+      #coord_flip() +
+      scale_x_date(date_breaks = "7 days", date_labels = "%d/%m")
     
     
     data.frame(Y = as.vector(model.dat$splits$test[model.dat$masks$test==0]),
@@ -288,7 +266,7 @@ simpute_fit <- simpute.cv(
   Y_train = as.matrix(model.dat$splits$train),
   y_valid = model.dat$splits$valid@x,
   W_valid = model.dat$masks$valid,
-  y = as.matrix(model.dat$depart),
+  y = as.matrix(model.dat$splits$train),
   n.lambda = 20,
   trace = FALSE,
   print.best = TRUE,
@@ -301,7 +279,12 @@ simpute_fit <- simpute.cv(
   seed= 2023
   
 )
-print_performance(model.dat, simpute_fit, error_metric$rmse, TRUE, "SoftImpute", F, 3)
+
+rbind(
+print_performance(model.dat, simpute_fit, error_metric$rmse, TRUE, "SoftImpute", F, 3),
+print_performance(model.dat, fiti3, error_metric$rmse, F, "CASMC2", F, 3),
+print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3)
+)
 
 # 
 # all_res  |>

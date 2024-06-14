@@ -254,6 +254,7 @@ load_bixi_dat <-
         length(model.dat$splits$test@x)
         length(model.dat$splits$valid@x)
         length(model.dat$depart)
-        
+        model.dat$dates = dates
+        model.dat$locations = locations
         return(list(model = model.dat, raw = bixi.dat))
     }
