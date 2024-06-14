@@ -119,13 +119,13 @@ system.time(CASMC3_cv_beta(
   quiet = F,
   seed = 2023,
   early.stopping = 5,
-  lambda.beta.grid = seq(0,10,length.out=20)
+  lambda.beta.grid = seq(0,10,length.out=20),
+  max_cores = 10
 ) -> fit4)
 
-fit3$hparams
-fit3$fit -> fiti3
-fiti3$beta = as.matrix(fiti3$ub %*% (fiti3$db^2) %*% t(fiti3$vb))
-print_performance(dat, fiti3, error_metric$rmse, F, "CASMC(Rank)",F,3)
+fit4$hparams
+fit4$fit$beta[,1:5]
+print_performance(dat, fit4$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
 #============================================================================
 CASMC2_cv_beta(
   y_train = dat$fit_data$train,
@@ -145,6 +145,7 @@ CASMC2_cv_beta(
 fit3$hparams
 fit3$fit -> fiti3
 fiti3$beta = as.matrix(fiti3$ub %*% (fiti3$db^2) %*% t(fiti3$vb))
+fiti3$beta[,1:5]
 print_performance(dat, fiti3, error_metric$rmse, F, "CASMC(Rank)",F,3)
 
 #============================================================================

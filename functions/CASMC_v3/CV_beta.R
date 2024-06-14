@@ -49,89 +49,104 @@ CASMC3_cv_beta <-
                                 length.out = 20)
       
       
-      # num_cores = length(lambda.beta.grid)
-      # if (length(lambda.beta.grid) > max_cores)
-      #    num_cores <-
-      #    min(max_cores, ceiling(length(lambda.beta.grid) / 2))
-      # print(paste("Running on", num_cores, "cores."))
+      num_cores = length(lambda.beta.grid)
+      if (length(lambda.beta.grid) > max_cores)
+         num_cores <-
+         min(max_cores, ceiling(length(lambda.beta.grid) / 2))
+      print(paste("Running on", num_cores, "cores."))
       
-      counter = 0
       best_fit <- list(error = Inf)
-      results <- mclapply(lambda.beta.grid, function(lambda.beta){
-         
-      #for (i in seq(along = lambda.beta.grid)) {
+      results <- mclapply(lambda.beta.grid, function(lambda.beta) {
          fiti = tryCatch({
             CASMC3_cv_M(
-            y_train = y_train,
-            X = X,
-            y_valid = y_valid,
-            W_valid = W_valid,
-            y = y,
-            learning.rate = learning.rate,
-            lambda.beta = lambda.beta,
-            beta.iter.max = beta.iter.max,
-            error_function = error_function,
-            lambda.factor = lambda.factor,
-            lambda.init = lambda.init,
-            n.lambda = n.lambda,
-            trace = ifelse(trace == 2, TRUE, FALSE),
-            print.best = print.best,
-            thresh = thresh,
-            maxit = maxit,
-            rank.init = rank.M.init,
-            rank.limit = rank.M.limit,
-            rank.step = rank.step,
-            pct = pct,
-            warm = NULL,
-            lambda.a = lambda.a,
-            S.a = S.a,
-            lambda.b = lambda.b,
-            S.b = S.b,
-            quiet = quiet,
-            seed = seed
-         )
-         }, error = function(e) list(error_message = e, error = 999999, lambda.beta = lambda.beta))
+               y_train = y_train,
+               X = X,
+               y_valid = y_valid,
+               W_valid = W_valid,
+               y = y,
+               learning.rate = learning.rate,
+               lambda.beta = lambda.beta,
+               beta.iter.max = beta.iter.max,
+               error_function = error_function,
+               lambda.factor = lambda.factor,
+               lambda.init = lambda.init,
+               n.lambda = n.lambda,
+               trace = ifelse(trace == 2, TRUE, FALSE),
+               print.best = print.best,
+               thresh = thresh,
+               maxit = maxit,
+               rank.init = rank.M.init,
+               rank.limit = rank.M.limit,
+               rank.step = rank.step,
+               pct = pct,
+               warm = NULL,
+               lambda.a = lambda.a,
+               S.a = S.a,
+               lambda.b = lambda.b,
+               S.b = S.b,
+               quiet = quiet,
+               seed = seed
+            )
+         }, error = function(e)
+            list(
+               error_message = e,
+               error = 999999,
+               lambda.beta = lambda.beta
+            ))
          fiti
       }, mc.cores = num_cores, mc.cleanup = TRUE)
       
-         err = fiti$error
-         fiti = fiti$fit
-         if (trace > 0)
+      # showing errors, if any,
+      sapply(results, function(x) {
+         if (!is.null(x$error_message))
+            print(
+               paste(
+                  "Error encountered at lambda.beta = ",
+                  round(x$lambda.beta, 3),
+                  "with the following error message: ",
+                  x$error_message
+               )
+            )
+      })
+      
+      # extract best fit
+      best_fit <-
+         results[[which.min(sapply(results, function(x)
+            x$error))]]
+      
+      # print all fit output:
+      if (trace > 0) {
+         sapply(results, function(x)
             print(
                sprintf(
                   paste0(
-                     "<< %2d lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] >> "
+                     "<< lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] >> "
                   ),
-                  i,
-                  lambda.beta.grid[i],
-                  err,
-                  fiti$n_iter,
-                  fiti$J,
-                  fiti$lambda.M
+                  x$lambda.beta,
+                  x$error,
+                  x$fit$n_iter,
+                  x$fit$J,
+                  x$fit$lambda.M
                )
-            )
-         #-------------------------
-         # register best fir
-         if (err < best_fit$error) {
-            best_fit$error = err
-            best_fit$lambda.beta = lambda.beta.grid[i]
-            best_fit$fit = fiti
-            best_fit$iter = i
-            counter = 0
-         } else
-            counter = counter + 1
-         if (counter >= early.stopping) {
-            if (trace > 0)
-               print(
-                  sprintf(
-                     "Early stopping. Reached Peak point. Performance didn't improve for the last %d iterations.",
-                     counter
-                  )
-               )
-            break
-         }
-         
+            ))
       }
+      
+      # print best if
+      if (print.best)
+         print(
+            sprintf(
+               paste0(
+                  "<< Best fit >> lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] > "
+               ),
+               best_fit$lambda.beta,
+               best_fit$error,
+               best_fit$fit$n_iter,
+               best_fit$fit$J,
+               best_fit$fit$lambda.M
+            )
+         )
+      #-------------------------
+      
       best_fit$hparams = data.frame(
          lambda.beta = best_fit$lambda.beta,
          lambda.M = best_fit$fit$lambda.M,

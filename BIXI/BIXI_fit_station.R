@@ -62,7 +62,7 @@ print_performance <-
 #----------------------------------------------
 model.dat <-
   load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
-                testp = 0.6, validp = 0.1, seed=2023)$model
+                testp = 0.3, validp = 0.1, seed=2023)$model
 
 model.dat$X <- model.dat$spatial_simple
 all_res = data.frame()
@@ -92,7 +92,7 @@ case =1
     X = X,
     y_valid = model.dat$splits$valid@x,
     W_valid = model.dat$masks$valid,
-    #y = model.dat$depart,
+    y = model.dat$depart,
     trace = T,
     quiet = F,
     seed = 2023,
@@ -116,6 +116,44 @@ case =1
   length(model.dat$splits$test@x)
   sum(model.dat$masks$valid==0)
   sum(model.dat$masks$test==0)
+  #---------------------------------------------------------------------
+  
+  CASMC3_cv_beta(
+    y_train = model.dat$splits$train,
+    X = X,
+    y_valid = model.dat$splits$valid@x,
+    W_valid = model.dat$masks$valid,
+    y = model.dat$depart,
+    trace = 2,
+    quiet = F,
+    seed = 2023,
+    early.stopping = 1,
+    lambda.beta.grid = seq(10,0,length.out=20),
+    max_cores = 5
+  ) -> fit_bixi2
+  
+  fit_bixi2$hparams
+  fit_bixi2$fit$X = X
+  fit_bixi2$fit$beta[,1:5]
+  print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "SoftImpute", F, 3)
+  apply(fit_bixi2$fit$beta, 1, summary) |> as.data.frame() |> 
+    setNames(colnames(X)) |>  round(2) |>
+    t() |> as.data.frame() |>  
+    mutate(Prop_non_zero = rowSums(round(fit_bixi2$fit$beta,6) > 0) / ncol(fit_bixi2$fit$beta)) |>
+    mutate(all_zeros = Prop_non_zero == 0) |> 
+    arrange(desc(Prop_non_zero)) |> 
+    round(2) |> 
+    arrange(desc(Median)) |>  kable()
+  
+  
+  
+  length(model.dat$depart@x)
+  length(model.dat$splits$train@x)
+  length(model.dat$splits$test@x)
+  sum(model.dat$masks$valid==0)
+  sum(model.dat$masks$test==0)
+  
+  
   #------------------------------------------------
   results <- CASMC_var_selection(
     y_train = model.dat$splits$train,
@@ -152,7 +190,7 @@ case =1
 
 simpute_fit <- simpute.cv(
   Y_train = as.matrix(model.dat$splits$train),
-  y_valid = model.dat$splits$valid,
+  y_valid = model.dat$splits$valid@x,
   W_valid = model.dat$masks$valid,
   y = as.matrix(model.dat$depart),
   n.lambda = 20,
@@ -163,10 +201,11 @@ simpute_fit <- simpute.cv(
   rank.init = 2,
   rank.limit = 30,
   rank.step = 2,
-  maxit = 300,
+  maxit = 800,
   seed= 2023
   
 )
+print_performance(model.dat, simpute_fit, error_metric$rmse, TRUE, "SoftImpute", F, 3)
 
 
 all_res  |>

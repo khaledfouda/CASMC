@@ -132,11 +132,11 @@ load_bixi_dat <-
             arrange(order_vec) |>
             dplyr::select(-location, - order_vec) |>
         transmute(
-                  walkscore_sq_scaled = med_scale(walkscore^2),
+                  #walkscore_sq_scaled = med_scale(walkscore^2),
                   walkscore_scaled = med_scale(walkscore),
                   len_minor_road_scaled = med_scale(len_minor_road),
                   num_restaurants_scaled = med_scale(num_restaurants),
-                  num_restaurants_sq_scaled = med_scale(num_restaurants^2),
+                  #num_restaurants_sq_scaled = med_scale(num_restaurants^2),
                   capacity_scaled = med_scale(capacity),
                   area_park_log = log1p(area_park),
                   len_major_road_scaled = med_scale(len_major_road),
@@ -146,8 +146,8 @@ load_bixi_dat <-
                   num_university_bin = num_university,
                   num_metro_stations_log = log1p(num_metro_stations),
                   num_bus_routes_scaled = med_scale(num_bus_routes),
-                  len_cycle_path_log = log1p(len_cycle_path),
-                  num_bus_routes_sq_scaled = med_scale(num_bus_routes^2)
+                  len_cycle_path_log = log1p(len_cycle_path)
+                  #num_bus_routes_sq_scaled = med_scale(num_bus_routes^2)
                   ) |> 
             as.matrix() ->
             model.dat$X
