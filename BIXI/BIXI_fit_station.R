@@ -158,7 +158,7 @@ case =1
     pivot_longer(-Time, names_to="Covariate", values_to="Value") |> 
     filter(Covariate %in% sig_cols) |> 
     ggplot(aes(Time, Value, color=Covariate)) +
-    geom_line() +
+    geom_point() +
     facet_wrap(~Covariate, scales = "free_y") +
     labs(
       title = "Station Covariate Coefficients",
@@ -181,7 +181,7 @@ case =1
       mutate(Time = model.dat$dates) |> 
       pivot_longer(-Time, names_to="Covariate", values_to="Value") |>  
       ggplot(aes(Time, Value, color=Covariate)) +
-      geom_line() +
+      geom_point() +
       facet_wrap(~Covariate, scales = "free_y") +
       labs(
         title = "Time Covariates",
