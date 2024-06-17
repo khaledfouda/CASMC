@@ -152,7 +152,7 @@ CASMC3_fit <-
       # part 1: update beta
       beta.old <- matrix(0, k, m)
       
-      beta.thresh = learning.rate * lambda.beta
+      beta.thresh =   lambda.beta * learning.rate
       beta.iter = 0
       partial.update = learning.rate * as.matrix(t(X) %*% y + XtX %*% beta)
       while (sqrt(sum((beta - beta.old) ^ 2)) > 1e-3 &

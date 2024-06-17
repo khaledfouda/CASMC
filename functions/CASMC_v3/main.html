@@ -377,420 +377,8 @@ display: none;
 <h2>r will be set to 15 for all tests and dimensions 800x900 and 90%
 missingness</h2>
 </div>
-<div id="test-1-5-covariates-no-collineatity.-100-informative" class="section level2">
-<h2>Test 1: 5 covariates, no collineatity. 100% informative</h2>
-<pre class="r"><code>dat &lt;-
- generate_simulation_rows(
-  800,
-  900,
-  r = 15,
-  k = 5, 
-  missing_prob = 0.9,
-  coll = F,
-  prepare_for_fitting = TRUE,
-  half_discrete = FALSE,
-  informative_cov_prop = 1,
-  mv_beta = T,
-  seed = 2023
- )
-#---------------
-
-
-fit_rank &lt;- CASMC_cv_rank(
- y_train = dat$fit_data$train,
- X = dat$X,
- y_valid = dat$fit_data$valid,
- W_valid = dat$fit_data$W_valid,
- y = dat$fit_data$Y,
- error_function = error_metric$rmse,
- lambda.factor = 1 / 4,
- lambda.init = NULL,
- n.lambda = 20,
- rank.init = 2,
- rank.limit = 30,
- rank.step = 2,
- pct = 0.98,
- lambda.a = 0,
- S.a = NULL,
- lambda.b = 0,
- S.b = NULL,
- early.stopping = 1,
- thresh = 1e-6,
- maxit = 30,
- trace = F,
- print.best = TRUE,
- quiet = FALSE,
- warm = NULL,
- r_min = 0,
- track = TRUE,
- max_cores = 30,
- seed = 2023
-)</code></pre>
-<pre><code>## [1] &quot;Running on 6 cores.&quot;
-## [1] &quot;r = 0 - Val Err = 1.27991&quot;
-## [1] &quot;r = 1 - Val Err = 1.15308&quot;
-## [1] &quot;r = 2 - Val Err = 1.13789&quot;
-## [1] &quot;r = 3 - Val Err = 1.13056&quot;
-## [1] &quot;r = 4 - Val Err = 1.1268&quot;
-## [1] &quot;r = 5 - Val Err = 1.11696&quot;
-## [1] &quot;Best fit: r =  5  - Validation Error:  1.11696276198317&quot;</code></pre>
-<pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
-            X = dat$X,
-            J = fit_rank$rank.max,
-            r = fit_rank$r,
-            lambda.M = fit_rank$lambda,
-            lambda.beta = fit_rank$lambda,
-            # similarity matrix for A
-            S.a = NULL,
-            lambda.a = 0,
-            # similarity matrix for B
-            S.b = NULL,
-            lambda.b = 0,
-            maxit = 400,
-            thresh = 1e-05,
-            trace.it = T,
-            warm.start = NULL,
-            final.svd = F,
-            init = &quot;naive&quot;,
-            Qtype = 1,
-            qiter.max = 10,
-            min_eigv = 0) -&gt;
-  fiti</code></pre>
-<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
-## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
-## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
-<pre><code>## 1 : obj 3.34067 ratio 0.001786411 qiter 0 
-## 2 : obj 2.70954 ratio 0.001237526 qiter 0 
-## 3 : obj 2.26263 ratio 0.0008616438 qiter 0 
-## 4 : obj 1.94318 ratio 0.0005995669 qiter 0 
-## 5 : obj 1.71245 ratio 0.0004195872 qiter 0 
-## 6 : obj 1.54351 ratio 0.0002974328 qiter 0 
-## 7 : obj 1.4178 ratio 0.0002145359 qiter 0 
-## 8 : obj 1.32264 ratio 0.0001577951 qiter 0 
-## 9 : obj 1.24934 ratio 0.0001184158 qiter 0 
-## 10 : obj 1.19195 ratio 9.062194e-05 qiter 0 
-## 11 : obj 1.14632 ratio 7.064353e-05 qiter 0 
-## 12 : obj 1.10951 ratio 5.601355e-05 qiter 0 
-## 13 : obj 1.07944 ratio 4.510424e-05 qiter 0 
-## 14 : obj 1.0546 ratio 3.682862e-05 qiter 0 
-## 15 : obj 1.03386 ratio 3.04503e-05 qiter 0 
-## 16 : obj 1.01639 ratio 2.546236e-05 qiter 0 
-## 17 : obj 1.00155 ratio 2.151002e-05 qiter 0 
-## 18 : obj 0.98885 ratio 1.834078e-05 qiter 0 
-## 19 : obj 0.97792 ratio 1.577201e-05 qiter 0 
-## 20 : obj 0.96846 ratio 1.366948e-05 qiter 0 
-## 21 : obj 0.96022 ratio 1.193313e-05 qiter 0 
-## 22 : obj 0.953 ratio 1.048729e-05 qiter 0 
-## 23 : obj 0.94667 ratio 9.274046e-06 qiter 0</code></pre>
-<pre class="r"><code>fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
-print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt; 
-rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
-<pre><code>##       Metric       model      Beta         M  test train     Y
-## 1 rmse(rank) New Version 0.473( 5) 0.939( 3) 0.614 0.540 1.048
-## 2 rmse(rank) Old Version 0.135( 5) 0.406( 3) 0.493 0.444 0.972</code></pre>
-<pre class="r"><code>fiti$beta[,1:5]</code></pre>
-<pre><code>##            [,1]       [,2]       [,3]       [,4]       [,5]
-## [1,] -1.2752973 -1.3337194 -0.4265129 -1.7529795 -1.3951696
-## [2,] -1.5490366 -0.2791393 -0.8980494 -1.6785680 -1.9070344
-## [3,]  0.3863845  0.9450852  0.5678272  0.9736322  0.7498937
-## [4,] -1.5957189 -1.6377978 -1.9366903 -1.5268957 -1.3304922
-## [5,] -2.5454025 -1.5671670 -1.6190953 -0.9529609 -1.0016893</code></pre>
-<pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
-<pre><code>##            [,1]       [,2]       [,3]      [,4]      [,5]
-## [1,] -1.5998781 -1.5870461 -0.5720032 -2.022859 -1.734993
-## [2,] -1.9616162 -0.4151947 -1.3135156 -2.271224 -2.283070
-## [3,]  0.5116062  1.2655331  0.7372227  1.291433  1.053125
-## [4,] -1.9023150 -1.9843256 -2.3216256 -1.721309 -1.630142
-## [5,] -3.2382401 -2.0614500 -2.1337393 -1.260240 -1.143710</code></pre>
-</div>
-<div id="test-2-10-covariates-no-collineatity.-70-informative" class="section level2">
-<h2>Test 2: 10 covariates, no collineatity. 70% informative</h2>
-<pre class="r"><code>dat &lt;-
- generate_simulation_rows(
-  800,
-  900,
-  r = 15,
-  k = 10, 
-  missing_prob = 0.9,
-  coll = F,
-  prepare_for_fitting = TRUE,
-  half_discrete = FALSE,
-  informative_cov_prop = 0.7,
-  mv_beta = T,
-  seed = 2023
- )
-#---------------
-
-fit_rank &lt;- CASMC_cv_rank(
- y_train = dat$fit_data$train,
- X = dat$X,
- y_valid = dat$fit_data$valid,
- W_valid = dat$fit_data$W_valid,
- y = dat$fit_data$Y,
- error_function = error_metric$rmse,
- lambda.factor = 1 / 4,
- lambda.init = NULL,
- n.lambda = 20,
- rank.init = 2,
- rank.limit = 30,
- rank.step = 2,
- pct = 0.98,
- lambda.a = 0,
- S.a = NULL,
- lambda.b = 0,
- S.b = NULL,
- early.stopping = 1,
- thresh = 1e-6,
- maxit = 30,
- trace = F,
- print.best = TRUE,
- quiet = FALSE,
- warm = NULL,
- r_min = 0,
- track = TRUE,
- max_cores = 30,
- seed = 2023
-)</code></pre>
-<pre><code>## [1] &quot;Running on 11 cores.&quot;
-## [1] &quot;r = 0 - Val Err = 1.69262&quot;
-## [1] &quot;r = 1 - Val Err = 1.33695&quot;
-## [1] &quot;r = 2 - Val Err = 1.30801&quot;
-## [1] &quot;r = 3 - Val Err = 1.29731&quot;
-## [1] &quot;r = 4 - Val Err = 1.18878&quot;
-## [1] &quot;r = 5 - Val Err = 1.16716&quot;
-## [1] &quot;r = 6 - Val Err = 1.16125&quot;
-## [1] &quot;r = 7 - Val Err = 1.15463&quot;
-## [1] &quot;r = 8 - Val Err = 1.16598&quot;
-## [1] &quot;r = 9 - Val Err = 1.17905&quot;
-## [1] &quot;r = 10 - Val Err = 1.74602&quot;
-## [1] &quot;Best fit: r =  7  - Validation Error:  1.15462562976151&quot;</code></pre>
-<pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
-            X = dat$X,
-            
-            J = fit_rank$rank.max,
-            r = fit_rank$r,
-            lambda.M = fit_rank$lambda,
-            lambda.beta = fit_rank$lambda,
-            # similarity matrix for A
-            S.a = NULL,
-            lambda.a = 0,
-            # similarity matrix for B
-            S.b = NULL,
-            lambda.b = 0,
-            maxit = 400,
-            thresh = 1e-05,
-            trace.it = T,
-            warm.start = NULL,
-            final.svd = F,
-            init = &quot;naive&quot;,
-            Qtype = 1,
-            qiter.max = 10,
-            min_eigv = 0) -&gt;
-  fiti</code></pre>
-<pre><code>## 1 : obj 4.85314 ratio 0.002581422 qiter 0 
-## 2 : obj 3.8335 ratio 0.001788537 qiter 0 
-## 3 : obj 3.11412 ratio 0.001223594 qiter 0 
-## 4 : obj 2.60305 ratio 0.0008331265 qiter 0 
-## 5 : obj 2.23527 ratio 0.0005736146 qiter 0 
-## 6 : obj 1.9658 ratio 0.0004022819 qiter 0 
-## 7 : obj 1.76452 ratio 0.0002881034 qiter 0 
-## 8 : obj 1.61128 ratio 0.000210861 qiter 0 
-## 9 : obj 1.4925 ratio 0.0001576831 qiter 0 
-## 10 : obj 1.39889 ratio 0.0001203801 qiter 0 
-## 11 : obj 1.32396 ratio 9.370604e-05 qiter 0 
-## 12 : obj 1.26317 ratio 7.42643e-05 qiter 0 
-## 13 : obj 1.21323 ratio 5.982758e-05 qiter 0 
-## 14 : obj 1.17175 ratio 4.89145e-05 qiter 0 
-## 15 : obj 1.13696 ratio 4.052495e-05 qiter 0 
-## 16 : obj 1.10753 ratio 3.397334e-05 qiter 0 
-## 17 : obj 1.08243 ratio 2.878232e-05 qiter 0 
-## 18 : obj 1.06088 ratio 2.461439e-05 qiter 0 
-## 19 : obj 1.04226 ratio 2.122726e-05 qiter 0 
-## 20 : obj 1.02609 ratio 1.84444e-05 qiter 0 
-## 21 : obj 1.01197 ratio 1.613533e-05 qiter 0 
-## 22 : obj 0.99958 ratio 1.420231e-05 qiter 0 
-## 23 : obj 0.98867 ratio 1.257111e-05 qiter 0 
-## 24 : obj 0.97902 ratio 1.118465e-05 qiter 0 
-## 25 : obj 0.97045 ratio 9.998549e-06 qiter 0</code></pre>
-<pre class="r"><code>fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
-
-print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt; 
-rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
-<pre><code>##       Metric       model      Beta         M  test train     Y
-## 1 rmse(rank) New Version 0.428( 7) 1.127( 3) 0.754 0.629 1.074
-## 2 rmse(rank) Old Version 0.115( 7) 0.412( 3) 0.528 0.471 0.960</code></pre>
-<pre class="r"><code>fiti$beta[,1:5]</code></pre>
-<pre><code>##              [,1]        [,2]         [,3]         [,4]        [,5]
-##  [1,]  0.03630886 -0.05138941 -0.027539990 -0.001237316  0.10355910
-##  [2,]  0.65922729  0.53639714  1.586074769  0.670655104  1.70662904
-##  [3,] -0.08595206 -0.25273570 -0.076000656 -0.060511371 -0.08525513
-##  [4,] -0.09149047 -0.04865812  0.009009499 -0.004115888 -0.02811229
-##  [5,] -1.59771527 -2.18790126 -2.945632264 -1.817790934 -1.28634690
-##  [6,]  1.17215740  1.67511831  1.358680530  0.128083618  1.47692825
-##  [7,] -2.47504487 -1.42870644 -2.361641788 -0.612062870 -2.55030535
-##  [8,] -1.40418204 -1.32188507 -1.557718496 -0.998723845 -0.34363783
-##  [9,]  1.17331005  0.18635077  0.987394327  0.897342245  0.90186244
-## [10,]  1.38601484  3.62412765  0.796432180  0.994556265  0.90532305</code></pre>
-<pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
-<pre><code>##             [,1]       [,2]      [,3]       [,4]       [,5]
-##  [1,]  0.0000000  0.0000000  0.000000  0.0000000  0.0000000
-##  [2,]  0.7390241  0.5972650  1.927318  0.8472436  2.1308332
-##  [3,]  0.0000000  0.0000000  0.000000  0.0000000  0.0000000
-##  [4,]  0.0000000  0.0000000  0.000000  0.0000000  0.0000000
-##  [5,] -2.1846051 -2.9403038 -3.623230 -2.1876325 -1.8388812
-##  [6,]  1.4835485  1.8762521  1.647486  0.2318316  1.5566623
-##  [7,] -3.2439206 -2.0218549 -2.878678 -0.8489951 -3.0650717
-##  [8,] -1.8714028 -1.7828547 -1.831918 -1.3111785 -0.6068661
-##  [9,]  1.3808379  0.4143827  1.339524  1.0017880  1.1412041
-## [10,]  1.8682805  4.2936581  1.082008  1.3235066  1.2967626</code></pre>
-</div>
-<div id="test-3-6-covariates-with-collineatity.-100-informative" class="section level2">
-<h2>Test 3: 6 covariates, with collineatity. 100% informative</h2>
-<pre class="r"><code>dat &lt;-
- generate_simulation_rows(
-  800,
-  900,
-  r = 15,
-  k = 6, 
-  missing_prob = 0.9,
-  coll = T,
-  prepare_for_fitting = TRUE,
-  half_discrete = FALSE,
-  informative_cov_prop = 1,
-  mv_beta = T,
-  seed = 2023
- )
-#---------------
-
-fit_rank &lt;- CASMC_cv_rank(
- y_train = dat$fit_data$train,
- X = dat$X,
- y_valid = dat$fit_data$valid,
- W_valid = dat$fit_data$W_valid,
- y = dat$fit_data$Y,
- error_function = error_metric$rmse,
- lambda.factor = 1 / 4,
- lambda.init = NULL,
- n.lambda = 20,
- rank.init = 2,
- rank.limit = 30,
- rank.step = 2,
- pct = 0.98,
- lambda.a = 0,
- S.a = NULL,
- lambda.b = 0,
- S.b = NULL,
- early.stopping = 1,
- thresh = 1e-6,
- maxit = 30,
- trace = F,
- print.best = TRUE,
- quiet = FALSE,
- warm = NULL,
- r_min = 0,
- track = TRUE,
- max_cores = 30,
- seed = 2023
-)</code></pre>
-<pre><code>## [1] &quot;Running on 7 cores.&quot;
-## [1] &quot;r = 0 - Val Err = 1.50078&quot;
-## [1] &quot;r = 1 - Val Err = 9.06947109714425e+25&quot;
-## [1] &quot;r = 2 - Val Err = 1.18129&quot;
-## [1] &quot;r = 3 - Val Err = 1.16823&quot;
-## [1] &quot;r = 4 - Val Err = 1.16229&quot;
-## [1] &quot;r = 5 - Val Err = 1.15558&quot;
-## [1] &quot;r = 6 - Val Err = 1.14854&quot;
-## [1] &quot;Best fit: r =  6  - Validation Error:  1.14854373743354&quot;</code></pre>
-<pre class="r"><code>CASMC2_fit2(y = dat$fit_data$train,
-            X = dat$X,
-            
-            J = fit_rank$rank.max,
-            r = fit_rank$r-1,
-            lambda.M = fit_rank$lambda,
-            lambda.beta = fit_rank$lambda,
-            # similarity matrix for A
-            S.a = NULL,
-            lambda.a = 0,
-            # similarity matrix for B
-            S.b = NULL,
-            lambda.b = 0,
-            maxit = 400,
-            thresh = 1e-05,
-            trace.it = T,
-            warm.start = NULL,
-            final.svd = F,
-            init = &quot;naive&quot;,
-            Qtype = 1,
-            qiter.max = 10,
-            min_eigv = 0) -&gt;
-  fiti</code></pre>
-<pre><code>## 1 : obj 5.16988 ratio 0.003466963 qiter 0 
-## 2 : obj 4.06182 ratio 0.002412767 qiter 0 
-## 3 : obj 3.28978 ratio 0.001621406 qiter 0 
-## 4 : obj 2.75326 ratio 0.001087771 qiter 0 
-## 5 : obj 2.37565 ratio 0.0007418508 qiter 0 
-## 6 : obj 2.10493 ratio 0.0005158146 qiter 0 
-## 7 : obj 1.90717 ratio 0.0003657623 qiter 0 
-## 8 : obj 1.76003 ratio 0.0002645709 qiter 0 
-## 9 : obj 1.64858 ratio 0.0001952752 qiter 0 
-## 10 : obj 1.56269 ratio 0.0001471047 qiter 0 
-## 11 : obj 1.49539 ratio 0.0001131433 qiter 0 
-## 12 : obj 1.44182 ratio 8.891194e-05 qiter 0 
-## 13 : obj 1.3985 ratio 7.149445e-05 qiter 0 
-## 14 : obj 1.36296 ratio 5.89944e-05 qiter 0 
-## 15 : obj 1.33334 ratio 5.019569e-05 qiter 0 
-## 16 : obj 1.30826 ratio 4.434796e-05 qiter 0 
-## 17 : obj 1.28663 ratio 4.102379e-05 qiter 0 
-## 18 : obj 1.26757 ratio 4.000729e-05 qiter 0 
-## 19 : obj 1.25035 ratio 4.118057e-05 qiter 0 
-## 20 : obj 1.23433 ratio 4.438656e-05 qiter 0 
-## 21 : obj 1.21898 ratio 4.927769e-05 qiter 0 
-## 22 : obj 1.2037 ratio 5.514539e-05 qiter 0 
-## 23 : obj 1.17509 ratio 5.531386e-05 qiter 0 
-## 24 : obj 1.13603 ratio 4.768987e-05 qiter 0 
-## 25 : obj 1.10403 ratio 3.997557e-05 qiter 0 
-## 26 : obj 1.07801 ratio 3.301793e-05 qiter 0 
-## 27 : obj 1.05682 ratio 2.712592e-05 qiter 0 
-## 28 : obj 1.0395 ratio 2.231719e-05 qiter 0 
-## 29 : obj 1.02522 ratio 1.847178e-05 qiter 0 
-## 30 : obj 1.01336 ratio 1.542588e-05 qiter 0 
-## 31 : obj 1.00341 ratio 1.3019e-05 qiter 0 
-## 32 : obj 0.995 ratio 1.111281e-05 qiter 0 
-## 33 : obj 0.98781 ratio 9.595463e-06 qiter 0</code></pre>
-<pre class="r"><code>fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
-
-print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt; 
-rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
-<pre><code>##       Metric       model       Beta         M  test train     Y
-## 1 rmse(rank) New Version  1.237( 5) 1.292( 3) 0.652 0.563 1.062
-## 2 rmse(rank) Old Version 73.930( 6) 0.410( 3) 0.508 0.460 0.973</code></pre>
-<pre class="r"><code>fiti$beta[,1:5]</code></pre>
-<pre><code>##            [,1]       [,2]       [,3]        [,4]       [,5]
-## [1,]  0.4810973  0.6175548  0.3112537  0.18552696  0.8754609
-## [2,] -4.0778280 -3.5662693 -3.5510965 -3.48135864 -4.9592772
-## [3,]  0.7367826  0.6077512  0.1643535 -0.05825919  1.3675853
-## [4,]  2.4171650  1.1741920  2.4518926  2.64523550  2.3650994
-## [5,] -0.8029812 -1.7587272 -1.3655109 -0.79467409 -3.7786612
-## [6,] -2.5052779 -1.8416792 -1.7898795 -1.60640401 -2.8118788</code></pre>
-<pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
-<pre><code>##             [,1]         [,2]         [,3]        [,4]        [,5]
-## [1,]  23.0329244  153.2114541  198.5693856  92.1220063 -253.335912
-## [2,] -27.1556696 -157.0003982 -202.6168710 -96.1271582  248.568188
-## [3,]   0.8622176    0.6528236    0.3513189   0.1235127    1.620942
-## [4,]   2.8785325    1.3057644    3.1080201   3.4871790    3.071931
-## [5,]  -1.2207784   -1.9606891   -1.5495065  -1.1450382   -4.408979
-## [6,]  -3.1606932   -2.2623435   -2.4573878  -2.2263241   -3.314076</code></pre>
-<pre class="r"><code>dat$beta[,1:5]</code></pre>
-<pre><code>##            [,1]       [,2]       [,3]      [,4]      [,5]
-## [1,] -2.2605087 -1.1225995 -3.0489860 -2.939398 -2.945278
-## [2,] -1.9020515 -2.5829902 -0.9119708 -1.230545 -1.907237
-## [3,]  0.7489833  0.8462216  0.3048621  0.178085  1.551455
-## [4,]  2.9807324  1.4704025  3.1806321  3.298564  2.839327
-## [5,] -1.2266692 -1.9829920 -1.6385659 -1.138986 -4.378930
-## [6,] -3.2165106 -2.4005482 -2.6215256 -2.163315 -3.390803</code></pre>
-</div>
-<div id="test-4-10-covariates-no-collineatity.-70-informative---cv" class="section level2">
-<h2>Test 4: 10 covariates, no collineatity. 70% informative - cv</h2>
+<div id="test-1-10-covariates-no-collineatity.-70-informative---cv" class="section level2">
+<h2>Test 1: 10 covariates, no collineatity. 70% informative - cv</h2>
 <pre class="r"><code>dat &lt;-
  generate_simulation_rows(
   800,
@@ -863,28 +451,77 @@ fit_rank &lt;- CASMC_cv_rank(
   seed = 2023,
   lambda.beta.grid = &quot;default1&quot;
 ) -&gt;
-  fiti.cv
-
-fiti.cv$fit -&gt; fiti
+  fiti.cv</code></pre>
+<pre><code>## &#39;as(&lt;dgCMatrix&gt;, &quot;dgTMatrix&quot;)&#39; is deprecated.
+## Use &#39;as(., &quot;TsparseMatrix&quot;)&#39; instead.
+## See help(&quot;Deprecated&quot;) and help(&quot;Matrix-deprecated&quot;).</code></pre>
+<pre class="r"><code>fiti.cv$fit -&gt; fiti
 fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
 
-print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt; 
-rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
-<pre><code>##       Metric       model      Beta         M  test train     Y
-## 1 rmse(rank) New Version 0.135( 7) 0.448( 3) 0.543 0.483 0.967
-## 2 rmse(rank) Old Version 0.115( 7) 0.412( 3) 0.528 0.471 0.960</code></pre>
+
+
+CASMC3_cv_beta(
+  y_train = dat$fit_data$train,
+  X = dat$X,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  trace = 2,
+  print.best  = T,
+  quiet = F,
+  seed = 2023,
+  lambda.beta.grid = seq(5,0,length.out=20),
+  max_cores = 10
+) -&gt;
+  fiti.cv2</code></pre>
+<pre><code>## [1] &quot;Running on 10 cores.&quot;
+## [1] &quot;&lt;&lt; lambda.beta = 5.000, error = 1.17851, niter/fit = 30, M = [3,10.876] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.737, error = 1.17807, niter/fit = 30, M = [3,10.876] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.474, error = 1.17703, niter/fit = 25, M = [3,10.876] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.211, error = 1.17694, niter/fit = 25, M = [3,10.876] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.947, error = 1.17715, niter/fit = 37, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.684, error = 1.17407, niter/fit = 36, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.421, error = 1.17416, niter/fit = 36, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.158, error = 1.17479, niter/fit = 34, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.895, error = 1.17554, niter/fit = 30, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.632, error = 1.17642, niter/fit = 26, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.368, error = 1.17750, niter/fit = 24, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.105, error = 1.17859, niter/fit = 21, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.842, error = 1.17980, niter/fit = 20, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.579, error = 1.18121, niter/fit = 19, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.316, error = 1.18261, niter/fit = 18, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.053, error = 1.18422, niter/fit = 18, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.789, error = 1.18589, niter/fit = 17, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.526, error = 1.18759, niter/fit = 17, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.263, error = 1.18946, niter/fit = 17, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.000, error = 1.19152, niter/fit = 17, M = [3,7.251] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; Best fit &gt;&gt; lambda.beta = 3.684, error = 1.17407, niter/fit = 36, M = [3,7.251] &gt; &quot;</code></pre>
+<pre class="r"><code>fiti.cv$hparams</code></pre>
+<pre><code>##   lambda.beta lambda.M rank.beta rank.M
+## 1    22.94912 7.250835         7      3</code></pre>
+<pre class="r"><code>fiti.cv2$hparams</code></pre>
+<pre><code>##   lambda.beta lambda.M learning.rate rank.M
+## 1    3.684211 7.250835         0.001      3</code></pre>
+<pre class="r"><code>print_performance(dat, fiti, error_metric$rmse, F, &quot;CASMC2&quot;,F,3) |&gt; 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;CASMC1&quot;,F,3)) |&gt; 
+  rbind(print_performance(dat, fiti.cv2$fit, error_metric$rmse, F, &quot;CASMC3&quot;,F,3))  |&gt; 
+  arrange(test)</code></pre>
+<pre><code>##       Metric  model      Beta         M  test train     Y
+## 1 rmse(rank) CASMC2 0.116( 7) 0.417( 3) 0.526 0.469 0.959
+## 2 rmse(rank) CASMC1 0.115( 7) 0.412( 3) 0.528 0.471 0.960
+## 3 rmse(rank) CASMC3 0.539(10) 1.592( 3) 0.559 0.490 0.940</code></pre>
 <pre class="r"><code>fiti$beta[,1:5]</code></pre>
-<pre><code>##              [,1]        [,2]         [,3]         [,4]        [,5]
-##  [1,]  0.02306896 -0.06957571 -0.011405105 -0.006722142  0.11120305
-##  [2,]  0.75242080  0.58552521  1.885555138  0.842164468  2.16275103
-##  [3,] -0.11662557 -0.29064973 -0.094763240 -0.082313709 -0.11795787
-##  [4,] -0.10983858 -0.06653923 -0.005724414 -0.003361118 -0.01744113
-##  [5,] -2.14435408 -2.88833720 -3.587117260 -2.146165773 -1.78040465
-##  [6,]  1.44782043  1.89876754  1.643900580  0.244964782  1.55545412
-##  [7,] -3.19186801 -2.00493633 -2.836995101 -0.833561483 -3.04121481
-##  [8,] -1.82089711 -1.74827679 -1.810745224 -1.274047832 -0.58940092
-##  [9,]  1.36736000  0.40024165  1.362397911  1.014197793  1.13075732
-## [10,]  1.83106763  4.20958157  1.097898845  1.296408379  1.29113532</code></pre>
+<pre><code>##               [,1]          [,2]         [,3]        [,4]         [,5]
+##  [1,]  0.008299886 -0.0216698720 -0.005704154 -0.01832493 -0.004191777
+##  [2,]  0.741518735  0.5817742520  1.902297961  0.84449365  2.087790415
+##  [3,] -0.006430493  0.0000990133 -0.031591570 -0.01425933 -0.020411531
+##  [4,] -0.012532886  0.0086741668 -0.020453903 -0.01241116 -0.013437278
+##  [5,] -2.162116002 -2.9167647763 -3.596854555 -2.16106404 -1.821460336
+##  [6,]  1.492894861  1.8890261518  1.640598989  0.24376903  1.579488345
+##  [7,] -3.197136346 -2.0371186017 -2.858618816 -0.84500630 -3.044399044
+##  [8,] -1.832434794 -1.7421092551 -1.822000299 -1.28951436 -0.581716888
+##  [9,]  1.392615798  0.3967709499  1.346653303  1.01688818  1.152215471
+## [10,]  1.855388126  4.2237567426  1.093401706  1.33124519  1.281261018</code></pre>
 <pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
 <pre><code>##             [,1]       [,2]      [,3]       [,4]       [,5]
 ##  [1,]  0.0000000  0.0000000  0.000000  0.0000000  0.0000000
@@ -897,23 +534,180 @@ rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Versi
 ##  [8,] -1.8714028 -1.7828547 -1.831918 -1.3111785 -0.6068661
 ##  [9,]  1.3808379  0.4143827  1.339524  1.0017880  1.1412041
 ## [10,]  1.8682805  4.2936581  1.082008  1.3235066  1.2967626</code></pre>
+<pre class="r"><code>fiti.cv2$fit$beta[,1:5]</code></pre>
+<pre><code>##              [,1]         [,2]        [,3]        [,4]        [,5]
+##  [1,]  0.04932772 -0.003136083  0.12631902 -0.06180880  0.00000000
+##  [2,]  0.12726647  0.000000000  1.26297885  0.27871523  1.56437909
+##  [3,]  0.02922476 -0.145052275  0.00000000  0.02878642 -0.03433870
+##  [4,]  0.12718832  0.016736401 -0.08618952  0.01271305  0.26451111
+##  [5,] -1.45516349 -2.229819233 -2.84513709 -1.53204112 -1.15382857
+##  [6,]  1.09268140  1.494538871  1.22761338 -0.05939120  1.17938828
+##  [7,] -2.43220953 -1.258814124 -2.15973898 -0.21184519 -2.40419358
+##  [8,] -1.04783800 -0.954965876 -0.96778422 -0.59656039  0.02446676
+##  [9,]  0.78368055 -0.168340422  0.70771836  0.43507648  0.60523746
+## [10,]  1.16367934  3.571607492  0.38040199  0.72448056  0.68697943</code></pre>
 <pre class="r"><code>print(diag(fiti$db^2) |&gt; round(3))</code></pre>
-<pre><code>## [1] 160.691  27.407  24.588  23.892  21.187  17.748  16.031</code></pre>
+<pre><code>## [1] 161.552  27.436  24.595  23.904  21.242  17.895  16.046</code></pre>
 <pre class="r"><code>print(svd(fit_rank$fit$beta)$d |&gt; round(3))</code></pre>
 <pre><code>##  [1] 162.260  27.809  24.995  24.262  21.566  18.259  16.422   0.000   0.000
 ## [10]   0.000</code></pre>
+<pre class="r"><code>apply(fiti.cv2$fit$beta, 1, summary) |&gt; as.data.frame() |&gt; 
+    round(2) |&gt;
+    t() |&gt; as.data.frame() |&gt;  
+       mutate(true_Prop_zero = rowSums(round(dat$beta,6) == 0) / ncol(dat$beta)) |&gt;
+    mutate(Prop_zero = rowSums(round(fiti.cv2$fit$beta,6) == 0) / ncol(fiti.cv2$fit$beta)) |&gt;
+  mutate(Prop_zero =  paste0(round(Prop_zero*100),&quot;%&quot;),
+         true_Prop_zero =  paste0(round(true_Prop_zero*100),&quot;%&quot;)) |&gt; 
+      kable()</code></pre>
+<table>
+<colgroup>
+<col width="5%" />
+<col width="8%" />
+<col width="11%" />
+<col width="10%" />
+<col width="8%" />
+<col width="11%" />
+<col width="8%" />
+<col width="21%" />
+<col width="14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Min.</th>
+<th align="right">1st Qu.</th>
+<th align="right">Median</th>
+<th align="right">Mean</th>
+<th align="right">3rd Qu.</th>
+<th align="right">Max.</th>
+<th align="left">true_Prop_zero</th>
+<th align="left">Prop_zero</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">V1</td>
+<td align="right">-0.34</td>
+<td align="right">-0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.35</td>
+<td align="left">100%</td>
+<td align="left">34%</td>
+</tr>
+<tr class="even">
+<td align="left">V2</td>
+<td align="right">-1.20</td>
+<td align="right">0.15</td>
+<td align="right">0.51</td>
+<td align="right">0.52</td>
+<td align="right">0.85</td>
+<td align="right">2.30</td>
+<td align="left">0%</td>
+<td align="left">4%</td>
+</tr>
+<tr class="odd">
+<td align="left">V3</td>
+<td align="right">-0.31</td>
+<td align="right">-0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.01</td>
+<td align="right">0.04</td>
+<td align="right">0.35</td>
+<td align="left">100%</td>
+<td align="left">33%</td>
+</tr>
+<tr class="even">
+<td align="left">V4</td>
+<td align="right">-0.41</td>
+<td align="right">-0.05</td>
+<td align="right">0.00</td>
+<td align="right">-0.01</td>
+<td align="right">0.01</td>
+<td align="right">0.30</td>
+<td align="left">100%</td>
+<td align="left">31%</td>
+</tr>
+<tr class="odd">
+<td align="left">V5</td>
+<td align="right">-4.51</td>
+<td align="right">-2.72</td>
+<td align="right">-2.25</td>
+<td align="right">-2.27</td>
+<td align="right">-1.83</td>
+<td align="right">-0.28</td>
+<td align="left">0%</td>
+<td align="left">0%</td>
+</tr>
+<tr class="even">
+<td align="left">V6</td>
+<td align="right">-1.61</td>
+<td align="right">0.23</td>
+<td align="right">0.82</td>
+<td align="right">0.84</td>
+<td align="right">1.37</td>
+<td align="right">3.58</td>
+<td align="left">0%</td>
+<td align="left">3%</td>
+</tr>
+<tr class="odd">
+<td align="left">V7</td>
+<td align="right">-5.00</td>
+<td align="right">-2.83</td>
+<td align="right">-2.16</td>
+<td align="right">-2.16</td>
+<td align="right">-1.48</td>
+<td align="right">0.52</td>
+<td align="left">0%</td>
+<td align="left">1%</td>
+</tr>
+<tr class="even">
+<td align="left">V8</td>
+<td align="right">-4.32</td>
+<td align="right">-2.09</td>
+<td align="right">-1.52</td>
+<td align="right">-1.52</td>
+<td align="right">-0.96</td>
+<td align="right">0.66</td>
+<td align="left">0%</td>
+<td align="left">1%</td>
+</tr>
+<tr class="odd">
+<td align="left">V9</td>
+<td align="right">-1.12</td>
+<td align="right">0.15</td>
+<td align="right">0.54</td>
+<td align="right">0.59</td>
+<td align="right">0.97</td>
+<td align="right">2.58</td>
+<td align="left">0%</td>
+<td align="left">3%</td>
+</tr>
+<tr class="even">
+<td align="left">V10</td>
+<td align="right">-0.98</td>
+<td align="right">0.69</td>
+<td align="right">1.30</td>
+<td align="right">1.30</td>
+<td align="right">1.85</td>
+<td align="right">4.16</td>
+<td align="left">0%</td>
+<td align="left">1%</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="test-5-6-covariates-with-collineatity.-100-informative-with-cv" class="section level2">
-<h2>Test 5: 6 covariates, with collineatity. 100% informative with
-CV</h2>
+<div id="test-2-10-covariates-no-collineatity.-100-informative---cv" class="section level2">
+<h2>Test 2: 10 covariates, no collineatity. 100% informative - cv</h2>
 <pre class="r"><code>dat &lt;-
  generate_simulation_rows(
   800,
   900,
   r = 15,
-  k = 6,
+  k = 10, 
   missing_prob = 0.9,
-  coll = T,
+  coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
   informative_cov_prop = 1,
@@ -952,15 +746,19 @@ fit_rank &lt;- CASMC_cv_rank(
  max_cores = 30,
  seed = 2023
 )</code></pre>
-<pre><code>## [1] &quot;Running on 7 cores.&quot;
-## [1] &quot;r = 0 - Val Err = 1.50078&quot;
-## [1] &quot;r = 1 - Val Err = 9.06947109714425e+25&quot;
-## [1] &quot;r = 2 - Val Err = 1.18129&quot;
-## [1] &quot;r = 3 - Val Err = 1.16823&quot;
-## [1] &quot;r = 4 - Val Err = 1.16229&quot;
-## [1] &quot;r = 5 - Val Err = 1.15558&quot;
-## [1] &quot;r = 6 - Val Err = 1.14854&quot;
-## [1] &quot;Best fit: r =  6  - Validation Error:  1.14854373743354&quot;</code></pre>
+<pre><code>## [1] &quot;Running on 11 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 2.1211&quot;
+## [1] &quot;r = 1 - Val Err = 1.93917&quot;
+## [1] &quot;r = 2 - Val Err = 1.66269&quot;
+## [1] &quot;r = 3 - Val Err = 1.54606&quot;
+## [1] &quot;r = 4 - Val Err = 1.46786&quot;
+## [1] &quot;r = 5 - Val Err = 1.45329&quot;
+## [1] &quot;r = 6 - Val Err = 1.35875&quot;
+## [1] &quot;r = 7 - Val Err = 1.21292&quot;
+## [1] &quot;r = 8 - Val Err = 1.19807&quot;
+## [1] &quot;r = 9 - Val Err = 1.20186&quot;
+## [1] &quot;r = 10 - Val Err = 1.19257&quot;
+## [1] &quot;Best fit: r =  10  - Validation Error:  1.19256842229826&quot;</code></pre>
 <pre class="r"><code>CASMC2_cv_beta(
   y_train = dat$fit_data$train,
   X = dat$X,
@@ -968,7 +766,350 @@ fit_rank &lt;- CASMC_cv_rank(
   W_valid = dat$fit_data$W_valid,
   y = dat$fit_data$Y,
   trace = F,
-  print.best = T,
+  print.best  = T,
+  warm = NULL,
+  quiet = F,
+  seed = 2023,
+  lambda.beta.grid = &quot;default1&quot;
+) -&gt;
+  fiti.cv</code></pre>
+<pre><code>## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.
+## Warning in propack.svd(M, J): Only 1 singular triplets converged within 10
+## iterations.</code></pre>
+<pre class="r"><code>fiti.cv$fit -&gt; fiti
+fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
+
+
+
+CASMC3_cv_beta(
+  y_train = dat$fit_data$train,
+  X = dat$X,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  trace = 2,
+  print.best  = T,
+  quiet = F,
+  seed = 2023,
+  lambda.beta.grid = seq(5,0,length.out=20),
+  max_cores = 10
+) -&gt;
+  fiti.cv2</code></pre>
+<pre><code>## [1] &quot;Running on 10 cores.&quot;
+## [1] &quot;&lt;&lt; lambda.beta = 5.000, error = 1.21001, niter/fit = 27, M = [3,11.032] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.737, error = 1.20648, niter/fit = 27, M = [3,11.032] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.474, error = 1.20458, niter/fit = 28, M = [3,11.032] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.211, error = 1.20221, niter/fit = 27, M = [3,11.032] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.947, error = 1.20101, niter/fit = 27, M = [3,11.032] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.684, error = 1.19859, niter/fit = 36, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.421, error = 1.19688, niter/fit = 38, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.158, error = 1.19633, niter/fit = 40, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.895, error = 1.19558, niter/fit = 40, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.632, error = 1.19494, niter/fit = 36, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.368, error = 1.19475, niter/fit = 30, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.105, error = 1.19473, niter/fit = 25, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.842, error = 1.19492, niter/fit = 22, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.579, error = 1.19500, niter/fit = 20, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.316, error = 1.19522, niter/fit = 19, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.053, error = 1.19536, niter/fit = 18, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.789, error = 1.19563, niter/fit = 17, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.526, error = 1.19573, niter/fit = 17, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.263, error = 1.19582, niter/fit = 17, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.000, error = 1.19596, niter/fit = 17, M = [3,7.355] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; Best fit &gt;&gt; lambda.beta = 2.105, error = 1.19473, niter/fit = 25, M = [3,7.355] &gt; &quot;</code></pre>
+<pre class="r"><code>fiti.cv$hparams</code></pre>
+<pre><code>##   lambda.beta lambda.M rank.beta rank.M
+## 1    17.65317 7.354792        10      3</code></pre>
+<pre class="r"><code>fiti.cv2$hparams</code></pre>
+<pre><code>##   lambda.beta lambda.M learning.rate rank.M
+## 1    2.105263 7.354792         0.001      3</code></pre>
+<pre class="r"><code>print_performance(dat, fiti, error_metric$rmse, F, &quot;CASMC2&quot;,F,3) |&gt; 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;CASMC1&quot;,F,3)) |&gt; 
+  rbind(print_performance(dat, fiti.cv2$fit, error_metric$rmse, F, &quot;CASMC3&quot;,F,3))  |&gt; 
+  arrange(test)</code></pre>
+<pre><code>##       Metric  model      Beta         M  test train     Y
+## 1 rmse(rank) CASMC2 0.135(10) 0.413( 3) 0.581 0.503 0.938
+## 2 rmse(rank) CASMC3 0.326(10) 0.948( 3) 0.585 0.506 0.937
+## 3 rmse(rank) CASMC1 0.139(10) 0.418( 3) 0.589 0.508 0.940</code></pre>
+<pre class="r"><code>fiti$beta[,1:5]</code></pre>
+<pre><code>##             [,1]       [,2]      [,3]       [,4]       [,5]
+##  [1,] -2.4811485 -2.7521804 -4.128288 -1.0392364 -1.4948303
+##  [2,]  0.6383179  0.5762380  2.036338  0.5667184  2.2373050
+##  [3,]  0.7000007  0.6248214  1.894068  0.3175339  0.9089616
+##  [4,]  2.4011847  2.4243042  1.342552  1.8750326  1.4983625
+##  [5,] -2.6657604 -2.9996818 -3.675785 -2.3863789 -1.7122544
+##  [6,]  1.6334821  1.7470830  1.777966  0.2699697  1.5968413
+##  [7,] -3.4998596 -2.0002230 -3.067793 -1.0775077 -2.8441083
+##  [8,] -1.6487120 -1.9267986 -1.914236 -1.3473982 -0.8347384
+##  [9,]  1.3844067  0.2690858  1.470157  1.0209717  1.1153717
+## [10,]  1.9146925  4.2597972  1.062888  1.4638666  1.4018993</code></pre>
+<pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
+<pre><code>##             [,1]       [,2]      [,3]       [,4]       [,5]
+##  [1,] -2.4795255 -2.7593247 -4.123654 -1.0467519 -1.5066998
+##  [2,]  0.6554006  0.5774086  2.031879  0.5891998  2.2765561
+##  [3,]  0.6927471  0.5961842  1.895716  0.2862796  0.8970694
+##  [4,]  2.4041864  2.4243711  1.325900  1.8841398  1.4873828
+##  [5,] -2.6239198 -2.9933699 -3.677644 -2.3939806 -1.6967526
+##  [6,]  1.6804748  1.7474123  1.767093  0.2208995  1.6040397
+##  [7,] -3.5047109 -1.9831143 -3.073584 -1.0630562 -2.8015762
+##  [8,] -1.6053557 -1.9348906 -1.917977 -1.3406712 -0.8212551
+##  [9,]  1.4092067  0.3040665  1.460180  1.0157313  1.0812253
+## [10,]  1.9157548  4.2810086  1.035475  1.4564124  1.4026611</code></pre>
+<pre class="r"><code>fiti.cv2$fit$beta[,1:5]</code></pre>
+<pre><code>##             [,1]        [,2]       [,3]        [,4]       [,5]
+##  [1,] -2.1620464 -2.46138882 -3.8416043 -0.77684997 -1.2364881
+##  [2,]  0.3116403  0.25900781  1.7323949  0.29656798  1.9919303
+##  [3,]  0.4305721  0.37849192  1.6448662  0.09430310  0.6852712
+##  [4,]  2.0487089  2.08837360  0.9608484  1.58204298  1.1819223
+##  [5,] -2.3233762 -2.67798985 -3.3283615 -2.09382543 -1.4069808
+##  [6,]  1.3971372  1.53171448  1.5591341  0.07910319  1.4067578
+##  [7,] -3.1740737 -1.66716837 -2.7433923 -0.79359271 -2.5619772
+##  [8,] -1.2561154 -1.53879206 -1.4987737 -0.99383901 -0.4972306
+##  [9,]  1.0707435 -0.01142304  1.1558414  0.75370764  0.8343224
+## [10,]  1.6008359  3.98716975  0.7423093  1.20893224  1.1276732</code></pre>
+<pre class="r"><code>print(diag(fiti$db^2) |&gt; round(3))</code></pre>
+<pre><code>##  [1] 191.682  28.490  26.096  25.544  24.549  23.857  20.942  18.078  17.180
+## [10]  16.252</code></pre>
+<pre class="r"><code>print(svd(fit_rank$fit$beta)$d |&gt; round(3))</code></pre>
+<pre><code>##  [1] 191.465  28.814  26.425  25.893  24.848  24.141  21.216  18.394  17.525
+## [10]  16.544</code></pre>
+<pre class="r"><code>apply(fiti.cv2$fit$beta, 1, summary) |&gt; as.data.frame() |&gt; 
+    round(2) |&gt;
+    t() |&gt; as.data.frame() |&gt;  
+     mutate(true_Prop_zero = rowSums(round(dat$beta,6) == 0) / ncol(dat$beta)) |&gt;
+    mutate(Prop_zero = rowSums(round(fiti.cv2$fit$beta,6) == 0) / ncol(fiti.cv2$fit$beta)) |&gt;
+  mutate(Prop_zero =  paste0(round(Prop_zero*100),&quot;%&quot;),
+         true_Prop_zero =  paste0(round(true_Prop_zero*100),&quot;%&quot;)) |&gt; 
+      kable()</code></pre>
+<table>
+<colgroup>
+<col width="5%" />
+<col width="8%" />
+<col width="11%" />
+<col width="10%" />
+<col width="8%" />
+<col width="11%" />
+<col width="8%" />
+<col width="21%" />
+<col width="14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Min.</th>
+<th align="right">1st Qu.</th>
+<th align="right">Median</th>
+<th align="right">Mean</th>
+<th align="right">3rd Qu.</th>
+<th align="right">Max.</th>
+<th align="left">true_Prop_zero</th>
+<th align="left">Prop_zero</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">V1</td>
+<td align="right">-4.97</td>
+<td align="right">-2.95</td>
+<td align="right">-2.32</td>
+<td align="right">-2.33</td>
+<td align="right">-1.73</td>
+<td align="right">0.75</td>
+<td align="left">0%</td>
+<td align="left">0%</td>
+</tr>
+<tr class="even">
+<td align="left">V2</td>
+<td align="right">-0.88</td>
+<td align="right">0.45</td>
+<td align="right">0.81</td>
+<td align="right">0.81</td>
+<td align="right">1.15</td>
+<td align="right">2.55</td>
+<td align="left">0%</td>
+<td align="left">1%</td>
+</tr>
+<tr class="odd">
+<td align="left">V3</td>
+<td align="right">-1.36</td>
+<td align="right">0.38</td>
+<td align="right">0.98</td>
+<td align="right">1.00</td>
+<td align="right">1.56</td>
+<td align="right">3.94</td>
+<td align="left">0%</td>
+<td align="left">2%</td>
+</tr>
+<tr class="even">
+<td align="left">V4</td>
+<td align="right">-0.53</td>
+<td align="right">1.13</td>
+<td align="right">1.50</td>
+<td align="right">1.53</td>
+<td align="right">1.92</td>
+<td align="right">3.53</td>
+<td align="left">0%</td>
+<td align="left">0%</td>
+</tr>
+<tr class="odd">
+<td align="left">V5</td>
+<td align="right">-4.62</td>
+<td align="right">-3.08</td>
+<td align="right">-2.64</td>
+<td align="right">-2.63</td>
+<td align="right">-2.19</td>
+<td align="right">-0.65</td>
+<td align="left">0%</td>
+<td align="left">0%</td>
+</tr>
+<tr class="even">
+<td align="left">V6</td>
+<td align="right">-1.59</td>
+<td align="right">0.40</td>
+<td align="right">0.99</td>
+<td align="right">1.01</td>
+<td align="right">1.54</td>
+<td align="right">3.73</td>
+<td align="left">0%</td>
+<td align="left">1%</td>
+</tr>
+<tr class="odd">
+<td align="left">V7</td>
+<td align="right">-5.56</td>
+<td align="right">-3.23</td>
+<td align="right">-2.56</td>
+<td align="right">-2.53</td>
+<td align="right">-1.85</td>
+<td align="right">0.18</td>
+<td align="left">0%</td>
+<td align="left">0%</td>
+</tr>
+<tr class="even">
+<td align="left">V8</td>
+<td align="right">-4.57</td>
+<td align="right">-2.42</td>
+<td align="right">-1.88</td>
+<td align="right">-1.88</td>
+<td align="right">-1.36</td>
+<td align="right">0.27</td>
+<td align="left">0%</td>
+<td align="left">0%</td>
+</tr>
+<tr class="odd">
+<td align="left">V9</td>
+<td align="right">-0.92</td>
+<td align="right">0.48</td>
+<td align="right">0.87</td>
+<td align="right">0.89</td>
+<td align="right">1.30</td>
+<td align="right">2.82</td>
+<td align="left">0%</td>
+<td align="left">1%</td>
+</tr>
+<tr class="even">
+<td align="left">V10</td>
+<td align="right">-0.63</td>
+<td align="right">1.08</td>
+<td align="right">1.64</td>
+<td align="right">1.65</td>
+<td align="right">2.18</td>
+<td align="right">4.55</td>
+<td align="left">0%</td>
+<td align="left">0%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="test-3-10-covariates-no-collineatity.-60-informative---missing-at-random---cv" class="section level2">
+<h2>Test 3: 10 covariates, no collineatity. 60% informative - missing at
+random - cv</h2>
+<pre class="r"><code>dat &lt;-
+ generate_simulation_rows(
+  800,
+  900,
+  r = 15,
+  k = 10, 
+  missing_prob = 0.9,
+  coll = F,
+  prepare_for_fitting = TRUE,
+  half_discrete = FALSE,
+  informative_cov_prop = 0.6,
+  mv_beta = T,
+  mar_sparse = TRUE,
+  seed = 2023
+ )
+#---------------
+
+fit_rank &lt;- CASMC_cv_rank(
+ y_train = dat$fit_data$train,
+ X = dat$X,
+ y_valid = dat$fit_data$valid,
+ W_valid = dat$fit_data$W_valid,
+ y = dat$fit_data$Y,
+ error_function = error_metric$rmse,
+ lambda.factor = 1 / 4,
+ lambda.init = NULL,
+ n.lambda = 20,
+ rank.init = 2,
+ rank.limit = 30,
+ rank.step = 2,
+ pct = 0.98,
+ lambda.a = 0,
+ S.a = NULL,
+ lambda.b = 0,
+ S.b = NULL,
+ early.stopping = 1,
+ thresh = 1e-6,
+ maxit = 30,
+ trace = F,
+ print.best = TRUE,
+ quiet = FALSE,
+ warm = NULL,
+ r_min = 0,
+ track = TRUE,
+ max_cores = 30,
+ seed = 2023
+)</code></pre>
+<pre><code>## [1] &quot;Running on 11 cores.&quot;
+## [1] &quot;r = 0 - Val Err = 1.31888&quot;
+## [1] &quot;r = 1 - Val Err = 1.29977&quot;
+## [1] &quot;r = 2 - Val Err = 1.29458&quot;
+## [1] &quot;r = 3 - Val Err = 1.28317&quot;
+## [1] &quot;r = 4 - Val Err = 1.26862&quot;
+## [1] &quot;r = 5 - Val Err = 1.25664&quot;
+## [1] &quot;r = 6 - Val Err = 1.24304&quot;
+## [1] &quot;r = 7 - Val Err = 1.22718&quot;
+## [1] &quot;r = 8 - Val Err = 1.21522&quot;
+## [1] &quot;r = 9 - Val Err = 1.19969&quot;
+## [1] &quot;r = 10 - Val Err = 1.19309&quot;
+## [1] &quot;Best fit: r =  10  - Validation Error:  1.19309498806113&quot;</code></pre>
+<pre class="r"><code>CASMC2_cv_beta(
+  y_train = dat$fit_data$train,
+  X = dat$X,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  trace = F,
+  print.best  = T,
   warm = NULL,
   quiet = F,
   seed = 2023,
@@ -979,27 +1120,244 @@ fit_rank &lt;- CASMC_cv_rank(
 fiti.cv$fit -&gt; fiti
 fiti$beta = as.matrix(fiti$ub %*% (fiti$db^2) %*% t(fiti$vb))
 
-print_performance(dat, fiti, error_metric$rmse, F, &quot;New Version&quot;,F,3) |&gt;
-rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;Old Version&quot;,F,3))</code></pre>
-<pre><code>##       Metric       model       Beta         M  test train     Y
-## 1 rmse(rank) New Version  2.148( 1) 6.044( 4) 1.073 0.974 1.326
-## 2 rmse(rank) Old Version 73.930( 6) 0.410( 3) 0.508 0.460 0.973</code></pre>
+
+
+CASMC3_cv_beta(
+  y_train = dat$fit_data$train,
+  X = dat$X,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  trace = 2,
+  print.best  = T,
+  quiet = F,
+  seed = 2023,
+  lambda.beta.grid = seq(5,0,length.out=20),
+  max_cores = 10
+) -&gt;
+  fiti.cv2</code></pre>
+<pre><code>## [1] &quot;Running on 10 cores.&quot;
+## [1] &quot;&lt;&lt; lambda.beta = 5.000, error = 1.16697, niter/fit = 16, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.737, error = 1.16587, niter/fit = 16, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.474, error = 1.16500, niter/fit = 16, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 4.211, error = 1.16438, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.947, error = 1.16399, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.684, error = 1.16383, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.421, error = 1.16395, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 3.158, error = 1.16425, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.895, error = 1.16490, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.632, error = 1.16583, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.368, error = 1.16711, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 2.105, error = 1.16881, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.842, error = 1.17078, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.579, error = 1.17316, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.316, error = 1.17585, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 1.053, error = 1.17900, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.789, error = 1.18247, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.526, error = 1.18629, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.263, error = 1.19059, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; lambda.beta = 0.000, error = 1.19522, niter/fit = 17, M = [3,7.196] &gt;&gt; &quot;
+## [1] &quot;&lt;&lt; Best fit &gt;&gt; lambda.beta = 3.684, error = 1.16383, niter/fit = 17, M = [3,7.196] &gt; &quot;</code></pre>
+<pre class="r"><code>fiti.cv$hparams</code></pre>
+<pre><code>##   lambda.beta lambda.M rank.beta rank.M
+## 1    17.65317 7.196084        10      3</code></pre>
+<pre class="r"><code>fiti.cv2$hparams</code></pre>
+<pre><code>##   lambda.beta lambda.M learning.rate rank.M
+## 1    3.684211 7.196084         0.001      3</code></pre>
+<pre class="r"><code>print_performance(dat, fiti, error_metric$rmse, F, &quot;CASMC2&quot;,F,3) |&gt; 
+rbind(print_performance(dat, fit_rank$fit, error_metric$rmse, F, &quot;CASMC1&quot;,F,3)) |&gt; 
+  rbind(print_performance(dat, fiti.cv2$fit, error_metric$rmse, F, &quot;CASMC3&quot;,F,3))  |&gt; 
+  arrange(test)</code></pre>
+<pre><code>##       Metric  model      Beta         M  test train     Y
+## 1 rmse(rank) CASMC3 0.149(10) 0.481( 3) 0.548 0.484 0.954
+## 2 rmse(rank) CASMC2 0.133(10) 0.409( 3) 0.578 0.501 0.942
+## 3 rmse(rank) CASMC1 0.134(10) 0.408( 3) 0.584 0.504 0.942</code></pre>
 <pre class="r"><code>fiti$beta[,1:5]</code></pre>
-<pre><code>##               [,1]          [,2]          [,3]          [,4]          [,5]
-## [1,]  1.785387e-18 -3.087204e-18  2.608315e-18  3.494847e-18  1.225148e-18
-## [2,] -1.820412e-18  3.147767e-18 -2.659483e-18 -3.563407e-18 -1.249182e-18
-## [3,]  8.933579e-21 -1.544751e-20  1.305128e-20  1.748724e-20  6.130298e-21
-## [4,]  2.142895e-20 -3.705389e-20  3.130606e-20  4.194657e-20  1.470472e-20
-## [5,] -1.495810e-20  2.586481e-20 -2.185264e-20 -2.928006e-20 -1.026437e-20
-## [6,] -2.264332e-20  3.915372e-20 -3.308017e-20 -4.432368e-20 -1.553804e-20</code></pre>
+<pre><code>##               [,1]        [,2]        [,3]        [,4]         [,5]
+##  [1,] -0.311929595  0.07267525  0.19110891 -0.95352257 -1.395342651
+##  [2,]  0.649044441 -0.05545000  2.33606916  0.93587072  2.064485390
+##  [3,] -0.068321834 -0.09828374  1.86849182  0.03796001 -0.038197944
+##  [4,]  0.084467025  0.04827373  1.08541878 -0.09426802  0.098500286
+##  [5,] -2.410873454 -3.01220162 -3.43658739  0.15169704 -1.762506250
+##  [6,]  0.071332890  0.09241605 -0.05485581  0.02734174  0.074110127
+##  [7,] -0.006440998 -0.05323618  0.22904788 -1.00883564 -0.308938530
+##  [8,]  0.548856355 -2.00088415 -1.85424841 -1.45475760 -0.017369826
+##  [9,]  1.310091699 -0.01549798  1.56172279  1.22346027  0.008509476
+## [10,]  1.769958696  0.02130816 -0.15277053 -0.19155486 -0.038849271</code></pre>
 <pre class="r"><code>fit_rank$fit$beta[,1:5]</code></pre>
-<pre><code>##             [,1]         [,2]         [,3]        [,4]        [,5]
-## [1,]  23.0329244  153.2114541  198.5693856  92.1220063 -253.335912
-## [2,] -27.1556696 -157.0003982 -202.6168710 -96.1271582  248.568188
-## [3,]   0.8622176    0.6528236    0.3513189   0.1235127    1.620942
-## [4,]   2.8785325    1.3057644    3.1080201   3.4871790    3.071931
-## [5,]  -1.2207784   -1.9606891   -1.5495065  -1.1450382   -4.408979
-## [6,]  -3.1606932   -2.2623435   -2.4573878  -2.2263241   -3.314076</code></pre>
+<pre><code>##              [,1]        [,2]        [,3]        [,4]        [,5]
+##  [1,] -0.30564635  0.08512852  0.18101711 -0.96040562 -1.39549070
+##  [2,]  0.62172773 -0.07897392  2.40497661  0.90802231  2.16703705
+##  [3,] -0.08350737 -0.09757161  1.90047475  0.03258997 -0.01940465
+##  [4,]  0.07287088  0.08425192  1.11197065 -0.06669142  0.08378889
+##  [5,] -2.42240814 -3.07239903 -3.48881877  0.17110353 -1.75558357
+##  [6,]  0.07960898  0.07100376 -0.05438364  0.02056739  0.02935189
+##  [7,]  0.03335048 -0.03212387  0.24143627 -1.00724040 -0.32902331
+##  [8,]  0.55952256 -1.98618154 -1.89792258 -1.49830695 -0.05404982
+##  [9,]  1.33006609 -0.03231634  1.56183471  1.26951282  0.02863376
+## [10,]  1.78550102 -0.05120954 -0.14493314 -0.20692916 -0.04887108</code></pre>
+<pre class="r"><code>fiti.cv2$fit$beta[,1:5]</code></pre>
+<pre><code>##              [,1]        [,2]        [,3]        [,4]         [,5]
+##  [1,] -0.15558659  0.09789689  0.22155571 -0.82083590 -1.290514398
+##  [2,]  0.53359471 -0.09488770  2.24303123  0.78940383  1.983639724
+##  [3,] -0.06235065 -0.10908453  1.77645609 -0.01743151 -0.042430838
+##  [4,]  0.00000000  0.00000000  0.91595289 -0.09190154  0.000000000
+##  [5,] -2.33299771 -2.91107866 -3.32725901  0.11156061 -1.656052215
+##  [6,]  0.00000000  0.00000000 -0.07610725  0.00000000  0.000000000
+##  [7,]  0.00000000  0.00000000  0.27341886 -0.90192687 -0.199082073
+##  [8,]  0.52470698 -1.90768432 -1.69331675 -1.24459345  0.042588834
+##  [9,]  1.18709239 -0.04386924  1.47635886  1.09743506 -0.006303605
+## [10,]  1.65817887 -0.01171111 -0.17833376 -0.17417578 -0.050947519</code></pre>
+<pre class="r"><code>print(diag(fiti$db^2) |&gt; round(3))</code></pre>
+<pre><code>##  [1] 85.062 46.266 42.524 38.149 33.537 30.762 24.851 23.797 21.240 19.402</code></pre>
+<pre class="r"><code>print(svd(fit_rank$fit$beta)$d |&gt; round(3))</code></pre>
+<pre><code>##  [1] 85.484 46.558 42.795 38.484 33.873 31.065 25.161 24.089 21.483 19.690</code></pre>
+<pre class="r"><code>apply(fiti.cv2$fit$beta, 1, summary) |&gt; as.data.frame() |&gt; 
+    round(2) |&gt;
+    t() |&gt; as.data.frame() |&gt;  
+    mutate(true_Prop_zero = rowSums(round(dat$beta,6) == 0) / ncol(dat$beta)) |&gt;
+    mutate(Prop_zero = rowSums(round(fiti.cv2$fit$beta,6) == 0) / ncol(fiti.cv2$fit$beta)) |&gt;
+  mutate(Prop_zero =  paste0(round(Prop_zero*100),&quot;%&quot;),
+         true_Prop_zero =  paste0(round(true_Prop_zero*100),&quot;%&quot;)) |&gt; 
+      kable()</code></pre>
+<table style="width:100%;">
+<colgroup>
+<col width="5%" />
+<col width="8%" />
+<col width="11%" />
+<col width="10%" />
+<col width="8%" />
+<col width="11%" />
+<col width="7%" />
+<col width="21%" />
+<col width="14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Min.</th>
+<th align="right">1st Qu.</th>
+<th align="right">Median</th>
+<th align="right">Mean</th>
+<th align="right">3rd Qu.</th>
+<th align="right">Max.</th>
+<th align="left">true_Prop_zero</th>
+<th align="left">Prop_zero</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">V1</td>
+<td align="right">-4.83</td>
+<td align="right">-2.32</td>
+<td align="right">-0.01</td>
+<td align="right">-1.05</td>
+<td align="right">0.05</td>
+<td align="right">0.42</td>
+<td align="left">56%</td>
+<td align="left">12%</td>
+</tr>
+<tr class="even">
+<td align="left">V2</td>
+<td align="right">-0.70</td>
+<td align="right">-0.06</td>
+<td align="right">0.00</td>
+<td align="right">0.36</td>
+<td align="right">0.81</td>
+<td align="right">2.69</td>
+<td align="left">60%</td>
+<td align="left">16%</td>
+</tr>
+<tr class="odd">
+<td align="left">V3</td>
+<td align="right">-1.20</td>
+<td align="right">-0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.38</td>
+<td align="right">0.62</td>
+<td align="right">4.11</td>
+<td align="left">61%</td>
+<td align="left">18%</td>
+</tr>
+<tr class="even">
+<td align="left">V4</td>
+<td align="right">-0.46</td>
+<td align="right">-0.06</td>
+<td align="right">0.00</td>
+<td align="right">0.68</td>
+<td align="right">1.58</td>
+<td align="right">3.52</td>
+<td align="left">58%</td>
+<td align="left">14%</td>
+</tr>
+<tr class="odd">
+<td align="left">V5</td>
+<td align="right">-4.44</td>
+<td align="right">-2.57</td>
+<td align="right">0.00</td>
+<td align="right">-1.06</td>
+<td align="right">0.06</td>
+<td align="right">0.40</td>
+<td align="left">61%</td>
+<td align="left">13%</td>
+</tr>
+<tr class="even">
+<td align="left">V6</td>
+<td align="right">-1.38</td>
+<td align="right">-0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.38</td>
+<td align="right">0.69</td>
+<td align="right">3.70</td>
+<td align="left">63%</td>
+<td align="left">20%</td>
+</tr>
+<tr class="odd">
+<td align="left">V7</td>
+<td align="right">-5.74</td>
+<td align="right">-2.38</td>
+<td align="right">0.00</td>
+<td align="right">-1.01</td>
+<td align="right">0.06</td>
+<td align="right">0.43</td>
+<td align="left">61%</td>
+<td align="left">14%</td>
+</tr>
+<tr class="even">
+<td align="left">V8</td>
+<td align="right">-4.87</td>
+<td align="right">-1.88</td>
+<td align="right">0.00</td>
+<td align="right">-0.82</td>
+<td align="right">0.06</td>
+<td align="right">0.53</td>
+<td align="left">58%</td>
+<td align="left">13%</td>
+</tr>
+<tr class="odd">
+<td align="left">V9</td>
+<td align="right">-0.70</td>
+<td align="right">-0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.37</td>
+<td align="right">0.80</td>
+<td align="right">2.91</td>
+<td align="left">62%</td>
+<td align="left">17%</td>
+</tr>
+<tr class="even">
+<td align="left">V10</td>
+<td align="right">-0.46</td>
+<td align="right">-0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.67</td>
+<td align="right">1.49</td>
+<td align="right">4.65</td>
+<td align="left">60%</td>
+<td align="left">15%</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 

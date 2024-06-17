@@ -115,6 +115,7 @@ generate_simulation_rows <-
             half_discrete = FALSE,
             informative_cov_prop = 1,
             prepare_for_fitting = FALSE,
+            mar_sparse = FALSE,
             mv_beta = TRUE,
             seed = NULL) {
       if (!is.null(seed))
@@ -130,7 +131,7 @@ generate_simulation_rows <-
       # the actual correlation value is very close to 0.999999%
       if (coll == TRUE) {
          X[, 2]  <- X[, 1] + rnorm(n, mean = 0, sd = 0.8)
-         cor(X[,1], X[,1] + rnorm(n, mean = 0, sd = 0.8))
+         cor(X[, 1], X[, 1] + rnorm(n, mean = 0, sd = 0.8))
       }
       #---------------------------
       if (mv_beta) {
@@ -139,7 +140,8 @@ generate_simulation_rows <-
          beta <-
             t(mvrnorm(m, beta_means, diag(beta_vars, k, k)))
       } else
-         beta <- matrix(runif(k * m, 1, 2)*sample(c(1,1),k*m,TRUE), nrow = k)
+         beta <-
+            matrix(runif(k * m, 1, 2) * sample(c(1, 1), k * m, TRUE), nrow = k)
       U <- matrix(runif(n * r), ncol = r)
       V <- matrix(runif(r * m), nrow = r)
       P_X = X %*% solve(t(X) %*% X) %*% t(X)
@@ -149,15 +151,23 @@ generate_simulation_rows <-
       
       W <- matrix(rbinom(n * m, 1, (1 - missing_prob)) , nrow = n)
       
-      ncov_to_keep = round(informative_cov_prop * k)
-      
-      if (ncov_to_keep <= 0) {
-         beta <- matrix(0, k, ncol = m)
-      } else if (ncov_to_keep < k) {
-         sampled_covars_to_remove <-
-            sample(1:k, k - ncov_to_keep, replace = FALSE)
-         beta[sampled_covars_to_remove,] <- 0
+      if (informative_cov_prop < 1) {
+         if (mar_sparse && informative_cov_prop > 0) {
+            indices_to_zero <- sample(1:length(beta), informative_cov_prop * length(beta))
+            beta[indices_to_zero] <- 0
+         } else{
+            ncov_to_keep = round(informative_cov_prop * k)
+            
+            if (ncov_to_keep <= 0) {
+               beta <- matrix(0, k, ncol = m)
+            } else if (ncov_to_keep < k) {
+               sampled_covars_to_remove <-
+                  sample(1:k, k - ncov_to_keep, replace = FALSE)
+               beta[sampled_covars_to_remove,] <- 0
+            }
+         }
       }
+      
       O <- X %*% beta +  M
       # random noise to Y
       sqrt_signal <-
