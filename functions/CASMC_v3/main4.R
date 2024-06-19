@@ -113,20 +113,50 @@ system.time(CASMC3_cv_beta(
   y_valid = dat$fit_data$valid,
   W_valid = dat$fit_data$W_valid,
   y = dat$fit_data$Y,
-  trace = 1,
+  trace = 2,
   print.best = T,
   warm = NULL,
   quiet = F,
   seed = 2023,
   early.stopping = 5,
-  lambda.beta.grid = seq(0,10,length.out=20),
-  max_cores = 10
+  lambda.beta.grid = seq(0,3,length.out=3),
+  max_cores = 1
 ) -> fit4)
 
 fit4$hparams
 fit4$fit$beta[,1:5]
 print_performance(dat, fit4$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
 #============================================================================
+system.time(CASMC3_kfold(
+  Y = dat$Y,
+  X = dat$X,
+  obs_mask = dat$W,
+  n_folds = 5,
+  trace = 2,
+  print.best = T, 
+  warm = NULL,
+  quiet = F,
+  seed = 2023,
+  early.stopping = 5,
+  lambda.beta.grid = seq(0,1,length.out=3),
+  max_cores = 1
+) -> fit5)
+
+fit5$hparams 
+fit5$fit$beta[,1:5]
+print_performance(dat, fit5$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
+
+
+round(rowSums(fit5$fit$beta == 0) / ncol(dat$beta), 2)
+#============================================================================
+
+fds <- k_fold_cells(nrow(dat$Y), ncol(dat$Y), 3, dat$W, seed=2023)
+
+lapply(fds, function(x) (sum(x==1)/length(x))) |> unlist() |> round(2)
+
+
+sum(dat$W==1) / length(dat$W)
+#=============================================================
 CASMC2_cv_beta(
   y_train = dat$fit_data$train,
   X = dat$X,
