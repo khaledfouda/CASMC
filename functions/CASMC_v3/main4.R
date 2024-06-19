@@ -131,15 +131,15 @@ system.time(CASMC3_kfold(
   Y = dat$Y,
   X = dat$X,
   obs_mask = dat$W,
-  n_folds = 5,
+  n_folds = 10,
   trace = 2,
   print.best = T, 
   warm = NULL,
   quiet = F,
   seed = 2023,
   early.stopping = 5,
-  lambda.beta.grid = seq(0,1,length.out=3),
-  max_cores = 1
+  lambda.beta.grid = seq(0,5,length.out=10),
+  max_cores = 10
 ) -> fit5)
 
 fit5$hparams 

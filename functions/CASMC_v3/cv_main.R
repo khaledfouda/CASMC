@@ -217,7 +217,7 @@ CASMC3_kfold_M <-
     return(best_fit)
   }
 #---------------------------------------------------------------------------------
-CASMC3_kfold_M <-
+CASMC3_kfold_M_2 <-
   function(Y,
            # y_train is expected to be Incomplete
            X,
@@ -296,13 +296,13 @@ CASMC3_kfold_M <-
     #-----------------------------------------------------------------------
     #---------------------------------------------------------------------
     fold_fit <- vector("list", n_folds)
+    warm <- NULL
     for (fold in 1:n_folds) {
       rank.max <- rank.init
       best_fit <- list(error = Inf)
       counter <- 0
       err <- rank <- niter <- 0
       data = fold_data[[fold]]
-      warm <- NULL
       for (i in seq(along = lamseq)) {
         fiti <-
           CASMC3_fit(
@@ -383,9 +383,32 @@ CASMC3_kfold_M <-
       # move to the next fold ->
       # what's shared?
       fold_fit[[fold]] <- best_fit
+      
     }
     #---------------------------------------------------------------------
+    # find the fit with the lowest validation error.
+    best_fold = which.min(sapply(fold_fit, function(x) x$error))
     
+    best_fit <- list(
+      error = fold_fit[[1]]$error,
+      rank_M = fold_fit[[1]]$rank_M,
+      lambda.M = fold_fit[[1]]$lambda.M,
+      rank.max = fold_fit[[1]]$rank.max,
+      fit = fold_fit[[best_fold]]$fit
+    )
+    #best_fit$beta = fold_fit[[1]]$fit$beta
+    for(fold in 2:n_folds){
+      best_fit$error <- best_fit$error + fold_fit[[fold]]$error
+      best_fit$rank_M <- best_fit$rank_M + fold_fit[[fold]]$rank_M
+      best_fit$lambda.M <- best_fit$lambda.M + fold_fit[[fold]]$lambda.M
+      best_fit$rank.max <- best_fit$rank.max + fold_fit[[fold]]$rank.max
+      #best_fit$fit$beta <- best_fit$fit$beta + fold_fit[[fold]]$fit$beta
+    }
+    best_fit$error <- best_fit$error / n_folds
+    best_fit$rank_M <- round(best_fit$rank_M / n_folds)
+    best_fit$lambda.M <- best_fit$lambda.M / n_folds
+    best_fit$rank.max <- round(best_fit$rank.max / n_folds)
+    #best_fit$fit$beta = best_fit$fit$beta / n_folds
     #---------------------------------------------------------------------
     # fit one last time full model, if the train/valid is provided
     Y[Y == 0] = NA
@@ -479,7 +502,7 @@ CASMC3_kfold <-
     best_fit <- list(error = Inf)
     results <- mclapply(lambda.beta.grid, function(lambda.beta) {
       fiti = tryCatch({
-        CASMC3_kfold_M(
+        CASMC3_kfold_M_2(
           Y = Y,
           X = X,
           n_folds = n_folds,
