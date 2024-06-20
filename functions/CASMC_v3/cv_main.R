@@ -446,26 +446,26 @@ CASMC3_kfold_M_2 <-
     #best_fit$fit$beta = best_fit$fit$beta / n_folds
     #---------------------------------------------------------------------
     # fit one last time full model, if the train/valid is provided
-    Y[Y == 0] = NA
-    Y <- as(Y, "Incomplete")
-    best_fit$fit <-
-      CASMC3_fit(
-        y = Y,
-        X = X,
-        J = best_fit$rank.max,
-        lambda.M = best_fit$lambda.M,
-        learning.rate = learning.rate,
-        beta.iter.max = beta.iter.max,
-        lambda.beta = lambda.beta,
-        lambda.a = lambda.a,
-        S.a = S.a,
-        lambda.b = lambda.b,
-        S.b = S.b,
-        warm.start = best_fit$fit,
-        trace.it = F,
-        thresh = thresh,
-        maxit = maxit
-      )
+    # Y[Y == 0] = NA
+    # Y <- as(Y, "Incomplete")
+    # best_fit$fit <-
+    #   CASMC3_fit(
+    #     y = Y,
+    #     X = X,
+    #     J = best_fit$rank.max,
+    #     lambda.M = best_fit$lambda.M,
+    #     learning.rate = learning.rate,
+    #     beta.iter.max = beta.iter.max,
+    #     lambda.beta = lambda.beta,
+    #     lambda.a = lambda.a,
+    #     S.a = S.a,
+    #     lambda.b = lambda.b,
+    #     S.b = S.b,
+    #     warm.start = best_fit$fit,
+    #     trace.it = F,
+    #     thresh = thresh,
+    #     maxit = maxit
+    #   )
     
     
     best_fit$lambda.beta = lambda.beta
@@ -538,7 +538,7 @@ CASMC3_kfold <-
     best_fit <- list(error = Inf)
     results <- mclapply(lambda.beta.grid, function(lambda.beta) {
       fiti = tryCatch({
-        CASMC3_kfold_M(
+        CASMC3_kfold_M_3(
           Y = Y,
           X = X,
           n_folds = n_folds,
