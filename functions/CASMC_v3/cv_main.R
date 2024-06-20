@@ -115,20 +115,42 @@ CASMC3_kfold_M <-
         fold_err[fold] <-
           error_function(MValid + XbetaValid, data$Y_valid)
         err = err + fold_err[fold]
-        #rank <- sum(round(fiti$d, 4) > 0)
+        rank <- max(rank, sum(round(fit_out[[fold]]$d, 4) > 0))
+        #rank <- max(rank, length(fit_out[[fold]]$d))
         # newly added, to be removed later
-        var_explained = fit_out[[fold]]$d ^ 2 / sum(fit_out[[fold]]$d ^ 2)
-        cum_var = cumsum(var_explained)
-        rank  <- rank + which(cum_var >= pct)[1]
+        # var_explained = fit_out[[fold]]$d ^ 2 / sum(fit_out[[fold]]$d ^ 2)
+        # cum_var = cumsum(var_explained)
+        # rank  <- rank + which(cum_var >= pct)[1]
         niter <- niter + fit_out[[fold]]$n_iter
       }
       err <- err / n_folds
-      rank <- as.integer(rank / n_folds)
+      # rank <- as.integer(rank / n_folds)
       niter <- as.integer(niter / n_folds)
       #---------------------------------------------------------------------
-      weights = fold_err / fold_err #
-      #weights = weights / sum(weights)
-      warm <- list(beta = weights[1] * fit_out[[1]]$beta)
+      for(fold in 1:n_folds){
+        Jf = length(fit_out[[fold]]$d)
+        if(Jf < rank){
+          to_fill = (Jf+1):rank
+          fit_out[[fold]]$d[to_fill] <- 0
+          fit_out[[fold]]$u <- cbind(fit_out[[fold]]$u, 
+                                     matrix(0,nrow(fit_out[[fold]]$u),length(to_fill)))
+          fit_out[[fold]]$v <- cbind(fit_out[[fold]]$v, 
+                                     matrix(0,nrow(fit_out[[fold]]$v),length(to_fill)))
+        }else if(Jf > rank){
+          fit_out[[fold]]$d <- fit_out[[fold]]$d[1:rank]
+          fit_out[[fold]]$u <- fit_out[[fold]]$u[,1:rank]
+          fit_out[[fold]]$v <- fit_out[[fold]]$v[,1:rank]
+        }
+      }
+      
+      
+      weights = 1 / fold_err #
+      weights = weights / sum(weights)
+      warm <- list(beta = weights[1] * fit_out[[1]]$beta,
+                   u = weights[1] * fit_out[[1]]$u,
+                   d = weights[1] * fit_out[[1]]$d,
+                   v = weights[1] * fit_out[[1]]$v)
+      
       #M_avg <- weights[1] * unsvd(fit_out[[1]])
       if (n_folds > 1) {
         for (fold in 2:n_folds) {
@@ -136,14 +158,27 @@ CASMC3_kfold_M <-
           warm$beta <-
             warm$beta + weights[fold] * fit_out[[fold]]$beta
           warm$beta[fit_out[[fold]]$beta == 0] <- 0
+          warm$u <-
+            warm$u + weights[fold] * fit_out[[fold]]$u
+          warm$d <-
+            warm$d + weights[fold] * fit_out[[fold]]$d
+          warm$v <-
+            warm$v + weights[fold] * fit_out[[fold]]$v
+          
         }
         #M_avg <- M_avg / n_folds
-        warm$beta <- warm$beta / n_folds
+        #warm$beta <- warm$beta / n_folds
       }
-      Msvd <- fit_out[[n_folds]]#svd(M_avg)
-      warm$u <- Msvd$u
-      warm$d <- Msvd$d
-      warm$v <- Msvd$v
+      # warm$u <- svd(warm$u)$u
+      # warm$v <- svd(warm$v)$v
+      var_explained = warm$d ^ 2 / sum(warm$d ^ 2)
+      cum_var = cumsum(var_explained)
+      rank  <- rank + which(cum_var >= pct)[1]
+      
+      # Msvd <- fit_out[[n_folds]]#svd(M_avg)
+      # warm$u <- Msvd$u
+      # warm$d <- Msvd$d
+      # warm$v <- Msvd$v
       warm$n_iter <- niter
       warm$J <- rank
       warm$lambda.M <- lamseq[i]
@@ -361,7 +396,7 @@ CASMC3_kfold_M_2 <-
           best_fit$rank_M = rank
           best_fit$lambda.M = lamseq[i]
           best_fit$rank.max = rank.max
-          best_fit$fit = warm
+          best_fit$fit = fiti
           best_fit$iter = i
           counter = 0
         } else
@@ -400,14 +435,14 @@ CASMC3_kfold_M_2 <-
     for(fold in 2:n_folds){
       best_fit$error <- best_fit$error + fold_fit[[fold]]$error
       best_fit$rank_M <- best_fit$rank_M + fold_fit[[fold]]$rank_M
-      best_fit$lambda.M <- best_fit$lambda.M + fold_fit[[fold]]$lambda.M
-      best_fit$rank.max <- best_fit$rank.max + fold_fit[[fold]]$rank.max
+      best_fit$lambda.M <- max(best_fit$lambda.M, fold_fit[[fold]]$lambda.M)
+      best_fit$rank.max <- min(best_fit$rank.max, fold_fit[[fold]]$rank.max)
       #best_fit$fit$beta <- best_fit$fit$beta + fold_fit[[fold]]$fit$beta
     }
     best_fit$error <- best_fit$error / n_folds
     best_fit$rank_M <- round(best_fit$rank_M / n_folds)
-    best_fit$lambda.M <- best_fit$lambda.M / n_folds
-    best_fit$rank.max <- round(best_fit$rank.max / n_folds)
+    # best_fit$lambda.M <- best_fit$lambda.M / n_folds
+    # best_fit$rank.max <- round(best_fit$rank.max / n_folds)
     #best_fit$fit$beta = best_fit$fit$beta / n_folds
     #---------------------------------------------------------------------
     # fit one last time full model, if the train/valid is provided
@@ -437,6 +472,7 @@ CASMC3_kfold_M_2 <-
     best_fit$lambda.a = lambda.a
     best_fit$lambda.b = lambda.b
     best_fit$learning.rate = learning.rate
+    best_fit$rank_M = best_fit$fit$J
     return(best_fit)
   }
 
@@ -502,7 +538,7 @@ CASMC3_kfold <-
     best_fit <- list(error = Inf)
     results <- mclapply(lambda.beta.grid, function(lambda.beta) {
       fiti = tryCatch({
-        CASMC3_kfold_M_2(
+        CASMC3_kfold_M(
           Y = Y,
           X = X,
           n_folds = n_folds,

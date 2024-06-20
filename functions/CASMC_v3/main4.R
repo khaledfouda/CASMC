@@ -119,8 +119,8 @@ system.time(CASMC3_cv_beta(
   quiet = F,
   seed = 2023,
   early.stopping = 5,
-  lambda.beta.grid = seq(0,3,length.out=3),
-  max_cores = 1
+  lambda.beta.grid = seq(0,5,length.out=10),
+  max_cores = 10
 ) -> fit4)
 
 fit4$hparams
@@ -131,14 +131,14 @@ system.time(CASMC3_kfold(
   Y = dat$Y,
   X = dat$X,
   obs_mask = dat$W,
-  n_folds = 10,
+  n_folds = 5,
   trace = 2,
   print.best = T, 
   warm = NULL,
   quiet = F,
   seed = 2023,
   early.stopping = 5,
-  lambda.beta.grid = seq(0,5,length.out=10),
+  lambda.beta.grid = seq(1,4,length.out=5),
   max_cores = 10
 ) -> fit5)
 
