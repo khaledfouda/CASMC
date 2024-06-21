@@ -24,7 +24,7 @@ CASMC3_cv_M <-
            # y: a final full-fit if provided. Expected to be Incomplete
            lambda.beta = .Machine$double.eps,
            learning.rate = 0.001,
-           beta.iter.max = 20,
+           beta.iter.max = 200,
            # provide this if you need L2 regularization.
            error_function = error_metric$rmse,
            # tuning parameters for lambda

@@ -127,29 +127,31 @@ CASMC3_kfold_M <-
       # rank <- as.integer(rank / n_folds)
       niter <- as.integer(niter / n_folds)
       #---------------------------------------------------------------------
-      for(fold in 1:n_folds){
+      for (fold in 1:n_folds) {
         Jf = length(fit_out[[fold]]$d)
-        if(Jf < rank){
-          to_fill = (Jf+1):rank
+        if (Jf < rank) {
+          to_fill = (Jf + 1):rank
           fit_out[[fold]]$d[to_fill] <- 0
-          fit_out[[fold]]$u <- cbind(fit_out[[fold]]$u, 
-                                     matrix(0,nrow(fit_out[[fold]]$u),length(to_fill)))
-          fit_out[[fold]]$v <- cbind(fit_out[[fold]]$v, 
-                                     matrix(0,nrow(fit_out[[fold]]$v),length(to_fill)))
-        }else if(Jf > rank){
+          fit_out[[fold]]$u <- cbind(fit_out[[fold]]$u,
+                                     matrix(0, nrow(fit_out[[fold]]$u), length(to_fill)))
+          fit_out[[fold]]$v <- cbind(fit_out[[fold]]$v,
+                                     matrix(0, nrow(fit_out[[fold]]$v), length(to_fill)))
+        } else if (Jf > rank) {
           fit_out[[fold]]$d <- fit_out[[fold]]$d[1:rank]
-          fit_out[[fold]]$u <- fit_out[[fold]]$u[,1:rank]
-          fit_out[[fold]]$v <- fit_out[[fold]]$v[,1:rank]
+          fit_out[[fold]]$u <- fit_out[[fold]]$u[, 1:rank]
+          fit_out[[fold]]$v <- fit_out[[fold]]$v[, 1:rank]
         }
       }
       
       
       weights = 1 / fold_err #
       weights = weights / sum(weights)
-      warm <- list(beta = weights[1] * fit_out[[1]]$beta,
-                   u = weights[1] * fit_out[[1]]$u,
-                   d = weights[1] * fit_out[[1]]$d,
-                   v = weights[1] * fit_out[[1]]$v)
+      warm <- list(
+        beta = weights[1] * fit_out[[1]]$beta,
+        u = weights[1] * fit_out[[1]]$u,
+        d = weights[1] * fit_out[[1]]$d,
+        v = weights[1] * fit_out[[1]]$v
+      )
       
       #M_avg <- weights[1] * unsvd(fit_out[[1]])
       if (n_folds > 1) {
@@ -186,8 +188,8 @@ CASMC3_kfold_M <-
       if (trace == TRUE)
         print(sprintf(
           paste0(
-            "%2d lambda.M = %.3f, rank.max = %d  ==>",
-            " rank = %d, error = %.5f, niter/fit = %d [Beta(lambda=%.3f)]"
+            "%2d lambda.M = %.3f, rank.max = %.0f  ==>",
+            " rank = %.0f, error = %.5f, niter/fit = %.0f [Beta(lambda=%.3f)]"
           ),
           i,
           lamseq[i],
@@ -213,7 +215,7 @@ CASMC3_kfold_M <-
         if (trace)
           print(
             sprintf(
-              "Early stopping. Reached Peak point. Performance didn't improve for the last %d iterations.",
+              "Early stopping. Reached Peak point. Performance didn't improve for the last %.0f iterations.",
               counter
             )
           )
@@ -331,8 +333,8 @@ CASMC3_kfold_M_2 <-
     #-----------------------------------------------------------------------
     #---------------------------------------------------------------------
     fold_fit <- vector("list", n_folds)
-    warm <- NULL
     for (fold in 1:n_folds) {
+      warm <- NULL
       rank.max <- rank.init
       best_fit <- list(error = Inf)
       counter <- 0
@@ -378,8 +380,8 @@ CASMC3_kfold_M_2 <-
         if (trace == TRUE)
           print(sprintf(
             paste0(
-              "%2d lambda.M = %.3f, rank.max = %d  ==>",
-              " rank = %d, error = %.5f, niter/fit = %d [Beta(lambda=%.3f)]"
+              "%2d lambda.M = %.3f, rank.max = %.0f  ==>",
+              " rank = %.0f, error = %.5f, niter/fit = %.0f [Beta(lambda=%.3f)]"
             ),
             i,
             lamseq[i],
@@ -405,7 +407,7 @@ CASMC3_kfold_M_2 <-
           if (trace)
             print(
               sprintf(
-                "Early stopping. Reached Peak point. Performance didn't improve for the last %d iterations.",
+                "Early stopping. Reached Peak point. Performance didn't improve for the last %.0f iterations.",
                 counter
               )
             )
@@ -422,25 +424,103 @@ CASMC3_kfold_M_2 <-
     }
     #---------------------------------------------------------------------
     # find the fit with the lowest validation error.
-    best_fold = which.min(sapply(fold_fit, function(x) x$error))
+    best_fold = which.min(sapply(fold_fit, function(x)
+      x$error))
     
     best_fit <- list(
-      error = fold_fit[[1]]$error,
-      rank_M = fold_fit[[1]]$rank_M,
-      lambda.M = fold_fit[[1]]$lambda.M,
-      rank.max = fold_fit[[1]]$rank.max,
-      fit = fold_fit[[best_fold]]$fit
+      error = median(sapply(fold_fit, function(x)
+        x$error)),
+      rank_M = median(sapply(fold_fit, function(x)
+        sum(x$fit$d > 0))) |> round(),
+      lambda.M = median(sapply(fold_fit, function(x)
+        x$lambda.M)),
+      rank.max = median(sapply(fold_fit, function(x)
+        x$rank.max)) |> round()
     )
-    #best_fit$beta = fold_fit[[1]]$fit$beta
-    for(fold in 2:n_folds){
-      best_fit$error <- best_fit$error + fold_fit[[fold]]$error
-      best_fit$rank_M <- best_fit$rank_M + fold_fit[[fold]]$rank_M
-      best_fit$lambda.M <- max(best_fit$lambda.M, fold_fit[[fold]]$lambda.M)
-      best_fit$rank.max <- min(best_fit$rank.max, fold_fit[[fold]]$rank.max)
-      #best_fit$fit$beta <- best_fit$fit$beta + fold_fit[[fold]]$fit$beta
+    beta_3d = lapply(fold_fit, function(x)
+      x$fit$beta) |> simplify2array()
+    
+    # alt beta method:
+    # epsilon <- 1e-5
+    # 
+    # # Compute the mean of the elements, considering epsilon
+    # beta <- apply(beta_3d, c(1, 2), function(x) {
+    #   non_zeros <- x[x != 0]
+    #   if (length(non_zeros) == 0) {
+    #     return(0)
+    #   } else {
+    #     return(mean(non_zeros) * (length(non_zeros) / length(x)) + 
+    #              epsilon * (length(x) - length(non_zeros)) / length(x))
+    #   }
+    # })
+    # 
+    # threshold <- 1e-4
+    # beta[abs(beta) < threshold] <- 0
+    #---
+    zero_mask <- apply(beta_3d == 0, c(1, 2), any)
+    beta <- apply(beta_3d, c(1, 2), function(x)
+      mean(x[x != 0]))
+    beta[zero_mask] <- 0
+    
+    # pad them:
+    A_comp  <- B_comp <- M_comp <- 0
+    print(best_fit$rank_M)
+    
+    for (fit in fold_fit) {
+      u <- fit$fit$u
+      d <- fit$fit$d
+      v <- fit$fit$v
+      # Jf = length(d)
+      # if (Jf < best_fit$rank_M) {
+      #   to_fill = (Jf + 1):best_fit$rank_M
+      #   d[to_fill] <- 0
+      #   u <- cbind(u, matrix(0, nrow(u), length(to_fill)))
+      #   v <- cbind(v, matrix(0, nrow(v), length(to_fill)))
+      # } else if (Jf > best_fit$rank_M) {
+      #   d <- d[1:best_fit$rank_M]
+      #   u <- u[, 1:best_fit$rank_M]
+      #   v <- v[, 1:best_fit$rank_M]
+      # }
+      
+      M_comp <- M_comp + u %*% (d * t(v))
+      # A_comp <- A_comp + u %*% diag(sqrt(d))
+      # B_comp <- B_comp + v %*% diag(sqrt(d))
     }
-    best_fit$error <- best_fit$error / n_folds
-    best_fit$rank_M <- round(best_fit$rank_M / n_folds)
+    # A_comp <- A_comp / n_folds
+    # B_comp <- B_comp / n_folds
+    # Msvd <- svd(A_comp %*% t(B_comp))
+    # Msvd <- fold_fit[[best_fold]]$fit
+    Msvd <- svd_trunc_simple(M_comp / n_folds, best_fit$rank_M)
+    
+    #print(length(fit$fit$d))
+    #U_comp <- U_comp + fit$fit$u %*% diag(fit$fit$u)
+    
+    
+    
+    #beta = Reduce("+", lapply(fold_fit, function(x) x$fit$beta)) / n_folds
+    #Msvd = svd(Reduce("+", lapply(fold_fit, function(x)
+    #unsvd(x$fit))) / n_folds)
+    best_fit$fit <- list(
+      beta = beta,
+      u = Msvd$u,
+      d = Msvd$d,
+      v = Msvd$v,
+      J = best_fit$rank_M,
+      lambda.M = best_fit$lambda.M,
+      n_iter = median(sapply(fold_fit, function(x)
+        x$fit$n_iter) |> round())
+    )
+    
+    #best_fit$beta = fold_fit[[1]]$fit$beta
+    # for(fold in 2:n_folds){
+    #   best_fit$error <- best_fit$error + fold_fit[[fold]]$error
+    #   best_fit$rank_M <- best_fit$rank_M + fold_fit[[fold]]$rank_M
+    #   best_fit$lambda.M <- max(best_fit$lambda.M, fold_fit[[fold]]$lambda.M)
+    #   best_fit$rank.max <- min(best_fit$rank.max, fold_fit[[fold]]$rank.max)
+    #   #best_fit$fit$beta <- best_fit$fit$beta + fold_fit[[fold]]$fit$beta
+    # }
+    # best_fit$error <- best_fit$error / n_folds
+    # best_fit$rank_M <- round(best_fit$rank_M / n_folds)
     # best_fit$lambda.M <- best_fit$lambda.M / n_folds
     # best_fit$rank.max <- round(best_fit$rank.max / n_folds)
     #best_fit$fit$beta = best_fit$fit$beta / n_folds
@@ -472,7 +552,7 @@ CASMC3_kfold_M_2 <-
     best_fit$lambda.a = lambda.a
     best_fit$lambda.b = lambda.b
     best_fit$learning.rate = learning.rate
-    best_fit$rank_M = best_fit$fit$J
+    #best_fit$rank_M = best_fit$fit$J
     return(best_fit)
   }
 
@@ -538,7 +618,7 @@ CASMC3_kfold <-
     best_fit <- list(error = Inf)
     results <- mclapply(lambda.beta.grid, function(lambda.beta) {
       fiti = tryCatch({
-        CASMC3_kfold_M_3(
+        CASMC3_kfold_M_2(
           Y = Y,
           X = X,
           n_folds = n_folds,
@@ -600,7 +680,7 @@ CASMC3_kfold <-
         print(
           sprintf(
             paste0(
-              "<< lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] >> "
+              "<< lambda.beta = %.3f, error = %.5f, niter/fit = %.0f, M = [%.0f,%.3f] >> "
             ),
             x$lambda.beta,
             x$error,
@@ -616,7 +696,7 @@ CASMC3_kfold <-
       print(
         sprintf(
           paste0(
-            "<< Best fit >> lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] > "
+            "<< Best fit >> lambda.beta = %.3f, error = %.5f, niter/fit = %.0f, M = [%.0f,%.3f] > "
           ),
           best_fit$lambda.beta,
           best_fit$error,

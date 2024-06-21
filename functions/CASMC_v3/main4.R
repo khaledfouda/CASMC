@@ -12,7 +12,7 @@ dat <-
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = .7,
+  informative_cov_prop = .7,mar_sparse = T,
   mv_beta = T,
   seed = 2023
  )
@@ -107,6 +107,9 @@ print_performance(dat, fiti2, error_metric$rmse, F, "CASMC(Rank)",F,3)
 
 
 #============================================================================
+learning_rate = 1 / sqrt(sum((t(dat$X) %*% dat$X)^2))
+
+
 system.time(CASMC3_cv_beta(
   y_train = dat$fit_data$train,
   X = dat$X,
@@ -116,11 +119,11 @@ system.time(CASMC3_cv_beta(
   trace = 2,
   print.best = T,
   warm = NULL,
-  quiet = F,
+  quiet = F, learning.rate = learning_rate,
   seed = 2023,
   early.stopping = 5,
-  lambda.beta.grid = seq(0,5,length.out=10),
-  max_cores = 10
+  lambda.beta.grid = seq(0,10,length.out=20),
+  max_cores = 20
 ) -> fit4)
 
 fit4$hparams
@@ -129,27 +132,34 @@ print_performance(dat, fit4$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
 round(rowSums(fit4$fit$beta == 0) / ncol(dat$beta), 2)
 #============================================================================
 system.time(CASMC3_kfold(
-  Y = dat$Y,
+  Y = dat$Y,learning.rate = learning_rate,
   X = dat$X,
   obs_mask = dat$W,
-  n_folds = 7,
-  trace = 2,
+  n_folds = 5,
+  trace = 0,
   print.best = T, 
   warm = NULL,
   quiet = F,
   seed = 2023,
   early.stopping = 5,
   n.lambda = 20,
-  rank.step = 1,
+  rank.step = 2,
   pct = 0.98,
-  lambda.beta.grid = seq(7.888889,7,length.out=4),
-  max_cores = 10
+  lambda.beta.grid = seq(4.444444,5,length.out=1),
+  max_cores = 20
 ) -> fit5)
 
+#fit5$fit$beta[dat$beta==0] <- 0
 print_performance(dat, fit5$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
 fit5$hparams 
 fit5$fit$beta[,1:5]
 
+beta2 <- fit5$fit$beta
+fit5$fit$beta[ beta2==0 & dat$beta!=0 ] <- fit4$fit$beta[beta2==0 & dat$beta!=0] 
+sum(dat$beta==0)
+sum(dat$beta==0 & fit4$fit$beta==0)
+sum(beta2==0)
+sum(fit4$fit$beta==0)
 
 round(rowSums(fit5$fit$beta == 0) / ncol(dat$beta), 2)
 #============================================================================

@@ -120,7 +120,7 @@ CASMC3_cv_beta <-
             print(
                sprintf(
                   paste0(
-                     "<< lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] >> "
+                     "<< lambda.beta = %.3f, error = %.5f, niter/fit = %.0f, M = [%.0f,%.3f] >> "
                   ),
                   x$lambda.beta,
                   x$error,
@@ -136,7 +136,7 @@ CASMC3_cv_beta <-
          print(
             sprintf(
                paste0(
-                  "<< Best fit >> lambda.beta = %.3f, error = %.5f, niter/fit = %d, M = [%d,%.3f] > "
+                  "<< Best fit >> lambda.beta = %.3f, error = %.5f, niter/fit = %.0f, M = [%.0f,%.3f] > "
                ),
                best_fit$lambda.beta,
                best_fit$error,
