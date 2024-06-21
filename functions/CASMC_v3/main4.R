@@ -157,7 +157,7 @@ fit5$fit$beta[,1:5]
 beta2 <- fit5$fit$beta
 fit5$fit$beta[ beta2==0 & dat$beta!=0 ] <- fit4$fit$beta[beta2==0 & dat$beta!=0] 
 sum(dat$beta==0)
-sum(dat$beta==0 & fit4$fit$beta==0)
+sum(dat$beta!=0 & fit5$fit$beta==0)
 sum(beta2==0)
 sum(fit4$fit$beta==0)
 
