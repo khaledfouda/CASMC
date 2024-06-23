@@ -1,11 +1,11 @@
 #------------------------------------------------------------------------------------------
-CASMC2_cv <-
+CASMC1_cv <-
   function(y_train,
            # y_train is expected to be Incomplete
            X,
-           W_valid,
-           # y_valid is a vector
            y_valid,
+           # y_valid is a vector
+           W_valid,
            y = NULL,
            # y: a final full-fit if provided. Expected to be Incomplete
            error_function = error_metric$rmse,
@@ -26,7 +26,7 @@ CASMC2_cv <-
            # stopping criteria
            early.stopping = 1,
            thresh = 1e-6,
-           maxit = 300,
+           maxit = 100,
            # trace parameters
            trace = FALSE,
            print.best = TRUE,
@@ -37,24 +37,16 @@ CASMC2_cv <-
            rank_x = qr(X)$rank,
            r_min = 0,
            r_max = rank_x,
-           # L2 parameters
-           lambda.beta.grid = "default1",
            track = FALSE,
            max_cores = 8,
            # seed
            seed = NULL) {
     if(!is.null(seed)) set.seed(seed)
     r_seq <- (max(r_min, 0)):(min(rank_x, r_max))
-    if(identical(lambda.beta.grid, "default1"))
-      lambda.beta.max = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *  10
-    if(identical(lambda.beta.grid, "default2"))
-      lambda.beta.max = propack.svd(naive_fit(y, X, TRUE),1)$d/4
-    
-    num_cores = 1 #min(max_cores, length(r_seq))
+    num_cores = min(max_cores, length(r_seq))
     print(paste("Running on", num_cores, "cores."))
-    
+    Xterms = GetXterms(X)
     svdH = reduced_hat_decomp.H(X)
-    
     results <- mclapply(r_seq, function(r) {
     fiti <- tryCatch({
       CASMC_cv_nuclear(

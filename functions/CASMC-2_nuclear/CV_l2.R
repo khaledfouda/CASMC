@@ -1,4 +1,4 @@
-CASMC2_cv_beta <-
+CASMC2_cv <-
    function(y_train,
             # y_train is expected to be Incomplete
             X,
@@ -114,7 +114,7 @@ CASMC2_cv_beta <-
                fiti$n_iter
             ))
          #-------------------------
-         # register best fir
+         # register best fit
          if (err < best_fit$error) {
             best_fit$error = err
             best_fit$rank_beta = rank

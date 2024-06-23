@@ -4,8 +4,8 @@ source("./code_files/import_lib.R")
 
 dat <-
  generate_simulation_rows(
-  300,
-  400,
+  600,
+  700,
   r = 10,
   k = 10, 
   missing_prob = 0.9,

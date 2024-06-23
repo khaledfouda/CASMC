@@ -1,4 +1,4 @@
-CASMC_cv_L2 <-
+CASMC0_cv <-
    function(y_train,
             # y_train is expected to be Incomplete
             X,
