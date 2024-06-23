@@ -80,13 +80,15 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
 }
 
 
-CASMC_rank_Sim_Wrapper <-
+#----------------------------------------------------------------------------------
+CASMC_1_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
+           maxit = 300,
            ...) {
     start_time = Sys.time()
-    rank_x <- qr(dat$X)$rank
-    fiti <- CASMC_cv_rank(
+    
+    fiti <- CASMC1_cv(
       y_train = dat$fit_data$train,
       X = dat$X,
       y_valid = dat$fit_data$valid,
@@ -106,15 +108,13 @@ CASMC_rank_Sim_Wrapper <-
       S.b = NULL,
       early.stopping = 1,
       thresh = 1e-6,
-      maxit = 100,
-      trace = T,
-      print.best = F,
+      maxit = maxit,
+      trace = F,
+      print.best = TRUE,
       quiet = FALSE,
       warm = NULL,
-      rank_x = rank_x,
       r_min = 0,
-      r_max = rank_x,
-      track_r = F,
+      track = F,
       max_cores = max_cores,
       seed = NULL
     )
@@ -124,22 +124,25 @@ CASMC_rank_Sim_Wrapper <-
     fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
-    results = list(model = "CASMC_Rank_Restriction")
+    results = list(model="CASMC-1")
     results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-    results$lambda.M = NA
-    results$lambda.beta = fit.$lambda
+    results$lambda.M = fit.$lambda
+    results$lambda.beta = NA
     results$error.test = test_error(fit.$estimates[dat$W == 0], dat$O[dat$W == 0])
     results$error.all = test_error(fit.$estimates, dat$O)
     results$error.M = test_error(fit.$M, dat$M)
     results$error.beta = test_error(fit.$beta, dat$beta)
-    results$rank_M = length(fit.$d)
-    results$rank_beta = fiti$r
+    results$rank_M = sum(fit.$d > 0)
+    results$rank_beta = qr(fit.$beta)$rank
+    results$sparse_in_sparse = sum(dat$beta == 0 & fit.$beta == 0) /
+      (sum(dat$beta == 0) +  1e-17)
+    results$sparse_in_nonsparse = sum(dat$beta != 0 &
+                                        fit.$beta == 0) /
+      (sum(dat$beta != 0) +  1e-17)
     results
   }
 
-
-
-
+#--------------------------------------------------------------------------------------
 CASMC_0_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
@@ -147,7 +150,7 @@ CASMC_0_Sim_Wrapper <-
            ...) {
     start_time = Sys.time()
     
-    fiti <- CASMC_cv_L2(
+    fiti <- CASMC0_cv(
       y_train = dat$fit_data$train,
       X = dat$X,
       y_valid = dat$fit_data$valid,
@@ -183,7 +186,7 @@ CASMC_0_Sim_Wrapper <-
     fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
-    results = list(model = ifelse(maxit == 2, "CASMC-0_single_iter", "CASMC-0"))
+    results = list(model = "CASMC-0")
     results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
     results$lambda.M = fit.$lambda
     results$lambda.beta = fiti$lambda.beta
@@ -231,7 +234,7 @@ CASMC_2_Sim_Wrapper <-
     fit.$beta = fit.$ub %*% (fit.$db^2) %*% t(fit.$vb)
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
-    results = list(model = ifelse(maxit == 2, "CASMC-0_single_iter", "CASMC-0"))
+    results = list(model = "CASMC-2")
     results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
     results$lambda.M = fiti$hparams$lambda.M
     results$lambda.beta = fiti$hparams$lambda.beta

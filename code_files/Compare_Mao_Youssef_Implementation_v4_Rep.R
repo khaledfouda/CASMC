@@ -29,16 +29,18 @@ compare_and_save_with_rep2 <- function(missingness,
                                       n_folds = 5,
                                       dim = c(400,400),
                                       ncovariates = 10,
+                                      mar_beta = FALSE,
+                                      half_discrete = FALSE,
                                       lambda.1_grid = seq(0, 3, length = 20),
                                       lambda.2_grid = seq(.9, 0, length = 20),
                                       alpha_grid = seq(0.992, 1, length = 10),
                                       ncores_mao = 2,
                                       max_cores = 20,
-                                      weight_function = MaoUniWeights, 
+                                      weight_function = Mao_weights$uniform, 
                                       n.lambda = 30,
                                       rank.limit = 20,
                                       rank.step = 2,
-                                      error_function = RMSE_error,
+                                      error_function = error_metric$rmse,
                                       first_seed = NULL,
                                       mao_r = ncovariates,
                                       cov_eff = 1,
@@ -48,32 +50,38 @@ compare_and_save_with_rep2 <- function(missingness,
    data_dir = "./saved_data/"
    stopifnot(missingness %in% c(0, 0.8, 0.9))
    stopifnot(length(dim) == 2)
-   stopifnot(length(model_flag) == 6)
+   stopifnot(length(model_flag) == 8)
    metrics = c(
       "time",
-      "lambda.1",
-      "lambda.2",
+      "lambda.M",
+      "lambda.beta",
       "error.test",
       "error.all",
       "error.M",
       "error.beta",
       "rank_M",
-      "rank_beta"
+      "rank_beta",
+      "sparse_in_sparse",
+      "sparse_in_nonsparse"
    )
    models = c(
       "SoftImpute",
       "Mao",
-      "CASMC_rank_restriction",
-      "CASMC_L2",
-      "CASMC_L2_1iter",
+      "CASMC-0_Ridge",
+      "CASMC-1_Hard_Rank",
+      "CASMC-2_Nuclear",
+      "CASMC-3a_Lasso_single_split",
+      "CASMC-3b_Lasso_10-folds",
       "Naive")
    
    model_functions = list(
       SImpute_Sim_Wrapper,
       Mao_Sim_Wrapper,
-      CASMC_rank_Sim_Wrapper,
-      function(dat, max_cores,...) CASMC_L2_Sim_Wrapper(dat, max_cores, 300),
-      function(dat, max_cores,...) CASMC_L2_Sim_Wrapper(dat, max_cores, 2),
+      CASMC_0_Sim_Wrapper,
+      CASMC_1_Sim_Wrapper,
+      CASMC_2_Sim_Wrapper,
+      CASMC_3a_Sim_Wrapper,
+      CASMC_3b_Sim_Wrapper,
       Naive_Sim_Wrapper
    )
    models = models[model_flag]
@@ -103,6 +111,8 @@ compare_and_save_with_rep2 <- function(missingness,
             missing_prob = missingness,
             coll = coll,
             seed = seed,
+            half_discrete = half_discrete,
+            mar_sparse = mar_beta,
             informative_cov_prop = cov_eff,
             mv_beta = TRUE,
             prepare_for_fitting = TRUE
@@ -154,7 +164,7 @@ compare_and_save_with_rep2 <- function(missingness,
       results$model = models
       
       filename = paste0(
-         "Compare_MC_Models_Youssef_Simulation_with_replications_",
+         "Model_Comparison_simulation_replications_",
          note,
          round(missingness * 100),
          "_coll_",
@@ -227,9 +237,10 @@ for (hparams in list(#c(0.9, 400,500),
                      #c(0.0, FALSE)
                      )) {
    compare_and_save_with_rep2(
-      hparams[1],
-      FALSE,
-      num_replications = 50,
+      missingness = hparams[1],
+      coll = FALSE,
+      num_replications = 2,
+      n_folds = 5,
       dim = c(hparams[2],hparams[3]),
       lambda.1_grid = seq(1, 0, length = 20),
       lambda.2_grid = seq(.9, 0.1, length = 20),
@@ -237,12 +248,11 @@ for (hparams in list(#c(0.9, 400,500),
       ncores_mao = 1,
       max_cores = 20,
       ncovariates = 10,
-      mao_r = 10,
       weight_function = Mao_weights$uniform,
       error_function = error_metric$rmse, 
       cov_eff = 0.7,
       first_seed =  10,
-      model_flag = c(T,T,T,T,T,T),
-      note = "_new47_"
+      model_flag = c(T,T,T,T,T,T,T,T),
+      note = "_test_"
    )
 }
