@@ -4,15 +4,15 @@ source("./code_files/import_lib.R")
 
 dat <-
  generate_simulation_rows(
-  700,
-  700,
+  300,
+  400,
   r = 10,
   k = 10, 
   missing_prob = 0.9,
-  coll = F,
+  coll = T,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = .7,mar_sparse = T,
+  informative_cov_prop = 1,mar_sparse = T,
   mv_beta = T,
   seed = 2023
  )
@@ -128,6 +128,7 @@ system.time(CASMC3_cv_beta(
 
 fit4$hparams
 fit4$fit$beta[,1:5]
+dat$beta[,1:5]
 print_performance(dat, fit4$fit, error_metric$rmse, F, "CASMC(Rank)",F,3)
 round(rowSums(fit4$fit$beta == 0) / ncol(dat$beta), 2)
 #============================================================================
@@ -141,11 +142,11 @@ system.time(CASMC3_kfold(
   warm = NULL,
   quiet = F,
   seed = 2023,
-  early.stopping = 5,
+  early.stopping = 1,
   n.lambda = 20,
   rank.step = 2,
   pct = 0.98,
-  lambda.beta.grid = seq(4.444444,5,length.out=1),
+  lambda.beta.grid = seq(0,3,length.out=10),
   max_cores = 20
 ) -> fit5)
 

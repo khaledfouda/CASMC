@@ -130,8 +130,8 @@ generate_simulation_rows <-
       # if collinearity is needed, make the correlation between the first two columns in X and Z between (.99,1)
       # the actual correlation value is very close to 0.999999%
       if (coll == TRUE) {
-         X[, 2]  <- X[, 1] + rnorm(n, mean = 0, sd = 0.8)
-         cor(X[, 1], X[, 1] + rnorm(n, mean = 0, sd = 0.8))
+         cor(X[, 1], X[, 1] + rnorm(n, mean = 0, sd = 1.5))
+         X[, 2]  <- X[, 1] + rnorm(n, mean = 0, sd = 1.5)
       }
       #---------------------------
       if (mv_beta) {
