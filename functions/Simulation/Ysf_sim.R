@@ -123,9 +123,9 @@ generate_simulation_rows <-
       #-----------------------------------
       X <- matrix(rnorm(n * k), ncol = k)
       if (half_discrete) {
-         ndisc = ceiling(k / 2) + 1
+         ndisc = ceiling(k / 2) 
          sampled_disc = sample(1:k, ndisc, FALSE)
-         X[, sampled_disc] <- rbinom(n * (k - ndisc + 1), 1, 0.3)
+         X[, sampled_disc] <- rbinom(n * ndisc, 1, 0.3)
       }
       # if collinearity is needed, make the correlation between the first two columns in X and Z between (.99,1)
       # the actual correlation value is very close to 0.999999%

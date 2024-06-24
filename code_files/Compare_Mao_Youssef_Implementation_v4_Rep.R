@@ -23,33 +23,26 @@ get_sd_from_sse <- function(current_sse, n) {
 
 
 
-compare_and_save_with_rep2 <- function(missingness,
-                                      coll = F,
-                                      num_replications = 500,
-                                      n_folds = 5,
-                                      dim = c(400,400),
-                                      ncovariates = 10,
-                                      mar_beta = FALSE,
-                                      half_discrete = FALSE,
-                                      lambda.1_grid = seq(0, 3, length = 20),
-                                      lambda.2_grid = seq(.9, 0, length = 20),
-                                      alpha_grid = seq(0.992, 1, length = 10),
-                                      ncores_mao = 2,
-                                      max_cores = 20,
-                                      weight_function = Mao_weights$uniform, 
-                                      n.lambda = 30,
-                                      rank.limit = 20,
-                                      rank.step = 2,
-                                      error_function = error_metric$rmse,
-                                      first_seed = NULL,
-                                      mao_r = ncovariates,
-                                      cov_eff = 1,
-                                      model_flag = rep(TRUE,6),
-                                      note = "") {
+compare_and_save_with_rep2 <- function(simPar,
+                                       num_replications = 500,
+                                       n_folds = 5,
+                                       new_datfolder = "",
+                                       lambda.1_grid = seq(0, 3, length = 20),
+                                       lambda.2_grid = seq(.9, 0, length = 20),
+                                       alpha_grid = seq(0.992, 1, length = 10),
+                                       ncores_mao = 2,
+                                       max_cores = 20,
+                                       weight_function = Mao_weights$uniform,
+                                       n.lambda = 30,
+                                       rank.limit = 20,
+                                       rank.step = 2,
+                                       error_function = error_metric$rmse,
+                                       first_seed = NULL,
+                                       model_flag = rep(TRUE, 6),
+                                       note = "") {
    test_error <<- error_function
-   data_dir = "./saved_data/"
-   stopifnot(missingness %in% c(0, 0.8, 0.9))
-   stopifnot(length(dim) == 2)
+   data_dir = paste0("./saved_data/", new_datfolder, "/")
+   stopifnot(simPar$missp %in% c(0, 0.8, 0.9))
    stopifnot(length(model_flag) == 8)
    metrics = c(
       "time",
@@ -72,7 +65,8 @@ compare_and_save_with_rep2 <- function(missingness,
       "CASMC-2_Nuclear",
       "CASMC-3a_Lasso_single_split",
       "CASMC-3b_Lasso_10-folds",
-      "Naive")
+      "Naive"
+   )
    
    model_functions = list(
       SImpute_Sim_Wrapper,
@@ -102,85 +96,87 @@ compare_and_save_with_rep2 <- function(missingness,
       # results <- data.frame()
       
       #---- initialize the data
-         dat <-
+      dat <-
          generate_simulation_rows(
-            dim[1],
-            dim[2],
-            ncovariates,
-            ncovariates,
-            missing_prob = missingness,
-            coll = coll,
+            simPar$dim1,
+            simPar$dim2,
+            r = simPar$nr,
+            k = simPar$ncov,
+            missing_prob = simPar$missp,
+            coll = simPar$coll,
             seed = seed,
-            half_discrete = half_discrete,
-            mar_sparse = mar_beta,
-            informative_cov_prop = cov_eff,
+            half_discrete = simPar$Disc,
+            mar_sparse = simPar$MAR,
+            informative_cov_prop = simPar$info,
             mv_beta = TRUE,
             prepare_for_fitting = TRUE
          )
       print(n)
-      #----------------------------------------------------------------------
-      # start fitting the models:
-      for (i in 1:length(model_functions)) {
-         results = as.numeric(
-            model_functions[[i]](
-               dat = dat,
-               n_folds = n_folds,
-               lambda.1_grid = lambda.1_grid,
-               lambda.2_grid = lambda.2_grid,
-               alpha_grid = alpha_grid,
-               ncores = ncores_mao,
-               max_cores = max_cores,
-               weight_function = weight_function
-            )[-1]
-         )
-         new_mean <- update_mean(perf_means[i, ], results, n)
-         perf_stdev[i, ] <-
-            update_sse(perf_means[i, ], new_mean, perf_stdev[i, ],
-                       results, n)
-         perf_means[i, ] <- new_mean
-      }
-      print(perf_means)
-      # print(perf_stdev)
-      
-      # I decided to save results after each iteration.
-      out_stdev = perf_stdev
-      for (i in 1:length(model_functions))
-         out_stdev[i, ] <- get_sd_from_sse(perf_stdev[i, ], n)
-      #---------------------
-      # we now combine them in a dataframe
-      df_means <- as.data.frame(perf_means)
-      df_stdev <- as.data.frame(out_stdev)
-      # Rename columns
-      colnames(df_means) <-
-         paste(colnames(df_means), "mean", sep = "_")
-      colnames(df_stdev) <- paste(colnames(df_stdev), "sd", sep = "_")
-      results <- cbind(df_means, df_stdev)
-      results$true_rank = dat$rank
-      results$dim = paste0("(",dim[1],",",dim[2],")") 
-      results$k = ncovariates
-      results$B = n
-      results$missinginess = missingness
-      results$collinearity = coll
-      results$model = models
-      
-      filename = paste0(
-         "Model_Comparison_simulation_replications_",
-         note,
-         round(missingness * 100),
-         "_coll_",
-         coll,
-         "_dim_",
-         dim[1],
-         "x",
-         dim[2],
-         ".csv"
-      )
-      
-      write.csv(results,
-                file = paste0(data_dir, filename),
-                row.names = FALSE)
-      
-      
+      #----
+      # if one model fail, skip to the next, remember to decrease n by 1.
+      tryCatch({
+         #----------------------------------------------------------------------
+         # start fitting the models:
+         for (i in 1:length(model_functions)) {
+            results = as.numeric(
+               model_functions[[i]](
+                  dat = dat,
+                  n_folds = n_folds,
+                  lambda.1_grid = lambda.1_grid,
+                  lambda.2_grid = lambda.2_grid,
+                  alpha_grid = alpha_grid,
+                  ncores = ncores_mao,
+                  max_cores = max_cores,
+                  weight_function = weight_function
+               )[-1]
+            )
+            new_mean <- update_mean(perf_means[i, ], results, n)
+            perf_stdev[i, ] <-
+               update_sse(perf_means[i, ], new_mean, perf_stdev[i, ],
+                          results, n)
+            perf_means[i, ] <- new_mean
+         }
+         print(perf_means)
+         # print(perf_stdev)
+         
+         # I decided to save results after each iteration.
+         out_stdev = perf_stdev
+         for (i in 1:length(model_functions))
+            out_stdev[i, ] <- get_sd_from_sse(perf_stdev[i, ], n)
+         #---------------------
+         # we now combine them in a dataframe
+         df_means <- as.data.frame(perf_means)
+         df_stdev <- as.data.frame(out_stdev)
+         # Rename columns
+         colnames(df_means) <-
+            paste(colnames(df_means), "mean", sep = "_")
+         colnames(df_stdev) <-
+            paste(colnames(df_stdev), "sd", sep = "_")
+         results <- cbind(df_means, df_stdev)
+         results$true_rank = dat$rank
+         results$dim = paste0("(", simPar$dim1, ",", simPar$dim2, ")")
+         results$k = simPar$ncov
+         results$B = n
+         results$missinginess = simPar$missp
+         results$collinearity = simPar$coll
+         results$rank_r = simPar$nr
+         results$mar_beta = simPar$MAR
+         results$half_disc = simPar$Disc
+         results$inform_prop = simPar$info
+         results$model = models
+         
+         filename = paste0("Model_Comparison_simulation_replications_",
+                           note,
+                           ".csv")
+         
+         write.csv(results,
+                   file = paste0(data_dir, filename),
+                   row.names = FALSE)
+         
+      }, error = function(e) {
+         print(paste(n, "-", e))
+         n = n - 1
+      })
       #-------------------------------------
    }
    for (i in 1:length(model_functions))
@@ -195,28 +191,23 @@ compare_and_save_with_rep2 <- function(missingness,
    colnames(df_stdev) <- paste(colnames(df_stdev), "sd", sep = "_")
    results <- cbind(df_means, df_stdev)
    results$true_rank = dat$rank
-   results$dim = paste0("(",dim[1],",",dim[2],")")
-   results$k = ncovariates
-   results$B = num_replications
-   results$missinginess = missingness
-   results$collinearity = coll
+   results$dim = paste0("(", simPar$dim1, ",", simPar$dim2, ")")
+   results$k = simPar$ncov
+   results$B = n
+   results$missinginess = simPar$missp
+   results$collinearity = simPar$coll
+   results$rank_r = simPar$nr
+   results$mar_beta = simPar$MAR
+   results$half_disc = simPar$Disc
+   results$inform_prop = simPar$info
    results$model = models
    
    #print(results)
    print("Exiting Loop ...")
    
-      filename = paste0(
-         "Compare_MC_Models_Youssef_Simulation_with_replications_",
-         note,
-         round(missingness * 100),
-         "_coll_",
-         coll,
-         "_dim_",
-         dim[1],
-         "x",
-         dim[2],
-         ".csv"
-      )
+   filename = paste0("Model_Comparison_simulation_replications_",
+                     note,
+                     ".csv")
    
    write.csv(results,
              file = paste0(data_dir, filename),
@@ -229,30 +220,35 @@ compare_and_save_with_rep2 <- function(missingness,
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
+simPar <- data.frame(
+   dim1 = 700,
+   dim2 = 800,
+   missp = 0.9,
+   coll = FALSE,
+   ncov = 6,
+   nr = 10,
+   MAR = c(F, T, F, F),
+   Disc = c(F, F, T, F),
+   info = c(1, .7, 1, .7)
+)
 
-for (hparams in list(#c(0.9, 400,500),
-                     c(0.9, 700, 800)
-                     # c(0.9, TRUE),
-                     # c(0.8, TRUE)
-                     #c(0.0, FALSE)
-                     )) {
+for (i in 1:2) {
    compare_and_save_with_rep2(
-      missingness = hparams[1],
-      coll = FALSE,
-      num_replications = 2,
+      simPar = simPar[i,],
+      num_replications = 30,
       n_folds = 5,
-      dim = c(hparams[2],hparams[3]),
+      new_datfolder = "June18",
       lambda.1_grid = seq(1, 0, length = 20),
       lambda.2_grid = seq(.9, 0.1, length = 20),
       alpha_grid = c(1),
       ncores_mao = 1,
       max_cores = 20,
-      ncovariates = 10,
       weight_function = Mao_weights$uniform,
-      error_function = error_metric$rmse, 
-      cov_eff = 0.7,
+      error_function = error_metric$rmse,
       first_seed =  10,
-      model_flag = c(T,T,T,T,T,T,T,T),
-      note = "_test_"
+      model_flag = c(T, T, T, T, T, T, T, T),
+      note = paste0("_", i, "_")
    )
+    
+   
 }

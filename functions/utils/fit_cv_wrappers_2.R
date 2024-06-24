@@ -307,7 +307,7 @@ CASMC_3b_Sim_Wrapper <-
     fiti <- CASMC3_kfold(
       Y = dat$Y,
       X = dat$X,
-      obs_mask = dat$W,
+      obs_mask = dat$W, n_folds = 10,
       trace = 0,
       print.best = T,
       warm = NULL,
