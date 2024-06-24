@@ -13,4 +13,5 @@ dat$X <- dat$X[,c(1,2,5)] |>
  scalers("minmax")
 
 dat$masks$tr_val = (dat$masks$obs == 1) & (dat$masks$test == 1)
-
+dat$Y <- as.matrix(dat$depart)
+# dat$Y[is.na(dat$Y)] <- 0

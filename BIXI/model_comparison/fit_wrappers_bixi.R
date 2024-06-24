@@ -12,7 +12,7 @@ Mao_Bixi_Wrapper <-
   fiti <- Mao.cv(
    Y = dat$Y,
    X = dat$X,
-   W = dat$W,
+   W = dat$masks$tr_val,
    n_folds = n_folds,
    lambda.1_grid = lambda.1_grid,
    lambda.2_grid = lambda.2_grid,
@@ -26,31 +26,51 @@ Mao_Bixi_Wrapper <-
   )
   
   fit. <- fiti$fit
+  
+  fit.$Xbeta = dat$X %*% fit.$beta
+  
   results = list(model = "Mao")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fiti$best_parameters$lambda.2
   results$lambda.beta = fiti$best_parameters$lambda.1
-  results$error.test = test_error(fit.$estimates[dat$W == 0], dat$O[dat$W ==
-                                                                     0])
-  results$error.all = test_error(fit.$estimates, dat$O)
-  results$error.M = test_error(fit.$M, dat$M)
-  results$error.beta = test_error(fit.$beta, dat$beta)
-  results$rank_M = qr(fit.$M)$rank
+  
+  results$error.test = test_error(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$corr.test = cor(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$error.train = test_error(fit.$estimates[dat$masks$tr_val != 0], dat$depart@x)
+  results$rank_M = sum(fit.$d > 0)
   results$rank_beta = qr(fit.$beta)$rank
-  results$sparse_in_sparse = sum(dat$beta == 0 & fit.$beta == 0) /
-   (sum(dat$beta == 0) +  1e-17)
-  results$sparse_in_nonsparse = sum(dat$beta != 0 &
-                                     fit.$beta == 0) /
-   (sum(dat$beta != 0) +  1e-17)
+  results$sparse_prop = sum(fit.$beta == 0) / length(fit.$beta)
+  apply(fit.$beta, 1, summary) |> as.data.frame() |>
+    t() |>
+    as.data.frame() |>
+    mutate(prop_non_zero = apply(fit.$beta, 1, function(x)
+      sum(x != 0) / length(x))) |>
+    `rownames<-` (colnames(dat$X)) ->
+    results$cov_summaries
+  
+  Y = dat$depart[dat$masks$obs == 1]
+  xbeta = fit.$Xbeta[dat$masks$obs == 1]
+  M = fit.$M[dat$masks$obs == 1]
+  resids = Y - xbeta - M
+  
+  TSS = sum((Y - mean(Y)) ^ 2)
+  ESS_xbeta = sum((xbeta - mean(Y)) ^ 2)
+  ESS_M = sum((M - mean(Y)) ^ 2)
+  RSS <- sum(resids ^ 2)
+  
+  results$Prop_explained_xbeta = ESS_xbeta / TSS
+  results$Prop_explained_M = ESS_M / TSS
+  results$Prop_unexplained <-  RSS / TSS
+  
   results
  }
 
-SImpute_Sim_Wrapper <- function(dat, ...) {
+SImpute_Bixi_Wrapper <- function(dat, ...) {
  start_time = Sys.time()
  fit. <- simpute.cv(
-  Y_train = as.matrix(dat$fit_data$train),
-  y_valid = dat$fit_data$valid,
-  W_valid = dat$fit_data$W_valid,
+  Y_train = dat$Y,
+  y_valid = dat$splits$valid@x,
+  W_valid = dat$masks$valid,
   y = dat$Y,
   n.lambda = 20,
   trace = FALSE,
@@ -67,21 +87,34 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
  results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
  results$lambda.beta = NA
  results$lambda.M = fit.$lambda
- results$error.test = test_error(fit.$estimates[dat$W == 0], dat$O[dat$W ==
-                                                                    0])
- results$error.all = test_error(fit.$estimates, dat$O)
- results$error.M = NA
- results$error.beta = NA
- results$rank_M = fit.$rank_M
+ results$error.test = test_error(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+ 
+ results$corr.test = cor(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+ results$error.train = test_error(fit.$estimates[dat$masks$tr_val != 0], dat$depart@x)
+ results$rank_M = qr(fit.$estimates)$rank
  results$rank_beta = NA
- results$sparse_in_sparse = NA
- results$sparse_in_nonsparse = NA
+ results$sparse_prop = NA
+ NA ->
+   results$cov_summaries
+ 
+ Y = dat$depart[dat$masks$obs == 1]
+ M = fit.$estimates[dat$masks$obs == 1]
+ resids = Y - M
+ 
+ TSS = sum((Y - mean(Y)) ^ 2)
+ ESS_M = sum((M - mean(Y)) ^ 2)
+ RSS <- sum(resids ^ 2)
+ 
+ results$Prop_explained_xbeta = NA
+ results$Prop_explained_M = ESS_M / TSS
+ results$Prop_unexplained <-  RSS / TSS
+ 
  results
 }
 
 
 #----------------------------------------------------------------------------------
-CASMC_1_Sim_Wrapper <-
+CASMC_1_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
@@ -89,11 +122,11 @@ CASMC_1_Sim_Wrapper <-
   start_time = Sys.time()
   
   fiti <- CASMC1_cv(
-   y_train = dat$fit_data$train,
+   y_train = dat$splits$train,
    X = dat$X,
-   y_valid = dat$fit_data$valid,
-   W_valid = dat$fit_data$W_valid,
-   y = dat$fit_data$Y,
+   y_valid = dat$splits$valid,
+   W_valid = dat$masks$valid,
+   y = dat$depart,
    error_function = error_metric$rmse,
    lambda.factor = 1 / 4,
    lambda.init = NULL,
@@ -122,28 +155,47 @@ CASMC_1_Sim_Wrapper <-
   fit. = fiti$fit
   # get estimates and validate
   fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
-  fit.$estimates = fit.$M + dat$X %*% fit.$beta
+  fit.$Xbeta = dat$X %*% fit.$beta
+  fit.$estimates = fit.$M + fit.$Xbeta
   
   results = list(model = "CASMC-1")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fit.$lambda
   results$lambda.beta = NA
-  results$error.test = test_error(fit.$estimates[dat$W == 0], dat$O[dat$W == 0])
-  results$error.all = test_error(fit.$estimates, dat$O)
-  results$error.M = test_error(fit.$M, dat$M)
-  results$error.beta = test_error(fit.$beta, dat$beta)
+  results$error.test = test_error(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  
+  results$corr.test = cor(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$error.train = test_error(fit.$estimates[dat$masks$tr_val != 0], dat$depart@x)
   results$rank_M = sum(fit.$d > 0)
   results$rank_beta = qr(fit.$beta)$rank
-  results$sparse_in_sparse = sum(dat$beta == 0 & fit.$beta == 0) /
-   (sum(dat$beta == 0) +  1e-17)
-  results$sparse_in_nonsparse = sum(dat$beta != 0 &
-                                     fit.$beta == 0) /
-   (sum(dat$beta != 0) +  1e-17)
+  results$sparse_prop = sum(fit.$beta == 0) / length(fit.$beta)
+  apply(fit.$beta, 1, summary) |> as.data.frame() |>
+    t() |>
+    as.data.frame() |>
+    mutate(prop_non_zero = apply(fit.$beta, 1, function(x)
+      sum(x != 0) / length(x))) |>
+    `rownames<-` (colnames(dat$X)) ->
+    results$cov_summaries
+  
+  Y = dat$depart[dat$masks$obs == 1]
+  xbeta = fit.$Xbeta[dat$masks$obs == 1]
+  M = fit.$M[dat$masks$obs == 1]
+  resids = Y - xbeta - M
+  
+  TSS = sum((Y - mean(Y)) ^ 2)
+  ESS_xbeta = sum((xbeta - mean(Y)) ^ 2)
+  ESS_M = sum((M - mean(Y)) ^ 2)
+  RSS <- sum(resids ^ 2)
+  
+  results$Prop_explained_xbeta = ESS_xbeta / TSS
+  results$Prop_explained_M = ESS_M / TSS
+  results$Prop_unexplained <-  RSS / TSS
+  
   results
  }
 
 #--------------------------------------------------------------------------------------
-CASMC_0_Sim_Wrapper <-
+CASMC_0_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
@@ -151,11 +203,11 @@ CASMC_0_Sim_Wrapper <-
   start_time = Sys.time()
   
   fiti <- CASMC0_cv(
-   y_train = dat$fit_data$train,
+   y_train = dat$splits$train,
    X = dat$X,
-   y_valid = dat$fit_data$valid,
-   W_valid = dat$fit_data$W_valid,
-   y = dat$fit_data$Y,
+   y_valid = dat$splits$valid@x,
+   W_valid = dat$masks$valid,
+   #y = dat$depart,
    error_function = error_metric$rmse,
    lambda.factor = 1 / 4,
    lambda.init = NULL,
@@ -184,29 +236,47 @@ CASMC_0_Sim_Wrapper <-
   fit. = fiti$fit
   # get estimates and validate
   fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
-  fit.$estimates = fit.$M + dat$X %*% fit.$beta
+  fit.$Xbeta = dat$X %*% fit.$beta
+  fit.$estimates = fit.$M + fit.$Xbeta
   
   results = list(model = "CASMC-0")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fit.$lambda
   results$lambda.beta = fiti$lambda.beta
-  results$error.test = test_error(fit.$estimates[dat$W == 0], dat$O[dat$W == 0])
-  results$error.all = test_error(fit.$estimates, dat$O)
-  results$error.M = test_error(fit.$M, dat$M)
-  results$error.beta = test_error(fit.$beta, dat$beta)
+  results$error.test = test_error(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$corr.test = cor(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$error.train = test_error(fit.$estimates[dat$masks$tr_val != 0], dat$depart@x)
   results$rank_M = sum(fit.$d > 0)
   results$rank_beta = qr(fit.$beta)$rank
-  results$sparse_in_sparse = sum(dat$beta == 0 & fit.$beta == 0) /
-   (sum(dat$beta == 0) +  1e-17)
-  results$sparse_in_nonsparse = sum(dat$beta != 0 &
-                                     fit.$beta == 0) /
-   (sum(dat$beta != 0) +  1e-17)
+  results$sparse_prop = sum(fit.$beta == 0) / length(fit.$beta)
+  apply(fit.$beta, 1, summary) |> as.data.frame() |>
+    t() |>
+    as.data.frame() |>
+    mutate(prop_non_zero = apply(fit.$beta, 1, function(x)
+      sum(x != 0) / length(x))) |>
+    `rownames<-` (colnames(dat$X)) ->
+    results$cov_summaries
+  
+  Y = dat$depart[dat$masks$obs == 1]
+  xbeta = fit.$Xbeta[dat$masks$obs == 1]
+  M = fit.$M[dat$masks$obs == 1]
+  resids = Y - xbeta - M
+  
+  TSS = sum((Y - mean(Y)) ^ 2)
+  ESS_xbeta = sum((xbeta - mean(Y)) ^ 2)
+  ESS_M = sum((M - mean(Y)) ^ 2)
+  RSS <- sum(resids ^ 2)
+  
+  results$Prop_explained_xbeta = ESS_xbeta / TSS
+  results$Prop_explained_M = ESS_M / TSS
+  results$Prop_unexplained <-  RSS / TSS
+  
   results
  }
 #-------
 
 
-CASMC_2_Sim_Wrapper <-
+CASMC_2_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
@@ -214,11 +284,11 @@ CASMC_2_Sim_Wrapper <-
   start_time = Sys.time()
   
   fiti <- CASMC2_cv(
-   y_train = dat$fit_data$train,
+   y_train = dat$splits$train,
    X = dat$X,
-   y_valid = dat$fit_data$valid,
-   W_valid = dat$fit_data$W_valid,
-   y = dat$fit_data$Y,
+   y_valid = dat$splits$valid@x,
+   W_valid = dat$masks$valid,
+   #y = dat$depart,
    error_function = error_metric$rmse,
    warm = NULL,
    quiet = F,
@@ -232,23 +302,41 @@ CASMC_2_Sim_Wrapper <-
   # get estimates and validate
   fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
   fit.$beta = fit.$ub %*% (fit.$db ^ 2) %*% t(fit.$vb)
-  fit.$estimates = fit.$M + dat$X %*% fit.$beta
+  fit.$Xbeta = dat$X %*% fit.$beta
+  fit.$estimates = fit.$M + fit.$Xbeta
   
   results = list(model = "CASMC-2")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fiti$hparams$lambda.M
   results$lambda.beta = fiti$hparams$lambda.beta
-  results$error.test = test_error(fit.$estimates[dat$W == 0], dat$O[dat$W == 0])
-  results$error.all = test_error(fit.$estimates, dat$O)
-  results$error.M = test_error(fit.$M, dat$M)
-  results$error.beta = test_error(fit.$beta, dat$beta)
+  results$error.test = test_error(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$corr.test = cor(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$error.train = test_error(fit.$estimates[dat$masks$tr_val != 0], dat$depart@x)
   results$rank_M = sum(fit.$d > 0)
   results$rank_beta = qr(fit.$beta)$rank
-  results$sparse_in_sparse = sum(dat$beta == 0 & fit.$beta == 0) /
-   (sum(dat$beta == 0) +  1e-17)
-  results$sparse_in_nonsparse = sum(dat$beta != 0 &
-                                     fit.$beta == 0) /
-   (sum(dat$beta != 0) +  1e-17)
+  results$sparse_prop = sum(fit.$beta == 0) / length(fit.$beta)
+  apply(fit.$beta, 1, summary) |> as.data.frame() |>
+    t() |>
+    as.data.frame() |>
+    mutate(prop_non_zero = apply(fit.$beta, 1, function(x)
+      sum(x != 0) / length(x))) |>
+    `rownames<-` (colnames(dat$X)) ->
+    results$cov_summaries
+  
+  Y = dat$depart[dat$masks$obs == 1]
+  xbeta = fit.$Xbeta[dat$masks$obs == 1]
+  M = fit.$M[dat$masks$obs == 1]
+  resids = Y - xbeta - M
+  
+  TSS = sum((Y - mean(Y)) ^ 2)
+  ESS_xbeta = sum((xbeta - mean(Y)) ^ 2)
+  ESS_M = sum((M - mean(Y)) ^ 2)
+  RSS <- sum(resids ^ 2)
+  
+  results$Prop_explained_xbeta = ESS_xbeta / TSS
+  results$Prop_explained_M = ESS_M / TSS
+  results$Prop_unexplained <-  RSS / TSS
+  
   results
  }
 #----------------------------------------------------
@@ -266,7 +354,7 @@ CASMC_3a_Bixi_Wrapper <-
    X = dat$X,
    y_valid = dat$splits$valid@x,
    W_valid = dat$masks$valid,
-   #y = dat$depart,
+   # y = to_incomplete(dat$Y),
    trace = 0,
    print.best = T,
    warm = NULL,
@@ -318,7 +406,7 @@ CASMC_3a_Bixi_Wrapper <-
   results
  }
 #------
-CASMC_3b_Sim_Wrapper <-
+CASMC_3b_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
@@ -328,38 +416,57 @@ CASMC_3b_Sim_Wrapper <-
   fiti <- CASMC3_kfold(
    Y = dat$Y,
    X = dat$X,
-   obs_mask = dat$W,
-   n_folds = 10,
-   trace = 0,
+   obs_mask = dat$masks$tr_val,
+   n_folds = 5,
+   trace = 2,
    print.best = T,
    warm = NULL,
+   beta.iter.max = 30,
    quiet = F,
    learning.rate = learning_rate,
    early.stopping = 1,
-   lambda.beta.grid = seq(0, 10, length.out = 20),
+   lambda.beta.grid = seq(0, 2.5, length.out = 10),
    max_cores = max_cores
   )
   
   fit. = fiti$fit
-  # get estimates and validate
+  # get estimates and validate 
   fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
-  fit.$estimates = fit.$M + dat$X %*% fit.$beta
+  fit.$Xbeta = dat$X %*% fit.$beta 
+  fit.$estimates = fit.$M + fit.$Xbeta
   
   results = list(model = "CASMC-3b")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fiti$hparams$lambda.M
   results$lambda.beta = fiti$hparams$lambda.beta
-  results$error.test = test_error(fit.$estimates[dat$W == 0], dat$O[dat$W == 0])
-  results$error.all = test_error(fit.$estimates, dat$O)
-  results$error.M = test_error(fit.$M, dat$M)
-  results$error.beta = test_error(fit.$beta, dat$beta)
+  results$error.test = test_error(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$corr.test = cor(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+  results$error.train = test_error(fit.$estimates[dat$masks$tr_val != 0], dat$depart@x)
   results$rank_M = sum(fit.$d > 0)
   results$rank_beta = qr(fit.$beta)$rank
-  results$sparse_in_sparse = sum(dat$beta == 0 & fit.$beta == 0) /
-   (sum(dat$beta == 0) +  1e-17)
-  results$sparse_in_nonsparse = sum(dat$beta != 0 &
-                                     fit.$beta == 0) /
-   (sum(dat$beta != 0) +  1e-17)
+  results$sparse_prop = sum(fit.$beta == 0) / length(fit.$beta)
+  apply(fit.$beta, 1, summary) |> as.data.frame() |>
+    t() |>
+    as.data.frame() |> 
+    mutate(prop_non_zero = apply(fit.$beta, 1, function(x)
+      sum(x != 0) / length(x))) |>
+    `rownames<-` (colnames(dat$X)) ->
+    results$cov_summaries
+  
+  Y = dat$depart[dat$masks$obs == 1]
+  xbeta = fit.$Xbeta[dat$masks$obs == 1]
+  M = fit.$M[dat$masks$obs == 1]
+  resids = Y - xbeta - M
+  
+  TSS = sum((Y - mean(Y)) ^ 2)
+  ESS_xbeta = sum((xbeta - mean(Y)) ^ 2)
+  ESS_M = sum((M - mean(Y)) ^ 2)
+  RSS <- sum(resids ^ 2)
+  
+  results$Prop_explained_xbeta = ESS_xbeta / TSS
+  results$Prop_explained_M = ESS_M / TSS
+  results$Prop_unexplained <-  RSS / TSS
+  
   results
  }
 #------
@@ -369,23 +476,43 @@ CASMC_3b_Sim_Wrapper <-
 
 
 #----------------------------------------------
-Naive_Sim_Wrapper <- function(dat, ...) {
+Naive_Bixi_Wrapper <- function(dat, ...) {
  start_time = Sys.time()
  fiti <- naive_fit(dat$Y, dat$X)
  results = list(model = "Naive")
+ fit. <- fiti
+ fit.$Xbeta = dat$X %*% fit.$beta
+ 
  results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
  results$lambda.M = NA
  results$lambda.beta = NA
- results$error.test = test_error(fiti$estimates[dat$W == 0], dat$O[dat$W == 0])
- results$error.all = test_error(fiti$estimates, dat$O)
- results$error.M = test_error(fiti$M, dat$M)
- results$error.beta = test_error(fiti$beta, dat$beta)
- results$rank_M = qr(fiti$M)$rank
- results$rank_beta = qr(fiti$beta)$rank
- results$sparse_in_sparse = sum(dat$beta == 0 & fiti$beta == 0) /
-  (sum(dat$beta == 0) +  1e-17)
- results$sparse_in_nonsparse = sum(dat$beta != 0 &
-                                    fiti$beta == 0) /
-  (sum(dat$beta != 0) +  1e-17)
+ results$error.test = test_error(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+ results$corr.test = cor(fit.$estimates[dat$masks$test == 0], dat$splits$test@x)
+ results$error.train = test_error(fit.$estimates[dat$masks$tr_val != 0], dat$depart@x)
+ results$rank_M = sum(fit.$d > 0)
+ results$rank_beta = qr(fit.$beta)$rank
+ results$sparse_prop = sum(fit.$beta == 0) / length(fit.$beta)
+ apply(fit.$beta, 1, summary) |> as.data.frame() |>
+   t() |>
+   as.data.frame() |>
+   mutate(prop_non_zero = apply(fit.$beta, 1, function(x)
+     sum(x != 0) / length(x))) |>
+   `rownames<-` (colnames(dat$X)) ->
+   results$cov_summaries
+ 
+ Y = dat$depart[dat$masks$obs == 1]
+ xbeta = fit.$Xbeta[dat$masks$obs == 1]
+ M = fit.$M[dat$masks$obs == 1]
+ resids = Y - xbeta - M
+ 
+ TSS = sum((Y - mean(Y)) ^ 2)
+ ESS_xbeta = sum((xbeta - mean(Y)) ^ 2)
+ ESS_M = sum((M - mean(Y)) ^ 2)
+ RSS <- sum(resids ^ 2)
+ 
+ results$Prop_explained_xbeta = ESS_xbeta / TSS
+ results$Prop_explained_M = ESS_M / TSS
+ results$Prop_unexplained <-  RSS / TSS
+ 
  results
 }

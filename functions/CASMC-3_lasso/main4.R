@@ -2,7 +2,7 @@
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
 
-dat <-
+dat2 <-
  generate_simulation_rows(
   600,
   700,
