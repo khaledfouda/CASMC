@@ -58,9 +58,9 @@ Mao_Bixi_Wrapper <-
   ESS_M = sum((M - mean(Y)) ^ 2)
   RSS <- sum(resids ^ 2)
   
-  results$Prop_explained_xbeta = ESS_xbeta / TSS
-  results$Prop_explained_M = ESS_M / TSS
-  results$Prop_unexplained <-  RSS / TSS
+  results$Prop_explained_xbeta = var(xbeta) / var(Y)
+  results$Prop_explained_M = var(M) / var(Y)
+  results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
   results
  }
@@ -106,8 +106,8 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
  RSS <- sum(resids ^ 2)
  
  results$Prop_explained_xbeta = NA
- results$Prop_explained_M = ESS_M / TSS
- results$Prop_unexplained <-  RSS / TSS
+ results$Prop_explained_M = var(M) / var(Y)
+ results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
  
  results
 }
@@ -187,9 +187,9 @@ CASMC_1_Bixi_Wrapper <-
   ESS_M = sum((M - mean(Y)) ^ 2)
   RSS <- sum(resids ^ 2)
   
-  results$Prop_explained_xbeta = ESS_xbeta / TSS
-  results$Prop_explained_M = ESS_M / TSS
-  results$Prop_unexplained <-  RSS / TSS
+  results$Prop_explained_xbeta = var(xbeta) / var(Y)
+  results$Prop_explained_M = var(M) / var(Y)
+  results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
   results
  }
@@ -267,9 +267,9 @@ CASMC_0_Bixi_Wrapper <-
   ESS_M = sum((M - mean(Y)) ^ 2)
   RSS <- sum(resids ^ 2)
   
-  results$Prop_explained_xbeta = ESS_xbeta / TSS
-  results$Prop_explained_M = ESS_M / TSS
-  results$Prop_unexplained <-  RSS / TSS
+  results$Prop_explained_xbeta = var(xbeta) / var(Y)
+  results$Prop_explained_M = var(M) / var(Y)
+  results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
   results
  }
@@ -333,9 +333,9 @@ CASMC_2_Bixi_Wrapper <-
   ESS_M = sum((M - mean(Y)) ^ 2)
   RSS <- sum(resids ^ 2)
   
-  results$Prop_explained_xbeta = ESS_xbeta / TSS
-  results$Prop_explained_M = ESS_M / TSS
-  results$Prop_unexplained <-  RSS / TSS
+  results$Prop_explained_xbeta = var(xbeta) / var(Y)
+  results$Prop_explained_M = var(M) / var(Y)
+  results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
   results
  }
@@ -399,9 +399,9 @@ CASMC_3a_Bixi_Wrapper <-
   ESS_M = sum((M - mean(Y)) ^ 2)
   RSS <- sum(resids ^ 2)
   
-  results$Prop_explained_xbeta = ESS_xbeta / TSS
-  results$Prop_explained_M = ESS_M / TSS
-  results$Prop_unexplained <-  RSS / TSS
+  results$Prop_explained_xbeta = var(xbeta) / var(Y)
+  results$Prop_explained_M = var(M) / var(Y)
+  results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
   results
  }
@@ -463,9 +463,9 @@ CASMC_3b_Bixi_Wrapper <-
   ESS_M = sum((M - mean(Y)) ^ 2)
   RSS <- sum(resids ^ 2)
   
-  results$Prop_explained_xbeta = ESS_xbeta / TSS
-  results$Prop_explained_M = ESS_M / TSS
-  results$Prop_unexplained <-  RSS / TSS
+  results$Prop_explained_xbeta = var(xbeta) / var(Y)
+  results$Prop_explained_M = var(M) / var(Y)
+  results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
   results
  }
@@ -510,9 +510,9 @@ Naive_Bixi_Wrapper <- function(dat, ...) {
  ESS_M = sum((M - mean(Y)) ^ 2)
  RSS <- sum(resids ^ 2)
  
- results$Prop_explained_xbeta = ESS_xbeta / TSS
- results$Prop_explained_M = ESS_M / TSS
- results$Prop_unexplained <-  RSS / TSS
+ results$Prop_explained_xbeta = var(xbeta) / var(Y)
+ results$Prop_explained_M = var(M) / var(Y)
+ results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
  
  results
 }
