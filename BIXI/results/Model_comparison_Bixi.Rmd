@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = FALSE, cache = FALSE, eval = TRUE,
 
 ```{r echo=F, message=FALSE, warning=FALSE, include=F, eval=T}
 source("./code_files/import_lib.R")
-path_to_data = "./saved_data/June18/"
+#path_to_data = "./saved_data/June18/"
 library(data.table)
 ```
 
@@ -189,65 +189,21 @@ data.frame(
 #missingness=0; coll=FALSE;
 print_table <-
    function(results,
-            #missingness = NULL,
-            #coll = TRUE,
-            #prob = NA,
-            caption = "") {
-      #$$
-      
+           
+            time = T) {
+
       
       nmodels = length(unique(results$model))
       names(results) = gsub("error\\.", "", names(results))
       
-      # results %>%
-      #    filter(missinginess == missingness, collinearity == coll) %>%
-      #    dplyr::rename(
-      #       O_mean = all_mean,
-      #       O_sd = all_sd,
-      #       O_test_mean = test_mean,
-      #       O_test_sd = test_sd,
-      #       Method = model,
-      #       missing_prob = missinginess
-      #    ) %>%
-      #    mutate(rank_diff = rank_mean - true_rank) %>%
-      #    select(
-      #       Method,
-      #       true_rank,
-      #       missing_prob,
-      #       rank_diff,
-      #       contains("_mean"),
-      #       contains("_sd"),
-      #       -contains("alpha")
-      #       # lambda.1,
-      #       # lambda.2,
-      #       # O_test,
-      #       # O,
-      #       # M,
-      #       # Beta,
-      #       # rank,
-      #       # seconds
-      #    )   -> combined_results
-      # 
+      
       combined_results <- results |> 
-         rename(O_mean = all_mean,
-            O_sd = all_sd,
-            O_test_mean = test_mean,
-            O_test_sd = test_sd,
-            Method = model,
-            missing_prob = missinginess)
+         rename(
+            Method = model)
       
       combined_results %<>% 
          mutate(time_mean = ifelse(Method == "Naive", NA, time_mean),
                 time_sd = ifelse(Method == "Naive", NA, time_sd))
-      
-      #$$
-      # test_col = 6
-      # if (missingness == 0) {
-      #    test_col = 6
-      #    #combined_results$missing_prob = 0.8 #%<>% select(-missing_prob)
-      #    nfixed = 2
-      # } else
-      #    nfixed = 2
       
       
       combined_results %<>%
@@ -255,32 +211,22 @@ print_table <-
             replace_na(as.character(round(x, 3)), ''))
       
       # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
-      error_columns <- c("O_test", "O", "beta", "M", "time", "lambda.M", "lambda.beta",
-                         "rank_beta", "rank_M", "sparse_in_sparse", "sparse_in_nonsparse")
+      error_columns <- c("test", "corr.test", "train", "time", "lambda.M", "lambda.beta",
+                         "rank_beta", "rank_M", "sparse_prop", "Prop_explained_xbeta",
+                         "Prop_explained_M", "Prop_unexplained")
       
-      # for (i in seq(1, 28, nmodels))
-      #    combined_results[i:(i + nmodels - 1),] <-
-      #    color_min_values(combined_results[i:(i + nmodels - 1),], error_columns)
       for(ec in error_columns){
          combined_results[[ec]] <- paste0(combined_results[[paste0(ec,"_mean")]]," (",
                 combined_results[[paste0(ec,"_sd")]], ")")
       }
-      dim = results$dim[1]
+      dim = ifelse(time, "[587x193]", "[193x587]")
       B = results$B[1]
-      #sim_type = "Sim-C"
-      ncov = paste0("[#covariates=",results$k[1],"]")
-      rank_r = paste0("[Rank of M",results$rank_r[1],"]")
-      mar_beta = ifelse(results$mar_beta[1], "[MAR in beta]", "[missing-by-row in beta]")
-      mar_beta = ifelse(results$inform_prop[1]==1, "", mar_beta)
-      half_disc = ifelse(results$half_disc[1], "[half of covariates are discrete]", "")
-      informs = paste0("[ percent of informative covariates is: ",round(results$inform_prop[1]*100),"%]")
-      coll_type = ifelse(results$collinearity[1]==TRUE, "[w/collinearity]", "")
-      miss_p = ifelse(results$missinginess[1]==0, "[80% missing] ",
-                      paste0("[", as.integer(results$missinginess[1]*100),"% missing] "  ))
+      ncov = ifelse(time, "[#covariates=3]", "[#covariates=13]")
+      miss_p = "[12% unobserved, 20% test, 20% validation]"
       
       
-      tb_head = paste0("Dimension:",dim,"[#replications=",B,"]",miss_p, coll_type,
-                       ncov, rank_r, informs, mar_beta, half_disc)
+      tb_head = paste0("Dimension:",dim,"[#replications=",B,"]",miss_p, 
+                       ncov)
       
       tb_head = paste0("<b style='font-size:20px'>",tb_head,"</b>")
       
@@ -289,22 +235,26 @@ print_table <-
          select(Method,
             lambda.M,
             lambda.beta,
-            O_test,
-            O,
-            beta,
-            M,
+            corr.test,
+            test,
+            train,
             rank_beta,
             rank_M,
-            sparse_in_sparse,
-            sparse_in_nonsparse,
+            sparse_prop,
+            Prop_explained_xbeta,
+            Prop_explained_M,
+            Prop_unexplained,
             #rank_diff,
-            seconds) %>% 
-      rename(in_sparse = sparse_in_sparse,
-             in_nonsparse = sparse_in_nonsparse) |> 
+            seconds) %>%  
+      rename(Proportion = sparse_prop,
+             test_estimates = corr.test,
+             explained_by_xbeta = Prop_explained_xbeta,
+             explained_by_M = Prop_explained_M,
+             unexplained = Prop_unexplained) |> 
          mutate_if(is.numeric, function(x)
             replace_na(as.character(round(x, 3)), '')) %>%
          mutate(across(everything(), ~ ifelse(.x=="NaN (NaN)","",.x))) |> 
-         arrange(O_test) |> 
+         arrange(test) |> 
          kable("html",
                escape = FALSE,
                align = 'c',
@@ -317,9 +267,11 @@ print_table <-
          add_header_above(c(
             "Fixed" = 1,
             "Hyperparameters" = 2,
-            "Error on" = 4,
+            "Correlation" = 1,
+            "Error on" = 2,
             "Rank" = 2,
-            "Sparsity" = 2,
+            "Sparsity" = 1,
+            "Proportion of Variability" = 3,
             "Time" = 1
          )) %>%
          column_spec(
@@ -332,58 +284,120 @@ print_table <-
 
 
 
-```{r, include=FALSE, eval=FALSE}
-res1 <- load_data("_new_90_coll_FALSE_dim_400x500") |>
-   rbind(load_data("_new_90_coll_FALSE_dim_700x800")) |>
-   rbind(load_data("_new18_90_coll_FALSE_dim_700x800")) |> 
-   rbind(load_data("_new25_90_coll_FALSE_dim_700x800")) |> 
-   rbind(load_data("_new47_90_coll_FALSE_dim_700x800"))
+## Using Time Covariates
 
-res1 <- 
-
-
-
-res1 |> 
-   group_by(dim, model) |> 
-   summarise(
-    across(ends_with("_mean") | ends_with("_sd"), ~mean(.x,na.rm=T), .names = "{col}"),
-    B = sum(B),
-    across(!ends_with("_mean") & !ends_with("_sd") & !matches("^B$"), first, .names = "{col}")
-  ) |> 
-   ungroup() |> 
-   as.data.frame() ->
-   res1
-   
-
-res1
-
+```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
+read_csv("BIXI/results/Model_results_.csv", 
+                    show_col_types = F) |> 
+   print_table(time = T)
 ```
 
+
+
+## Using Station Covariates
+
+```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
+read_csv("BIXI/results/station_Model_results_.csv", 
+                    show_col_types = F) |> 
+   print_table(time = F)
+```
+
+
+
+
+#---------------------------------------
+
+## Time Covariates' Effects 
+
+```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
+
+means <- read.csv("BIXI/results/cov_means.csv") |> 
+ filter(Model != "SoftImpute" & Model != "Naive")
+sds <- read.csv("BIXI/results/cov_std.csv") |> 
+ filter(Model != "SoftImpute" & Model != "Naive")
+
+sds <- sds %>%
+  rename_with(~ gsub("^", "", .x), everything())
+
+combined <- means %>%
+  inner_join(sds, by = c("Model", "Variable"), suffix = c("_mean", "_sd"))
+
+combined <- combined %>%
+  mutate(across(matches("_mean$"), 
+                ~ paste0(round(.x, 3), " (", round(get(sub("_mean$", "_sd", cur_column())), 3), ")"),
+                .names = "{sub('_mean$', '', .col)}")) %>%
+  select( Variable, Min, X1st_Qu, Median, Mean, X3rd_Qu, Max, prop_non_zero)
+
+
+combined <- combined %>%
+  mutate(Variable = case_when(
+    Variable == "humidity" ~ cell_spec(Variable, color = "green"),
+    Variable == "max_temp_f" ~ cell_spec(Variable, color = "blue"),
+    Variable == "holiday" ~ cell_spec(Variable, color = "red"),
+    TRUE ~ Variable
+  ))
+
+combined %>%
+  kable("html", escape = FALSE, align = 'c', caption = "Summary of Means and Standard Deviations") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+  
+  row_spec(0, bold = TRUE) %>% 
+  pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CASMC-0_Ridge", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CASMC-1_Hard_Rank", 7, 9, hline_after = TRUE) %>%
+  pack_rows("CASMC-2_Nuclear", 10, 12, hline_after = TRUE) %>%
+  pack_rows("CASMC-3a_Lasso_single_split", 13, 15, hline_after = TRUE)
+```
+
+
+# Station Covariates' Effects
 
 
 ```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__1_.csv", show_col_types = F) |> 
-   print_table(caption = "Case 1")
+
+means <- read.csv("BIXI/results/station_cov_means.csv") |> 
+  filter(Model != "SoftImpute" & Model != "Naive")
+sds <- read.csv("BIXI/results/station_cov_std.csv") |> 
+  filter(Model != "SoftImpute" & Model != "Naive")
+
+sds <- sds %>%
+  rename_with(~ gsub("^", "", .x), everything())
+
+combined <- means %>%
+  inner_join(sds, by = c("Model", "Variable"), suffix = c("_mean", "_sd"))
+
+combined <- combined %>%
+  mutate(across(matches("_mean$"), 
+                ~ paste0(round(.x, 3), " (", round(get(sub("_mean$", "_sd", cur_column())), 3), ")"),
+                .names = "{sub('_mean$', '', .col)}")) %>%
+  select(Variable, Min, X1st_Qu, Median, Mean, X3rd_Qu, Max, prop_non_zero)
+
+combined <- combined %>%
+  mutate(Variable = case_when(
+    Variable == "walkscore" ~ cell_spec(Variable, color = "green"),
+    Variable == "len_minor_road" ~ cell_spec(Variable, color = "blue"),
+    Variable == "num_restaurants" ~ cell_spec(Variable, color = "red"),
+    Variable == "capacity" ~ cell_spec(Variable, color = "purple"),
+    Variable == "area_park" ~ cell_spec(Variable, color = "orange"),
+    Variable == "len_major_road" ~ cell_spec(Variable, color = "cyan"),
+    Variable == "num_other_commercial" ~ cell_spec(Variable, color = "magenta"),
+    Variable == "num_bus_stations" ~ cell_spec(Variable, color = "brown"),
+    Variable == "num_pop" ~ cell_spec(Variable, color = "pink"),
+    Variable == "num_university" ~ cell_spec(Variable, color = "yellow"),
+    Variable == "num_metro_stations" ~ cell_spec(Variable, color = "grey"),
+    Variable == "num_bus_routes" ~ cell_spec(Variable, color = "darkgreen"),
+    Variable == "len_cycle_path" ~ cell_spec(Variable, color = "darkblue"),
+    TRUE ~ Variable
+  ))
+
+combined %>%
+  kable("html", escape = FALSE, align = 'c', caption = "Summary of Means and Standard Deviations for New Variables") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+  row_spec(0, bold = TRUE) %>%
+   pack_rows("Mao", 1, 13, hline_after = TRUE) %>%
+  pack_rows("CASMC-0_Ridge", 14, 26, hline_after = TRUE) %>%
+  pack_rows("CASMC-1_Hard_Rank", 27, 39, hline_after = TRUE) %>%
+  pack_rows("CASMC-2_Nuclear", 40, 52, hline_after = TRUE) %>%
+  pack_rows("CASMC-3a_Lasso_single_split", 53, 65, hline_after = TRUE)
+
 ```
-
-
-```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__2_.csv", show_col_types = F) |> 
-   print_table(caption = "Case 2")
-```
-
-
-
-```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__3_.csv", show_col_types = F) |> 
-   print_table(caption = "Case 3")
-```
-
-
-
-```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__4_.csv", show_col_types = F) |> 
-   print_table(caption = "Case 4")
-```
-
-
