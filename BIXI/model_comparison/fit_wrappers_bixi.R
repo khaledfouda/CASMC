@@ -62,6 +62,16 @@ Mao_Bixi_Wrapper <-
   results$Prop_explained_M = var(M) / var(Y)
   results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
+  Y = dat$depart[dat$masks$test == 0]
+  xbeta = fit.$Xbeta[dat$masks$test == 0]
+  M = fit.$M[dat$masks$test == 0]
+  resids = Y - xbeta - M
+  
+  sigmasq = var(resids)
+  log.likli = (- length(resids)/2) * log(2 * pi * sigmasq) - (1 / (2*sigmasq)) * sum(resids^2)
+  Rsq.mcf = 1 - log.likli / SImpute_Bixi_likl(dat)
+  results$Prop_explained_xbeta <- Rsq.mcf
+  
   results
  }
 
@@ -107,9 +117,38 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
  
  results$Prop_explained_xbeta = NA
  results$Prop_explained_M = var(M) / var(Y)
- results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
+ results$Prop_unexplained <-  1 - results$Prop_explained_M 
  
  results
+}
+
+
+SImpute_Bixi_likl <- function(dat, ...) {
+  fit. <- simpute.cv(
+    Y_train = dat$Y,
+    y_valid = dat$splits$valid@x,
+    W_valid = dat$masks$valid,
+    y = dat$Y,
+    n.lambda = 20,
+    trace = FALSE,
+    print.best = FALSE,
+    tol = 5,
+    thresh = 1e-6,
+    rank.init = 2,
+    rank.limit = 30,
+    rank.step = 2,
+    maxit = 600,
+    seed = NULL
+  )
+  
+  
+  Y = dat$depart[dat$masks$test == 0]
+  M = fit.$estimates[dat$masks$test == 0]
+  resids = Y - M
+  sigmasq = var(resids)
+  log.likli = - length(resids)/2 * log(2 * pi * sigmasq) - 1 / (2*sigmasq) * sum(resids^2)
+  return(log.likli)
+  
 }
 
 
@@ -191,6 +230,16 @@ CASMC_1_Bixi_Wrapper <-
   results$Prop_explained_M = var(M) / var(Y)
   results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
+  Y = dat$depart[dat$masks$test == 0]
+  xbeta = fit.$Xbeta[dat$masks$test == 0]
+  M = fit.$M[dat$masks$test == 0]
+  resids = Y - xbeta - M
+  
+  sigmasq = var(resids)
+  log.likli = (- length(resids)/2) * log(2 * pi * sigmasq) - (1 / (2*sigmasq)) * sum(resids^2)
+  Rsq.mcf = 1 - log.likli / SImpute_Bixi_likl(dat)
+  results$Prop_explained_xbeta <- Rsq.mcf
+  
   results
  }
 
@@ -262,6 +311,8 @@ CASMC_0_Bixi_Wrapper <-
   M = fit.$M[dat$masks$obs == 1]
   resids = Y - xbeta - M
   
+  
+  
   TSS = sum((Y - mean(Y)) ^ 2)
   ESS_xbeta = sum((xbeta - mean(Y)) ^ 2)
   ESS_M = sum((M - mean(Y)) ^ 2)
@@ -270,6 +321,16 @@ CASMC_0_Bixi_Wrapper <-
   results$Prop_explained_xbeta = var(xbeta) / var(Y)
   results$Prop_explained_M = var(M) / var(Y)
   results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
+  
+  Y = dat$depart[dat$masks$test == 0]
+  xbeta = fit.$Xbeta[dat$masks$test == 0]
+  M = fit.$M[dat$masks$test == 0]
+  resids = Y - xbeta - M
+  
+  sigmasq = var(resids)
+  log.likli = (- length(resids)/2) * log(2 * pi * sigmasq) - (1 / (2*sigmasq)) * sum(resids^2)
+  Rsq.mcf = 1 - log.likli / SImpute_Bixi_likl(dat)
+  results$Prop_explained_xbeta <- Rsq.mcf
   
   results
  }
@@ -337,6 +398,16 @@ CASMC_2_Bixi_Wrapper <-
   results$Prop_explained_M = var(M) / var(Y)
   results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
+  Y = dat$depart[dat$masks$test == 0]
+  xbeta = fit.$Xbeta[dat$masks$test == 0]
+  M = fit.$M[dat$masks$test == 0]
+  resids = Y - xbeta - M
+  
+  sigmasq = var(resids)
+  log.likli = (- length(resids)/2) * log(2 * pi * sigmasq) - (1 / (2*sigmasq)) * sum(resids^2)
+  Rsq.mcf = 1 - log.likli / SImpute_Bixi_likl(dat)
+  results$Prop_explained_xbeta <- Rsq.mcf
+  
   results
  }
 #----------------------------------------------------
@@ -403,6 +474,16 @@ CASMC_3a_Bixi_Wrapper <-
   results$Prop_explained_M = var(M) / var(Y)
   results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
+  Y = dat$depart[dat$masks$test == 0]
+  xbeta = fit.$Xbeta[dat$masks$test == 0]
+  M = fit.$M[dat$masks$test == 0]
+  resids = Y - xbeta - M
+  
+  sigmasq = var(resids)
+  log.likli = (- length(resids)/2) * log(2 * pi * sigmasq) - (1 / (2*sigmasq)) * sum(resids^2)
+  Rsq.mcf = 1 - log.likli / SImpute_Bixi_likl(dat)
+  results$Prop_explained_xbeta <- Rsq.mcf
+  
   results
  }
 #------
@@ -467,6 +548,17 @@ CASMC_3b_Bixi_Wrapper <-
   results$Prop_explained_M = var(M) / var(Y)
   results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
   
+  Y = dat$depart[dat$masks$test == 0]
+  xbeta = fit.$Xbeta[dat$masks$test == 0]
+  M = fit.$M[dat$masks$test == 0]
+  resids = Y - xbeta - M
+  
+  
+  sigmasq = var(resids)
+  log.likli = (- length(resids)/2) * log(2 * pi * sigmasq) - (1 / (2*sigmasq)) * sum(resids^2)
+  Rsq.mcf = 1 - log.likli / SImpute_Bixi_likl(dat)
+  results$Prop_explained_xbeta <- Rsq.mcf
+  
   results
  }
 #------
@@ -513,6 +605,8 @@ Naive_Bixi_Wrapper <- function(dat, ...) {
  results$Prop_explained_xbeta = var(xbeta) / var(Y)
  results$Prop_explained_M = var(M) / var(Y)
  results$Prop_unexplained <-  1 - results$Prop_explained_M -  results$Prop_explained_xbeta 
+ 
+ 
  
  results
 }

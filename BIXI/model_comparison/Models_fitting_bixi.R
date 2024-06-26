@@ -6,7 +6,7 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 library(BKTR)
 source("./code_files/import_lib.R")
 source("./BIXI/data-raw/bixi_data.R")
-# 
+
 # dat <-
 #  load_bixi_dat(
 #   transpose = T,
@@ -16,13 +16,13 @@ source("./BIXI/data-raw/bixi_data.R")
 #   validp = 0.2,
 #   seed = 2023
 #  )$model
-
+# 
 dat <-
  load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
                testp = 0.2, validp = 0.2, seed=2023)$model
 dat$X <- dat$spatial_simple
 
-dat$X <- dat$X |>  #[, c(1, 2, 5)] |>
+dat$X <- dat$X |> #[, c(1, 2, 5)] |>
  scalers("minmax")
 
 dat$masks$tr_val = (dat$masks$obs == 1) & (dat$masks$test == 1)
@@ -112,7 +112,7 @@ cov_means <- cov_stdev <-
         dimnames = list(models, cov_colnames))
 
 
-num_replications = 10
+num_replications = 5
 
 for (n in 1:num_replications) {
  seed = seed + n

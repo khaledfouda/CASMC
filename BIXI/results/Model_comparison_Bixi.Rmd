@@ -242,15 +242,16 @@ print_table <-
             rank_M,
             sparse_prop,
             Prop_explained_xbeta,
-            Prop_explained_M,
-            Prop_unexplained,
+            #Prop_explained_M,
+            #Prop_unexplained,
             #rank_diff,
             seconds) %>%  
       rename(Proportion = sparse_prop,
              test_estimates = corr.test,
-             explained_by_xbeta = Prop_explained_xbeta,
-             explained_by_M = Prop_explained_M,
-             unexplained = Prop_unexplained) |> 
+             McFadden = Prop_explained_xbeta,
+             #explained_by_M = Prop_explained_M,
+             #unexplained = Prop_unexplained
+             ) |> 
          mutate_if(is.numeric, function(x)
             replace_na(as.character(round(x, 3)), '')) %>%
          mutate(across(everything(), ~ ifelse(.x=="NaN (NaN)","",.x))) |> 
@@ -271,7 +272,7 @@ print_table <-
             "Error on" = 2,
             "Rank" = 2,
             "Sparsity" = 1,
-            "Proportion of Variability" = 3,
+            "Pseudo Rsquared" = 1,
             "Time" = 1
          )) %>%
          column_spec(
