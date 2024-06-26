@@ -7,7 +7,10 @@ CASMC2_cv <-
             W_valid,
             y = NULL,
             rank.beta.init = 1,
+            rank.beta.step = 1,
             rank.beta.limit = qr(X)$rank,
+            lambda.beta.length = 20,
+            lambda.beta.max = NULL,
             # y: a final full-fit if provided. Expected to be Incomplete
             error_function = error_metric$rmse,
             # tuning parameters for lambda
@@ -40,14 +43,21 @@ CASMC2_cv <-
             max_cores = 8,
             # seed
             seed = NULL) {
+      
+      if(is.null(lambda.beta.max)){
+         
+      
       if (identical(lambda.beta.grid, "default1"))
          lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *
-            seq(10, .Machine$double.eps, length.out = 20)
+            seq(10, .Machine$double.eps, length.out = lambda.beta.length)
+      
+      
       if (identical(lambda.beta.grid, "default2"))
          lambda.beta.grid = seq(propack.svd(naive_fit(y, X, TRUE), 1)$d / 4,
                                 .Machine$double.eps,
-                                length.out = 20)
-      
+                                length.out = lambda.beta.length)
+      }else
+         lambda.beta.grid = seq(lambda.beta.max, 0, length.out=lambda.beta.length)
       
       # num_cores = length(lambda.beta.grid)
       # if (length(lambda.beta.grid) > max_cores)
@@ -93,14 +103,14 @@ CASMC2_cv <-
          )
          err = fiti$error
          fiti = fiti$fit
-         rank <- sum(round(diag(fiti$db), 4) > 0)
+         rank <- sum(round(diag(fiti$db), 6) > 0)
          # var_explained = diag(fiti$db) ^ 2 / sum(diag(fiti$db) ^ 2)
          # cum_var = cumsum(var_explained)
          # rank  <- which(cum_var >= pct)[1]
          
          warm <- fiti # warm start for next
          
-         if (trace == TRUE)
+         if (track == TRUE)
             print(sprintf(
                paste0(
                   "%2d lambda.beta=%9.5g, rank.max.beta = %d  ==>",
@@ -126,7 +136,7 @@ CASMC2_cv <-
          } else
             counter = counter + 1
          if (counter >= early.stopping) {
-            if (trace)
+            if (track)
                print(
                   sprintf(
                      "Early stopping. Reached Peak point. Performance didn't improve for the last %d iterations.",
@@ -136,7 +146,7 @@ CASMC2_cv <-
             break
          }
          # compute rank.max for next iteration
-         rank.max <- min(rank + 1, rank.beta.limit)
+         rank.max <- min(rank + rank.beta.step, rank.beta.limit)
          
       }
       best_fit$hparams = data.frame(lambda.beta = best_fit$lambda.beta,

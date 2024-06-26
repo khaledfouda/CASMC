@@ -79,7 +79,7 @@ CASMC2_cv_M <-
     #---------------------------------------------------------------------
     for (i in seq(along = lamseq)) {
       fiti <-
-        CASMC2_fit2(
+        CASMC2_fit(
           y = y_train,
           X = X,
           J = rank.max,
@@ -157,7 +157,7 @@ CASMC2_cv_M <-
     if (!is.null(y)) {
       stopifnot(inherits(y, "dgCMatrix"))
       best_fit$fit <-
-        CASMC2_fit2(
+        CASMC2_fit(
           y = y,
           X = X,
           J = best_fit$rank.max,
