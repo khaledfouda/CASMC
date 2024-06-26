@@ -11,7 +11,7 @@
 
 <meta name="author" content="Khaled Fouda" />
 
-<meta name="date" content="2024-06-25" />
+<meta name="date" content="2024-06-26" />
 
 <title>Comparing Model Implementations - Repetition</title>
 
@@ -1848,7 +1848,7 @@ display: none;
 <h1 class="title toc-ignore">Comparing Model Implementations -
 Repetition</h1>
 <h4 class="author">Khaled Fouda</h4>
-<h4 class="date">2024-06-25</h4>
+<h4 class="date">2024-06-26</h4>
 
 </div>
 
@@ -2385,7 +2385,7 @@ Naive
 <h2>Using Station Covariates</h2>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
-<b style="font-size:20px">Dimension:[193x587][#replications=10][12%
+<b style="font-size:20px">Dimension:[193x587][#replications=5][12%
 unobserved, 20% test, 20% validation][#covariates=13]</b>
 </caption>
 <thead>
@@ -2473,69 +2473,34 @@ seconds
 CASMC-0_Ridge
 </td>
 <td style="text-align:center;">
-0.743 (0)
+1.565 (0)
 </td>
 <td style="text-align:center;">
-21.781 (4.743)
+20.674 (0)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.947 (0)
+0.946 (0)
 </td>
 <td style="text-align:center;">
-0.323 (0)
+0.325 (0)
 </td>
 <td style="text-align:center;">
-0.302 (0)
+0.305 (0)
 </td>
 <td style="text-align:center;">
-3 (0)
+13 (0)
 </td>
 <td style="text-align:center;">
-6 (0)
+5 (0)
 </td>
 <td style="text-align:center;">
 0 (0)
 </td>
 <td style="text-align:center;">
-0.016 (0)
+0.028 (0)
 </td>
 <td style="text-align:center;">
-16.7 (1.059)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-CASMC-3a_Lasso_single_split
-</td>
-<td style="text-align:center;">
-1.411 (0.235)
-</td>
-<td style="text-align:center;">
-0.895 (0.254)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.947 (0)
-</td>
-<td style="text-align:center;">
-0.323 (0)
-</td>
-<td style="text-align:center;">
-0.296 (0.001)
-</td>
-<td style="text-align:center;">
-3 (0)
-</td>
-<td style="text-align:center;">
-7 (0)
-</td>
-<td style="text-align:center;">
-0.5 (0.16)
-</td>
-<td style="text-align:center;">
-0.02 (0.003)
-</td>
-<td style="text-align:center;">
-14.5 (0.527)
+19.2 (1.643)
 </td>
 </tr>
 <tr>
@@ -2543,10 +2508,45 @@ CASMC-3a_Lasso_single_split
 CASMC-2_Nuclear
 </td>
 <td style="text-align:center;">
-2.97 (0)
+1.565 (0)
 </td>
 <td style="text-align:center;">
-30.207 (0)
+19.586 (0)
+</td>
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
+0.946 (0)
+</td>
+<td style="text-align:center;">
+0.325 (0)
+</td>
+<td style="text-align:center;">
+0.306 (0)
+</td>
+<td style="text-align:center;">
+2 (0)
+</td>
+<td style="text-align:center;">
+5 (0)
+</td>
+<td style="text-align:center;">
+0 (0)
+</td>
+<td style="text-align:center;">
+0.026 (0)
+</td>
+<td style="text-align:center;">
+63.6 (0.548)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+CASMC-3a_Lasso_single_split
+</td>
+<td style="text-align:center;">
+1.565 (0)
+</td>
+<td style="text-align:center;">
+4.211 (0)
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
 0.946 (0)
@@ -2558,19 +2558,19 @@ CASMC-2_Nuclear
 0.308 (0)
 </td>
 <td style="text-align:center;">
-1 (0)
+5 (0)
 </td>
 <td style="text-align:center;">
-6 (0)
+5 (0)
 </td>
 <td style="text-align:center;">
-0 (0)
+0.937 (0)
 </td>
 <td style="text-align:center;">
-0.04 (0)
+0.027 (0)
 </td>
 <td style="text-align:center;">
-30.8 (0.422)
+15.4 (0.548)
 </td>
 </tr>
 <tr>
@@ -2587,7 +2587,7 @@ SoftImpute
 0.945 (0)
 </td>
 <td style="text-align:center;">
-0.329 (0)
+0.328 (0)
 </td>
 <td style="text-align:center;">
 0.273 (0)
@@ -2605,7 +2605,42 @@ SoftImpute
 ()
 </td>
 <td style="text-align:center;">
-5.3 (0.483)
+5.6 (0.548)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Mao
+</td>
+<td style="text-align:center;">
+0.142 (0)
+</td>
+<td style="text-align:center;">
+0 (0)
+</td>
+<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
+0.905 (0)
+</td>
+<td style="text-align:center;">
+0.437 (0)
+</td>
+<td style="text-align:center;">
+0.405 (0)
+</td>
+<td style="text-align:center;">
+13 (0)
+</td>
+<td style="text-align:center;">
+0 (0)
+</td>
+<td style="text-align:center;">
+0 (0)
+</td>
+<td style="text-align:center;">
+0.123 (0)
+</td>
+<td style="text-align:center;">
+4 (0.707)
 </td>
 </tr>
 <tr>
@@ -2613,19 +2648,19 @@ SoftImpute
 CASMC-1_Hard_Rank
 </td>
 <td style="text-align:center;">
-14.108 (0)
+29.727 (0)
 </td>
 <td style="text-align:center;">
 ()
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.914 (0)
+0.903 (0)
 </td>
 <td style="text-align:center;">
-0.428 (0)
+0.512 (0)
 </td>
 <td style="text-align:center;">
-0.424 (0)
+0.508 (0)
 </td>
 <td style="text-align:center;">
 0 (0)
@@ -2637,45 +2672,10 @@ CASMC-1_Hard_Rank
 1 (0)
 </td>
 <td style="text-align:center;">
-0.153 (0)
+0.313 (0)
 </td>
 <td style="text-align:center;">
-7.3 (0.483)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-Mao
-</td>
-<td style="text-align:center;">
-0.332 (0)
-</td>
-<td style="text-align:center;">
-0 (0)
-</td>
-<td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.897 (0)
-</td>
-<td style="text-align:center;">
-0.446 (0)
-</td>
-<td style="text-align:center;">
-0.425 (0)
-</td>
-<td style="text-align:center;">
-3 (0)
-</td>
-<td style="text-align:center;">
-0 (0)
-</td>
-<td style="text-align:center;">
-0 (0)
-</td>
-<td style="text-align:center;">
-0.081 (0)
-</td>
-<td style="text-align:center;">
-3.5 (0.527)
+11.6 (0.548)
 </td>
 </tr>
 <tr>
@@ -2689,25 +2689,25 @@ Naive
 ()
 </td>
 <td style="text-align:center;font-weight: bold;background-color: rgba(255, 192, 203, 26) !important;">
-0.129 (0)
+0.709 (0)
 </td>
 <td style="text-align:center;">
-1.044 (0)
-</td>
-<td style="text-align:center;">
-0 (0)
-</td>
-<td style="text-align:center;">
-3 (0)
+0.759 (0)
 </td>
 <td style="text-align:center;">
 0 (0)
 </td>
 <td style="text-align:center;">
+13 (0)
+</td>
+<td style="text-align:center;">
 0 (0)
 </td>
 <td style="text-align:center;">
-0.474 (0)
+0 (0)
+</td>
+<td style="text-align:center;">
+0.324 (0)
 </td>
 <td style="text-align:center;">
 ()
@@ -4244,22 +4244,22 @@ prop_non_zero
 <span style="     color: green !important;">walkscore</span>
 </td>
 <td style="text-align:center;">
--1.042 (0)
+-1.045 (0)
 </td>
 <td style="text-align:center;">
--0.02 (0)
+-0.028 (0)
 </td>
 <td style="text-align:center;">
-0.244 (0)
+0.236 (0)
 </td>
 <td style="text-align:center;">
-0.155 (0)
+0.147 (0)
 </td>
 <td style="text-align:center;">
-0.426 (0)
+0.418 (0)
 </td>
 <td style="text-align:center;">
-0.672 (0)
+0.65 (0)
 </td>
 <td style="text-align:center;">
 1 (0)
@@ -4270,22 +4270,22 @@ prop_non_zero
 <span style="     color: blue !important;">len_minor_road</span>
 </td>
 <td style="text-align:center;">
--0.325 (0)
+-0.316 (0)
 </td>
 <td style="text-align:center;">
--0.017 (0)
+-0.02 (0)
 </td>
 <td style="text-align:center;">
-0.061 (0)
+0.062 (0)
 </td>
 <td style="text-align:center;">
 0.037 (0)
 </td>
 <td style="text-align:center;">
-0.113 (0)
+0.11 (0)
 </td>
 <td style="text-align:center;">
-0.216 (0)
+0.212 (0)
 </td>
 <td style="text-align:center;">
 1 (0)
@@ -4296,22 +4296,22 @@ prop_non_zero
 <span style="     color: red !important;">num_restaurants</span>
 </td>
 <td style="text-align:center;">
--0.087 (0)
+-0.062 (0)
 </td>
 <td style="text-align:center;">
-0 (0)
+-0.002 (0)
 </td>
 <td style="text-align:center;">
-0.025 (0)
+0.015 (0)
 </td>
 <td style="text-align:center;">
-0.018 (0)
+0.012 (0)
 </td>
 <td style="text-align:center;">
-0.042 (0)
+0.029 (0)
 </td>
 <td style="text-align:center;">
-0.077 (0)
+0.063 (0)
 </td>
 <td style="text-align:center;">
 1 (0)
@@ -4322,22 +4322,22 @@ prop_non_zero
 <span style="     color: purple !important;">capacity</span>
 </td>
 <td style="text-align:center;">
--0.187 (0)
+-0.184 (0)
 </td>
 <td style="text-align:center;">
--0.007 (0)
+-0.006 (0)
 </td>
 <td style="text-align:center;">
-0.045 (0)
+0.039 (0)
 </td>
 <td style="text-align:center;">
-0.028 (0)
+0.025 (0)
 </td>
 <td style="text-align:center;">
-0.077 (0)
+0.073 (0)
 </td>
 <td style="text-align:center;">
-0.113 (0)
+0.111 (0)
 </td>
 <td style="text-align:center;">
 1 (0)
@@ -4348,10 +4348,10 @@ prop_non_zero
 <span style="     color: orange !important;">area_park</span>
 </td>
 <td style="text-align:center;">
--0.084 (0)
+-0.083 (0)
 </td>
 <td style="text-align:center;">
--0.007 (0)
+-0.006 (0)
 </td>
 <td style="text-align:center;">
 0.015 (0)
@@ -4360,10 +4360,10 @@ prop_non_zero
 0.009 (0)
 </td>
 <td style="text-align:center;">
-0.028 (0)
+0.027 (0)
 </td>
 <td style="text-align:center;">
-0.06 (0)
+0.058 (0)
 </td>
 <td style="text-align:center;">
 1 (0)
@@ -4374,149 +4374,19 @@ prop_non_zero
 <span style="     color: cyan !important;">len_major_road</span>
 </td>
 <td style="text-align:center;">
--0.042 (0)
+-0.025 (0)
 </td>
 <td style="text-align:center;">
--0.01 (0)
+-0.009 (0)
 </td>
 <td style="text-align:center;">
 0 (0)
-</td>
-<td style="text-align:center;">
-0.001 (0)
-</td>
-<td style="text-align:center;">
-0.013 (0)
-</td>
-<td style="text-align:center;">
-0.047 (0)
-</td>
-<td style="text-align:center;">
-1 (0)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-<span style="     color: magenta !important;">num_other_commercial</span>
-</td>
-<td style="text-align:center;">
--0.073 (0)
-</td>
-<td style="text-align:center;">
--0.004 (0)
-</td>
-<td style="text-align:center;">
-0.019 (0)
-</td>
-<td style="text-align:center;">
-0.013 (0)
-</td>
-<td style="text-align:center;">
-0.033 (0)
-</td>
-<td style="text-align:center;">
-0.054 (0)
-</td>
-<td style="text-align:center;">
-1 (0)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-<span style="     color: brown !important;">num_bus_stations</span>
-</td>
-<td style="text-align:center;">
--0.051 (0)
-</td>
-<td style="text-align:center;">
--0.006 (0)
-</td>
-<td style="text-align:center;">
-0.006 (0)
-</td>
-<td style="text-align:center;">
-0.005 (0)
-</td>
-<td style="text-align:center;">
-0.017 (0)
-</td>
-<td style="text-align:center;">
-0.05 (0)
-</td>
-<td style="text-align:center;">
-1 (0)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-<span style="     color: pink !important;">num_pop</span>
-</td>
-<td style="text-align:center;">
--0.156 (0)
-</td>
-<td style="text-align:center;">
--0.012 (0)
-</td>
-<td style="text-align:center;">
-0.027 (0)
-</td>
-<td style="text-align:center;">
-0.015 (0)
-</td>
-<td style="text-align:center;">
-0.051 (0)
-</td>
-<td style="text-align:center;">
-0.117 (0)
-</td>
-<td style="text-align:center;">
-1 (0)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-<span style="     color: yellow !important;">num_university</span>
-</td>
-<td style="text-align:center;">
--0.032 (0)
-</td>
-<td style="text-align:center;">
--0.008 (0)
 </td>
 <td style="text-align:center;">
 -0.001 (0)
 </td>
 <td style="text-align:center;">
--0.001 (0)
-</td>
-<td style="text-align:center;">
-0.007 (0)
-</td>
-<td style="text-align:center;">
-0.026 (0)
-</td>
-<td style="text-align:center;">
-1 (0)
-</td>
-</tr>
-<tr>
-<td style="text-align:center;padding-left: 2em;" indentlevel="1">
-<span style="     color: grey !important;">num_metro_stations</span>
-</td>
-<td style="text-align:center;">
--0.032 (0)
-</td>
-<td style="text-align:center;">
--0.007 (0)
-</td>
-<td style="text-align:center;">
-0 (0)
-</td>
-<td style="text-align:center;">
-0 (0)
-</td>
-<td style="text-align:center;">
-0.007 (0)
+0.008 (0)
 </td>
 <td style="text-align:center;">
 0.03 (0)
@@ -4527,25 +4397,155 @@ prop_non_zero
 </tr>
 <tr>
 <td style="text-align:center;padding-left: 2em;" indentlevel="1">
-<span style="     color: darkgreen !important;">num_bus_routes</span>
+<span style="     color: magenta !important;">num_other_commercial</span>
 </td>
 <td style="text-align:center;">
--0.047 (0)
+-0.064 (0)
+</td>
+<td style="text-align:center;">
+-0.002 (0)
+</td>
+<td style="text-align:center;">
+0.014 (0)
+</td>
+<td style="text-align:center;">
+0.01 (0)
+</td>
+<td style="text-align:center;">
+0.027 (0)
+</td>
+<td style="text-align:center;">
+0.043 (0)
+</td>
+<td style="text-align:center;">
+1 (0)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+<span style="     color: brown !important;">num_bus_stations</span>
+</td>
+<td style="text-align:center;">
+-0.049 (0)
+</td>
+<td style="text-align:center;">
+-0.007 (0)
+</td>
+<td style="text-align:center;">
+0.005 (0)
+</td>
+<td style="text-align:center;">
+0.003 (0)
+</td>
+<td style="text-align:center;">
+0.015 (0)
+</td>
+<td style="text-align:center;">
+0.043 (0)
+</td>
+<td style="text-align:center;">
+1 (0)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+<span style="     color: pink !important;">num_pop</span>
+</td>
+<td style="text-align:center;">
+-0.157 (0)
+</td>
+<td style="text-align:center;">
+-0.013 (0)
+</td>
+<td style="text-align:center;">
+0.028 (0)
+</td>
+<td style="text-align:center;">
+0.016 (0)
+</td>
+<td style="text-align:center;">
+0.049 (0)
+</td>
+<td style="text-align:center;">
+0.114 (0)
+</td>
+<td style="text-align:center;">
+1 (0)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+<span style="     color: yellow !important;">num_university</span>
+</td>
+<td style="text-align:center;">
+-0.013 (0)
+</td>
+<td style="text-align:center;">
+-0.007 (0)
 </td>
 <td style="text-align:center;">
 -0.004 (0)
 </td>
 <td style="text-align:center;">
-0.008 (0)
+-0.003 (0)
 </td>
 <td style="text-align:center;">
-0.006 (0)
+0 (0)
 </td>
 <td style="text-align:center;">
-0.019 (0)
+0.016 (0)
 </td>
 <td style="text-align:center;">
-0.049 (0)
+1 (0)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+<span style="     color: grey !important;">num_metro_stations</span>
+</td>
+<td style="text-align:center;">
+-0.017 (0)
+</td>
+<td style="text-align:center;">
+-0.006 (0)
+</td>
+<td style="text-align:center;">
+-0.002 (0)
+</td>
+<td style="text-align:center;">
+-0.002 (0)
+</td>
+<td style="text-align:center;">
+0.002 (0)
+</td>
+<td style="text-align:center;">
+0.015 (0)
+</td>
+<td style="text-align:center;">
+1 (0)
+</td>
+</tr>
+<tr>
+<td style="text-align:center;padding-left: 2em;" indentlevel="1">
+<span style="     color: darkgreen !important;">num_bus_routes</span>
+</td>
+<td style="text-align:center;">
+-0.041 (0)
+</td>
+<td style="text-align:center;">
+-0.003 (0)
+</td>
+<td style="text-align:center;">
+0.007 (0)
+</td>
+<td style="text-align:center;">
+0.004 (0)
+</td>
+<td style="text-align:center;">
+0.013 (0)
+</td>
+<td style="text-align:center;">
+0.031 (0)
 </td>
 <td style="text-align:center;">
 1 (0)
@@ -4556,22 +4556,22 @@ prop_non_zero
 <span style="     color: darkblue !important;">len_cycle_path</span>
 </td>
 <td style="text-align:center;">
--0.194 (0)
+-0.195 (0)
 </td>
 <td style="text-align:center;">
--0.011 (0)
+-0.01 (0)
 </td>
 <td style="text-align:center;">
-0.032 (0)
+0.035 (0)
 </td>
 <td style="text-align:center;">
-0.02 (0)
+0.022 (0)
 </td>
 <td style="text-align:center;">
-0.063 (0)
+0.066 (0)
 </td>
 <td style="text-align:center;">
-0.128 (0)
+0.133 (0)
 </td>
 <td style="text-align:center;">
 1 (0)
@@ -4599,7 +4599,7 @@ prop_non_zero
 -0.04 (0)
 </td>
 <td style="text-align:center;">
-0.043 (0)
+0.042 (0)
 </td>
 <td style="text-align:center;">
 0.34 (0)
