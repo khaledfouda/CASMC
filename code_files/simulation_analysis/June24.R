@@ -8,7 +8,7 @@ dat <-
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = .7,mar_sparse = T,
+  informative_cov_prop = .7,mar_sparse = F,
   mv_beta = T,
   seed = 2023
  )
@@ -27,9 +27,10 @@ fiti <- CASMC2_cv(
  quiet = F,
  trace = F,
  track = T,
- rank.beta.init = 1,
+ rank.beta.init = 1, rank.beta.limit = 1,
  rank.beta.step = 1,
- lambda.beta.grid = "default1",
+ lambda.beta.length = 80,
+ lambda.beta.grid = rep(0,20),
  max_cores = max_cores,
  seed = NULL,
 )
@@ -63,8 +64,7 @@ CASMC_0_Sim_Wrapper(dat, max_cores = 20)
 
 
 
-beta = 
-beta[1:5,1:5]
+fit.$beta[1:5,1:5]
 dat$beta[1:5,1:5]
 
 
@@ -74,7 +74,6 @@ system.time({for(i in 1:2) fit. = CASMC2_fit(
   J = 4,
   lambda.M = 2,
   r = 4,
-  Qtype = 1,
   lambda.beta = 1,
   warm.start = NULL,
   trace.it = F

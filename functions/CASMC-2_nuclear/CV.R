@@ -155,7 +155,7 @@ CASMC2_cv <-
                               rank.M = best_fit$fit$J)
       best_fit$fit$beta = list(u = best_fit$fit$ub,
                                v = best_fit$fit$vb,
-                               d = best_fit$fit$db)
+                               d = best_fit$fit$db^2)
       
       return(best_fit)
       

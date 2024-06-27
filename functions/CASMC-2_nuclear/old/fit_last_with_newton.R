@@ -41,8 +41,11 @@ CASMC2_fit <-
            warm.start = NULL,
            # the following should not be modified
            final.svd = TRUE,
+           Qtype = 1,
+           learning_rate = 0,
+           qiter.max = 10,
            init = "naive",
-           min_eigv = 1e-4) {
+           min_eigv = 0) {
     stopifnot(inherits(y, "dgCMatrix"))
     irow = y@i
     pcol = y@p
@@ -95,9 +98,9 @@ CASMC2_fit <-
         V = cbind(warm.start$v, matrix(0, m, Ja))
       }
       #----------------
-      # prepare ub, db, vb
+      # prepare Q, and R
       Db = warm.start$db
-      rD = sum(Db > min_eigv)
+      rD = sum(Db > 0)
       if (rD >= r) {
         Ub = warm.start$ub[, seq(r), drop = FALSE]
         Vb = warm.start$vb[, seq(r), drop = FALSE]
@@ -145,7 +148,7 @@ CASMC2_fit <-
         beta = as.matrix(ginv(X) %*% Xbeta)
         QRsvd = svd_trunc_simple(beta, r)
         Ub <- as.matrix(QRsvd$u, k, r)
-        Db <- pmax(sqrt(QRsvd$d), min_eigv)
+        Db <- sqrt(QRsvd$d)
         Vb <- as.matrix(QRsvd$v, m, r)
         Y_naive <- Xbeta <- M <- NULL
         #---------------------------------------------------------------
@@ -158,7 +161,7 @@ CASMC2_fit <-
     yobs <- y@x # y will hold the model residuals
     ratio <- 1
     iter <- 0
-    if (!is.null(r) && r == 0) { # not used but should be
+    if (!is.null(r) && r == 0) {
       beta <- matrix(0, k, m)
       xbeta.obs <- rep(0, length(y@x))
     }
@@ -192,7 +195,7 @@ CASMC2_fit <-
       
       Rsvd = fast.svd(RD, trim = FALSE)
       Ub = Ub %*% Rsvd$v
-      Db <- pmax(sqrt(Rsvd$d), min_eigv)
+      Db <- sqrt(Rsvd$d)
       Vb = Rsvd$u
       Q = UD(Ub , Db)
       R = UD(Vb , Db)
@@ -200,13 +203,58 @@ CASMC2_fit <-
       # part 2: update Q
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
+      
+      if(Qtype == 0){
+        
       part1 <- as.vector(t(X) %*% y %*% R + XtX %*% UD(Q, Db^2))
       part2 <- kronecker(diag(Db^2, r, r), XtX) + diag(lambda.beta, k*r,k*r)
       Q <- matrix(solve(part2) %*% part1, k, r)
+      qiter = 0
+      }else{
+        
+      
+      # 
+      # 
+      Qold = Q + 10
+      qiter = 0
+      Dbsq = Db ^ 2
+      # newton!!
+      if (Qtype == 1) {
+        hessian <- matrix(0, k, r)
+        for (ih in 1:k)
+          hessian[ih,] <- sum(XtX[ih,]) * Dbsq
+        hessian = hessian + diag(lambda.beta, k, r)
+        partial_gradient = -t(X) %*% y %*% R - XtX %*% UD(Q, Dbsq)
+
+        while (sqrt(sum((Q - Qold) ^ 2)) > 1e-3 &
+               qiter < qiter.max) {
+          Qold <- Q
+          gradient = partial_gradient +  XtX %*% UD(Q, Dbsq) + lambda.beta * Q
+          Q <- Q -  gradient / hessian
+          qiter <- qiter + 1
+        }
+      } else if (Qtype == 2) {
+        # proximal
+        eta = sum(Dbsq^2) * learning_rate
+        #print(eta)
+        #print(((1 + lambda.beta * eta)^(-1)))
+        partial_grad = t(X) %*% y %*% R + XtX %*% UD(Q, Dbsq)
+        while (sqrt(sum((Q - Qold) ^ 2)) > 1e-3 &
+               qiter < qiter.max) {
+          Qold <- Q
+          #print((XtX %*% UD(Q-Qold, Dbsq))[1:3,1:3])
+          # print(Q[1:3,1:3])
+          Q = ((1 + lambda.beta * eta)^(-1)) *
+            (Q + eta * (partial_grad - XtX %*% UD(Q, Dbsq)))
+          qiter <- qiter + 1
+        }
+      }
+      #print(qiter)
+      }
       
       Qsvd = fast.svd(UD(Q, Db), trim = FALSE)
       Ub = Qsvd$u
-      Db <- pmax(sqrt(Qsvd$d), min_eigv)
+      Db <- sqrt(Qsvd$d)
       Vb = Vb %*% Qsvd$v
       Q = UD(Ub,Db)
       R = UD(Vb,Db)
@@ -267,6 +315,8 @@ CASMC2_fit <-
             format(round(obj, 5)),
             "ratio",
             ratio,
+            "qiter",
+            qiter,
             "\n")
       }
       #-----------------------------------------------------------------------------------
@@ -310,8 +360,10 @@ CASMC2_fit <-
     
     #-------------------------------------------------------
     # trim in case we reduce the rank of M to be smaller than J.
-    J = min(max(1,sum(Dsq > min_eigv)), J)
-    r = min(max(1,sum(Db > min_eigv)), r)
+    J = min(sum(Dsq > min_eigv) + 1, J)
+    J = min(J, length(Dsq))
+    r = min(sum(Db > 0) + 1, r)
+    r = min(r, length(Db))
     
     out = list(
       u = U[, seq(J), drop = FALSE],
