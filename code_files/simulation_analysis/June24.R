@@ -8,7 +8,7 @@ dat <-
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = .7,mar_sparse = F,
+  informative_cov_prop = 0,mar_sparse = F,
   mv_beta = T,
   seed = 2023
  )
@@ -27,10 +27,10 @@ fiti <- CASMC2_cv(
  quiet = F,
  trace = F,
  track = T,
- rank.beta.init = 1, rank.beta.limit = 1,
+ rank.beta.init = 10, rank.beta.limit = 10, lambda.beta.grid = c(0,0),
  rank.beta.step = 1,
  lambda.beta.length = 80,
- lambda.beta.grid = rep(0,20),
+ # lambda.beta.grid = "default1",
  max_cores = max_cores,
  seed = NULL,
 )
