@@ -92,7 +92,7 @@ CASMC2_cv <-
             rank.limit = rank.M.limit,
             rank.step = rank.step,
             pct = pct,
-            warm = NULL,
+            warm = warm,
             #warm,
             lambda.a = lambda.a,
             S.a = S.a,
@@ -103,7 +103,7 @@ CASMC2_cv <-
          )
          err = fiti$error
          fiti = fiti$fit
-         rank <- sum(round(diag(fiti$db), 6) > 0)
+         rank <- sum(round(fiti$db, 6) > 0)
          # var_explained = diag(fiti$db) ^ 2 / sum(diag(fiti$db) ^ 2)
          # cum_var = cumsum(var_explained)
          # rank  <- which(cum_var >= pct)[1]
@@ -153,6 +153,9 @@ CASMC2_cv <-
                               lambda.M = best_fit$fit$lambda.M,
                               rank.beta = best_fit$rank_beta,
                               rank.M = best_fit$fit$J)
+      best_fit$fit$beta = list(u = best_fit$fit$ub,
+                               v = best_fit$fit$vb,
+                               d = best_fit$fit$db)
       
       return(best_fit)
       

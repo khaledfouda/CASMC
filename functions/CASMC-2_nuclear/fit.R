@@ -2,6 +2,8 @@
 
 
 
+
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
 #'
@@ -40,6 +42,7 @@ CASMC2_fit <-
            # the following should not be modified
            final.svd = TRUE,
            Qtype = 1,
+           learning_rate = 0,
            qiter.max = 10,
            init = "naive",
            min_eigv = 0) {
@@ -97,14 +100,14 @@ CASMC2_fit <-
       #----------------
       # prepare Q, and R
       Db = warm.start$db
-      rD = sum(diag(Db) > 0)
+      rD = sum(Db > 0)
       if (rD >= r) {
         Ub = warm.start$ub[, seq(r), drop = FALSE]
         Vb = warm.start$vb[, seq(r), drop = FALSE]
-        Db = Db[seq(r), seq(r), drop = FALSE]
+        Db = Db[seq(r)]
       } else{
         ra = r - rD
-        Db = diag(c(diag(Db), rep(diag(Db)[rD], ra)), r, r)
+        Db = c(Db, rep(Db[rD], ra))
         Ub = warm.start$ub
         Uba = matrix(rnorm(k * ra), k, ra)
         Uba = Uba - Ub %*% (t(Ub) %*% Uba)
@@ -145,14 +148,14 @@ CASMC2_fit <-
         beta = as.matrix(ginv(X) %*% Xbeta)
         QRsvd = svd_trunc_simple(beta, r)
         Ub <- as.matrix(QRsvd$u, k, r)
-        Db <- diag(sqrt(QRsvd$d), r, r)
+        Db <- sqrt(QRsvd$d)
         Vb <- as.matrix(QRsvd$v, m, r)
         Y_naive <- Xbeta <- M <- NULL
         #---------------------------------------------------------------
       }
     }
-    Q = Ub %*% Db
-    R = Vb %*% Db
+    Q = UD(Ub, Db)
+    R = UD(Vb, Db)
     XtX = t(X) %*% X
     #----------------------------------------
     yobs <- y@x # y will hold the model residuals
@@ -170,7 +173,7 @@ CASMC2_fit <-
       Dsq.old = Dsq
       Ub.old = Ub
       Vb.old = Vb
-      Db.old = Db[cbind(1:r, 1:r)]
+      Db.old = Db
       #----------------------------------------------
       # part 0: Update y (training residulas)
       # prereq: U, Dsq, V, Q, R, yobs
@@ -188,19 +191,30 @@ CASMC2_fit <-
       # updates: Q, R
       part1 = as.matrix(t(Q) %*% XtX %*% Q + diag(lambda.beta, r, r))
       part2 =  as.matrix(t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R))
-      RD = t(as.matrix(ginv(part1) %*% part2)) %*% Db
+      RD = t(as.matrix(ginv(part1) %*% part2) * Db)
       
       Rsvd = fast.svd(RD, trim = FALSE)
       Ub = Ub %*% Rsvd$v
-      Db[cbind(1:r, 1:r)] <- sqrt(Rsvd$d)
+      Db <- sqrt(Rsvd$d)
       Vb = Rsvd$u
-      Q = Ub %*% Db
-      R = Vb %*% Db
+      Q = UD(Ub , Db)
+      R = UD(Vb , Db)
       #-----------------------------------------------------------------
       # part 2: update Q
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
       
+      if(Qtype == 0){
+        
+      part1 <- as.vector(t(X) %*% y %*% R + XtX %*% UD(Q, Db^2))
+      part2 <- kronecker(diag(Db^2, r, r), XtX) + diag(lambda.beta, k*r,k*r)
+      Q <- matrix(solve(part2) %*% part1, k, r)
+      qiter = 0
+      }else{
+        
+      
+      # 
+      # 
       Qold = Q + 10
       qiter = 0
       Dbsq = Db ^ 2
@@ -208,28 +222,42 @@ CASMC2_fit <-
       if (Qtype == 1) {
         hessian <- matrix(0, k, r)
         for (ih in 1:k)
-          hessian[ih,] <- sum(XtX[ih,]) * diag(Dbsq)
+          hessian[ih,] <- sum(XtX[ih,]) * Dbsq
         hessian = hessian + diag(lambda.beta, k, r)
-        partial_gradient = -t(X) %*% y %*% R - XtX %*% Q %*% Dbsq
-        
-        while (sqrt(sum((Q - Qold) ^ 2)) > 1e-3 & qiter < qiter.max) {
+        partial_gradient = -t(X) %*% y %*% R - XtX %*% UD(Q, Dbsq)
+
+        while (sqrt(sum((Q - Qold) ^ 2)) > 1e-3 &
+               qiter < qiter.max) {
           Qold <- Q
-          gradient = partial_gradient +  XtX %*% Q %*% Dbsq + lambda.beta * Q
+          gradient = partial_gradient +  XtX %*% UD(Q, Dbsq) + lambda.beta * Q
           Q <- Q -  gradient / hessian
           qiter <- qiter + 1
         }
-      } else if(Qtype==2){
+      } else if (Qtype == 2) {
         # proximal
-        #eta = sum(Dbsq^2)
-        #partial_grad = 
+        eta = sum(Dbsq^2) * learning_rate
+        #print(eta)
+        #print(((1 + lambda.beta * eta)^(-1)))
+        partial_grad = t(X) %*% y %*% R + XtX %*% UD(Q, Dbsq)
+        while (sqrt(sum((Q - Qold) ^ 2)) > 1e-3 &
+               qiter < qiter.max) {
+          Qold <- Q
+          #print((XtX %*% UD(Q-Qold, Dbsq))[1:3,1:3])
+          # print(Q[1:3,1:3])
+          Q = ((1 + lambda.beta * eta)^(-1)) *
+            (Q + eta * (partial_grad - XtX %*% UD(Q, Dbsq)))
+          qiter <- qiter + 1
+        }
+      }
+      #print(qiter)
       }
       
-      Qsvd = fast.svd(Q %*% Db, trim = FALSE)
+      Qsvd = fast.svd(UD(Q, Db), trim = FALSE)
       Ub = Qsvd$u
-      Db[cbind(1:r, 1:r)] <- sqrt(Qsvd$d)
+      Db <- sqrt(Qsvd$d)
       Vb = Vb %*% Qsvd$v
-      Q = Ub %*% Db
-      R = Vb %*% Db
+      Q = UD(Ub,Db)
+      R = UD(Vb,Db)
       #-------------------------------------------------------------------
       # part extra: re-update y
       xbeta.obs <-
@@ -274,13 +302,13 @@ CASMC2_fit <-
       V = V %*% (Asvd$v)
       #------------------------------------------------------------------------------
       ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
-      ratio = ratio + Frob(Ub.old, Db.old, Vb.old, Ub, Db[cbind(1:r, 1:r)], Vb)
+      ratio = ratio + Frob(Ub.old, Db.old, Vb.old, Ub, Db, Vb)
       ratio = ratio / 2
       #------------------------------------------------------------------------------
       if (trace.it) {
         obj = (.5 * sum(y@x ^ 2) +
                  lambda.M * sum(Dsq) +
-                 lambda.beta * sum(Db[cbind(1:r, 1:r)] ^ 2)) / nz
+                 lambda.beta * sum(Db ^ 2)) / nz
         cat(iter,
             ":",
             "obj",
@@ -342,7 +370,7 @@ CASMC2_fit <-
       d = Dsq[seq(J)],
       v = V[, seq(J), drop = FALSE],
       ub = Ub[, seq(r), drop = FALSE],
-      db = Db[seq(r), seq(r), drop = FALSE],
+      db = Db[seq(r)],
       vb = Vb[, seq(r), drop = FALSE],
       #---------------------
       # hyperparameters
@@ -358,3 +386,4 @@ CASMC2_fit <-
     )
     out
   }
+
