@@ -37,23 +37,23 @@ fiti <- CASMC2_cv2(
 
 
 
-set.seed(2023); fit. <- CASMC2_fit(
-  y = dat$fit_data$Y,
-  X = dat$X,
-  J = fiti$hparams$rank.M,
-  lambda.M = fiti$hparams$lambda.M,
-  r = fiti$hparams$rank.beta,
-  lambda.beta = fiti$hparams$lambda.beta,
-  warm.start = NULL,
-  trace.it = F, 
-  thresh = 1e-6,
-  maxit = 300
-)
+# set.seed(2023); fit. <- CASMC2_fit(
+#   y = dat$fit_data$Y,
+#   X = dat$X,
+#   J = fiti$hparams$rank.M,
+#   lambda.M = fiti$hparams$lambda.M,
+#   r = fiti$hparams$rank.beta,
+#   lambda.beta = fiti$hparams$lambda.beta,
+#   warm.start = NULL,
+#   trace.it = F, 
+#   thresh = 1e-6,
+#   maxit = 300
+# )
+# 
+# test_error <- error_metric$rmse_normalized
+# fit.$beta <- list(u=fit.$ub, d=fit.$db^2, v=fit.$vb)
 
-test_error <- error_metric$rmse_normalized
-fit.$beta <- list(u=fit.$ub, d=fit.$db^2, v=fit.$vb)
-
-#fit. = fiti$fit
+fit. = fiti$fit
 fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
 fit.$beta = unsvd(fit.$beta)
 fit.$estimates = fit.$M + dat$X %*% fit.$beta
@@ -74,10 +74,49 @@ results$sparse_in_nonsparse = sum(dat$beta != 0 &
                                     fit.$beta == 0) /
   (sum(dat$beta != 0) +  1e-17)
 results
+####################################################
+start_time = Sys.time() 
+fitkf <- CASMC2_cv_kf(
+  Y = dat$Y,
+  X = dat$X,
+  obs_mask = dat$W,
+  y = dat$fit_data$Y,
+  error_function = error_metric$rmse,
+  warm = NULL,
+  quiet = F,
+  trace = F,  
+  track = F,
+  #rank.beta.init = 10, rank.beta.limit = 10, lambda.beta.grid = c(0,0),
+  rank.beta.step = 1, early.stopping = 10,
+  lambda.beta.length = 80,
+  lambda.beta.grid = "default1",
+  max_cores = 20,
+  n_folds = 10,
+  seed = 2023,
+)
 
+test_error <- error_metric$rmse_normalized
 
+fitkf$estimates = fitkf$M + dat$X %*% fitkf$beta
 
+results = list(model = "CASMC-2")
+results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
+results$lambda.M = fitkf$M_param$lambda
+results$lambda.beta = fitkf$beta_param$lambda
+results$error.test = test_error(fitkf$estimates[dat$W == 0], dat$O[dat$W == 0])
+results$error.all = test_error(fitkf$estimates, dat$O)
+results$error.M = test_error(fitkf$M, dat$M)
+results$error.beta = test_error(fitkf$beta, dat$beta)
+results$rank_M = qr(fitkf$M)$rank
+results$rank_beta = qr(fitkf$beta)$rank
+results$sparse_in_sparse = sum(dat$beta == 0 & fitkf$beta == 0) /
+  (sum(dat$beta == 0) +  1e-17)
+results$sparse_in_nonsparse = sum(dat$beta != 0 &
+                                    fitkf$beta == 0) /
+  (sum(dat$beta != 0) +  1e-17)
+results
 
+####################################################
 set.seed(2023); CASMC_0_Sim_Wrapper(dat, max_cores = 20) 
 
 
