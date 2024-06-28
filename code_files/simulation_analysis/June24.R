@@ -1,14 +1,14 @@
 dat <-
  generate_simulation_rows(
-  600,
+  800,
   700,
   r = 10,
-  k = 10, 
+  k = 13, 
   missing_prob = 0.9,
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = 0,mar_sparse = F,
+  informative_cov_prop = .5,mar_sparse = F,
   mv_beta = T,
   seed = 2023
  )
@@ -16,7 +16,7 @@ dat <-
 
 
 start_time = Sys.time()
-fiti <- CASMC2_cv(
+fiti <- CASMC2_cv2(
  y_train = dat$fit_data$train,
  X = dat$X,
  y_valid = dat$fit_data$valid,
@@ -25,19 +25,37 @@ fiti <- CASMC2_cv(
  error_function = error_metric$rmse,
  warm = NULL,
  quiet = F,
- trace = F,
- track = T,
- rank.beta.init = 10, rank.beta.limit = 10, lambda.beta.grid = c(0,0),
- rank.beta.step = 1,
+ trace = T,  
+ track = T, step3 = T,
+ #rank.beta.init = 10, rank.beta.limit = 10, lambda.beta.grid = c(0,0),
+ rank.beta.step = 1, early.stopping = 10,
  lambda.beta.length = 80,
- # lambda.beta.grid = "default1",
+ lambda.beta.grid = "default1",
  max_cores = max_cores,
- seed = NULL,
+ seed = 2023,
 )
 
-fit. = fiti$fit
+
+
+set.seed(2023); fit. <- CASMC2_fit(
+  y = dat$fit_data$Y,
+  X = dat$X,
+  J = fiti$hparams$rank.M,
+  lambda.M = fiti$hparams$lambda.M,
+  r = fiti$hparams$rank.beta,
+  lambda.beta = fiti$hparams$lambda.beta,
+  warm.start = NULL,
+  trace.it = F, 
+  thresh = 1e-6,
+  maxit = 300
+)
+
+test_error <- error_metric$rmse_normalized
+fit.$beta <- list(u=fit.$ub, d=fit.$db^2, v=fit.$vb)
+
+#fit. = fiti$fit
 fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
-fit.$beta = unsvd(fiti$fit$beta)
+fit.$beta = unsvd(fit.$beta)
 fit.$estimates = fit.$M + dat$X %*% fit.$beta
 
 results = list(model = "CASMC-2")
@@ -60,7 +78,7 @@ results
 
 
 
-CASMC_0_Sim_Wrapper(dat, max_cores = 20) 
+set.seed(2023); CASMC_0_Sim_Wrapper(dat, max_cores = 20) 
 
 
 

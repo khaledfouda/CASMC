@@ -178,6 +178,11 @@ CASMC2_cv_M <-
     best_fit$lambda.beta = lambda.beta
     best_fit$lambda.a = lambda.a
     best_fit$lambda.b = lambda.b
+    best_fit$fit$beta <- list(
+      u = best_fit$fit$ub,
+      d = best_fit$fit$db^2,
+      v = best_fit$fit$vb
+    )
     return(best_fit)
   }
 #---

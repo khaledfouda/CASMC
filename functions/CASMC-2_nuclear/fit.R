@@ -50,6 +50,8 @@ CASMC2_fit <-
     m <- n[2]
     n <- n[1]
     k <- ncol(X)
+    XtX = t(X) %*% X
+    
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
     #-------------------------------
@@ -117,18 +119,48 @@ CASMC2_fit <-
         Vb = cbind(warm.start$vb, matrix(0, m, ra))
       }
       
-      
+      Q = UD(Ub, Db)
+      R = UD(Vb, Db)
     } else{
       # initialize. Warm start is not provided
       stopifnot(init %in% c("random", "naive"))
       if (init == "random") {
         stop("Not implemented yet.")
       } else if (init == "naive") {
-        Y_naive = as.matrix(y)
-        Y_naive = naive_MC(Y_naive)
-        svdH = reduced_hat_decomp.H(X)
-        Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
-        M <- as.matrix(Y_naive - Xbeta)
+        # Y_naive = as.matrix(y)
+        # Y_naive = naive_MC(Y_naive)
+        # svdH = reduced_hat_decomp.H(X)
+        # Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
+        # M <- as.matrix(Y_naive - Xbeta)
+        # M <-  tryCatch(
+        #   propack.svd(M, J),
+        #   error = function(e) {
+        #     message(paste("Naive Init:", e))
+        #     svd_trunc_simple(M, J)
+        #   }
+        # )
+        # U = M$u
+        # V = M$v
+        # Dsq = pmax(M$d, min_eigv)
+        # #----------------------
+        # # initialization for beta = X^-1 Y
+        # # comment for later: shouldn't be X^-1 H Y??
+        # beta = as.matrix(ginv(X) %*% Xbeta)
+        # QRsvd = svd_trunc_simple(beta, r)
+        # Ub <- as.matrix(QRsvd$u, k, r)
+        # Db <- pmax(sqrt(QRsvd$d), min_eigv)
+        # Vb <- as.matrix(QRsvd$v, m, r)
+        # Y_naive <- Xbeta <- M <- NULL
+        #---------------------------------------------------------------
+        Y_naive = naive_MC(as.matrix(y))
+        beta = ginv(XtX) %*% t(X) %*% Y_naive
+        QRsvd = svd_trunc_simple(beta, r)
+        Ub <- as.matrix(QRsvd$u, k, r)
+        Db <- pmax(sqrt(QRsvd$d), min_eigv)
+        Vb <- as.matrix(QRsvd$v, m, r)
+        Q = UD(Ub, Db)
+        R = UD(Vb, Db)
+        M <- as.matrix(Y_naive - (X %*% Q) %*% t(R) )
         M <-  tryCatch(
           propack.svd(M, J),
           error = function(e) {
@@ -139,21 +171,12 @@ CASMC2_fit <-
         U = M$u
         V = M$v
         Dsq = pmax(M$d, min_eigv)
+        Y_naive <- beta <- M <- NULL
         #----------------------
-        # initialization for beta = X^-1 Y
-        # comment for later: shouldn't be X^-1 H Y??
-        beta = as.matrix(ginv(X) %*% Xbeta)
-        QRsvd = svd_trunc_simple(beta, r)
-        Ub <- as.matrix(QRsvd$u, k, r)
-        Db <- pmax(sqrt(QRsvd$d), min_eigv)
-        Vb <- as.matrix(QRsvd$v, m, r)
-        Y_naive <- Xbeta <- M <- NULL
         #---------------------------------------------------------------
       }
     }
-    Q = UD(Ub, Db)
-    R = UD(Vb, Db)
-    XtX = t(X) %*% X
+    
     #----------------------------------------
     yobs <- y@x # y will hold the model residuals
     ratio <- 1
