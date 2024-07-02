@@ -8,7 +8,7 @@ dat <-
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = .5,mar_sparse = F,
+  informative_cov_prop = .5,mar_sparse = T,
   mv_beta = T,
   seed = 2023
  )
@@ -95,7 +95,7 @@ fitkf <- CASMC2_cv_kf(
   seed = 2023,
 )
 
-test_error <- error_metric$rmse_normalized
+test_error <- error_metric$rmse
 
 fitkf$estimates = fitkf$M + dat$X %*% fitkf$beta
 
@@ -118,6 +118,17 @@ results
 
 ####################################################
 set.seed(2023); CASMC_0_Sim_Wrapper(dat, max_cores = 20) 
+set.seed(2023); CASMC_3a_Sim_Wrapper(dat, max_cores = 20) 
+
+
+system.time({
+  for (i in 1:5000)
+    x = 1:10 * diag(1,10,10)
+  
+})
+
+x = kronecker(diag(1:10), matrix(5,10,10))
+x[1:20,1:20]
 
 
 

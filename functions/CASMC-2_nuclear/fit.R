@@ -199,7 +199,7 @@ CASMC2_fit <-
       # prereq: U, Dsq, V, Q, R, yobs
       # updates: y; VDsq; XQ
       VDsq = t(Dsq * t(V))
-      XQ = as.matrix(X %*% Q)
+      XQ = X %*% Q
       M_obs = suvC(U, VDsq, irow, pcol)
       if (iter == 1) {
         xbeta.obs <- suvC(XQ, R, irow, pcol)
@@ -209,9 +209,11 @@ CASMC2_fit <-
       # part 1: Update R
       # prereq: Q, R, XtX, lambda.beta, y, X, r
       # updates: Q, R
-      part1 = as.matrix(t(Q) %*% XtX %*% Q + diag(lambda.beta, r, r))
-      part2 =  as.matrix(t(XQ) %*% y + (t(Q) %*% (XtX %*% Q)) %*% t(R))
-      RD = t(as.matrix(ginv(part1) %*% part2) * Db)
+      QXtXQ <- t(Q) %*% (XtX %*% Q)
+      
+      part1 = (QXtXQ + diag(lambda.beta, r, r))
+      part2 =  (t(XQ) %*% y + QXtXQ %*% t(R))
+      RD = t( (solve(part1) %*% part2) * Db)
       
       Rsvd = fast.svd(RD, trim = FALSE)
       Ub = Ub %*% Rsvd$v
@@ -224,7 +226,7 @@ CASMC2_fit <-
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
       part1 <- as.vector(t(X) %*% y %*% R + XtX %*% UD(Q, Db^2))
-      part2 <- kronecker(diag(Db^2, r, r), XtX) + diag(lambda.beta, k*r,k*r)
+      part2 <- kronecker(diag(Db^2), XtX) + diag(lambda.beta, k*r,k*r)
       Q <- matrix(solve(part2) %*% part1, k, r)
       
       Qsvd = fast.svd(UD(Q, Db), trim = FALSE)
@@ -236,7 +238,7 @@ CASMC2_fit <-
       #-------------------------------------------------------------------
       # part extra: re-update y
       xbeta.obs <-
-        suvC(as.matrix(X %*% Q), as.matrix((R)), irow, pcol)
+        suvC(X %*% Q, R, irow, pcol)
       y@x = yobs - M_obs - xbeta.obs
       #--------------------------------------------------------------------
       # print("hi2")
