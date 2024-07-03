@@ -213,7 +213,7 @@ CASMC2_fit <-
       
       part1 = (QXtXQ + diag(lambda.beta, r, r))
       part2 =  (t(XQ) %*% y + QXtXQ %*% t(R))
-      RD = t( (solve(part1) %*% part2) * Db)
+      RD = t( as.matrix(solve(part1) %*% part2) * Db)
       
       Rsvd = fast.svd(RD, trim = FALSE)
       Ub = Ub %*% Rsvd$v
@@ -229,7 +229,7 @@ CASMC2_fit <-
       part2 <- kronecker(diag(Db^2), XtX) + diag(lambda.beta, k*r,k*r)
       Q <- matrix(solve(part2) %*% part1, k, r)
       
-      Qsvd = fast.svd(UD(Q, Db), trim = FALSE)
+      Qsvd = fast.svd(as.matrix(UD(Q, Db)), trim = FALSE)
       Ub = Qsvd$u
       Db <- pmax(sqrt(Qsvd$d), min_eigv)
       Vb = Vb %*% Qsvd$v
