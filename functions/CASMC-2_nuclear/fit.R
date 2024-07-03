@@ -181,10 +181,13 @@ CASMC2_fit <-
     yobs <- y@x # y will hold the model residuals
     ratio <- 1
     iter <- 0
-    if (!is.null(r) && r == 0) { # not used but should be
-      beta <- matrix(0, k, m)
-      xbeta.obs <- rep(0, length(y@x))
-    }
+    XQ = X %*% Q
+    xbeta.obs <- suvC(XQ, R, irow, pcol)
+    ypart = yobs - xbeta.obs
+    # if (!is.null(r) && r == 0) { # not used but should be
+    #   beta <- matrix(0, k, m)
+    #   xbeta.obs <- rep(0, length(y@x))
+    # }
     #----------------------------------------
     while ((ratio > thresh) & (iter < maxit)) {
       iter <- iter + 1
@@ -199,12 +202,10 @@ CASMC2_fit <-
       # prereq: U, Dsq, V, Q, R, yobs
       # updates: y; VDsq; XQ
       VDsq = t(Dsq * t(V))
-      XQ = X %*% Q
+      # ypart should be  yobs - xbeta.obs at the beginning:
       M_obs = suvC(U, VDsq, irow, pcol)
-      if (iter == 1) {
-        xbeta.obs <- suvC(XQ, R, irow, pcol)
-        y@x = yobs - M_obs - xbeta.obs
-      }
+      y@x = ypart - M_obs
+      ypart = yobs - M_obs
       #----------------------------------------------
       # part 1: Update R
       # prereq: Q, R, XtX, lambda.beta, y, X, r
@@ -221,12 +222,18 @@ CASMC2_fit <-
       Vb = Rsvd$u
       Q = UD(Ub , Db)
       R = UD(Vb , Db)
+      #-------------------------------------------------------------------
+      # part extra: re-update y
+      xbeta.obs <-
+        suvC(X %*% Q, R, irow, pcol)
+      y@x = ypart - xbeta.obs
+      #--------------------------------------------------------------------
       #-----------------------------------------------------------------
       # part 2: update Q
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
       part1 <- as.vector(t(X) %*% y %*% R + XtX %*% UD(Q, Db^2))
-      part2 <- kronecker(diag(Db^2), XtX) + diag(lambda.beta, k*r,k*r)
+      part2 <- kronecker(diag(Db^2, r, r), XtX) + diag(lambda.beta, k*r,k*r)
       Q <- matrix(solve(part2) %*% part1, k, r)
       
       Qsvd = fast.svd(as.matrix(UD(Q, Db)), trim = FALSE)
@@ -235,11 +242,13 @@ CASMC2_fit <-
       Vb = Vb %*% Qsvd$v
       Q = UD(Ub,Db)
       R = UD(Vb,Db)
+      XQ = X %*% Q
       #-------------------------------------------------------------------
       # part extra: re-update y
       xbeta.obs <-
         suvC(X %*% Q, R, irow, pcol)
-      y@x = yobs - M_obs - xbeta.obs
+      y@x = ypart - xbeta.obs
+      ypart = yobs - xbeta.obs
       #--------------------------------------------------------------------
       # print("hi2")
       ##--------------------------------------------
@@ -259,6 +268,12 @@ CASMC2_fit <-
       V = Bsvd$u
       Dsq = pmax(Bsvd$d, min_eigv)
       U = U %*% (Bsvd$v)
+      #-------------------------------------------------------------------
+      # part extra: re-update y
+      VDsq = t(Dsq * t(V))
+      M_obs = suvC(U, VDsq, irow, pcol)
+      y@x = ypart - M_obs
+      #--------------------------------------------------------------------
       #-------------------------------------------------------------
       # part 4: Update A
       # prereq: U, D, VDsq, y, lambda.M, L.a
@@ -277,10 +292,14 @@ CASMC2_fit <-
       U = Asvd$u
       Dsq = pmax(Asvd$d, min_eigv)
       V = V %*% (Asvd$v)
-      #------------------------------------------------------------------------------
-      ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
-      ratio = ratio + Frob(Ub.old, Db.old, Vb.old, Ub, Db, Vb)
-      ratio = ratio / 2
+      #-------------------------------------------------------------------
+      # part extra: re-update y
+      # VDsq = t(Dsq * t(V))
+      # M_obs = suvC(U, VDsq, irow, pcol)
+      # y@x = ypart - M_obs
+      # #------------------------------------------------------------------------------
+      ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V) +
+               Frob(Ub.old, Db.old, Vb.old, Ub, Db, Vb)
       #------------------------------------------------------------------------------
       if (trace.it) {
         obj = (.5 * sum(y@x ^ 2) +
@@ -323,6 +342,19 @@ CASMC2_fit <-
       V = V %*% Asvd$v
       # is this good?
       Dsq = pmax(Asvd$d - lambda.M, min_eigv)
+      #---------------------------------------------
+      # do it again with Q
+      # M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
+      # y@x = yobs - M_obs - xbeta.obs
+      # 
+      # part1 <- as.vector(t(X) %*% y %*% R + XtX %*% UD(Q, Db^2))
+      # part2 <- kronecker(diag(Db^2, r, r), XtX) + diag(lambda.beta, k*r,k*r)
+      # Q <- matrix(solve(part2) %*% part1, k, r)
+      # 
+      # Qsvd = fast.svd(as.matrix(UD(Q, Db)), trim = FALSE)
+      # Ub = Qsvd$u
+      # Db <- sqrt(pmax(Qsvd$d - lambda.beta, min_eigv))
+      # Vb = Vb %*% Qsvd$v
       #---------------------------------------------
       if (trace.it) {
         M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)

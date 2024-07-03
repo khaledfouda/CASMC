@@ -344,7 +344,7 @@ CASMC_2_Bixi_Wrapper <-
           ...) {
   start_time = Sys.time()
   
-  fiti <- CASMC2_cv(
+  fiti <- CASMC2_cv2(
    y_train = dat$splits$train,
    X = dat$X,
    y_valid = dat$splits$valid@x,
@@ -352,7 +352,10 @@ CASMC_2_Bixi_Wrapper <-
    #y = dat$depart,
    error_function = error_metric$rmse,
    warm = NULL,
-   quiet = F,
+   quiet = T,
+   trace = F,
+   track = F,
+   step3 = T,
    rank.beta.init = 1,
    lambda.beta.grid = "default1",
    max_cores = max_cores,
@@ -362,7 +365,7 @@ CASMC_2_Bixi_Wrapper <-
   fit. = fiti$fit
   # get estimates and validate
   fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
-  fit.$beta = fit.$ub %*% (fit.$db ^ 2) %*% t(fit.$vb)
+  fit.$beta = unsvd(fit.$beta)
   fit.$Xbeta = dat$X %*% fit.$beta
   fit.$estimates = fit.$M + fit.$Xbeta
   
