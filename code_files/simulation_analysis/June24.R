@@ -24,15 +24,30 @@ fiti <- CASMC2_cv2(
  y = dat$fit_data$Y,
  error_function = error_metric$rmse,
  warm = NULL,
+ M_cv_param = list(
+   rank.init = 2,
+   rank.limit = 30,
+   rank.step = 2,
+   pct = 0.98,
+   lambda.factor = 1/4,
+   lambda.init = NULL,
+   n.lambda = 20, 
+   early.stopping = 1
+ ),
+ beta_cv_param = list(
+   rank.init = 2,
+   rank.limit = qr(dat$X)$rank,
+   rank.step = 2,
+   pct = 0.98,
+   lambda.multi.factor = 20,
+   lambda.init = NULL,
+   n.lambda = 20, 
+   early.stopping = 1
+ ),
  quiet = F,
  trace = F,  
  track = F, step3 = T,
- #rank.beta.init = 10, rank.beta.limit = 10, lambda.beta.grid = c(0,0),
- rank.beta.step = 1, early.stopping = 10,
- lambda.beta.length = 80,
- lambda.beta.grid = "default1",
- max_cores = max_cores,
- seed = 2023,
+ seed = 2023
 )
 
 
