@@ -83,19 +83,33 @@ fitkf <- CASMC2_cv_kf(
   y = dat$fit_data$Y,
   error_function = error_metric$rmse,
   warm = NULL,
+  M_cv_param = list(
+    rank.init = 2,
+    rank.limit = 30,
+    rank.step = 2,
+    pct = 0.98,
+    lambda.factor = 1/4,
+    lambda.init = NULL,
+    n.lambda = 20, 
+    early.stopping = 1
+  ),
+  beta_cv_param = list(
+    rank.init = 2,
+    rank.limit = qr(dat$X)$rank,
+    rank.step = 2,
+    pct = 0.98,
+    lambda.multi.factor = 20,
+    lambda.init = NULL,
+    n.lambda = 20, 
+    early.stopping = 1
+  ),
   quiet = F,
   trace = F,  
   track = F,
-  #rank.beta.init = 10, rank.beta.limit = 10, lambda.beta.grid = c(0,0),
-  rank.beta.step = 1, early.stopping = 10,
-  lambda.beta.length = 80,
-  lambda.beta.grid = "default1",
   max_cores = 20,
-  n_folds = 10,
+  n_folds = 5,
   seed = 2023,
 )
-
-test_error <- error_metric$rmse
 
 fitkf$estimates = fitkf$M + dat$X %*% fitkf$beta
 
