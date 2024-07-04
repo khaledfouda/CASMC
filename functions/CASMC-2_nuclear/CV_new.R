@@ -6,6 +6,7 @@ CASMC2_cv2 <-
             # y_valid is a vector
             W_valid,
             y = NULL,
+            use_warmstart = TRUE,
             M_cv_param = list(
                rank.init = 2,
                rank.limit = 30,
@@ -88,6 +89,7 @@ CASMC2_cv2 <-
          seed = NULL
       )$fit
       M_param <- list(lambda = fiti$lambda.M, J = fiti$J)
+      if(use_warmstart) warm = fiti
       #---------------------------------------------------------
       # step 2:
       fiti = CASMC2_cv_beta(
@@ -98,7 +100,7 @@ CASMC2_cv2 <-
          y = NULL,
          J = M_param$J,
          lambda.M = M_param$lambda,
-         warm = fiti,
+         warm = warm,
          thresh = thresh,
          maxit = maxit,
          # cv params
@@ -123,6 +125,7 @@ CASMC2_cv2 <-
       )
       beta_param <-
          list(lambda = fiti$lambda.beta, r = fiti$rank.max)
+      if(use_warmstart) warm = fiti$fit
       #---------------------------------------------------------
       # step 3
       if (step3) {
@@ -172,8 +175,8 @@ CASMC2_cv2 <-
                S.a = S.a,
                lambda.b = lambda.b,
                S.b = S.b,
-               warm.start = best_fit$fit,
-               trace.it = T,
+               warm.start = warm,
+               trace.it = trace,
                thresh = thresh,
                maxit = maxit
             )

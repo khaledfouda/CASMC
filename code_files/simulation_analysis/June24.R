@@ -44,29 +44,12 @@ fiti <- CASMC2_cv2(
    n.lambda = 20, 
    early.stopping = 1
  ),
+ use_warmstart = TRUE,
  quiet = F,
  trace = F,  
- track = F, step3 = T,
+ track = F, step3 = F,
  seed = 2023
 )
-
-
-
-# set.seed(2023); fit. <- CASMC2_fit(
-#   y = dat$fit_data$Y,
-#   X = dat$X,
-#   J = fiti$hparams$rank.M,
-#   lambda.M = fiti$hparams$lambda.M,
-#   r = fiti$hparams$rank.beta,
-#   lambda.beta = fiti$hparams$lambda.beta,
-#   warm.start = NULL,
-#   trace.it = F, 
-#   thresh = 1e-6,
-#   maxit = 300
-# )
-# 
-# test_error <- error_metric$rmse_normalized
-# fit.$beta <- list(u=fit.$ub, d=fit.$db^2, v=fit.$vb)
 
 fit. = fiti$fit
 fit.$M = fit.$u %*% (fit.$d * t(fit.$v))

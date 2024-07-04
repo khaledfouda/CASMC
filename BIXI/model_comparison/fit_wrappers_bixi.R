@@ -352,19 +352,37 @@ CASMC_2_Bixi_Wrapper <-
    #y = dat$depart,
    error_function = error_metric$rmse,
    warm = NULL,
+   M_cv_param = list(
+     rank.init = 2,
+     rank.limit = 30,
+     rank.step = 2,
+     pct = 0.98,
+     lambda.factor = 1/4,
+     lambda.init = NULL,
+     n.lambda = 20, 
+     early.stopping = 1
+   ),
+   beta_cv_param = list(
+     rank.init = 2,
+     rank.limit = qr(dat$X)$rank,
+     rank.step = 2,
+     pct = 0.98,
+     lambda.multi.factor = 20,
+     lambda.init = NULL,
+     n.lambda = 20, 
+     early.stopping = 1
+   ),
    quiet = T,
    trace = F,
    track = F,
    step3 = T,
-   rank.beta.init = 1,
-   lambda.beta.grid = "default1",
-   max_cores = max_cores,
+   use_warmstart = TRUE,
    seed = NULL,
   )
   
   fit. = fiti$fit
   # get estimates and validate
-  fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
+  fit.$M = unsvd(fit.)
   fit.$beta = unsvd(fit.$beta)
   fit.$Xbeta = dat$X %*% fit.$beta
   fit.$estimates = fit.$M + fit.$Xbeta
