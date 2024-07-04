@@ -6,24 +6,34 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 library(BKTR)
 source("./code_files/import_lib.R")
 source("./BIXI/data-raw/bixi_data.R")
+source("./BIXI/model_comparison/fit_wrappers_bixi.R")
 
-# dat <-
-#  load_bixi_dat(
-#   transpose = T,
-#   scale_response = T,
-#   scale_covariates = F,
-#   testp = 0.2,
-#   validp = 0.2,
-#   seed = 2023
-#  )$model
-# 
+num_replications = 5
+spatial = FALSE
+if(spatial){
 dat <-
  load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
                testp = 0.2, validp = 0.2, seed=2023)$model
 dat$X <- dat$spatial_simple
-
 dat$X <- dat$X |> #[, c(1, 2, 5)] |>
- scalers("minmax")
+  scalers("minmax")  
+}else{
+dat <-
+ load_bixi_dat(
+  transpose = T,
+  scale_response = T,
+  scale_covariates = F,
+  testp = 0.2,
+  validp = 0.2,
+  seed = 2023
+ )$model
+
+dat$X <- dat$X[, c(1, 2, 5)] |>
+  scalers("minmax")
+}
+
+# 
+
 
 dat$masks$tr_val = (dat$masks$obs == 1) & (dat$masks$test == 1)
 dat$Y <- as.matrix(dat$depart)
@@ -70,7 +80,7 @@ model_functions = list(
  SImpute_Bixi_Wrapper,
  Mao_Bixi_Wrapper,
  CASMC_0_Bixi_Wrapper,
- CASMC_1_Bixi_Wrapper,
+ #CASMC_1_Bixi_Wrapper,
  CASMC_2_Bixi_Wrapper,
  CASMC_3a_Bixi_Wrapper,
  #CASMC_3b_Bixi_Wrapper,
@@ -80,13 +90,14 @@ models = c(
  "SoftImpute",
  "Mao",
  "CASMC-0_Ridge",
- "CASMC-1_Hard_Rank",
+ #"CASMC-1_Hard_Rank",
  "CASMC-2_Nuclear",
  "CASMC-3a_Lasso_single_split",
  #"CASMC-3b_Lasso_10-folds",
  "Naive"
 )
 
+stopifnot(length(models) == length(model_functions))
 perf_means <- perf_stdev <-
  matrix(0,
         length(models),
@@ -112,31 +123,38 @@ cov_means <- cov_stdev <-
         dimnames = list(models, cov_colnames))
 
 
-num_replications = 5
+
 
 for (n in 1:num_replications) {
  seed = seed + n
  set.seed(seed)
  # load data
- # dat <-
- #  load_bixi_dat(
- #   transpose = T,
- #   scale_response = T,
- #   scale_covariates = F,
- #   testp = 0.2,
- #   validp = 0.2,
- #   seed = seed
- #  )$model
+ if(spatial){
+   
  dat <-
   load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
                 testp = 0.2, validp = 0.2, seed=seed)$model
  dat$X <- dat$spatial_simple
- 
- 
- 
- 
  dat$X <- dat$X |> #[, c(1, 2, 5)] |>
   scalers("minmax")
+ }else{
+ dat <-
+  load_bixi_dat(
+   transpose = T,
+   scale_response = T,
+   scale_covariates = F,
+   testp = 0.2,
+   validp = 0.2,
+   seed = seed
+  )$model
+ dat$X <- dat$X[, c(1, 2, 5)] |>
+   scalers("minmax")
+ 
+ }
+ 
+ 
+ 
+ 
  
  dat$masks$tr_val = (dat$masks$obs == 1) & (dat$masks$test == 1)
  dat$Y <- as.matrix(dat$depart)
@@ -144,6 +162,7 @@ for (n in 1:num_replications) {
  print(n)
  
  for (i in 1:length(model_functions)) {
+   print(paste("starting Model ",i, ": ", models[i]))
   results =
    model_functions[[i]](
     dat = dat,
@@ -234,8 +253,10 @@ results$model = models
 
 #print(results)
 print("Exiting Loop ...")
+keyword = ifelse(spatial, "station_", "")
 
-filename = paste0("station_Model_results_",
+
+filename = paste0(keyword, "Model_results_",
                   "",
                   ".csv")
 
@@ -244,11 +265,11 @@ write.csv(results,
           row.names = FALSE)
 
 write.csv(df_cov_means,
-          file = paste0(data_dir, "station_cov_means.csv"),
+          file = paste0(data_dir, paste0(keyword,"cov_means.csv")),
           row.names = FALSE)
 
 write.csv(df_cov_stdev,
-          file = paste0(data_dir, "station_cov_std.csv"),
+          file = paste0(data_dir, paste0(keyword,"cov_std.csv")),
           row.names = FALSE)
 
 

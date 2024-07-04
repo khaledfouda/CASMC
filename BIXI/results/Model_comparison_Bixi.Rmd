@@ -397,8 +397,8 @@ combined %>%
   row_spec(0, bold = TRUE) %>%
    pack_rows("Mao", 1, 13, hline_after = TRUE) %>%
   pack_rows("CASMC-0_Ridge", 14, 26, hline_after = TRUE) %>%
-  pack_rows("CASMC-1_Hard_Rank", 27, 39, hline_after = TRUE) %>%
-  pack_rows("CASMC-2_Nuclear", 40, 52, hline_after = TRUE) %>%
-  pack_rows("CASMC-3a_Lasso_single_split", 53, 65, hline_after = TRUE)
+ # pack_rows("CASMC-1_Hard_Rank", 27, 39, hline_after = TRUE) %>%
+  pack_rows("CASMC-2_Nuclear", 27, 39, hline_after = TRUE) %>%
+  pack_rows("CASMC-3a_Lasso_single_split", 40, 52, hline_after = TRUE)
 
 ```
