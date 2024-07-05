@@ -42,29 +42,30 @@ compare_and_save_with_rep2 <- function(simPar,
                                        note = "") {
    test_error <<- error_function
    data_dir = paste0("./saved_data/", new_datfolder, "/")
-   stopifnot(simPar$missp %in% c(0, 0.8, 0.9))
-   stopifnot(length(model_flag) == 8)
    metrics = c(
-      "time",
-      "lambda.M",
       "lambda.beta",
+      "lambda.M",
+      "time",
       "error.test",
-      "error.all",
+      "corr.test",
+      "error.train",
       "error.M",
       "error.beta",
       "rank_M",
       "rank_beta",
       "sparse_in_sparse",
-      "sparse_in_nonsparse"
+      "nonsparse_in_nonsparse",
+      "likelihood_ratio_index",
+      "Cox_Snell_R2"
    )
    models = c(
       "SoftImpute",
       "Mao",
       "CASMC-0_Ridge",
-      "CASMC-1_Hard_Rank",
+      #"CASMC-1_Hard_Rank",
       "CASMC-2_Nuclear",
       "CASMC-3a_Lasso_single_split",
-      "CASMC-3b_Lasso_10-folds",
+      #"CASMC-3b_Lasso_10-folds",
       "Naive"
    )
    
@@ -72,14 +73,16 @@ compare_and_save_with_rep2 <- function(simPar,
       SImpute_Sim_Wrapper,
       Mao_Sim_Wrapper,
       CASMC_0_Sim_Wrapper,
-      CASMC_1_Sim_Wrapper,
+      #CASMC_1_Sim_Wrapper,
       CASMC_2_Sim_Wrapper,
       CASMC_3a_Sim_Wrapper,
-      CASMC_3b_Sim_Wrapper,
+      #CASMC_3b_Sim_Wrapper,
       Naive_Sim_Wrapper
    )
-   models = models[model_flag]
-   model_functions = model_functions[model_flag]
+   # stopifnot(length(model_flag) == length(models))
+   # stopifnot(length(model_functions) == length(models))
+   # models = models[model_flag]
+   # model_functions = model_functions[model_flag]
    
    perf_means <- perf_stdev <-
       matrix(0,
@@ -117,32 +120,39 @@ compare_and_save_with_rep2 <- function(simPar,
       tryCatch({
          #----------------------------------------------------------------------
          # start fitting the models:
+         
          for (i in 1:length(model_functions)) {
-            results = as.numeric(
-               model_functions[[i]](
-                  dat = dat,
-                  n_folds = n_folds,
-                  lambda.1_grid = lambda.1_grid,
-                  lambda.2_grid = lambda.2_grid,
-                  alpha_grid = alpha_grid,
-                  ncores = ncores_mao,
-                  max_cores = max_cores,
-                  weight_function = weight_function
-               )[-1]
-            )
-            new_mean <- update_mean(perf_means[i, ], results, n)
-            perf_stdev[i, ] <-
-               update_sse(perf_means[i, ], new_mean, perf_stdev[i, ],
+            if (i == 1) {
+               results <- SImpute_Sim_Wrapper(dat)
+               LogLik_SI = results$LogLik
+               results = as.numeric(results$results[-1])
+            } else
+               results = as.numeric(
+                  model_functions[[i]](
+                     dat = dat,
+                     n_folds = n_folds,
+                     lambda.1_grid = lambda.1_grid,
+                     lambda.2_grid = lambda.2_grid,
+                     alpha_grid = alpha_grid,
+                     ncores = ncores_mao,
+                     max_cores = max_cores,
+                     LogLik_SI = LogLik_SI,
+                     weight_function = weight_function
+                  )[-1]
+               )
+            new_mean <- update_mean(perf_means[i,], results, n)
+            perf_stdev[i,] <-
+               update_sse(perf_means[i,], new_mean, perf_stdev[i,],
                           results, n)
-            perf_means[i, ] <- new_mean
+            perf_means[i,] <- new_mean
          }
-         print(perf_means)
+         print(perf_means) |>  round(2)
          # print(perf_stdev)
          
          # I decided to save results after each iteration.
          out_stdev = perf_stdev
          for (i in 1:length(model_functions))
-            out_stdev[i, ] <- get_sd_from_sse(perf_stdev[i, ], n)
+            out_stdev[i,] <- get_sd_from_sse(perf_stdev[i,], n)
          #---------------------
          # we now combine them in a dataframe
          df_means <- as.data.frame(perf_means)
@@ -180,7 +190,7 @@ compare_and_save_with_rep2 <- function(simPar,
       #-------------------------------------
    }
    for (i in 1:length(model_functions))
-      perf_stdev[i, ] <- get_sd_from_sse(perf_stdev[i, ], n)
+      perf_stdev[i,] <- get_sd_from_sse(perf_stdev[i,], n)
    #---------------------
    # we now combine them in a dataframe
    df_means <- as.data.frame(perf_means)
@@ -221,23 +231,23 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R", local = FALSE)
 
 simPar <- data.frame(
-   dim1 = 700,
-   dim2 = 800,
-   missp = 0.9,
+   dim1 = c(193, rep(700,3)),
+   dim2 = c(587, rep(800,3)),
+   missp = c(.6, rep(0.9,3)),
    coll = FALSE,
-   ncov = 6,
+   ncov = c(13, 20,20,5),
    nr = 10,
    MAR = c(F, T, F, F),
-   Disc = c(F, F, T, F),
-   info = c(1, .7, 1, .7)
+   Disc = F,
+   info = c(.2, .3, .3, 1) 
 )
 
 for (i in 1:2) {
    compare_and_save_with_rep2(
-      simPar = simPar[i,],
+      simPar = simPar[i, ],
       num_replications = 30,
       n_folds = 5,
-      new_datfolder = "June18",
+      new_datfolder = "July05",
       lambda.1_grid = seq(1, 0, length = 20),
       lambda.2_grid = seq(.9, 0.1, length = 20),
       alpha_grid = c(1),

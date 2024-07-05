@@ -1,3 +1,42 @@
+
+prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim=NA, M=NA, M.estim=NA, LogLik_SI=NA, test_error = error_metric$rmse){
+  estim.test <- estimates[mask==0]
+  estim.train <- estimates[mask != 0]
+  obs.train <- obs[mask!=0]
+  obs.test <- obs[mask==0]
+  list(
+    time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs"))),
+    error.test = test_error(estim.test, obs.test),
+    corr.test = cor(estim.test, obs.test),
+    error.train = test_error(estim.train, obs.train),
+    error.M = tryCatch(test_error(M.estim, M), error = function(x) NA),
+    error.beta = tryCatch(test_error(beta.estim, beta), error = function(x) NA),
+    rank_M = tryCatch(qr(M.estim)$rank, error = function(x) NA),
+    rank_beta = tryCatch(qr(beta.estim)$rank, error = function(x) NA),
+    
+    sparse_in_sparse = tryCatch(sum(beta == 0 & beta.estim == 0) /
+                                  (sum(beta == 0) +  1e-17), error = function(x) NA),
+    nonsparse_in_nonsparse = tryCatch(sum(beta != 0 & beta.estim != 0) /
+                                        (sum(beta != 0) +  1e-17), error = function(x) NA)
+  ) -> results
+  
+  
+  if(is.null(LogLik_SI)){
+    results$likelihood_ratio_index <- NA
+    results$Cox_Snell_R2 <- NA
+  }else{
+    residuals <- obs.test - estim.test
+    LogLik <- logLikelihood(residuals)
+    n <- length(residuals)
+    results$likelihood_ratio_index <- Likelihood_ratio_index(LogLik, LogLik_SI)
+    results$Cox_Snell_R2 <- Cox_Snell_R2(LogLik, LogLik_SI, n)
+  }
+  return(results)
+}
+
+
+
+
 Mao_Sim_Wrapper <-
   function(dat,
            lambda.1_grid = seq(0, 1, length = 20),
@@ -28,50 +67,15 @@ Mao_Sim_Wrapper <-
     
     fit. <- fiti$fit
     results = list(model = "Mao")
-    results$lambda.M = fiti$best_parameters$lambda.2
     results$lambda.beta = fiti$best_parameters$lambda.1
-    results <- list_merge(results,
+    results$lambda.M = fiti$best_parameters$lambda.2
+    results <- c(results,
                  prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))    
     
     
     results
 }
 
-
-prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim=NA, M=NA, M.estim=NA, LogLik_SI=NA, test_error = error_metric$rmse){
-  estim.test <- estimates[mask==0]
-  estim.train <- estimates[mask != 0]
-  obs.train <- obs[mask!=0]
-  obs.test <- obs[mask==0]
-  list(
-    time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs"))),
-    error.test = test_error(estim.test, obs.test),
-    corr.test = cor(estim.test, obs.test),
-    error.train = test_error(estim.train, obs.train),
-    error.M = tryCatch(test_error(M.estim, M), error = function(x) NA),
-    error.beta = tryCatch(test_error(beta.estim, beta), error = function(x) NA),
-    rank_M = tryCatch(qr(M.estim)$rank, error = function(x) NA),
-    rank_beta = tryCatch(qr(beta.estim)$rank, error = function(x) NA),
-    
-    sparse_in_sparse = tryCatch(sum(beta == 0 & beta.estim == 0) /
-      (sum(beta == 0) +  1e-17), error = function(x) NA),
-    nonsparse_in_nonsparse = tryCatch(sum(beta != 0 & beta.estim != 0) /
-      (sum(beta != 0) +  1e-17), error = function(x) NA)
-  ) -> results
-  
-  
-    if(is.null(LogLik_SI)){
-      results$likelihood_ratio_index <- NA
-      results$Cox_Snell_R2 <- NA
-    }else{
-      residuals <- obs.test - estim.test
-      LogLik <- logLikelihood(residuals)
-      n <- length(residuals)
-      results$likelihood_ratio_index <- Likelihood_ratio_index(LogLik, LogLik_SI)
-      results$Cox_Snell_R2 <- Cox_Snell_R2(LogLik, LogLik_SI, n)
-    }
-    return(results)
-}
 
 
 
@@ -96,7 +100,7 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
   results = list(model = "SoftImpute")
   results$lambda.beta = NA
   results$lambda.M = fit.$lambda
-  results <- list_merge(results,
+  results <- c(results,
                         prepare_output(start_time, fit.$estimates, dat$O, dat$W, M.estim = fit.$estimates))    
   
   LogLik <- logLikelihood(dat$O[dat$W==0] - fit.$estimates[dat$W==0])
@@ -107,7 +111,6 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
 CASMC_0_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
-           maxit = 300,
            LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
@@ -132,7 +135,7 @@ CASMC_0_Sim_Wrapper <-
       S.b = NULL,
       early.stopping = 1,
       thresh = 1e-6,
-      maxit = maxit,
+      maxit = 300,
       trace = FALSE,
       print.best = F,
       quiet = FALSE,
@@ -149,9 +152,9 @@ CASMC_0_Sim_Wrapper <-
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
     results = list(model = "CASMC-0")
-    results$lambda.M = fit.$lambda
     results$lambda.beta = fiti$lambda.beta
-    results <- list_merge(results,
+    results$lambda.M = fit.$lambda
+    results <- c(results,
                           prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
     results
   }
@@ -160,8 +163,6 @@ CASMC_0_Sim_Wrapper <-
 
 CASMC_2_Sim_Wrapper <-
   function(dat,
-           max_cores = 20,
-           maxit = 300,
            LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
@@ -212,7 +213,7 @@ CASMC_2_Sim_Wrapper <-
     results$lambda.beta = fiti$hparams$lambda.beta
     results$lambda.M = fiti$hparams$lambda.M
     
-    results <- list_merge(results,
+    results <- c(results,
                           prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
     
     results
@@ -221,7 +222,6 @@ CASMC_2_Sim_Wrapper <-
 CASMC_3a_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
-           maxit = 300,
            LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
@@ -247,10 +247,10 @@ CASMC_3a_Sim_Wrapper <-
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
     results = list(model = "CASMC-3a")
-    results$lambda.M = fiti$hparams$lambda.M
     results$lambda.beta = fiti$hparams$lambda.beta
+    results$lambda.M = fiti$hparams$lambda.M
     
-    results <- list_merge(results,
+    results <- c(results,
                           prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
     
     results
@@ -260,9 +260,9 @@ Naive_Sim_Wrapper <- function(dat, ...) {
   start_time = Sys.time()
   fit. <- naive_fit(dat$Y, dat$X)
   results = list(model = "Naive")
-  results$lambda.M = NA
   results$lambda.beta = NA
-  results <- list_merge(results,
+  results$lambda.M = NA
+  results <- c(results,
                         prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M))  
   results
 }
