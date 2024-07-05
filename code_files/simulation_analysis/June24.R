@@ -90,8 +90,10 @@ LogLik0 <- logLikelihood(residuals2)
 SImpute_Sim_Wrapper(dat)
 Mao_Sim_Wrapper(dat, LogLik_SI = LogLik0)
 CASMC_0_Sim_Wrapper(dat, LogLik_SI = LogLik0)
+CASMC_2_Sim_Wrapper(dat, LogLik_SI = LogLik0)
+CASMC_3a_Sim_Wrapper(dat, LogLik_SI = LogLik0)
+Naive_Sim_Wrapper(dat)
 
-prepare_output(Sys.time(), fit.$estimates, dat$O, dat$W)
 ###############################################################
 start_time = Sys.time() 
 fitkf <- CASMC2_cv_kf(
