@@ -3,12 +3,12 @@ dat <-
   800,
   700,
   r = 10,
-  k = 13, 
+  k = 20, 
   missing_prob = 0.9,
   coll = F,
   prepare_for_fitting = TRUE,
   half_discrete = FALSE,
-  informative_cov_prop = .5,mar_sparse = T,
+  informative_cov_prop = .1,mar_sparse = F,
   mv_beta = T,
   seed = 2023
  )
@@ -47,7 +47,7 @@ fiti <- CASMC2_cv2(
  use_warmstart = TRUE,
  quiet = F,
  trace = F,  
- track = F, step3 = F,
+ track = F, step3 = T,
  seed = 2023
 )
 
@@ -72,7 +72,27 @@ results$sparse_in_nonsparse = sum(dat$beta != 0 &
                                     fit.$beta == 0) /
   (sum(dat$beta != 0) +  1e-17)
 results
-####################################################
+##########################################################
+residuals2 <- dat$O[dat$W==0] -  fit.$estimates[dat$W==0]
+
+
+# 1. residual analysis
+residual_analysis(residuals2)
+
+# 2. checking the likelihood
+logLikelihood(residuals)
+Likelihood_ratio_index(logLikelihood(residuals), logLikelihood(residuals2))
+Cox_Snell_R2(logLikelihood(residuals), logLikelihood(residuals2), length(residuals))
+
+
+LogLik0 <- logLikelihood(residuals2)
+
+SImpute_Sim_Wrapper(dat)
+Mao_Sim_Wrapper(dat, LogLik_SI = LogLik0)
+CASMC_0_Sim_Wrapper(dat, LogLik_SI = LogLik0)
+
+prepare_output(Sys.time(), fit.$estimates, dat$O, dat$W)
+###############################################################
 start_time = Sys.time() 
 fitkf <- CASMC2_cv_kf(
   Y = dat$Y,

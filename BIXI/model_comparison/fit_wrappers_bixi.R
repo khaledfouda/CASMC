@@ -382,7 +382,7 @@ CASMC_2_Bixi_Wrapper <-
   
   fit. = fiti$fit
   # get estimates and validate
-  fit.$M = unsvd(fit.)
+  fit.$M = unsvd(fit.) 
   fit.$beta = unsvd(fit.$beta)
   fit.$Xbeta = dat$X %*% fit.$beta
   fit.$estimates = fit.$M + fit.$Xbeta
