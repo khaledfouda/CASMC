@@ -153,7 +153,7 @@ generate_simulation_rows <-
       
       if (informative_cov_prop < 1) {
          if (mar_sparse && informative_cov_prop > 0) {
-            indices_to_zero <- sample(1:length(beta), informative_cov_prop * length(beta))
+            indices_to_zero <- sample(1:length(beta), (1-informative_cov_prop) * length(beta))
             beta[indices_to_zero] <- 0
          } else{
             ncov_to_keep = round(informative_cov_prop * k)

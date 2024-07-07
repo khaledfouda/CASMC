@@ -242,7 +242,7 @@ simPar <- data.frame(
    info = c(.2, .3, .3, 1) 
 )
 
-for (i in 1:2) {
+for (i in 2:2) {
    compare_and_save_with_rep2(
       simPar = simPar[i, ],
       num_replications = 30,

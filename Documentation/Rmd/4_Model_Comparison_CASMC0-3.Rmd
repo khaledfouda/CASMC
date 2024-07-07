@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = FALSE, cache = FALSE, eval = TRUE,
 
 ```{r echo=F, message=FALSE, warning=FALSE, include=F, eval=T}
 source("./code_files/import_lib.R")
-path_to_data = "./saved_data/June18/"
+path_to_data = "./saved_data/July05/"
 library(data.table)
 ```
 
@@ -229,8 +229,8 @@ print_table <-
       #    )   -> combined_results
       # 
       combined_results <- results |> 
-         rename(O_mean = all_mean,
-            O_sd = all_sd,
+         rename(O_train_mean = train_mean,
+            O_train_sd = train_sd,
             O_test_mean = test_mean,
             O_test_sd = test_sd,
             Method = model,
@@ -254,13 +254,13 @@ print_table <-
          mutate_if(is.numeric, function(x)
             replace_na(as.character(round(x, 3)), ''))
       
-      # Color the minimum errors for each pair of rows (200x200, 400x400, etc.)
-      error_columns <- c("O_test", "O", "beta", "M", "time", "lambda.M", "lambda.beta",
-                         "rank_beta", "rank_M", "sparse_in_sparse", "sparse_in_nonsparse")
+      # error_columns <- c("O_test", "O", "beta", "M", "time", "lambda.M", "lambda.beta",
+      #                    "rank_beta", "rank_M", "sparse_in_sparse", "sparse_in_nonsparse")
+      # 
+      sapply(names(select(combined_results, contains("mean"))),
+             function(x)str_split(x,"_mean")[[1]][1] )  |> as.vector() ->
+         error_columns
       
-      # for (i in seq(1, 28, nmodels))
-      #    combined_results[i:(i + nmodels - 1),] <-
-      #    color_min_values(combined_results[i:(i + nmodels - 1),], error_columns)
       for(ec in error_columns){
          combined_results[[ec]] <- paste0(combined_results[[paste0(ec,"_mean")]]," (",
                 combined_results[[paste0(ec,"_sd")]], ")")
@@ -287,24 +287,27 @@ print_table <-
       combined_results %>%
          dplyr::rename(seconds = time) %>% 
          select(Method,
-            lambda.M,
             lambda.beta,
+            lambda.M,
+            corr.test,
             O_test,
-            O,
+            O_train,
             beta,
             M,
             rank_beta,
             rank_M,
             sparse_in_sparse,
-            sparse_in_nonsparse,
+            nonsparse_in_nonsparse,
+            likelihood_ratio_index,
+            Cox_Snell_R2,
             #rank_diff,
             seconds) %>% 
       rename(in_sparse = sparse_in_sparse,
-             in_nonsparse = sparse_in_nonsparse) |> 
+             in_nonsparse = nonsparse_in_nonsparse) |> 
          mutate_if(is.numeric, function(x)
             replace_na(as.character(round(x, 3)), '')) %>%
          mutate(across(everything(), ~ ifelse(.x=="NaN (NaN)","",.x))) |> 
-         arrange(O_test) |> 
+         arrange(desc(corr.test)) |> 
          kable("html",
                escape = FALSE,
                align = 'c',
@@ -317,13 +320,15 @@ print_table <-
          add_header_above(c(
             "Fixed" = 1,
             "Hyperparameters" = 2,
-            "Error on" = 4,
+            "Error on" = 5,
             "Rank" = 2,
-            "Sparsity" = 2,
+            "Sparse" = 1,
+            "Dense" = 1,
+            "Pseudo R2" = 2,
             "Time" = 1
          )) %>%
          column_spec(
-            4,
+            4:5,
             bold = T,
             background = grDevices::adjustcolor("pink", alpha.f = 0.1)
          ) 
@@ -362,28 +367,34 @@ res1
 
 
 ```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__1_.csv", show_col_types = F) |> 
+read_csv("saved_data/July05/Model_Comparison_simulation_replications__1_.csv", show_col_types = F) |> 
    print_table(caption = "Case 1")
 ```
 
 
 ```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__2_.csv", show_col_types = F) |> 
+read_csv("saved_data/July05/Model_Comparison_simulation_replications__2_.csv", show_col_types = F) |> 
    print_table(caption = "Case 2")
 ```
 
 
 
 ```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__3_.csv", show_col_types = F) |> 
+read_csv("saved_data/July05/Model_Comparison_simulation_replications__3_.csv", show_col_types = F) |> 
    print_table(caption = "Case 3")
 ```
 
 
 
 ```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
-read_csv("saved_data/June18/Model_Comparison_simulation_replications__4_.csv", show_col_types = F) |> 
+read_csv("saved_data/July05/Model_Comparison_simulation_replications__4_.csv", show_col_types = F) |> 
    print_table(caption = "Case 4")
 ```
 
+
+
+```{r fig.height=15, fig.width=15, results='asis', eval=T, echo=F}
+read_csv("saved_data/July05/Model_Comparison_simulation_replications__5_.csv", show_col_types = F) |> 
+   print_table(caption = "Case 5")
+```
 
