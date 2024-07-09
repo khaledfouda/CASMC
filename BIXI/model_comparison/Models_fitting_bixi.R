@@ -6,10 +6,10 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 library(BKTR)
 source("./code_files/import_lib.R")
 source("./BIXI/data-raw/bixi_data.R")
-source("./BIXI/model_comparison/fit_wrappers_bixi.R")
+source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
 
 num_replications = 5
-spatial = FALSE
+spatial = TRUE
 if(spatial){
 dat <-
  load_bixi_dat(transpose = F, scale_response = T, scale_covariates = F,
@@ -63,17 +63,16 @@ data_dir <- "./BIXI/results/"
 
 metrics = c(
  "time",
- "lambda.M",
  "lambda.beta",
+ "lambda.M",
  "error.test",
  "corr.test",
  "error.train",
  "rank_M",
  "rank_beta",
  "sparse_prop",
- "Prop_explained_xbeta",
- "Prop_explained_M",
- "Prop_unexplained"
+ "likelihood_ratio_index",
+ "Cox_Snell_R2"
 )
 
 model_functions = list(
@@ -163,6 +162,16 @@ for (n in 1:num_replications) {
  
  for (i in 1:length(model_functions)) {
    print(paste("starting Model ",i, ": ", models[i]))
+   
+   if(i == 1){
+     results <- SImpute_Bixi_Wrapper(dat)
+     LogLik_SI = results$LogLik
+     results$results$cov_summaries <- NULL
+     results <- as.numeric(results$results[-1])
+   }else{
+     
+   
+   
   results =
    model_functions[[i]](
     dat = dat,
@@ -172,7 +181,8 @@ for (n in 1:num_replications) {
     alpha_grid = c(1),
     ncores = 1,
     max_cores = 20,
-    weight_function = Mao_weights$uniform
+    weight_function = Mao_weights$uniform,
+    LogLik_SI = LogLik_SI
    )
   
   no_cov = ifelse(i == 1 || i == 7, TRUE, FALSE)
@@ -181,10 +191,11 @@ for (n in 1:num_replications) {
                   pivot_longer(cols = everything()) |>
                   t())[2, ] |>
    as.numeric()
-  
   results$cov_summaries <- NULL
   results$model = NULL
   results <- results |> as.numeric()
+  
+  }
   
   
   new_mean <- update_mean(perf_means[i,], results, n)
@@ -203,7 +214,7 @@ for (n in 1:num_replications) {
   }
   
  }
- print(perf_means)
+ print(perf_means) |>  round(3)
  #print(cov_means)
  # print(perf_stdev)
  

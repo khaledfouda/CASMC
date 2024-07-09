@@ -3,6 +3,7 @@
 
 prepare_output_bixi <-
   function(start_time,
+           X,
            estim.test,
            estim.train,
            obs.test,
@@ -48,6 +49,18 @@ prepare_output_bixi <-
         Likelihood_ratio_index(LogLik, LogLik_SI)
       results$Cox_Snell_R2 <- Cox_Snell_R2(LogLik, LogLik_SI, n)
     }
+    
+    
+    tryCatch(
+      apply(beta.estim, 1, summary) |> as.data.frame() |>
+      t() |>
+      as.data.frame() |>
+      mutate(prop_non_zero = apply(beta.estim, 1, function(x)
+        sum(x != 0) / length(x))) |>
+      `rownames<-` (colnames(X)),
+      error = function(x) NA) ->
+      results$cov_summaries
+    
     return(results)
   }
 
@@ -86,6 +99,7 @@ Mao_Bixi_Wrapper <-
       results,
       prepare_output_bixi(
         start_time,
+        dat$X,
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
@@ -122,6 +136,7 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
     results,
     prepare_output_bixi(
       start_time,
+      NULL,
       fit.$estimates[dat$masks$test == 0],
       fit.$estimates[dat$masks$tr_val != 0],
       dat$splits$test@x,
@@ -185,6 +200,7 @@ CASMC_0_Bixi_Wrapper <-
       results,
       prepare_output_bixi(
         start_time,
+        dat$X,
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
@@ -255,6 +271,7 @@ CASMC_2_Bixi_Wrapper <-
       results,
       prepare_output_bixi(
         start_time,
+        dat$X,
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
@@ -305,6 +322,7 @@ CASMC_3a_Bixi_Wrapper <-
       results,
       prepare_output_bixi(
         start_time,
+        dat$X,
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
@@ -328,6 +346,7 @@ Naive_Bixi_Wrapper <- function(dat, ...) {
     results,
     prepare_output_bixi(
       start_time,
+      dat$X,
       fit.$estimates[dat$masks$test == 0],
       fit.$estimates[dat$masks$tr_val != 0],
       dat$splits$test@x,
