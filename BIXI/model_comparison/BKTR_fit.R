@@ -84,7 +84,7 @@ saveRDS(test.df,file =  paste0("./BIXI/data/splits/split_",i,"_test.rds"))
 
 }
 #-----------------------------------------------------------------------
-for(i in 1:3){
+for(i in 1:1){
  
 train.df <- readRDS(paste0("./BIXI/data/splits/split_",i,"_train.rds"))
 test.df <- readRDS(paste0("./BIXI/data/splits/split_",i,"_test.rds"))
@@ -101,6 +101,17 @@ saveRDS(split1.fit, paste0("./BIXI/data/fits/split_",i,"_fit.rds"))
 
 }
 #-----------------------------------------------------------------------
+split1.fit$beta_covariates_summary
+
+split1.fit |> summary()
+
+split1.fit$imputed_y_estimates |> 
+        as.data.frame() |> 
+        merge(test.df, by = c("location", "time")) |> 
+        select(location, time, y_est, nb_departure) -> 
+        test.estimates
 
 
-bktr.reg$beta_estimates$location
+error_metric$rmse(test.estimates$y_est, test.estimates$nb_departure)
+error_metric$mae(test.estimates$y_est, test.estimates$nb_departure)
+error_metric$spearman(test.estimates$y_est, test.estimates$nb_departure)
