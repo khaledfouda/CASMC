@@ -193,6 +193,7 @@ CASMC_0_Bixi_Wrapper <-
     fit.$Xbeta = dat$X %*% fit.$beta
     fit.$estimates = fit.$M + fit.$Xbeta
     
+    print("hi")
     results = list(model = "CASMC-0")
     results$lambda.beta = fiti$lambda.beta
     results$lambda.M = fit.$lambda

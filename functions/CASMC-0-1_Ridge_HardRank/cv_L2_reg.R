@@ -82,11 +82,6 @@ CASMC0_cv <-
          fiti
       }, mc.cores = num_cores, mc.cleanup = TRUE)
       
-      
-      best_fit <-
-         results[[which.min(sapply(results, function(x)
-            x$error))]]
-      
       if (track) {
          sapply(results, function(x)
             print(
@@ -98,6 +93,10 @@ CASMC0_cv <-
                )
             ))
       }
+      best_fit <-
+         results[[which.min(sapply(results, function(x)
+            x$error))]]
+      
       if (print.best)
          print(
             paste(
@@ -107,7 +106,6 @@ CASMC0_cv <-
                best_fit$error
             )
          )
-      
       return(best_fit)
       
       
