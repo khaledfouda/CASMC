@@ -1,5 +1,5 @@
 ---
-title: "July 10th -BIXI Analysis notes - see Obsidian"
+title: "July 10th -BIXI Analysis notes - Time Covariates - see Obsidian"
 author: "Khaled Fouda"
 date: ""
 output:
@@ -24,13 +24,225 @@ knitr::opts_chunk$set(echo = T, cache = FALSE, eval = TRUE,
 ```{r echo=F, message=FALSE, warning=FALSE, include=F, eval=T}
 source("./code_files/import_lib.R")
 model_functions = list(
-      SImpute_Sim_Wrapper,
-      Mao_Sim_Wrapper,
-      CASMC_0_Sim_Wrapper,
-      CASMC_2_Sim_Wrapper,
-      CASMC_3a_Sim_Wrapper,
-      Naive_Sim_Wrapper
+      SImpute_Bixi_Wrapper,
+      Mao_Bixi_Wrapper,
+      CASMC_0_Bixi_Wrapper,
+      CASMC_2_Bixi_Wrapper,
+      CASMC_3a_Bixi_Wrapper,
+      Naive_Bixi_Wrapper
    )
+
+model_names <- list(
+ "SoftImpute",
+ "Mao",
+ "CASMC-Ridge",
+ "CASMC-Nuclear",
+ "CASMC-Lasso",
+ "Naive LM"
+)
 
 ```
 
+
+## Fit all models
+
+```{r}
+
+model.dat <-  load_model_bixi_dat(time_cov = TRUE)
+
+results <-  SImpute_Bixi_Wrapper(model.dat)
+loglik_SI <- results$LogLik
+results <- as.data.frame(results$results)
+data.frame() -> covsum 
+results$cov_summaries <- NULL
+
+model_fits <- list()
+
+for(i in 2:length(model_functions)){
+ out <- model_functions[[i]](model.dat, train_on_all = TRUE, LogLik_SI = loglik_SI,
+                             return_fit = TRUE)
+ if(i %in% 3:5){
+  model_fits[[i-2]] <- out$fit
+  out <- out$results
+ }
+ covsum %<>%
+  rbind(
+   out$cov_summaries %>% 
+   mutate(model = model_names[[i]])
+  )
+ out$cov_summaries <- NULL
+ out$model <- model_names[[i]]
+ results %<>% rbind(as.data.frame(out))
+}
+
+```
+
+
+## load BKTR fit data
+
+```{r}
+bktr.fit <- readRDS("./BIXI/data/fits/split_2_fit.rds")
+train.df <- readRDS(paste0("./BIXI/data/splits/split_2_train.rds"))
+test.df <-  readRDS(paste0("./BIXI/data/splits/split_2_test.rds"))
+
+bktr.fit$imputed_y_estimates |> 
+  as.data.frame() |> 
+  merge(test.df, by = c("location", "time")) |> 
+  select(location, time, y_est, nb_departure) -> 
+  test.estimates
+
+bktr.fit$imputed_y_estimates |> 
+  as.data.frame() |> 
+  merge(filter(train.df, ! is.na(nb_departure)), by = c("location", "time")) |> 
+  select(location, time, y_est, nb_departure) -> 
+  train.estimates
+
+
+results %<>% 
+ rbind(
+  
+prepare_output_bixi(Sys.time(), dat$X, test.estimates$y_est,
+                    train.estimates$y_est, test.estimates$nb_departure,
+                    train.estimates$nb_departure) %>% 
+ as.data.frame() %>% 
+ mutate(cov_summaries = NULL, model = "BKTR",
+        lambda.beta = NA, lambda.M = NA)
+ )
+
+
+
+covsum %<>% 
+ rbind(
+bktr.fit$beta_estimates %>% 
+ as.data.frame() %>% 
+ select(-location, -time, -Intercept) %>% 
+ apply(2, summary) %>% 
+ t() %>% 
+ as.data.frame() %>% 
+ mutate(prop_non_zero = 1, model = "BKTR")
+ )
+
+
+```
+
+
+
+
+## Present Results table
+
+
+```{r}
+results %>% 
+ arrange(desc(corr.test)) |> 
+ mutate_if(is.numeric, function(x) round(x,3)) |> 
+ kable()
+
+
+```
+
+## covariate Summaries
+
+
+
+```{r}
+bktr.fit$beta_covariates_summary 
+
+
+error_metric$rmse(test.estimates$y_est, test.estimates$nb_departure) |> print()
+error_metric$mae(test.estimates$y_est, test.estimates$nb_departure) |>  print()
+error_metric$spearman(test.estimates$y_est, test.estimates$nb_departure) |>  print()
+
+
+```
+
+
+```{r}
+
+# covsum <- covsum %>%
+#   arrange(model)
+
+# Create the table using kable and kableExtra
+covsum %>%
+ filter(! model %in% c("Mao", "Naive LM") ) %>% 
+  kable("html", col.names = c("Min", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max", "Prop Non Zero", "Model"),
+        caption = "Covariate Summaries by Model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+  row_spec(0, bold = TRUE) %>%
+  # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CASMC-Ridge", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CASMC-Nuclear", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CASMC-Lasso", 7, 9, hline_after = TRUE) %>%  
+  pack_rows("BKTR", 10, 12, hline_after = TRUE)
+
+```
+
+
+## Plot: time vs average beta value  x4 models
+
+
+```{r}
+
+model_fits[[1]]$beta %>% t() %>% as.data.frame() %>% 
+ `colnames<-` (colnames(dat$X)) %>% 
+ mutate(model = model_names[[3]]) %>% 
+ rbind(
+  model_fits[[2]]$beta %>% t() %>% as.data.frame() %>% 
+ `colnames<-` (colnames(dat$X)) %>% 
+ mutate(model = model_names[[4]])
+ ) %>%
+ rbind(
+  model_fits[[3]]$beta %>% t() %>% as.data.frame() %>% 
+ `colnames<-` (colnames(dat$X)) %>% 
+ mutate(model = model_names[[5]])
+ ) %>% 
+ rbind(
+  
+bktr.fit$beta_estimates %>% as.data.frame() %>% 
+ arrange(location, time) %>% 
+ group_by(location) %>% 
+ summarise(location = location[1], mean_temp_c = mean(mean_temp_c),
+        total_precip_mm = mean(total_precip_mm), holiday = mean(holiday)) %>% 
+ ungroup() %>% 
+ select(-location) %>% 
+ mutate(model = "BKTR")  
+ ) %>%
+ pivot_longer(
+  cols = c(mean_temp_c, total_precip_mm, holiday), 
+  names_to = "covariate", values_to = "value"
+ ) %>% 
+ group_by(model, covariate) %>% 
+ mutate()
+ ->
+ df_long
+
+ plot_model <- function(model_name) {
+  df_long %>% filter(model == model_name) %>% 
+  ggplot(aes(x = row_number(), y = value, color = covariate, group = covariate)) +
+    geom_line() #+
+    geom_ribbon(aes(ymin = value - 0.1, ymax = value + 0.1), alpha = 0.2) + # Adjust ymin and ymax based on your data
+    facet_wrap(~ covariate, scales = "free_y") +
+    theme_minimal() +
+    ggtitle(model_name) +
+    theme(plot.title = element_text(hjust = 0.5))
+}
+ 
+p1 <- plot_model("CASMC-Ridge")
+p2 <- plot_model("CASMC-Nuclear")
+p3 <- plot_model("CASMC-Lasso")
+p4 <- plot_model("Naive LM")
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+
+p1
+
+```
+
+
+## Plot: observed Y vs estimated Y. x4/5 models
+
+
+
+##  Check Residuals
+
+
+## Something about covariates?

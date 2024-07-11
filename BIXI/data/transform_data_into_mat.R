@@ -171,6 +171,11 @@ model.dat <- dat <-  load_model_bixi_dat()
 SImpute_Bixi_Wrapper(model.dat)
 Mao_Bixi_Wrapper(model.dat)
 CASMC_0_Bixi_Wrapper(model.dat, train_on_all = TRUE)
+
 CASMC_2_Bixi_Wrapper(model.dat, train_on_all = TRUE)
-CASMC_3a_Bixi_Wrapper(model.dat, train_on_all = TRUE)
+
+
+CASMC_3a_Bixi_Wrapper(model.dat, train_on_all = TRUE) -> results
+
+
 Naive_Bixi_Wrapper(model.dat)
