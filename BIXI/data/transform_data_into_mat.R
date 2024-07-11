@@ -3,129 +3,174 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 # source("./code_files/import_lib.R")
 
 
+time_cov <- TRUE
+
+load_model_bixi_dat <- function(time_cov=TRUE){
+  
+
 bdat <- BixiData$new()
-i = 2
+i = ifelse(time_cov, 2, 1)
+
 model.dat <- list()
 
 train.df <-
- readRDS(paste0("./BIXI/data/splits/split_", i, "_train.rds"))
+  readRDS(paste0("./BIXI/data/splits/split_", i, "_train.rds"))
 test.df <-
- readRDS(paste0("./BIXI/data/splits/split_", i, "_test.rds"))
+  readRDS(paste0("./BIXI/data/splits/split_", i, "_test.rds"))
 
+if(time_cov){
 train.df |>
- as.data.frame() |>
- mutate(time = as.Date(time)) |>
- arrange(location, time) ->  train.df
+  as.data.frame() |>
+  mutate(time = as.Date(time)) %>%
+  arrange(location, time) ->  train.df
+
+test.df |>
+  as.data.frame() |>
+  mutate(time = as.Date(time)) %>%
+  arrange(location, time) ->  test.df
+
+  
+}else{
+  train.df |>
+    as.data.frame() |>
+    mutate(time = as.Date(time)) %>%
+    rename(location = time, time = location) %>%
+    arrange(location, time) ->  train.df
+  
+  test.df |>
+    as.data.frame() |>
+    mutate(time = as.Date(time)) %>%
+    rename(location = time, time = location) %>%
+    arrange(location, time) ->  test.df
+  
+}
+
 
 X <- train.df |>
- group_by(time) |>
- filter(row_number() == 1) |>
- ungroup() |>
- select(-location, -time, -nb_departure)
+  group_by(time) |>
+  filter(row_number() == 1) |>
+  ungroup() |>
+  select(-location, -time, -nb_departure)
 
 model.dat$X <- as.matrix(X)
 
 reshape2::dcast(train.df, time ~ location, value.var = "nb_departure") |>
- select(-time) |>
- as.matrix() ->
- Y
+  select(-time) |>
+  as.matrix() ->
+  Y
 
 model.dat$Y <- Y
 
-obs.mask <- (1*!is.na(Y)) %>%  
- {
-  colnames(.) <- NULL
-  .
- } %>%
- as.matrix() 
+obs.mask <- (1 * !is.na(Y)) %>%
+  {
+    colnames(.) <- NULL
+    .
+  } %>%
+  as.matrix()
 print(sum(obs.mask == 1) / length(obs.mask))
 
 train.df |>
- select(time, location, nb_departure) |>
- merge(
-  select(test.df, time, location, nb_departure),
-  by = c("time", "location"),
-  all.x = T
- ) |>
- as.data.frame() |>
- arrange(location, as.Date(time))  |>
- mutate(missing =  !(is.na(nb_departure.x) &
-                      (!is.na(nb_departure.y)))) -> mixed
+  select(time, location, nb_departure) |>
+  merge(
+    select(test.df, time, location, nb_departure),
+    by = c("time", "location"),
+    all.x = T
+  ) |>
+  as.data.frame() |>
+  arrange(location, time)  |>
+  mutate(missing =  !(is.na(nb_departure.x) &
+                        (!is.na(nb_departure.y)))) -> mixed
 
 print(sum(1 - mixed$missing) / nrow(mixed))
 
 reshape2::dcast(mixed, time ~ location, value.var = "missing") %>%
- select(-time) %>%
- {
-  colnames(.) <- NULL
-  .
- } %>%
- as.matrix() ->
- #as.integer() ->
- test.mask
+  select(-time) %>%
+  {
+    colnames(.) <- NULL
+    .
+  } %>%
+  as.matrix() ->
+  #as.integer() ->
+  test.mask
 
 test.mask = 1 * test.mask
 
 print(sum(1 - test.mask) / length(test.mask))
-obs.mask[1:5,1:5]
-test.mask[1:5,1:5]
+obs.mask[1:5, 1:5]
+test.mask[1:5, 1:5]
 
 valid_mask <- matrix.split.train.test(obs.mask, testp = 0.2)
 
 
-model.dat$masks <- list(tr_val = obs.mask, test = test.mask, valid = valid_mask)
+model.dat$masks <-
+  list(tr_val = obs.mask,
+       test = test.mask,
+       valid = valid_mask)
 #-----------------------
 # get test matrix
 train.df |>
- select(time, location, nb_departure) |>
- merge(
-  select(test.df, time, location, nb_departure),
-  by = c("time", "location"),
-  all.x = T
- ) |>
- as.data.frame() |>
- arrange(location, as.Date(time))  |>
- select("time", "location", nb_departure.y) %>% 
-reshape2::dcast(time ~ location, value.var = "nb_departure.y") |>
- select(-time) |>
- as.matrix() %>% 
- to_incomplete() ->
- test
+  select(time, location, nb_departure) |>
+  merge(
+    select(test.df, time, location, nb_departure),
+    by = c("time", "location"),
+    all.x = T
+  ) |>
+  as.data.frame() |>
+  arrange(location, time)  |>
+  select("time", "location", nb_departure.y) %>%
+  reshape2::dcast(time ~ location, value.var = "nb_departure.y") |>
+  select(-time) |>
+  as.matrix() %>%
+  to_incomplete() ->
+  test
 
 model.dat$splits <- list(
- 
-train = to_incomplete(Y*valid_mask),
-valid = to_incomplete(Y * (1-valid_mask)),         #Y[valid_mask==0],
-test = test,
-Y = to_incomplete(Y)
+  train = to_incomplete(Y * valid_mask),
+  valid = to_incomplete(Y * (1 - valid_mask)),
+  #Y[valid_mask==0],
+  test = test,
+  #Y = Y,
+  Y = to_incomplete(Y)
+  
 )
-print(length(model.dat$splits$train@x)/length(Y))
+print(length(model.dat$splits$train@x) / length(Y))
 print(length(model.dat$splits$test@x))
 print(model.dat$splits$valid@x %>% length)
 #-------------------------------
 # get all observed matrix
-train.df |>
- select(time, location, nb_departure) |>
- merge(
-  select(test.df, time, location, nb_departure),
-  by = c("time", "location"),
-  all.x = T
- ) |>
- as.data.frame() |>
- arrange(location, as.Date(time))  |>
- select("time", "location", nb_departure.x, nb_departure.y) %>%
- mutate(nb_departure = ifelse(is.na(nb_departure.x), nb_departure.y, nb_departure.x)) %>% 
- reshape2::dcast(time ~ location, value.var = "nb_departure") |>
- select(-time) |>
- as.matrix() %>% 
- to_incomplete() ->
- observed
+# train.df |>
+#   select(time, location, nb_departure) |>
+#   merge(
+#     select(test.df, time, location, nb_departure),
+#     by = c("time", "location"),
+#     all.x = T
+#   ) |>
+#   as.data.frame() |>
+#   arrange(location, time)  |>
+#   select("time", "location", nb_departure.x, nb_departure.y) %>%
+#   mutate(nb_departure = ifelse(is.na(nb_departure.x), nb_departure.y, nb_departure.x)) %>%
+#   reshape2::dcast(time ~ location, value.var = "nb_departure") |>
+#   select(-time) |>
+#   as.matrix() %>%
+#   to_incomplete() ->
+#   observed
+# 
+# print(length(observed@x))
+# model.dat$depart <- Y#observed
 
-print(length(observed@x))
-model.dat$depart <- observed
-
-
+return(model.dat)
+}
 #--------------------------------------------------------------------------------------------
-CASMC_0_Bixi_Wrapper(model.dat)
-CASMC_2_Bixi_Wrapper(model.dat)
-CASMC_3a_Bixi_Wrapper(model.dat)
+length(model.dat$splits$Y@x)
+sum(model.dat$masks$tr_val!=0)
+length(model.dat$splits$train@x)
+
+sum(!is.na(model.dat$Y))
+
+model.dat <- dat <-  load_model_bixi_dat()
+SImpute_Bixi_Wrapper(model.dat)
+Mao_Bixi_Wrapper(model.dat)
+CASMC_0_Bixi_Wrapper(model.dat, train_on_all = TRUE)
+CASMC_2_Bixi_Wrapper(model.dat, train_on_all = TRUE)
+CASMC_3a_Bixi_Wrapper(model.dat, train_on_all = TRUE)
+Naive_Bixi_Wrapper(model.dat)

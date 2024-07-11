@@ -10,27 +10,27 @@ source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
 
 bixi.dat <- BixiData$new()
 
-
-bixi.dat$data_df[1:5,]
-
-bktr.reg <- BKTRRegressor$new(
- data_df = bixi.dat$data_df,
- spatial_positions_df = bixi.dat$spatial_positions_df,
- temporal_positions_df = bixi.dat$temporal_positions_df
-)
-
-bktr.reg$mcmc_sampling()
-
-
-#saveRDS(bktr.reg, "./BIXI/results/BKTR_fit_backup.rds")
-
-TSR$set_params(seed = 0, fp_type = "float32")
-
-summary(bktr.reg)
-bktr.reg$beta_covariates_summary |> 
- as.data.frame() |> 
- arrange( desc(abs(Median)) )
-
+# 
+# bixi.dat$data_df[1:5,]
+# 
+# bktr.reg <- BKTRRegressor$new(
+#  data_df = bixi.dat$data_df,
+#  spatial_positions_df = bixi.dat$spatial_positions_df,
+#  temporal_positions_df = bixi.dat$temporal_positions_df
+# )
+# 
+# bktr.reg$mcmc_sampling()
+# 
+# 
+# #saveRDS(bktr.reg, "./BIXI/results/BKTR_fit_backup.rds")
+# 
+# TSR$set_params(seed = 0, fp_type = "float32")
+# 
+# summary(bktr.reg)
+# bktr.reg$beta_covariates_summary |> 
+#  as.data.frame() |> 
+#  arrange( desc(abs(Median)) )
+# 
 
 #---------------------------------
 # divide into train/test:
@@ -44,8 +44,8 @@ print(length(test_indic))
 train.df <- data.df
 train.df$nb_departure[test_indic] <- NA
 test.df <- data.df[test_indic,]
-saveRDS(train.df, "split_train.rds")
-saveRDS(test.df, "split_test.rds")
+# saveRDS(train.df, "split_train.rds")
+# saveRDS(test.df, "split_test.rds")
 #---------------------------------
 data <- list()
 
@@ -72,7 +72,7 @@ set.seed(0)
 data.df <- bixi.dat$data_df
 total_obs <- sum(! is.na(data.df$nb_departure))
 obs_indic <- which(! is.na(data.df$nb_departure))
-test_indic <- obs_indic[sample(1:total_obs, round(total_obs*0.2),replace = FALSE)]
+test_indic <- obs_indic[sample(1:total_obs, round(total_obs*0.3),replace = FALSE)]
 print(length(test_indic))
 for(i in 1:3){
  

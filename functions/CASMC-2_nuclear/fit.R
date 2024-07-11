@@ -99,7 +99,7 @@ CASMC2_fit <-
       #----------------
       # prepare ub, db, vb
       Db = warm.start$db
-      rD = sum(Db > min_eigv)
+      rD = max(1,sum(Db > min_eigv))
       if (rD >= r) {
         Ub = warm.start$ub[, seq(r), drop = FALSE]
         Vb = warm.start$vb[, seq(r), drop = FALSE]
@@ -118,7 +118,6 @@ CASMC2_fit <-
         Ub = cbind(Ub, Uba)
         Vb = cbind(warm.start$vb, matrix(0, m, ra))
       }
-      
       Q = UD(Ub, Db)
       R = UD(Vb, Db)
     } else{

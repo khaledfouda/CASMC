@@ -103,7 +103,7 @@ Mao_Bixi_Wrapper <-
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
-        dat$depart@x,
+        dat$splits$Y@x,
         fit.$beta,
         fit.$M
       )
@@ -140,7 +140,7 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
       fit.$estimates[dat$masks$test == 0],
       fit.$estimates[dat$masks$tr_val != 0],
       dat$splits$test@x,
-      dat$depart@x,
+      dat$splits$Y@x,
       M.estim = fit.$estimates
     )
   )
@@ -153,15 +153,19 @@ CASMC_0_Bixi_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
+           return_fit = FALSE,
+           train_on_all = FALSE,
            ...) {
     start_time = Sys.time()
+    Y_all <- NULL
+    if(train_on_all) Y_all <- dat$splits$Y 
     
     fiti <- CASMC0_cv(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
       W_valid = dat$masks$valid,
-      #y = dat$depart,
+      y = Y_all,
       error_function = error_metric$rmse,
       lambda.factor = 1 / 4,
       lambda.init = NULL,
@@ -205,12 +209,13 @@ CASMC_0_Bixi_Wrapper <-
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
-        dat$depart@x,
+        dat$splits$Y@x,
         fit.$beta,
         fit.$M,
         LogLik_SI
       )
     )
+    if(return_fit) return(list(fit=fit., results=results))
     results
   }
 #-------
@@ -219,15 +224,19 @@ CASMC_0_Bixi_Wrapper <-
 CASMC_2_Bixi_Wrapper <-
   function(dat,
            LogLik_SI = NULL,
+           return_fit = FALSE,
+           train_on_all = FALSE,
            ...) {
     start_time = Sys.time()
+    Y_all <- NULL
+    if(train_on_all) Y_all <- dat$splits$Y
     
     fiti <- CASMC2_cv2(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
       W_valid = dat$masks$valid,
-      #y = dat$depart,
+      y = Y_all,
       error_function = error_metric$rmse,
       warm = NULL,
       M_cv_param = list(
@@ -276,12 +285,13 @@ CASMC_2_Bixi_Wrapper <-
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
-        dat$depart@x,
+        dat$splits$Y@x,
         fit.$beta,
         fit.$M,
         LogLik_SI
       )
     )
+    if(return_fit) return(list(fit=fit., results=results))
     results
   }
 #----------------------------------------------------
@@ -289,17 +299,20 @@ CASMC_3a_Bixi_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
+           return_fit = FALSE,
+           train_on_all = FALSE,
            ...) {
     start_time = Sys.time()
     learning_rate = 1 / sqrt(sum((t(dat$X) %*% dat$X) ^ 2))
-    
+    Y_all <- NULL
+    if(train_on_all) Y_all <- dat$splits$Y
     
     fiti <- CASMC3_cv_beta(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
       W_valid = dat$masks$valid,
-      # y = to_incomplete(dat$Y),
+      y = Y_all,
       trace = 0,
       print.best = T,
       warm = NULL,
@@ -327,12 +340,13 @@ CASMC_3a_Bixi_Wrapper <-
         fit.$estimates[dat$masks$test == 0],
         fit.$estimates[dat$masks$tr_val != 0],
         dat$splits$test@x,
-        dat$depart@x,
+        dat$splits$Y@x,
         fit.$beta,
         fit.$M,
         LogLik_SI
       )
     )
+    if(return_fit) return(list(fit=fit., results=results))
     results
   }
 #------
@@ -351,7 +365,7 @@ Naive_Bixi_Wrapper <- function(dat, ...) {
       fit.$estimates[dat$masks$test == 0],
       fit.$estimates[dat$masks$tr_val != 0],
       dat$splits$test@x,
-      dat$depart@x,
+      dat$splits$Y@x,
       fit.$beta,
       fit.$M
     )

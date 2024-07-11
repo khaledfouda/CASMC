@@ -1,0 +1,36 @@
+---
+title: "July 10th -BIXI Analysis notes - see Obsidian"
+author: "Khaled Fouda"
+date: ""
+output:
+  html_document:
+     df_print: paged 
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=TRUE, echo=T, message=FALSE, warning=FALSE}
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+root_dir = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
+knitr::opts_knit$set(root.dir=root_dir)
+knitr::opts_chunk$set(echo = T, cache = FALSE, eval = TRUE, 
+                      cache.path = paste0(root_dir,"/Documentation/cache/"))
+```
+
+
+```{r echo=F, message=FALSE, warning=FALSE, include=F, eval=T}
+source("./code_files/import_lib.R")
+model_functions = list(
+      SImpute_Sim_Wrapper,
+      Mao_Sim_Wrapper,
+      CASMC_0_Sim_Wrapper,
+      CASMC_2_Sim_Wrapper,
+      CASMC_3a_Sim_Wrapper,
+      Naive_Sim_Wrapper
+   )
+
+```
+
