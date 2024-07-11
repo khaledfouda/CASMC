@@ -180,7 +180,7 @@ CASMC_0_Bixi_Wrapper <-
       S.b = NULL,
       early.stopping = 1,
       thresh = 1e-6,
-      maxit = maxit,
+      maxit = 300,
       trace = FALSE,
       print.best = F,
       quiet = FALSE,

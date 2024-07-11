@@ -17,12 +17,15 @@ library(tidyverse)
 root_dir = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
 knitr::opts_knit$set(root.dir=root_dir)
 knitr::opts_chunk$set(echo = T, cache = FALSE, eval = TRUE, 
+                      fig.width=12, fig.height=8,
                       cache.path = paste0(root_dir,"/Documentation/cache/"))
 ```
 
 
 ```{r echo=F, message=FALSE, warning=FALSE, include=F, eval=T}
 source("./code_files/import_lib.R")
+source("./BIXI/data/transform_data_into_mat.R")
+source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
 model_functions = list(
       SImpute_Bixi_Wrapper,
       Mao_Bixi_Wrapper,
@@ -48,7 +51,7 @@ model_names <- list(
 
 ```{r}
 
-model.dat <-  load_model_bixi_dat(time_cov = TRUE)
+model.dat <-  dat <- load_model_bixi_dat(time_cov = TRUE)
 
 results <-  SImpute_Bixi_Wrapper(model.dat)
 loglik_SI <- results$LogLik
@@ -59,6 +62,7 @@ results$cov_summaries <- NULL
 model_fits <- list()
 
 for(i in 2:length(model_functions)){
+ print(model_names[[i]])
  out <- model_functions[[i]](model.dat, train_on_all = TRUE, LogLik_SI = loglik_SI,
                              return_fit = TRUE)
  if(i %in% 3:5){
@@ -81,6 +85,8 @@ for(i in 2:length(model_functions)){
 ## load BKTR fit data
 
 ```{r}
+
+
 bktr.fit <- readRDS("./BIXI/data/fits/split_2_fit.rds")
 train.df <- readRDS(paste0("./BIXI/data/splits/split_2_train.rds"))
 test.df <-  readRDS(paste0("./BIXI/data/splits/split_2_test.rds"))
@@ -211,38 +217,128 @@ bktr.fit$beta_estimates %>% as.data.frame() %>%
   names_to = "covariate", values_to = "value"
  ) %>% 
  group_by(model, covariate) %>% 
- mutate()
- ->
+ mutate(station_id =  1:ncol(dat$Y)) %>% 
+ ungroup() ->
  df_long
 
  plot_model <- function(model_name) {
   df_long %>% filter(model == model_name) %>% 
-  ggplot(aes(x = row_number(), y = value, color = covariate, group = covariate)) +
-    geom_line() #+
-    geom_ribbon(aes(ymin = value - 0.1, ymax = value + 0.1), alpha = 0.2) + # Adjust ymin and ymax based on your data
+  ggplot(aes(x = station_id, y = value, color = covariate, group = covariate)) +
+    geom_point() +
+    #geom_ribbon(aes(ymin = value - 0.1, ymax = value + 0.1), alpha = 0.2) + # Adjust ymin and ymax based on your data
     facet_wrap(~ covariate, scales = "free_y") +
     theme_minimal() +
     ggtitle(model_name) +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "top")
 }
  
 p1 <- plot_model("CASMC-Ridge")
 p2 <- plot_model("CASMC-Nuclear")
 p3 <- plot_model("CASMC-Lasso")
-p4 <- plot_model("Naive LM")
+p4 <- plot_model("BKTR")
 
 gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
 
-p1
+
 
 ```
 
 
 ## Plot: observed Y vs estimated Y. x4/5 models
 
+```{r}
+ms <- model_fits[[1]]
+
+data.frame(True = dat$splits$test[dat$masks$test==0],
+           Predicted =  model_fits[[1]]$estimates[dat$masks$test==0],
+           model = model_names[[3]]) %>%
+ rbind(
+  data.frame(True = dat$splits$test[dat$masks$test==0],
+           Predicted =  model_fits[[2]]$estimates[dat$masks$test==0],
+           model = model_names[[4]])
+ ) %>% 
+ rbind(
+  data.frame(True = dat$splits$test[dat$masks$test==0],
+           Predicted =  model_fits[[3]]$estimates[dat$masks$test==0],
+           model = model_names[[5]])
+ ) %>% 
+ rbind(
+ transmute(test.estimates,  True = nb_departure,
+           Predicted = y_est,
+           model = "BKTR") 
+ ) %>%  
+ group_by(model) %>% 
+ mutate(id =  1:length(model.dat$splits$test@x)) %>% 
+ ungroup() ->
+ df_long
+
+
+plot_true_vs_predicted <- function(model_name) {
+  ggplot(df_long %>% filter(model == model_name), aes(x = True, y = Predicted)) +
+    geom_point(color = "black", size = 1, alpha = 0.6) +
+    geom_abline(intercept = 0, slope = 1, #linetype = "dashed", 
+                color = "blue",linewidth=1.1) + 
+    theme_minimal(base_size = 15) +
+    ggtitle(model_name) +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+          axis.title = element_text(size = 14),
+          axis.text = element_text(size = 12)) +
+    labs(x = "True Values", y = "Predicted Values") +
+    theme(legend.position = "none") +
+   # scale_y_continuous(expand = c(0, 0)) +
+   # scale_x_continuous(expand = c(0, 0)) +
+   xlim(0,1) +
+   ylim(min(df_long$Predicted), max(df_long$Predicted))
+     
+}
+
+p1 <- plot_true_vs_predicted("CASMC-Ridge")
+p2 <- plot_true_vs_predicted("CASMC-Nuclear")
+p3 <- plot_true_vs_predicted("CASMC-Lasso")
+p4 <- plot_true_vs_predicted("BKTR")
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+
+
+```
 
 
 ##  Check Residuals
+
+
+### CASMC-Ridge
+
+```{r}
+Residuals <- dat$splits$test[dat$masks$test==0] - 
+            model_fits[[1]]$estimates[model.dat$masks$test==0]  
+residual_analysis(Residuals) 
+```
+
+### CASMC-Nuclear
+
+```{r}
+Residuals <- dat$splits$test[dat$masks$test==0] - 
+            model_fits[[2]]$estimates[model.dat$masks$test==0]  
+residual_analysis(Residuals) 
+```
+
+
+### CASMC-Lasso
+
+```{r}
+Residuals <- dat$splits$test[dat$masks$test==0] - 
+            model_fits[[3]]$estimates[model.dat$masks$test==0]  
+residual_analysis(Residuals) 
+```
+
+### BKTR
+
+```{r}
+Residuals <- test.estimates$nb_departure - test.estimates$y_est  
+residual_analysis(Residuals) 
+```
+
 
 
 ## Something about covariates?

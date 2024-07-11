@@ -1,9 +1,6 @@
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
-# library(BKTR)
+library(BKTR)
 # source("./code_files/import_lib.R")
-
-
-time_cov <- TRUE
 
 load_model_bixi_dat <- function(time_cov=TRUE){
   
@@ -161,21 +158,21 @@ print(model.dat$splits$valid@x %>% length)
 return(model.dat)
 }
 #--------------------------------------------------------------------------------------------
-length(model.dat$splits$Y@x)
-sum(model.dat$masks$tr_val!=0)
-length(model.dat$splits$train@x)
-
-sum(!is.na(model.dat$Y))
-
-model.dat <- dat <-  load_model_bixi_dat()
-SImpute_Bixi_Wrapper(model.dat)
-Mao_Bixi_Wrapper(model.dat)
-CASMC_0_Bixi_Wrapper(model.dat, train_on_all = TRUE)
-
-CASMC_2_Bixi_Wrapper(model.dat, train_on_all = TRUE)
-
-
-CASMC_3a_Bixi_Wrapper(model.dat, train_on_all = TRUE) -> results
-
-
-Naive_Bixi_Wrapper(model.dat)
+# length(model.dat$splits$Y@x)
+# sum(model.dat$masks$tr_val!=0)
+# length(model.dat$splits$train@x)
+# 
+# sum(!is.na(model.dat$Y))
+# 
+# model.dat <- dat <-  load_model_bixi_dat()
+# SImpute_Bixi_Wrapper(model.dat)
+# Mao_Bixi_Wrapper(model.dat)
+# CASMC_0_Bixi_Wrapper(model.dat, train_on_all = TRUE)
+# 
+# CASMC_2_Bixi_Wrapper(model.dat, train_on_all = TRUE)
+# 
+# 
+# CASMC_3a_Bixi_Wrapper(model.dat, train_on_all = TRUE) -> results
+# 
+# 
+# Naive_Bixi_Wrapper(model.dat)
