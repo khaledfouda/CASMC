@@ -1,5 +1,5 @@
 ---
-title: "July 10th -BIXI Analysis notes - Time Covariates - see Obsidian"
+title: "July 10th -BIXI Analysis notes - Station Covariates - see Obsidian"
 author: "Khaled Fouda"
 date: ""
 output:
@@ -51,7 +51,7 @@ model_names <- list(
 
 ```{r}
 
-model.dat <-  dat <- load_model_bixi_dat(time_cov = TRUE)
+model.dat <-  dat <- load_model_bixi_dat(time_cov = FALSE)
 
 results <-  SImpute_Bixi_Wrapper(model.dat)
 loglik_SI <- results$LogLik
@@ -87,9 +87,9 @@ for(i in 2:length(model_functions)){
 ```{r}
 
 
-bktr.fit <- readRDS("./BIXI/data/fits/split_2_fit.rds")
-train.df <- readRDS(paste0("./BIXI/data/splits/split_2_train.rds"))
-test.df <-  readRDS(paste0("./BIXI/data/splits/split_2_test.rds"))
+bktr.fit <- readRDS("./BIXI/data/fits/split_1_fit.rds")
+train.df <- readRDS(paste0("./BIXI/data/splits/split_1_train.rds"))
+test.df <-  readRDS(paste0("./BIXI/data/splits/split_1_test.rds"))
 
 bktr.fit$imputed_y_estimates |> 
   as.data.frame() |> 
@@ -140,7 +140,7 @@ bktr.fit$beta_estimates %>%
 ```{r}
 results %>% 
  arrange(desc(corr.test)) |> 
- mutate_if(is.numeric, function(x) round(x,3)) |> 
+ mutate_if(is.numeric, function(x) round(x,4)) |> 
  kable()
 
 
@@ -166,7 +166,7 @@ error_metric$spearman(test.estimates$y_est, test.estimates$nb_departure) |>  pri
 
 # covsum <- covsum %>%
 #   arrange(model)
-
+nx <- ncol(dat$X)
 # Create the table using kable and kableExtra
 covsum %>%
  filter(! model %in% c("Mao", "Naive LM") ) %>% 
@@ -175,10 +175,10 @@ covsum %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
   row_spec(0, bold = TRUE) %>%
   # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Ridge", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Nuclear", 4, 6, hline_after = TRUE) %>%
-  pack_rows("CASMC-Lasso", 7, 9, hline_after = TRUE) %>%  
-  pack_rows("BKTR", 10, 12, hline_after = TRUE)
+  pack_rows("CASMC-Ridge", 1, nx, hline_after = TRUE) %>%
+  pack_rows("CASMC-Nuclear", nx+1, 2 * nx , hline_after = TRUE) %>%
+  pack_rows("CASMC-Lasso", (2*nx)+1, 3*nx, hline_after = TRUE) %>%  
+  pack_rows("BKTR", 3*nx + 1, 4 * nx, hline_after = TRUE)
 
 ```
 
@@ -189,37 +189,43 @@ covsum %>%
 ```{r}
 
 model_fits[[1]]$beta %>% t() %>% as.data.frame() %>% 
- `colnames<-` (colnames(dat$X)) %>% 
- mutate(model = model_names[[3]]) %>% 
- rbind(
-  model_fits[[2]]$beta %>% t() %>% as.data.frame() %>% 
- `colnames<-` (colnames(dat$X)) %>% 
- mutate(model = model_names[[4]])
- ) %>%
- rbind(
-  model_fits[[3]]$beta %>% t() %>% as.data.frame() %>% 
- `colnames<-` (colnames(dat$X)) %>% 
- mutate(model = model_names[[5]])
- ) %>% 
- rbind(
-  
-bktr.fit$beta_estimates %>% as.data.frame() %>% 
- arrange(location, time) %>% 
- group_by(location) %>% 
- summarise(location = location[1], mean_temp_c = mean(mean_temp_c),
-        total_precip_mm = mean(total_precip_mm), holiday = mean(holiday)) %>% 
- ungroup() %>% 
- select(-location) %>% 
- mutate(model = "BKTR")  
- ) %>%
- pivot_longer(
-  cols = c(mean_temp_c, total_precip_mm, holiday), 
-  names_to = "covariate", values_to = "value"
- ) %>% 
- group_by(model, covariate) %>% 
- mutate(station_id =  1:ncol(dat$Y)) %>% 
- ungroup() ->
- df_long
+  `colnames<-`(colnames(dat$X)) %>% 
+  mutate(model = model_names[[3]]) %>% 
+  rbind(
+    model_fits[[2]]$beta %>% t() %>% as.data.frame() %>% 
+      `colnames<-`(colnames(dat$X)) %>% 
+      mutate(model = model_names[[4]])
+  ) %>%
+  rbind(
+    model_fits[[3]]$beta %>% t() %>% as.data.frame() %>% 
+      `colnames<-`(colnames(dat$X)) %>% 
+      mutate(model = model_names[[5]])
+  ) %>% 
+  rbind(
+    bktr.fit$beta_estimates %>% as.data.frame() %>% 
+      arrange(location, time) %>% 
+      group_by(time) %>% 
+      summarise(time = time[1], 
+                walkscore = mean(walkscore),
+                capacity = mean(capacity),
+                num_metro_stations = mean(num_metro_stations),
+                num_bus_routes = mean(num_bus_routes),
+                num_university = mean(num_university),
+                len_minor_road = mean(len_minor_road),
+                num_pop = mean(num_pop),
+                area_park = mean(area_park)) %>% 
+      ungroup() %>% 
+      select(-time) %>% 
+      mutate(model = "BKTR")  
+  ) %>%
+  pivot_longer(
+    cols = c(walkscore, capacity, num_metro_stations, num_bus_routes, num_university, len_minor_road, num_pop, area_park), 
+    names_to = "covariate", values_to = "value"
+  ) %>% 
+  group_by(model, covariate) %>% 
+  mutate(station_id =  1:ncol(dat$Y)) %>% 
+  ungroup() ->
+  df_long
 
  plot_model <- function(model_name) {
   df_long %>% filter(model == model_name) %>% 
@@ -230,7 +236,7 @@ bktr.fit$beta_estimates %>% as.data.frame() %>%
     theme_minimal() +
     ggtitle(model_name) +
     theme(plot.title = element_text(hjust = 0.5),
-          legend.position = "top")
+          legend.position = "none")
 }
  
 p1 <- plot_model("CASMC-Ridge")

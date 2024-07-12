@@ -140,7 +140,7 @@ bktr.fit$beta_estimates %>%
 ```{r}
 results %>% 
  arrange(desc(corr.test)) |> 
- mutate_if(is.numeric, function(x) round(x,3)) |> 
+ mutate_if(is.numeric, function(x) round(x,4)) |> 
  kable()
 
 
