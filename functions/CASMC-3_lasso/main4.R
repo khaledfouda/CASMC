@@ -16,7 +16,15 @@ dat2 <-
   mv_beta = T,
   seed = 2023
  )
+#---------------------------------------
+xt <- GetXterms(dat$X)
 
+
+
+
+
+
+#---------------------------------
 
 system.time(CASMC2_fit2(y = dat$fit_data$train,
             X = dat$X,
