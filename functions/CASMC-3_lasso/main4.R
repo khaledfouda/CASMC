@@ -2,7 +2,7 @@
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
 
-dat2 <-
+dat <-
  generate_simulation_rows(
   600,
   700,
@@ -17,11 +17,36 @@ dat2 <-
   seed = 2023
  )
 #---------------------------------------
-xt <- GetXterms(dat$X)
+nf <- naive_fit(dat$fit_data$train, dat$X)
+resids <- dat$fit_data$train - nf$M - dat$X %*% nf$beta
+resids[dat$fit_data$train==0] <- 0
 
+eta1 <- sqrt(sum((t(dat$X) %*% dat$X)^2))
+term <- eta1 * nf$beta - t(dat$X) %*% resids 
+seq(max(term),0,length=10) / eta1
 
+summary(as.vector(dat$beta))
 
+#--------
+X = dat2$X
+lambda = 0
+svdX = fast.svd(X)
+Ux = svdX$u
+Vx = svdX$d * t(svdX$v)
+A = t(Vx) %*% Vx
 
+lambda =   4#svd(A)$d
+for(lambda in seq(0,1000,10)){
+  
+X0 = solve(t(Vx) %*% Vx + diag(lambda, ncol(X))) %*% t(Vx)
+X1 = X0 %*% t(Ux) # k by n
+X2 = X0 %*% Vx # k by k
+
+sum(round(X0,4) == 0) / length(X0)
+sum(round(X2,4) == 0) / length(X2)
+sum(round(X1,4) == 0) / length(X1)
+sum(X2^2) %>% print()
+}
 
 
 #---------------------------------

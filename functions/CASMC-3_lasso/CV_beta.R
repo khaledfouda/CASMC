@@ -40,10 +40,17 @@ CASMC3_cv_beta <-
             max_cores = 8,
             # seed
             seed = NULL) {
-      if (identical(lambda.beta.grid, "default1"))
-         lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *
-            seq(10, .Machine$double.eps, length.out = 20)
-      if (identical(lambda.beta.grid, "default2"))
+      if (identical(lambda.beta.grid, "default1")){
+         nf <- naive_fit(y_train, X)
+         resids <- y_train - nf$M - X %*% nf$beta
+         resids[y_train==0] <- 0
+         term <- max((nf$beta / learning.rate) - t(X) %*% resids) 
+         lambda.beta.grid = seq(term, .Machine$double.eps, length.out=20)
+         
+         # lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *
+         #    seq(10, .Machine$double.eps, length.out = 20)
+      
+      }else if (identical(lambda.beta.grid, "default2"))
          lambda.beta.grid = seq(propack.svd(naive_fit(y, X, TRUE), 1)$d / 4,
                                 .Machine$double.eps,
                                 length.out = 20)
