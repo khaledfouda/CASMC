@@ -111,7 +111,9 @@ psmall.svd = function(m, tol, trim, p)
 
 # note that also only positive singular values are returned
 
-utils$fast.svd = function(m, tol = NULL, trim = FALSE)
+fast.svd <- 
+  utils$fast.svd <-
+  function(m, tol = NULL, trim = FALSE)
 {
  n = dim(m)[1]
  p = dim(m)[2]

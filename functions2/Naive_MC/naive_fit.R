@@ -1,5 +1,5 @@
 naive_fit <- function(y, X, return_xbeta = FALSE) {
-  svdH <- reduced_hat_decomp.H(X)
+  svdH <- utils$reduced_hat_decomp.H(X)
   Y_naive = as.matrix(y)
   Y_naive = naive_MC(Y_naive)
   
@@ -10,7 +10,7 @@ naive_fit <- function(y, X, return_xbeta = FALSE) {
   #----------------------
   # initialization for beta = X^-1 Y
   # comment for later: shouldn't be X^-1 H Y??
-  beta = as.matrix(ginv(X) %*% Xbeta)
+  beta = as.matrix(utils$inv(X,FALSE) %*% Xbeta)
   return(list(
     estimates = Y_naive,
     M = M,

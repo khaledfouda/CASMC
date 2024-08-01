@@ -56,3 +56,6 @@ utils$scalers_post_process <- function(X, fun, skip_bin) {
  }
  
 }
+
+
+utils$med_scale <- function(x) (x - median(x)) / IQR(x)

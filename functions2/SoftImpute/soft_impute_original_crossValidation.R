@@ -11,9 +11,7 @@ simpute.cv <- function(Y_train,
                        rank.limit = 50,
                        rank.step = 2,
                        maxit = 300,
-                       #biscale = FALSE,
-                       #use.complete = FALSE,
-                       test_error = error_metric$rmse,
+                       test_error = utils$error_metric$rmse,
                        seed = NULL) {
   # W: validation only wij=0. For train and test make wij=1. make Yij=0 for validation and test. Aij=0 for test only.
   if(!is.null(seed))
@@ -21,7 +19,7 @@ simpute.cv <- function(Y_train,
   valid_ind <- W_valid == 0
   y[y == 0] = NA
   Y_train[Y_train == 0] = NA
-  lam0 <- lambda0(y)
+  lam0 <- softImpute::lambda0(y)
   lamseq <- seq(from = lam0,
                 to = 0,
                 length = n.lambda)
@@ -36,12 +34,10 @@ simpute.cv <- function(Y_train,
       rank.max = NA
     )
   counter <- 1
-  # if (biscale) {
-  #   Y = biScale(Y, col.scale = F, row.scale = F)
-  # }
+  
   for (i in seq(along = lamseq)) {
     fiti <-
-      softImpute(
+      softImpute::softImpute(
         Y_train,
         lambda = lamseq[i],
         rank.max = rank.max,
@@ -55,9 +51,7 @@ simpute.cv <- function(Y_train,
       sum(round(fiti$d, 4) > 0) # number of positive sing.values
     rank.max <- min(rank + rank.step, rank.limit)
     
-    # if (biscale | use.complete) {
-    #   soft_estim = complete(Y, fiti, unscale = TRUE)
-    # } else
+    
     soft_estim = fiti$u %*% (fiti$d * t(fiti$v))
     err = test_error(soft_estim[valid_ind], y_valid)
     #----------------------------
@@ -97,11 +91,10 @@ simpute.cv <- function(Y_train,
     print(best_fit)
   #----------------------------------
   # one final fit on the whole data:
-  # if (biscale)
-  #   O = biScale(O, col.scale = TRUE, row.scale = TRUE)
+  
 
     fiti <-
-    softImpute(
+    softImpute::softImpute(
       y,
       lambda = best_fit$lambda,
       rank.max = best_fit$rank.max,
@@ -109,9 +102,7 @@ simpute.cv <- function(Y_train,
       thresh = thresh,
       maxit = maxit
     )
-  # if (biscale || use.complete) {
-  #   best_fit$estimates = complete(O, fiti, unscale = TRUE)
-  # } else
+  
   best_fit$estimates =  fiti$u %*% (fiti$d * t(fiti$v))
   best_fit$rank_M = qr(best_fit$estimates)$rank
   #---------------------------------------------------------------
