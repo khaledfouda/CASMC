@@ -1,4 +1,5 @@
-CASMC0_cv <-
+CASMC1_cv <-
+   CASMC_Ridge_cv <-
    function(y_train,
             # y_train is expected to be Incomplete
             X,
@@ -46,10 +47,10 @@ CASMC0_cv <-
          num_cores <-
          min(max_cores, ceiling(length(lambda.beta.grid) / 2))
       print(paste("Running on", num_cores, "cores."))
-
+      
       results <- mclapply(lambda.beta.grid, function(lambda.beta) {
-         Xterms = GetXterms(X, lambda.beta)
-         fiti = CASMC_cv_nuclear(
+         Xterms = utils$GetXterms(X, lambda.beta)
+         fiti = CASMC1_cv_M(
             y_train = y_train,
             X = X,
             y_valid = y_valid,

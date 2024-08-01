@@ -13,7 +13,7 @@
 #'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CASMC_cv_nuclear <-
+CASMC1_cv_M <-
   function(y_train,
            # y_train is expected to be Incomplete
            X,
@@ -27,7 +27,7 @@ CASMC_cv_nuclear <-
            Xterms = NULL,
            svdH = NULL,
            # provide this if you need L2 regularization.
-           error_function = error_metric$rmse,
+           error_function = utils$error_metric$rmse,
            # tuning parameters for lambda
            lambda.factor = 1 / 4,
            lambda.init = NULL,
@@ -57,19 +57,14 @@ CASMC_cv_nuclear <-
     if (!is.null(seed))
       set.seed(seed)
     if(is.null(svdH)) 
-      svdH <-  reduced_hat_decomp.H(X)
+      svdH <-  utils$reduced_hat_decomp.H(X)
     # prepare the sequence of lambda (nuclear regularization hyperparameter)
     if (is.null(lambda.init))
       lambda.init <-
-        lambda0.cov_splr(y_train, svdH) * lambda.factor
+        utils$lambdaM.max(y_train, svdH) * lambda.factor
     lamseq <- seq(from = lambda.init,
                   to = 0,
                   length = n.lambda)
-    #---------------------------------------------------
-    if (!is.null(r) || is.null(Xterms)) {
-      fit_function = CASMC_fit_rank
-    } else
-      fit_function = CASMC_fit_L2
     #----------------------------------------------------
     stopifnot(inherits(y_train, "dgCMatrix"))
     # we only need the indices for validation from W_valid
@@ -81,7 +76,7 @@ CASMC_cv_nuclear <-
     W_valid = NULL
     #------------------------------------------------
     if (is.null(Xterms))
-      Xterms = GetXterms(X)
+      Xterms = utils$GetXterms(X)
     #-----------------------------------------------------------------------
     rank.max <- rank.init
     best_fit <- list(error = Inf, r = r)
@@ -89,14 +84,12 @@ CASMC_cv_nuclear <-
     #---------------------------------------------------------------------
     for (i in seq(along = lamseq)) {
       fiti <-
-        fit_function(
+        CASMC1_fit(
           y = y_train,
           X = X,
+          Xterms = Xterms,
           J = rank.max,
           lambda = lamseq[i],
-          r = r,
-          svdH = NULL,
-          Xterms = Xterms,
           lambda.a = lambda.a,
           S.a = S.a,
           lambda.b = lambda.b,
@@ -164,14 +157,12 @@ CASMC_cv_nuclear <-
     if (!is.null(y)) {
       stopifnot(inherits(y, "dgCMatrix"))
       best_fit$fit <-
-        fit_function(
+        CASMC1_fit(
           y = y,
           X = X,
+          Xterms = Xterms,
           J = best_fit$rank.max,
           lambda = best_fit$lambda,
-          r = r,
-          svdH = NULL,
-          Xterms = Xterms,
           lambda.a = lambda.a,
           S.a = S.a,
           lambda.b = lambda.b,

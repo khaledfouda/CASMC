@@ -111,13 +111,7 @@ CASMC_var_selection <-
   return(results)
  }
 
-remove_collinear_cols <- function(matrix, thresh=0.7){
-  
-  cor_m <- cor(matrix)
-  to_remove <- caret::findCorrelation(cor_m, thresh, verbose=TRUE)  
-  matrix <- matrix[, - to_remove, drop=FALSE]
-  return(matrix)
-}
+
 
 
 
