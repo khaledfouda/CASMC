@@ -58,7 +58,7 @@ CASMC2_cv_M <-
     # prepare the sequence of lambda (nuclear regularization hyperparameter)
     if (is.null(lambda.init))
       lambda.init <-
-        lambda0.cov_splr(y_train, reduced_hat_decomp.H(X)) * lambda.factor
+        utils$lambdaM.max(y_train, utils$reduced_hat_decomp.H(X)) * lambda.factor
     lamseq <- seq(from = lambda.init,
                   to = .Machine$double.eps,
                   length = n.lambda)
