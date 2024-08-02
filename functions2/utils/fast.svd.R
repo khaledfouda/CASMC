@@ -26,79 +26,85 @@
 
 
 # svd that retains only positive singular values
-positive.svd = function(m, tol, trim = TRUE)
+positive.svd = function(m, tol = NULL, trim = TRUE)
 {
- s = svd(m)
- if (!trim)
-  return(s)
- 
- if (is.null(missing))
-  tol = max(dim(m)) * max(s$d) * .Machine$double.eps
- 
- Positive = s$d > tol
- return(list(d = s$d[Positive],
-             u = s$u[, Positive, drop = FALSE],
-             v = s$v[, Positive, drop = FALSE]))
+  s = svd(m)
+  if (!trim)
+    return(s)
+  
+  if (is.null(tol))
+    tol = max(dim(m)) * max(s$d) * .Machine$double.eps
+  
+  Positive = s$d > tol
+  return(list(
+    d = s$d[Positive],
+    u = s$u[, Positive, drop = FALSE],
+    v = s$v[, Positive, drop = FALSE]
+  ))
 }
 
 # fast computation of svd(m) if n << p
 # (n are the rows, p are columns)
-nsmall.svd = function(m, tol, trim, n)
+utils$svd_small_nr <-
+nsmall.svd <-
+  function(m, trim = FALSE, tol = NULL, n = nrow(m)) 
 {
- B = as.matrix(m %*% t(m), n, n)     # nxn matrix
- s = svd(B, nv = 0)    # of which svd is easy..
- if (!trim) {
-  d = pmax(sqrt(s$d), .Machine$double.eps)
-  u = as.matrix(s$u, n)
-  return(list(
-   d = d,
-   u = u,
-   v = crossprod(m, u) %*% diag(1 / d, length(d))
-  ))
- }
- # determine rank of B  (= rank of m)
- if (is.null(missing))
-  tol = dim(B)[1] * max(s$d) * .Machine$double.eps
- Positive = s$d > tol
- 
- # positive singular values of m
- d = sqrt(s$d[Positive])
- 
- # corresponding orthogonal basis vectors
- u = s$u[, Positive, drop = FALSE]
- v = crossprod(m, u) %*% diag(1 / d, nrow = length(d))
- 
- return(list(d = d, u = u, v = v))
+  B = as.matrix(m %*% t(m), n, n)     # nxn matrix
+  s = svd(B, nv = 0)    # of which svd is easy..
+  if (!trim) {
+    d = pmax(sqrt(s$d), .Machine$double.eps)
+    u = as.matrix(s$u, n)
+    return(list(
+      d = d,
+      u = u,
+      v = crossprod(m, u) %*% diag(1 / d, length(d))
+    ))
+  }
+  # determine rank of B  (= rank of m)
+  if (is.null(tol))
+    tol = dim(B)[1] * max(s$d) * .Machine$double.eps
+  Positive = s$d > tol
+  
+  # positive singular values of m
+  d = sqrt(s$d[Positive])
+  
+  # corresponding orthogonal basis vectors
+  u = s$u[, Positive, drop = FALSE]
+  v = crossprod(m, u) %*% diag(1 / d, nrow = length(d))
+  
+  return(list(d = d, u = u, v = v))
 }
 
 # fast computation of svd(m) if n >> p
 # (n are the rows, p are columns)
-psmall.svd = function(m, tol, trim, p)
+utils$svd_small_nc <- 
+  psmall.svd <-
+  function(m, trim = FALSE, tol = NULL, p = ncol(m))
 {
- B = as.matrix(crossprod(m),p,p)   # pxp matrix
- s = svd(B, nu = 0)    # of which svd is easy..
- if (!trim) {
-  d = pmax(sqrt(s$d), .Machine$double.eps)
-  v = as.matrix(s$v, nrow = p)
-  return(list(
-   d = d,
-   v = v,
-   u = m %*% v %*% diag(1 / d, length(d))
-  ))
- }
- # determine rank of B  (= rank of m)
- if (is.null(missing))
-  tol = dim(B)[1] * max(s$d) * .Machine$double.eps
- Positive = s$d > tol
- 
- # positive singular values of m
- d = sqrt(s$d[Positive])
- 
- # corresponding orthogonal basis vectors
- v = s$v[, Positive, drop = FALSE]
- u = m %*% v %*% diag(1 / d, nrow = length(d))
- 
- return(list(d = d, u = u, v = v))
+  B = as.matrix(crossprod(m), p, p)   # pxp matrix
+  s = svd(B, nu = 0)    # of which svd is easy..
+  if (!trim) {
+    d = pmax(sqrt(s$d), .Machine$double.eps)
+    v = as.matrix(s$v, nrow = p)
+    return(list(
+      d = d,
+      v = v,
+      u = m %*% t(t(v) / d) #m %*% v %*% diag(1 / d, length(d))
+    ))
+  }
+  # determine rank of B  (= rank of m)
+  if (is.null(tol))
+    tol = dim(B)[1] * max(s$d) * .Machine$double.eps
+  Positive = s$d > tol
+  
+  # positive singular values of m
+  d = sqrt(s$d[Positive])
+  
+  # corresponding orthogonal basis vectors
+  v = s$v[, Positive, drop = FALSE]
+  u = m %*% v %*% diag(1 / d, nrow = length(d))
+  
+  return(list(d = d, u = u, v = v))
 }
 
 
@@ -111,26 +117,57 @@ psmall.svd = function(m, tol, trim, p)
 
 # note that also only positive singular values are returned
 
-fast.svd <- 
+fast.svd <-
   utils$fast.svd <-
   function(m, tol = NULL, trim = FALSE)
-{
- n = dim(m)[1]
- p = dim(m)[2]
- 
- 
- EDGE.RATIO = 2 # use standard SVD if matrix almost square
- if (n > EDGE.RATIO * p)
- {
-  return(psmall.svd(m, tol, trim, p))
- }
- else if (EDGE.RATIO * n < p)
- {
-  return(nsmall.svd(m, tol, trim, n))
- }
- else
-  # if p and n are approximately the same
- {
-  return(positive.svd(m, tol, trim))
- }
-}
+  {
+    n = dim(m)[1]
+    p = dim(m)[2]
+    
+    
+    EDGE.RATIO = 2 # use standard SVD if matrix almost square
+    if (n > EDGE.RATIO * p)
+    {
+      return(psmall.svd(m, tol, trim, p))
+    }
+    else if (EDGE.RATIO * n < p)
+    {
+      return(nsmall.svd(m, tol, trim, n))
+    }
+    else
+      # if p and n are approximately the same
+    {
+      return(positive.svd(m, tol, trim))
+    }
+  }
+
+
+utils$svdopt <-
+  function(mat,
+           k = NULL,
+           nr = nrow(mat),
+           nc = ncol(mat),
+           rthin = nc > 2 * nr,
+           cthin = nr > 2 * nc,
+           trim = FALSE,
+           tol = NULL)
+  {
+    if (is.null(k)) {
+#      tryCatch({
+        if (rthin)
+          return(nsmall.svd(mat, tol, trim, nr))
+        if (cthin)
+          return(psmall.svd(mat, tol, trim, nc))
+        return(positive.svd(mat, tol, trim))
+#      }, error = function(e)
+#        svd(mat))
+    }
+    
+#    tryCatch({
+      if (rthin || cthin || k > 5)
+        return(svds(mat, k)) # Rspectra
+      return(irlba(mat, k)) # irlba
+      
+#    }, error = function(e)
+#      utils$svd_simple(mat, k))
+  }

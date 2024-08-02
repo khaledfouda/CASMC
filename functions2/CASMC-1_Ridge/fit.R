@@ -15,6 +15,7 @@
 #' @export
 #'
 CASMC1_fit <-
+  CASMC_Ridge_fit <-
   function(y,
            X,
            #svdH = NULL,
@@ -33,7 +34,8 @@ CASMC1_fit <-
            thresh = 1e-05,
            trace.it = FALSE,
            warm.start = NULL,
-           final.svd = TRUE) {
+           final.svd = TRUE,
+           min_eigv = 1e-4) {
     stopifnot(inherits(y, "dgCMatrix"))
     irow = y@i
     pcol = y@p
@@ -71,34 +73,19 @@ CASMC1_fit <-
                0))
         stop("warm.start does not have components u, d and v")
       warm = TRUE
-      D = warm.start$d
-      JD = sum(D > 0)
-      #J = JD
       beta = warm.start$beta
-      
-      if (JD >= J) {
-        U = warm.start$u[, seq(J), drop = FALSE]
-        V = warm.start$v[, seq(J), drop = FALSE]
-        Dsq = D[seq(J)]
-      } else{
-        Dsq = c(D, rep(D[JD], J - JD))
-        Ja = J - JD
-        U = warm.start$u
-        Ua = matrix(rnorm(n * Ja), n, Ja)
-        Ua = Ua - U %*% (t(U) %*% Ua)
-        Ua = util$fast.svd(Ua)$u
-        U = cbind(U, Ua)
-        V = cbind(warm.start$v, matrix(0, m, Ja))
-      }
+      warm.out <- utils$prepare.M.warm.start(warm.start, J, n, m, min_eigv)
+      U = warm.out$U
+      V = warm.out$V
+      Dsq = warm.out$Dsq
     } else{
       # initialize. Warm start is not provided
       
-      Y_naive = as.matrix(y)
-      Y_naive = naive_MC(Y_naive)
+      Y_naive = naive_MC(as.matrix(y))
       beta = Xterms$X1 %*% Y_naive
       Xbeta <- X %*% beta   #svdH$u %*% (svdH$v  %*% Y_naive)
       M <- Y_naive - Xbeta
-      M <- propack.svd(as.matrix(M), J)
+      M <- utils$svdopt(as.matrix(M), J, n, m, F, F)
       U = M$u
       V = M$v
       Dsq = M$d
@@ -137,7 +124,7 @@ CASMC1_fit <-
       if (laplace.b)
         B = B - t(V)  %*% L.b
       B = t((B) * (Dsq / (Dsq + lambda)))
-      Bsvd = util$fast.svd(as.matrix(B))
+      Bsvd = utils$svd_small_nr(as.matrix(B), FALSE, n = J)  
       V = Bsvd$u
       Dsq = Bsvd$d
       U = U %*% (Bsvd$v)
@@ -148,7 +135,7 @@ CASMC1_fit <-
       if (laplace.a)
         A = A - L.a %*% U
       A = t(t(A) * (Dsq / (Dsq + lambda)))
-      Asvd =  util$fast.svd(as.matrix(A))
+      Asvd =  utils$svd_small_nc(as.matrix(A), FALSE, p = J)
       U = Asvd$u
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
@@ -179,7 +166,7 @@ CASMC1_fit <-
       if (laplace.a)
         A = A - L.a %*% U
       A = t(t(A) * (Dsq / (Dsq + lambda)))
-      Asvd =  util$fast.svd(as.matrix(A))
+      Asvd =  utils$svd_small_nc(as.matrix(A), FALSE, p = J)
       U = Asvd$u
       Dsq = Asvd$d
       V = V %*% (Asvd$v)
@@ -195,8 +182,7 @@ CASMC1_fit <-
     }
     #-------------------------------------------------------
     # trim in case we reduce the rank of M to be smaller than J.
-    J = min(sum(Dsq > 0) + 1, J)
-    J = min(J, length(Dsq))
+    J = min(max(1,sum(Dsq > min_eigv)), J)
     out = list(
       u = U[, seq(J), drop = FALSE],
       d = Dsq[seq(J)],
