@@ -124,7 +124,7 @@ CASMC1_fit <-
       if (laplace.b)
         B = B - t(V)  %*% L.b
       B = t((B) * (Dsq / (Dsq + lambda)))
-      Bsvd = utils$svd_small_nr(as.matrix(B), FALSE, n = J)  
+      Bsvd = utils$svd_small_nc(as.matrix(B), FALSE, p = J)  
       V = Bsvd$u
       Dsq = Bsvd$d
       U = U %*% (Bsvd$v)
