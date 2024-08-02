@@ -2,6 +2,7 @@
 
 
 
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
 #'
@@ -19,6 +20,7 @@
 #' @export
 #'
 CASMC3_fit <-
+  CASMC_Lasso_fit <-
   function(y,
            X,
            J = 2,
@@ -40,7 +42,6 @@ CASMC3_fit <-
            final.svd = TRUE,
            beta.iter.max = 10,
            learning.rate = 0.001,
-           init = "naive",
            min_eigv = 0) {
     stopifnot(inherits(y, "dgCMatrix"))
     irow = y@i
@@ -55,11 +56,11 @@ CASMC3_fit <-
     laplace.a = laplace.b = F
     if (!is.null(S.a) && lambda.a > 0) {
       laplace.a = T
-      L.a = computeLaplacian(S.a, normalized = normalized_laplacian) * lambda.a
+      L.a = utils$computeLaplacian(S.a, normalized = normalized_laplacian) * lambda.a
     }
     if (!is.null(S.b) && lambda.b > 0) {
       laplace.b = T
-      L.b = computeLaplacian(S.b, normalized = normalized_laplacian) * lambda.b
+      L.b = utils$computeLaplacian(S.b, normalized = normalized_laplacian) * lambda.b
     }
     #---------------------------------------------------
     # warm start or initialize (naive or random)
@@ -86,7 +87,7 @@ CASMC3_fit <-
         Ua = matrix(rnorm(n * Ja), n, Ja)
         Ua = Ua - U %*% (t(U) %*% Ua)
         Ua = tryCatch(
-          fast.svd(Ua, trim = FALSE)$u,
+          utils$fast.svd(Ua, trim = FALSE)$u,
           error = function(e)
             svd(Ua)$u
         )
@@ -100,32 +101,28 @@ CASMC3_fit <-
       
     } else{
       # initialize. Warm start is not provided
-      stopifnot(init %in% c("random", "naive"))
-      if (init == "random") {
-        stop("Not implemented yet.")
-      } else if (init == "naive") {
-        Y_naive = as.matrix(y)
-        Y_naive = naive_MC(Y_naive)
-        svdH = reduced_hat_decomp.H(X)
-        Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
-        M <- as.matrix(Y_naive - Xbeta)
-        M <-  tryCatch(
-          propack.svd(M, J),
-          error = function(e) {
-            message(paste("Naive Init:", e))
-            svd_trunc_simple(M, J)
-          }
-        )
-        U = M$u
-        V = M$v
-        Dsq = pmax(M$d, min_eigv)
-        #----------------------
-        # initialization for beta = X^-1 Y
-        # comment for later: shouldn't be X^-1 H Y??
-        beta = as.matrix(ginv(X) %*% Xbeta)
-        Y_naive <- Xbeta <- M <- NULL
-        #---------------------------------------------------------------
-      }
+      Y_naive = as.matrix(y)
+      Y_naive = naive_MC(Y_naive)
+      svdH = utils$reduced_hat_decomp.H(X)
+      Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
+      M <- as.matrix(Y_naive - Xbeta)
+      M <-  tryCatch(
+        propack.svd(M, J),
+        error = function(e) {
+          message(paste("Naive Init:", e))
+          utils$svd_simple(M, J)
+        }
+      )
+      U = M$u
+      V = M$v
+      Dsq = pmax(M$d, min_eigv)
+      #----------------------
+      # initialization for beta = X^-1 Y
+      # comment for later: shouldn't be X^-1 H Y??
+      beta = as.matrix(utils$inv(X, F) %*% Xbeta)
+      Y_naive <- Xbeta <- M <- NULL
+      #---------------------------------------------------------------
+      
     }
     XtX = t(X) %*% X
     #----------------------------------------
@@ -182,7 +179,7 @@ CASMC3_fit <-
         B = B - t(V)  %*% L.b
       B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
       Bsvd = tryCatch({
-        fast.svd(B, trim = FALSE)
+        utils$fast.svd(B, trim = FALSE)
       }, error = function(e) {
         message(paste("Loop/B:", e))
         svd(B)
@@ -200,7 +197,7 @@ CASMC3_fit <-
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
       Asvd = tryCatch({
         #svd(A)
-        fast.svd(A, trim = FALSE)
+        utils$fast.svd(A, trim = FALSE)
       }, error = function(e) {
         message(paste("Loop/A:", e))
         svd(A)
@@ -209,7 +206,7 @@ CASMC3_fit <-
       Dsq = pmax(Asvd$d, min_eigv)
       V = V %*% (Asvd$v)
       #------------------------------------------------------------------------------
-      ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V)
+      ratio =  utils$Frob(U.old, Dsq.old, V.old, U, Dsq, V)
       #------------------------------------------------------------------------------
       if (trace.it) {
         obj = (.5 * sum(y@x ^ 2) +
@@ -244,7 +241,7 @@ CASMC3_fit <-
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
       Asvd = tryCatch({
-        fast.svd(A, trim = FALSE)
+        utils$fast.svd(A, trim = FALSE)
       }, error = function(e) {
         message(paste("Final/A:", e))
         svd(A)

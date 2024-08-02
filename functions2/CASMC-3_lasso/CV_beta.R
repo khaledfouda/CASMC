@@ -1,4 +1,5 @@
-CASMC3_cv_beta <-
+CASMC3_cv <-
+   CASMC_Lasso_cv <-
    function(y_train,
             # y_train is expected to be Incomplete
             X,

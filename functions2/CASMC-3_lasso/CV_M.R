@@ -26,7 +26,7 @@ CASMC3_cv_M <-
            learning.rate = 0.001,
            beta.iter.max = 200,
            # provide this if you need L2 regularization.
-           error_function = error_metric$rmse,
+           error_function = utils$error_metric$rmse,
            # tuning parameters for lambda
            lambda.factor = 1 / 4,
            lambda.init = NULL,
@@ -59,7 +59,7 @@ CASMC3_cv_M <-
     # prepare the sequence of lambda (nuclear regularization hyperparameter)
     if (is.null(lambda.init))
       lambda.init <-
-        lambda0.cov_splr(y_train, reduced_hat_decomp.H(X)) * lambda.factor
+        utils$lambdaM.max(y_train, utils$reduced_hat_decomp.H(X)) * lambda.factor
     lamseq <- seq(from = lambda.init,
                   to = .Machine$double.eps,
                   length = n.lambda)
