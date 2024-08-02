@@ -77,12 +77,14 @@ CASMC3_cv_M <-
     rank.max <- rank.init
     best_fit <- list(error = Inf)
     counter <- 0
+    XtX = t(X) %*% X
     #---------------------------------------------------------------------
     for (i in seq(along = lamseq)) {
       fiti <-
         CASMC3_fit(
           y = y_train,
           X = X,
+          XtX = XtX,
           J = rank.max,
           lambda.M = lamseq[i],
           learning.rate = learning.rate,
@@ -158,6 +160,7 @@ CASMC3_cv_M <-
         CASMC3_fit(
           y = y,
           X = X,
+          XtX = XtX,
           J = best_fit$rank.max,
           lambda.M = best_fit$lambda.M,
           learning.rate = learning.rate,
