@@ -23,6 +23,7 @@ CASMC3_fit <-
   CASMC_Lasso_fit <-
   function(y,
            X,
+           XtX = t(X) %*% X,
            J = 2,
            lambda.M = 0,
            lambda.beta = 0,
@@ -72,59 +73,27 @@ CASMC3_fit <-
                0))
         stop("warm.start is missing some or all of the components.")
       warm = TRUE
-      # prepare U, Dsq, V
-      D = warm.start$d
-      JD = sum(D > min_eigv)
-      if (JD >= J) {
-        U = warm.start$u[, seq(J), drop = FALSE]
-        V = warm.start$v[, seq(J), drop = FALSE]
-        Dsq = D[seq(J)]
-      } else{
-        # upscale
-        Ja = J - JD
-        Dsq = c(D, rep(D[JD], Ja))
-        U = warm.start$u
-        Ua = matrix(rnorm(n * Ja), n, Ja)
-        Ua = Ua - U %*% (t(U) %*% Ua)
-        Ua = tryCatch(
-          utils$fast.svd(Ua, trim = FALSE)$u,
-          error = function(e)
-            svd(Ua)$u
-        )
-        U = cbind(U, Ua)
-        V = cbind(warm.start$v, matrix(0, m, Ja))
-      }
-      #----------------
-      # prepare beta
       beta = warm.start$beta
-      stopifnot(all(dim(beta) == c(k, m)))
+      warm.out <- utils$prepare.M.warm.start(warm.start, J, n, m, min_eigv)
+      U = warm.out$U
+      V = warm.out$V
+      Dsq = warm.out$Dsq
       
     } else{
       # initialize. Warm start is not provided
-      Y_naive = as.matrix(y)
-      Y_naive = naive_MC(Y_naive)
-      svdH = utils$reduced_hat_decomp.H(X)
-      Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
-      M <- as.matrix(Y_naive - Xbeta)
-      M <-  tryCatch(
-        propack.svd(M, J),
-        error = function(e) {
-          message(paste("Naive Init:", e))
-          utils$svd_simple(M, J)
-        }
-      )
+      Y_naive = naive_MC(as.matrix(y))
+      beta = Xterms$X1 %*% Y_naive
+      Xbeta <- X %*% beta   #svdH$u %*% (svdH$v  %*% Y_naive)
+      M <- Y_naive - Xbeta
+      M <- utils$svdopt(as.matrix(M), J, n, m, F, F)
       U = M$u
       V = M$v
-      Dsq = pmax(M$d, min_eigv)
-      #----------------------
-      # initialization for beta = X^-1 Y
-      # comment for later: shouldn't be X^-1 H Y??
-      beta = as.matrix(utils$inv(X, F) %*% Xbeta)
+      Dsq = M$d
       Y_naive <- Xbeta <- M <- NULL
       #---------------------------------------------------------------
       
     }
-    XtX = t(X) %*% X
+    
     #----------------------------------------
     yobs <- y@x # y will hold the model residuals
     ratio <- 1
@@ -178,14 +147,9 @@ CASMC3_fit <-
       if (laplace.b)
         B = B - t(V)  %*% L.b
       B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
-      Bsvd = tryCatch({
-        utils$fast.svd(B, trim = FALSE)
-      }, error = function(e) {
-        message(paste("Loop/B:", e))
-        svd(B)
-      })
+      Bsvd = utils$svd_small_nc(B, FALSE, p = J) 
       V = Bsvd$u
-      Dsq = pmax(Bsvd$d, min_eigv)
+      Dsq = Bsvd$d #pmax(Bsvd$d, min_eigv)
       U = U %*% (Bsvd$v)
       #-------------------------------------------------------------
       # part 4: Update A
@@ -195,15 +159,9 @@ CASMC3_fit <-
       if (laplace.a)
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
-      Asvd = tryCatch({
-        #svd(A)
-        utils$fast.svd(A, trim = FALSE)
-      }, error = function(e) {
-        message(paste("Loop/A:", e))
-        svd(A)
-      })
+      Asvd =  utils$svd_small_nc(A, FALSE, p = J)
       U = Asvd$u
-      Dsq = pmax(Asvd$d, min_eigv)
+      Dsq = Asvd$d #pmax(Asvd$d, min_eigv)
       V = V %*% (Asvd$v)
       #------------------------------------------------------------------------------
       ratio =  utils$Frob(U.old, Dsq.old, V.old, U, Dsq, V)
@@ -240,16 +198,10 @@ CASMC3_fit <-
       if (laplace.a)
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
-      Asvd = tryCatch({
-        utils$fast.svd(A, trim = FALSE)
-      }, error = function(e) {
-        message(paste("Final/A:", e))
-        svd(A)
-      })
+      Asvd =  utils$svd_small_nc(A, FALSE, p = J)
       U = Asvd$u
       V = V %*% Asvd$v
-      # is this good?
-      Dsq = pmax(Asvd$d - lambda.M, min_eigv)
+      Dsq = pmax(Asvd$d - lambda.M, 0)
       #---------------------------------------------
       if (trace.it) {
         M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
@@ -262,8 +214,7 @@ CASMC3_fit <-
     
     #-------------------------------------------------------
     # trim in case we reduce the rank of M to be smaller than J.
-    J = min(sum(Dsq > min_eigv) + 1, J)
-    J = min(J, length(Dsq))
+    J = min(max(1,sum(Dsq > min_eigv)), J)
     
     out = list(
       u = U[, seq(J), drop = FALSE],
