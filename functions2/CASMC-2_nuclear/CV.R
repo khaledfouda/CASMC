@@ -19,13 +19,13 @@ CASMC2_cv <-
                early.stopping = 1
             ),
             beta_cv_param = list(
-               rank.init = 2,
+               rank.init = 1,
                rank.limit = qr(X)$rank,
-               rank.step = 2,
+               rank.step = 1,
                pct = 0.98,
-               lambda.factor = 20,
+               lambda.factor = 4,
                lambda.init = NULL,
-               n.lambda = 20,
+               n.lambda = 40,
                early.stopping = 1
             ),
             error_function = utils$error_metric$rmse,

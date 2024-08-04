@@ -81,6 +81,7 @@ CASMC3_fit <-
       
     } else{
       # initialize. Warm start is not provided
+      Xterms = utils$GetXterms(X)
       Y_naive = naive_MC(as.matrix(y))
       beta = Xterms$X1 %*% Y_naive
       Xbeta <- X %*% beta   #svdH$u %*% (svdH$v  %*% Y_naive)

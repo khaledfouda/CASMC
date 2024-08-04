@@ -143,18 +143,12 @@ utils$lambdaM.max <-
 
 utils$lambda.beta.max <-
   function(Y,
-           svdH = NULL,
-           X = NULL,
-           tol = 1e-1,
+           X,
            max_it = 30) {
     # initial values for lambda_M when the Y is incomplete.
-    if (!is.null(svdH)) {
-      Xbeta =  svdH$u %*% (svdH$v %*% Y)
-    } else if (!is.null(X)) {
-      Xbeta =  X %*% utils$inv(t(X) %*% X, TRUE) %*% t(X) %*% Y
-    }
-    
-    propack.svd(as.matrix(Xbeta), 1, opts = list(kmax = max_it))$d[1]
+    beta =  utils$inv(t(X) %*% X, TRUE) %*% t(X) %*% Y
+
+    propack.svd(as.matrix(beta), 1, opts = list(kmax = max_it))$d[1]
     
   }
 

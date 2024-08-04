@@ -45,7 +45,7 @@ CASMC2_cv_beta <-
    #  seq(lambda.factor, .Machine$double.eps, length.out = n.lambda)
    
    lambda.init <-
-     utils$lambda.beta.max(y_train, utils$reduced_hat_decomp.H(X)) * lambda.factor
+     utils$lambda.beta.max(y_train,X) * lambda.factor
    lamseq <- seq(from = lambda.init,
                  to = .Machine$double.eps,
                  length = n.lambda)

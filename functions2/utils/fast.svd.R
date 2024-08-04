@@ -162,7 +162,7 @@ utils$svdopt <-
 #      }, error = function(e)
 #        svd(mat))
     }
-    
+    if(k == min(nr, nc)) return(svd(mat))
 #    tryCatch({
       if (rthin || cthin || k > 5)
         return(svds(mat, k)) # Rspectra

@@ -27,10 +27,10 @@ prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim
     results$Cox_Snell_R2 <- NA
   }else{
     residuals <- obs.test - estim.test
-    LogLik <- logLikelihood(residuals)
+    LogLik <- utils$logLikelihood(residuals)
     n <- length(residuals)
-    results$likelihood_ratio_index <- Likelihood_ratio_index(LogLik, LogLik_SI)
-    results$Cox_Snell_R2 <- Cox_Snell_R2(LogLik, LogLik_SI, n)
+    results$likelihood_ratio_index <- utils$Likelihood_ratio_index(LogLik, LogLik_SI)
+    results$Cox_Snell_R2 <-utils$ Cox_Snell_R2(LogLik, LogLik_SI, n)
   }
   return(results)
 }
@@ -61,7 +61,7 @@ Mao_Sim_Wrapper <-
       seed = 2023,
       numCores = ncores,
       n1n2_optimized = TRUE,
-      test_error = error_metric$rmse,
+      test_error = utils$error_metric$rmse,
       theta_estimator = weight_function,
       sequential = FALSE
     )
@@ -104,7 +104,7 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
   results <- c(results,
                         prepare_output(start_time, fit.$estimates, dat$O, dat$W, M.estim = fit.$estimates))    
   
-  LogLik <- logLikelihood(dat$O[dat$W==0] - fit.$estimates[dat$W==0])
+  LogLik <- utils$logLikelihood(dat$O[dat$W==0] - fit.$estimates[dat$W==0])
   return(list(results=results, LogLik=LogLik))
 }
 
@@ -152,7 +152,7 @@ CASMC_Ridge_Sim_Wrapper <-
     fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
-    results = list(model = "CASMC-0")
+    results = list(model = "CASMC-Ridge")
     results$lambda.beta = fiti$lambda.beta
     results$lambda.M = fit.$lambda
     results <- c(results,
@@ -187,16 +187,16 @@ CASMC_Nuclear_Sim_Wrapper <-
         early.stopping = 1
       ),
       beta_cv_param = list(
-        rank.init = 2,
+        rank.init = 1,
         rank.limit = qr(dat$X)$rank,
-        rank.step = 2,
+        rank.step = 1,
         pct = 0.98,
-        lambda.multi.factor = 20,
+        lambda.factor = 2,
         lambda.init = NULL,
-        n.lambda = 20, 
+        n.lambda = 30, 
         early.stopping = 1
       ),
-      trace = F,
+      trace = T,
       quiet = T,
       track = F,
       step3 = T,
@@ -210,7 +210,7 @@ CASMC_Nuclear_Sim_Wrapper <-
     fit.$beta = utils$unsvd(fit.$beta)
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
-    results = list(model = "CASMC-2")
+    results = list(model = "CASMC-Nuclear")
     results$lambda.beta = fiti$hparams$lambda.beta
     results$lambda.M = fiti$hparams$lambda.M
     
@@ -220,20 +220,20 @@ CASMC_Nuclear_Sim_Wrapper <-
     results
   }
 #----------------------------------------------------
-CASMC_3a_Sim_Wrapper <-
+CASMC_Lasso_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
     learning_rate = 1 / sqrt(sum((t(dat$X) %*% dat$X)^2))
-    fiti <- CASMC3_cv_beta(
+    fiti <- CASMC_Lasso_cv(
       y_train = dat$fit_data$train,
       X = dat$X,
       y_valid = dat$fit_data$valid,
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
-      trace = 0,
+      trace = 3,
       print.best = T,
       warm = NULL,
       quiet = F, learning.rate = learning_rate,
@@ -247,7 +247,7 @@ CASMC_3a_Sim_Wrapper <-
     fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
-    results = list(model = "CASMC-3a")
+    results = list(model = "CASMC-Lasso")
     results$lambda.beta = fiti$hparams$lambda.beta
     results$lambda.M = fiti$hparams$lambda.M
     

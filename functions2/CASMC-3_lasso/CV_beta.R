@@ -8,7 +8,7 @@ CASMC3_cv <-
             W_valid,
             y = NULL,
             # y: a final full-fit if provided. Expected to be Incomplete
-            error_function = error_metric$rmse,
+            error_function = utils$error_metric$rmse,
             # tuning parameters for lambda
             lambda.factor = 1 / 4,
             lambda.init = NULL,
@@ -47,6 +47,7 @@ CASMC3_cv <-
          resids[y_train==0] <- 0
          term <- max((nf$beta / learning.rate) - t(X) %*% resids) 
          lambda.beta.grid = seq(term, .Machine$double.eps, length.out=20)
+         
          
          # lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *
          #    seq(10, .Machine$double.eps, length.out = 20)
@@ -154,7 +155,7 @@ CASMC3_cv <-
             )
          )
       #-------------------------
-      
+   
       best_fit$hparams = data.frame(
          lambda.beta = best_fit$lambda.beta,
          lambda.M = best_fit$fit$lambda.M,
