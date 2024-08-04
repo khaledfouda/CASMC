@@ -8,7 +8,7 @@ CASMC1_cv <-
             W_valid,
             y = NULL,
             # y: a final full-fit if provided. Expected to be Incomplete
-            error_function = error_metric$rmse,
+            error_function = utils$error_metric$rmse,
             # tuning parameters for lambda
             lambda.factor = 1 / 4,
             lambda.init = NULL,

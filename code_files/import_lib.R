@@ -48,7 +48,7 @@ for (pkg in packages) {
 
 path_to_proj = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
 # setwed(path_to_proj)
-path_to_code = paste0(path_to_proj, "functions/")
+path_to_code = paste0(path_to_proj, "functions2/")
 path_to_data = paste0(path_to_proj, "saved_data/")
 
 file_list <-

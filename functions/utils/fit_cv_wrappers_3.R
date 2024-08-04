@@ -1,5 +1,6 @@
 
-prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim=NA, M=NA, M.estim=NA, LogLik_SI=NA, test_error = error_metric$rmse){
+prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim=NA, M=NA, M.estim=NA, 
+                           LogLik_SI=NA, test_error = utils$error_metric$rmse){
   estim.test <- estimates[mask==0]
   estim.train <- estimates[mask != 0]
   obs.train <- obs[mask!=0]
@@ -108,20 +109,20 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
 }
 
 #--------------------------------------------------------------------------------------
-CASMC_0_Sim_Wrapper <-
+CASMC_Ridge_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
     
-    fiti <- CASMC0_cv(
+    fiti <- CASMC_Ridge_cv(
       y_train = dat$fit_data$train,
       X = dat$X,
       y_valid = dat$fit_data$valid,
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
-      error_function = error_metric$rmse,
+      error_function = utils$error_metric$rmse,
       lambda.factor = 1 / 4,
       lambda.init = NULL,
       n.lambda = 20,
@@ -161,19 +162,19 @@ CASMC_0_Sim_Wrapper <-
 #-------
 
 
-CASMC_2_Sim_Wrapper <-
+CASMC_Nuclear_Sim_Wrapper <-
   function(dat,
            LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
     
-    fiti <- CASMC2_cv2(
+    fiti <- CASMC_Nuclear_cv(
       y_train = dat$fit_data$train,
       X = dat$X,
       y_valid = dat$fit_data$valid,
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
-      error_function = error_metric$rmse,
+      error_function = utils$error_metric$rmse,
       warm = NULL,
       M_cv_param = list(
         rank.init = 2,
@@ -205,8 +206,8 @@ CASMC_2_Sim_Wrapper <-
     
     fit. = fiti$fit
     # get estimates and validate
-    fit.$M = unsvd(fit.)
-    fit.$beta = unsvd(fit.$beta)
+    fit.$M = utils$unsvd(fit.)
+    fit.$beta = utils$unsvd(fit.$beta)
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
     
     results = list(model = "CASMC-2")

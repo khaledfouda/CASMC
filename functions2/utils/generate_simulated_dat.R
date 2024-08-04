@@ -76,11 +76,11 @@ utils$generate_simulated_data <-
       fit_data <- NULL
       if (prepare_for_fitting) {
          fit_data <- list()
-         fit_data$W_valid <- matrix.split.train.test(W, testp = 0.2)
+         fit_data$W_valid <- utils$MC_train_test_split(W, testp = 0.2)
          train = (Y * fit_data$W_valid)
-         fit_data$train = to_incomplete(train)
+         fit_data$train = utils$to_incomplete(train)
          fit_data$valid = Y[fit_data$W_valid == 0]
-         fit_data$Y = to_incomplete(Y)
+         fit_data$Y = utils$to_incomplete(Y)
       }
       
       return(list(

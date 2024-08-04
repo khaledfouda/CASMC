@@ -13,7 +13,7 @@ utils$unsvd <- function(obj,
     obj$v <- obj$vb
     obj$d <- obj$db ^ 2
   }
-  mat <- obj$u %*% (l$d * t(obj$v))
+  mat <- obj$u %*% (obj$d * t(obj$v))
   if (make_sparse) {
     # delete this part later.
     row_contrib = rowSums(obj$u ^ 2)

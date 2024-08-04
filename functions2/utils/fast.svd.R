@@ -26,7 +26,7 @@
 
 
 # svd that retains only positive singular values
-positive.svd = function(m, tol = NULL, trim = TRUE)
+positive.svd = function(m,  trim = TRUE, tol = NULL)
 {
   s = svd(m)
   if (!trim)
@@ -128,16 +128,16 @@ fast.svd <-
     EDGE.RATIO = 2 # use standard SVD if matrix almost square
     if (n > EDGE.RATIO * p)
     {
-      return(psmall.svd(m, tol, trim, p))
+      return(psmall.svd(m, trim, tol, p))
     }
     else if (EDGE.RATIO * n < p)
     {
-      return(nsmall.svd(m, tol, trim, n))
+      return(nsmall.svd(m, trim, tol, n))
     }
     else
       # if p and n are approximately the same
     {
-      return(positive.svd(m, tol, trim))
+      return(positive.svd(m, trim, tol))
     }
   }
 
@@ -155,10 +155,10 @@ utils$svdopt <-
     if (is.null(k)) {
 #      tryCatch({
         if (rthin)
-          return(nsmall.svd(mat, tol, trim, nr))
+          return(nsmall.svd(mat, trim, tol, nr))
         if (cthin)
-          return(psmall.svd(mat, tol, trim, nc))
-        return(positive.svd(mat, tol, trim))
+          return(psmall.svd(mat, trim, tol, nc))
+        return(positive.svd(mat, trim, tol))
 #      }, error = function(e)
 #        svd(mat))
     }
