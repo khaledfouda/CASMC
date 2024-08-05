@@ -23,13 +23,16 @@ load_movielens_1M <-
     
     names(users) <-
       c("user.id", "sex", "age", "occupation", "zip.code")
+    
+    hist(users$occupation)
+    
     users %<>%
       arrange(user.id) %>%
       select(-user.id, -zip.code) %>%
       mutate(age.sq = age ** 2,
         #age = (age - mean(age))/sd(age),     
         occupation = as.factor(occupation)) %>%
-      select(-occupation) %>%
+      #select(-occupation) %>%
       fastDummies::dummy_columns(
         ignore_na = T,
         remove_selected_columns = T,
@@ -57,25 +60,27 @@ load_movielens_1M <-
     #   users
     #----------------------------
     
-    
-    X_r <- reduced_hat_decomp(users, 1e-2)
+    X_r <- utils$reduced_hat_decomp(users, 1e-2)
     #---------------------------------------------------------------------------------------
     # prepare sparse matrix and X decomposition
-    user.id = as.numeric(
-      factor(as.character(ratings$user.id),
-             levels = sort(unique(ratings$user.id)))
-    )
-    movie.id = as.numeric(
-      factor(as.character(ratings$movie.id),
-             levels = sort(unique(ratings$movie.id)))
-    )
+    # user.id = as.numeric(
+    #   factor(as.character(ratings$user.id),
+    #          levels = sort(unique(ratings$user.id)))
+    # )
+    # movie.id = as.numeric(
+    #   factor(as.character(ratings$movie.id),
+    #          levels = sort(unique(ratings$movie.id)))
+    # )
     ratings.inc <- sparseMatrix(
-      i = user.id,
-      j = movie.id,
+      i = ratings$user.id,#user.id,
+      j = ratings$movie.id,#movie.id,
       x = scale(ratings$rating)[, 1],
       dims = c(max(ratings$user.id), max(ratings$movie.id))
     )  %>%
       as("Incomplete")
+    
+    head(ratings)
+    
     #-----------------------------------------------------------------
     # head(users)
     # dim(users)
@@ -109,9 +114,9 @@ load_movielens_1M <-
     
     W_missing = as.matrix(ratings.inc != 0) # 1 if observed (1M)
     W_test_valid <-
-      matrix.split.train.test(W_missing, testp = 0.4) #  0 for test/valid and 1 for train/missing
+      utils$MC_train_test_split(W_missing, testp = 0.4) #  0 for test/valid and 1 for train/missing
     W_valid <-
-      matrix.split.train.test((1 - W_test_valid) * W_missing , testp = 0.5) # 0 for valid and 1 for train/test/missing
+      utils$MC_train_test_split((1 - W_test_valid) * W_missing , testp = 0.5) # 0 for valid and 1 for train/test/missing
     W_test <-
       1 -  (1 - W_test_valid) * (W_valid) # 0 for test and 1 for train/valid/missing
     
