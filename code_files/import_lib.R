@@ -44,6 +44,7 @@ for (pkg in packages) {
  )))
 }
 
+utils <- new.env()
 
 
 path_to_proj = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"

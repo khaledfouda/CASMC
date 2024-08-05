@@ -1,4 +1,3 @@
-utils <- new.env()
 
 source("./code_files/import_lib.R")
 
@@ -25,7 +24,12 @@ out <- CASMC_Nuclear_cv(dat$fit_data$train, dat$X, dat$fit_data$valid, dat$fit_d
                       trace = T, track = T)
 
 
+lasso_hpar <- CASMC_Lasso_hparams
+lasso_hpar$beta$lambda.max <- 60
+
+
 out <- CASMC_Lasso_cv(dat$fit_data$train, dat$X, dat$fit_data$valid,
                       dat$fit_data$W_valid,
-                      dat$fit_data$Y, max_cores = 1)
+                      dat$fit_data$Y, lasso_hpar, max_cores = 20,
+                      trace = T)
 

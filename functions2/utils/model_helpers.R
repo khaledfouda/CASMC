@@ -112,6 +112,24 @@ utils$UD <- UD <- function(U, D, n = nrow(U)) {
   U * outer(rep(1, n), D, "*")
 }
 
+utils$clean.warm.start <-
+clean.warm.start <- function(a) {
+  if (is.null(a))
+    return(NULL)
+  d = a$d
+  if (is.null(d))
+    return(NULL)
+  if (any(d > 0)) {
+    if (length(d) == 1) {
+      a$u = matrix(a$u, ncol = 1)
+      a$v = matrix(a$v, ncol = 1)
+    }
+    a
+  }
+  else
+    NULL
+}
+
 
 utils$GetXterms <- GetXterms <- function(X, lambda = 0) {
   svdX = utils$fast.svd(X)
