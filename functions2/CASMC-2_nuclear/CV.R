@@ -1,3 +1,39 @@
+CASMC_Nuclear_hparams <-
+   list(
+      M = list(
+         # tuning parameters for lambda
+         lambda.factor = 1 / 4,
+         lambda.init = NULL,
+         n.lambda = 20,
+         # tuning parameters for J
+         rank.init = 2,
+         rank.limit = 30,
+         rank.step = 2,
+         pct = 0.98,
+         early.stopping = 1
+      ),
+      beta = list(
+         rank.init = 1,
+         rank.limit = "default",
+         rank.step = 1,
+         pct = 0.98,
+         lambda.factor = 4,
+         lambda.init = NULL,
+         n.lambda = 40,
+         early.stopping = 1
+      ),
+      laplacian = list(
+         # laplacian parameters
+         lambda.a = 0,
+         S.a = NULL,
+         lambda.b = 0,
+         S.b = NULL
+      )
+   )
+
+
+
+
 CASMC2_cv <-
    CASMC_Nuclear_cv <-
    function(y_train,
@@ -7,34 +43,10 @@ CASMC2_cv <-
             # y_valid is a vector
             W_valid,
             y = NULL,
+            hpar = CASMC_Nuclear_hparams,
             use_warmstart = TRUE,
-            M_cv_param = list(
-               rank.init = 2,
-               rank.limit = 30,
-               rank.step = 2,
-               pct = 0.98,
-               lambda.factor = 1 / 4,
-               lambda.init = NULL,
-               n.lambda = 20,
-               early.stopping = 1
-            ),
-            beta_cv_param = list(
-               rank.init = 1,
-               rank.limit = qr(X)$rank,
-               rank.step = 1,
-               pct = 0.98,
-               lambda.factor = 4,
-               lambda.init = NULL,
-               n.lambda = 40,
-               early.stopping = 1
-            ),
             error_function = utils$error_metric$rmse,
             
-            # laplacian parameters
-            lambda.a = 0,
-            S.a = NULL,
-            lambda.b = 0,
-            S.b = NULL,
             # stopping criteria
             thresh = 1e-6,
             maxit = 100,
@@ -49,7 +61,8 @@ CASMC2_cv <-
             seed = NULL) {
       if (!is.null(seed))
          set.seed(seed)
-      
+      if(identical(hpar$beta$rank.limit, "default"))
+         hpar$beta$rank.limit <- qr(X)$rank
       #-----------------------------------------------------------------------
       # step 1: use highest rank of beta and no regularization to find optimal
       # parameters for M (CASMC2_cv_M)
@@ -64,29 +77,30 @@ CASMC2_cv <-
          y_valid = y_valid,
          W_valid = W_valid,
          y = NULL,
-         r = beta_cv_param$rank.limit,
+         r = hpar$beta$rank.limit,
          lambda.beta = 0,
          warm = warm,
          thresh = thresh,
          maxit = maxit,
          # cv params
-         lambda.factor = M_cv_param$lambda.factor,
-         lambda.init = M_cv_param$lambda.init,
-         n.lambda = M_cv_param$n.lambda,
-         rank.init = M_cv_param$rank.init,
-         rank.limit = M_cv_param$rank.limit,
-         rank.step = M_cv_param$rank.step,
-         pct = M_cv_param$pct,
-         early.stopping = M_cv_param$early.stopping,
+         hpar = hpar,
+         #lambda.factor = M_cv_param$lambda.factor,
+         #lambda.init = M_cv_param$lambda.init,
+         #n.lambda = M_cv_param$n.lambda,
+         #rank.init = M_cv_param$rank.init,
+         #rank.limit = M_cv_param$rank.limit,
+         #rank.step = M_cv_param$rank.step,
+         #pct = M_cv_param$pct,
+         #early.stopping = M_cv_param$early.stopping,
          # error and others
          error_function = error_function,
          trace = trace,
          print.best = print.best,
          quiet = quiet,
-         lambda.a = lambda.a,
-         S.a = S.a,
-         lambda.b = lambda.b,
-         S.b = S.b,
+         #lambda.a = lambda.a,
+         #S.a = S.a,
+         #lambda.b = lambda.b,
+         #S.b = S.b,
          seed = NULL
       )$fit
       M_param <- list(lambda = fiti$lambda.M, J = fiti$J)
@@ -104,24 +118,25 @@ CASMC2_cv <-
          warm = warm,
          thresh = thresh,
          maxit = maxit,
+         hpar = hpar,
          # cv params
-         lambda.factor = beta_cv_param$lambda.factor,
-         lambda.init = beta_cv_param$lambda.init,
-         n.lambda = beta_cv_param$n.lambda,
-         rank.init = beta_cv_param$rank.init,
-         rank.limit = beta_cv_param$rank.limit,
-         rank.step = beta_cv_param$rank.step,
-         pct = beta_cv_param$pct,
-         early.stopping = beta_cv_param$early.stopping,
+         #lambda.factor = beta_cv_param$lambda.factor,
+         #lambda.init = beta_cv_param$lambda.init,
+         #n.lambda = beta_cv_param$n.lambda,
+         #rank.init = beta_cv_param$rank.init,
+         #rank.limit = beta_cv_param$rank.limit,
+         #rank.step = beta_cv_param$rank.step,
+         #pct = beta_cv_param$pct,
+         #early.stopping = beta_cv_param$early.stopping,
          # error and others
          error_function = error_function,
          trace = trace,
          print.best = print.best,
          quiet = quiet,
-         lambda.a = lambda.a,
-         S.a = S.a,
-         lambda.b = lambda.b,
-         S.b = S.b,
+         #lambda.a = lambda.a,
+         #S.a = S.a,
+         #lambda.b = lambda.b,
+         #S.b = S.b,
          seed = NULL
       )
       beta_param <-
@@ -141,24 +156,25 @@ CASMC2_cv <-
             warm = warm,
             thresh = thresh,
             maxit = maxit,
+            hpar = hpar,
             # cv params
-            lambda.factor = M_cv_param$lambda.factor,
-            lambda.init = M_cv_param$lambda.init,
-            n.lambda = M_cv_param$n.lambda,
-            rank.init = M_cv_param$rank.init,
-            rank.limit = M_cv_param$rank.limit,
-            rank.step = M_cv_param$rank.step,
-            pct = M_cv_param$pct,
-            early.stopping = M_cv_param$early.stopping,
+            #lambda.factor = M_cv_param$lambda.factor,
+            #lambda.init = M_cv_param$lambda.init,
+            #n.lambda = M_cv_param$n.lambda,
+            #rank.init = M_cv_param$rank.init,
+            #rank.limit = M_cv_param$rank.limit,
+            #rank.step = M_cv_param$rank.step,
+            #pct = M_cv_param$pct,
+            #early.stopping = M_cv_param$early.stopping,
             # error and others
             error_function = error_function,
             trace = trace,
             print.best = print.best,
             quiet = quiet,
-            lambda.a = lambda.a,
-            S.a = S.a,
-            lambda.b = lambda.b,
-            S.b = S.b,
+            #lambda.a = lambda.a,
+            #S.a = S.a,
+            #lambda.b = lambda.b,
+            #S.b = S.b,
             seed = NULL
          )$fit
          M_param <- list(lambda = fiti$lambda.M, J = fiti$J)
@@ -172,10 +188,10 @@ CASMC2_cv <-
                lambda.M = M_param$lambda,
                r = beta_param$r,
                lambda.beta = beta_param$lambda,
-               lambda.a = lambda.a,
-               S.a = S.a,
-               lambda.b = lambda.b,
-               S.b = S.b,
+               lambda.a = hpar$laplacian$lambda.a,
+               S.a = hpar$laplacian$S.a,
+               lambda.b = hpar$laplacian$lambda.b,
+               S.b = hpar$laplacian$S.b,
                warm.start = warm,
                trace.it = trace,
                thresh = thresh,
@@ -193,6 +209,7 @@ CASMC2_cv <-
             rank.beta = beta_param$r,
             lambda.M = M_param$lambda,
             rank.M = M_param$J
-         )
+         ),
+         init_param = hpar
       )
    }

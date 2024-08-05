@@ -123,25 +123,12 @@ CASMC_Ridge_Sim_Wrapper <-
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
       error_function = utils$error_metric$rmse,
-      lambda.factor = 1 / 4,
-      lambda.init = NULL,
-      n.lambda = 20,
-      rank.init = 2,
-      rank.limit = 30,
-      rank.step = 2,
-      pct = 0.98,
-      lambda.a = 0,
-      S.a = NULL,
-      lambda.b = 0,
-      S.b = NULL,
-      early.stopping = 1,
       thresh = 1e-6,
       maxit = 300,
       trace = FALSE,
       print.best = F,
       quiet = FALSE,
       warm = NULL,
-      lambda.beta.grid = "default",
       track = F,
       max_cores = max_cores,
       seed = NULL
@@ -176,27 +163,7 @@ CASMC_Nuclear_Sim_Wrapper <-
       y = dat$fit_data$Y,
       error_function = utils$error_metric$rmse,
       warm = NULL,
-      M_cv_param = list(
-        rank.init = 2,
-        rank.limit = 30,
-        rank.step = 2,
-        pct = 0.98,
-        lambda.factor = 1/4,
-        lambda.init = NULL,
-        n.lambda = 20, 
-        early.stopping = 1
-      ),
-      beta_cv_param = list(
-        rank.init = 1,
-        rank.limit = qr(dat$X)$rank,
-        rank.step = 1,
-        pct = 0.98,
-        lambda.factor = 2,
-        lambda.init = NULL,
-        n.lambda = 30, 
-        early.stopping = 1
-      ),
-      trace = T,
+      trace = F,
       quiet = T,
       track = F,
       step3 = T,
@@ -226,19 +193,16 @@ CASMC_Lasso_Sim_Wrapper <-
            LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
-    learning_rate = 1 / sqrt(sum((t(dat$X) %*% dat$X)^2))
     fiti <- CASMC_Lasso_cv(
       y_train = dat$fit_data$train,
       X = dat$X,
       y_valid = dat$fit_data$valid,
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
-      trace = 3,
-      print.best = T,
+      trace = 0,
+      print.best = F,
       warm = NULL,
-      quiet = F, learning.rate = learning_rate,
-      early.stopping = 1,
-      lambda.beta.grid = seq(0,10,length.out=20),
+      quiet = T, 
       max_cores = max_cores
     ) 
     

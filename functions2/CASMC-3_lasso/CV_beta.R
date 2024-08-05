@@ -9,7 +9,8 @@ CASMC_Lasso_hparams <-
          rank.init = 2,
          rank.limit = 30,
          rank.step = 2,
-         pct = 0.98
+         pct = 0.98,
+         early.stopping = 1
       ),
       beta = list(
          # L1 parameters
@@ -45,7 +46,6 @@ CASMC3_cv <-
             
             # stopping criteria
             error_function = utils$error_metric$rmse,
-            early.stopping = 1,
             thresh = 1e-6,
             maxit = 100,
             # trace parameters
@@ -183,7 +183,7 @@ CASMC3_cv <-
          learning.rate = hpar$beta$learning.rate,
          rank.M = best_fit$fit$J
       )
-      
+      best_fit$init_params = hpar
       return(best_fit)
       
       

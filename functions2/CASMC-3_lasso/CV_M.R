@@ -43,7 +43,6 @@ CASMC3_cv_M <-
            #lambda.b = 0,
            #S.b = NULL,
            # stopping criteria
-           early.stopping = 1,
            thresh = 1e-6,
            maxit = 100,
            # trace parameters
@@ -141,7 +140,7 @@ CASMC3_cv_M <-
         counter = 0
       } else
         counter = counter + 1
-      if (counter >= early.stopping) {
+      if (counter >= hpar$M$early.stopping) {
         if (trace)
           print(
             sprintf(

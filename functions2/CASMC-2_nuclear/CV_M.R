@@ -24,24 +24,25 @@ CASMC2_cv_M <-
            y = NULL,
            # y: a final full-fit if provided. Expected to be Incomplete
            lambda.beta = .Machine$double.eps,
+           hpar = NULL,
            # provide this if you need L2 regularization.
            error_function = error_metric$rmse,
            # tuning parameters for lambda
-           lambda.factor = 1 / 4,
-           lambda.init = NULL,
-           n.lambda = 20,
+           #lambda.factor = 1 / 4,
+           #lambda.init = NULL,
+           #n.lambda = 20,
            # tuning parameters for J
-           rank.init = 2,
-           rank.limit = 30,
-           rank.step = 2,
-           pct = 0.98,
+           #rank.init = 2,
+           #rank.limit = 30,
+           #rank.step = 2,
+           #pct = 0.98,
            # laplacian parameters
-           lambda.a = 0,
-           S.a = NULL,
-           lambda.b = 0,
-           S.b = NULL,
+           #lambda.a = 0,
+           #S.a = NULL,
+           #lambda.b = 0,
+           #S.b = NULL,
            # stopping criteria
-           early.stopping = 1,
+           #early.stopping = 1,
            thresh = 1e-6,
            maxit = 100,
            # trace parameters
@@ -56,12 +57,12 @@ CASMC2_cv_M <-
       set.seed(seed)
     
     # prepare the sequence of lambda (nuclear regularization hyperparameter)
-    if (is.null(lambda.init))
-      lambda.init <-
-        utils$lambdaM.max(y_train, utils$reduced_hat_decomp.H(X)) * lambda.factor
-    lamseq <- seq(from = lambda.init,
+    if (is.null(hpar$M$lambda.init))
+      hpar$M$lambda.init <-
+        utils$lambdaM.max(y_train, utils$reduced_hat_decomp.H(X)) * hpar$M$lambda.factor
+    lamseq <- seq(from = hpar$M$lambda.init,
                   to = .Machine$double.eps,
-                  length = n.lambda)
+                  length = hpar$M$n.lambda)
     #----------------------------------------------------
     stopifnot(inherits(y_train, "dgCMatrix"))
     # we only need the indices for validation from W_valid
@@ -73,7 +74,7 @@ CASMC2_cv_M <-
     W_valid = NULL
     #------------------------------------------------
     #-----------------------------------------------------------------------
-    rank.max <- rank.init
+    rank.max <- hpar$M$rank.init
     best_fit <- list(error = Inf, r = r)
     counter <- 0
     #---------------------------------------------------------------------
@@ -86,10 +87,10 @@ CASMC2_cv_M <-
           lambda.M = lamseq[i],
           r = r,
           lambda.beta = lambda.beta,
-          lambda.a = lambda.a,
-          S.a = S.a,
-          lambda.b = lambda.b,
-          S.b = S.b,
+          lambda.a = hpar$laplacian$lambda.a,
+          S.a = hpar$laplacian$S.a,
+          lambda.b = hpar$laplacian$lambda.b,
+          S.b = hpar$laplacian$S.b,
           warm.start = warm,
           trace.it = F,
           thresh = thresh,
@@ -109,7 +110,7 @@ CASMC2_cv_M <-
       # newly added, to be removed later
       var_explained = fiti$d ^ 2 / sum(fiti$d ^ 2)
       cum_var = cumsum(var_explained)
-      rank  <- which(cum_var >= pct)[1]
+      rank  <- which(cum_var >= hpar$M$pct)[1]
       
       warm <- fiti # warm start for next
       #---------------------------------------------------------------------
@@ -140,7 +141,7 @@ CASMC2_cv_M <-
         counter = 0
       } else
         counter = counter + 1
-      if (counter >= early.stopping) {
+      if (counter >= hpar$M$early.stopping) {
         if (trace)
           print(
             sprintf(
@@ -151,7 +152,7 @@ CASMC2_cv_M <-
         break
       }
       # compute rank.max for next iteration
-      rank.max <- min(rank + rank.step, rank.limit)
+      rank.max <- min(rank + hpar$M$rank.step, hpar$M$rank.limit)
     }
     # fit one last time full model, if the train/valid is provided
     if (!is.null(y)) {
@@ -164,10 +165,10 @@ CASMC2_cv_M <-
           lambda.M = best_fit$lambda.M,
           r = r,
           lambda.beta = lambda.beta,
-          lambda.a = lambda.a,
-          S.a = S.a,
-          lambda.b = lambda.b,
-          S.b = S.b,
+          lambda.a = hpar$laplacian$lambda.a,
+          S.a = hpar$laplacian$S.a,
+          lambda.b = hpar$laplacian$lambda.b,
+          S.b = hpar$laplacian$S.b,
           warm.start = best_fit$fit,
           trace.it = F,
           thresh = thresh,
@@ -176,8 +177,8 @@ CASMC2_cv_M <-
       
     }
     best_fit$lambda.beta = lambda.beta
-    best_fit$lambda.a = lambda.a
-    best_fit$lambda.b = lambda.b
+    best_fit$lambda.a = hpar$laplacian$lambda.a
+    best_fit$lambda.b = hpar$laplacian$lambda.b
     best_fit$fit$beta <- list(
       u = best_fit$fit$ub,
       d = best_fit$fit$db^2,
