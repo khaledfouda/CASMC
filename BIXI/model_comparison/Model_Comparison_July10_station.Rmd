@@ -52,6 +52,9 @@ model_names <- list(
 ```{r}
 
 model.dat <-  dat <- load_model_bixi_dat(time_cov = FALSE)
+dat$splits$test[dat$masks$test==0] 
+
+
 
 results <-  SImpute_Bixi_Wrapper(model.dat)
 loglik_SI <- results$LogLik
@@ -73,6 +76,7 @@ for(i in 2:length(model_functions)){
     hpar$beta$n.lambda = 60
   }else if(i == 4){
     hpar = CASMC_Lasso_hparams
+    hpar$beta$lambda.max = .5
     hpar$beta$n.lambda = 40  
   }
   

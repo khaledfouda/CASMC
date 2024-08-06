@@ -113,6 +113,8 @@ CASMC_Ridge_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
+           hpar = CASMC_Ridge_hparams,
+           trace = F,
            ...) {
     start_time = Sys.time()
     
@@ -122,14 +124,15 @@ CASMC_Ridge_Sim_Wrapper <-
       y_valid = dat$fit_data$valid,
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
+      hpar = hpar,
       error_function = utils$error_metric$rmse,
       thresh = 1e-6,
       maxit = 300,
-      trace = FALSE,
-      print.best = F,
+      trace = trace,
+      print.best = trace,
       quiet = FALSE,
       warm = NULL,
-      track = F,
+      track = trace,
       max_cores = max_cores,
       seed = NULL
     )
@@ -152,6 +155,8 @@ CASMC_Ridge_Sim_Wrapper <-
 CASMC_Nuclear_Sim_Wrapper <-
   function(dat,
            LogLik_SI = NULL,
+           hpar = CASMC_Nuclear_hparams,
+           trace = F,
            ...) {
     start_time = Sys.time()
     
@@ -161,11 +166,13 @@ CASMC_Nuclear_Sim_Wrapper <-
       y_valid = dat$fit_data$valid,
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
+      hpar = hpar,
       error_function = utils$error_metric$rmse,
       warm = NULL,
-      trace = F,
+      trace = trace,
       quiet = T,
-      track = F,
+      track = trace,
+      print.best = trace,
       step3 = T,
       use_warmstart = T,
       seed = NULL
@@ -191,6 +198,8 @@ CASMC_Lasso_Sim_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
+           hpar = CASMC_Lasso_hparams,
+           trace = F,
            ...) {
     start_time = Sys.time()
     fiti <- CASMC_Lasso_cv(
@@ -199,8 +208,9 @@ CASMC_Lasso_Sim_Wrapper <-
       y_valid = dat$fit_data$valid,
       W_valid = dat$fit_data$W_valid,
       y = dat$fit_data$Y,
-      trace = 0,
-      print.best = F,
+      hpar = hpar,
+      trace = trace,
+      print.best = trace,
       warm = NULL,
       quiet = T, 
       max_cores = max_cores

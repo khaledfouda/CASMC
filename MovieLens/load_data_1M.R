@@ -1,5 +1,5 @@
 load_movielens_1M <-
-  function(scale = FALSE, seed= 2023)
+  function(scale = FALSE, testp=.2, validp=.2, seed= 2023)
   {
     set.seed(seed)
     scale = FALSE
@@ -114,9 +114,9 @@ load_movielens_1M <-
     
     W_missing = as.matrix(ratings.inc != 0) # 1 if observed (1M)
     W_test_valid <-
-      utils$MC_train_test_split(W_missing, testp = 0.4) #  0 for test/valid and 1 for train/missing
+      utils$MC_train_test_split(W_missing, testp = testp+validp) #  0 for test/valid and 1 for train/missing
     W_valid <-
-      utils$MC_train_test_split((1 - W_test_valid) * W_missing , testp = 0.5) # 0 for valid and 1 for train/test/missing
+      utils$MC_train_test_split((1 - W_test_valid) * W_missing , testp = validp/(testp+validp)) # 0 for valid and 1 for train/test/missing
     W_test <-
       1 -  (1 - W_test_valid) * (W_valid) # 0 for test and 1 for train/valid/missing
     

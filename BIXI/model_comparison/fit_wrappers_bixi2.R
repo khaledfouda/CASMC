@@ -170,11 +170,11 @@ CASMC_0_Bixi_Wrapper <-
       hpar = hpar,
       thresh = 1e-6,
       maxit = 300,
-      trace = FALSE,
+      trace = T,
+      track = T,
       print.best = F,
       quiet = FALSE,
       warm = NULL,
-      track = F,
       max_cores = max_cores,
       seed = NULL
     )
@@ -185,7 +185,6 @@ CASMC_0_Bixi_Wrapper <-
     fit.$Xbeta = dat$X %*% fit.$beta
     fit.$estimates = fit.$M + fit.$Xbeta
     
-    print("hi")
     results = list(model = "CASMC-0")
     results$lambda.beta = fiti$lambda.beta
     results$lambda.M = fit.$lambda
@@ -275,7 +274,6 @@ CASMC_3a_Bixi_Wrapper <-
     start_time = Sys.time()
     Y_all <- NULL
     if(train_on_all) Y_all <- dat$splits$Y
-    
     fiti <- CASMC_Lasso_cv(
       y_train = dat$splits$train,
       X = dat$X,
@@ -283,7 +281,7 @@ CASMC_3a_Bixi_Wrapper <-
       W_valid = dat$masks$valid,
       y = Y_all,
       hpar = hpar,
-      trace = 0,
+      trace = 3,
       print.best = T,
       warm = NULL,
       quiet = F,
