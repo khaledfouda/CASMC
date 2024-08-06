@@ -121,17 +121,45 @@ load_movielens_1M <-
       1 -  (1 - W_test_valid) * (W_valid) # 0 for test and 1 for train/valid/missing
     
     # verification:
-    # sum(W_test_valid == 0) / sum(W_missing == 1)
-    # sum(W_test == 0) / sum(W_missing == 1)
-    # sum(W_valid == 0) / sum(W_missing == 1)
-    # sum(W_test == 0 & W_missing == 0) / sum(W_missing == 1)
-    
+    sum(W_missing == 0) / length(W_missing)
+    sum(W_test_valid == 0) / sum(W_missing == 1)
+    sum(W_test == 0) / sum(W_missing == 1)
+    sum(W_valid == 0) / sum(W_missing == 1)
+    sum(W_test == 0 & W_missing == 0) / sum(W_missing == 1)
+
+    masks <- list(
+      obs = W_missing,
+      test = W_test,
+      valid = W_valid,
+      test_valid = W_test_valid,
+      test_miss = W_test * W_missing # 0 for test/missing and 1 for train/valid given to kfold
+    )
     #-----------------------------------------------------------
     # prepare validation and test vectors:
     y_valid_vec = ratings.inc[W_valid == 0]
     y_test_vec = ratings.inc[W_test == 0]
+    Y = as.matrix(ratings.inc)
+    Y[is.na(Y)] <- 0
+    train = Y * masks$test_valid
+    train[train==0] <- NA
+    Y = Y * masks$test
+    Y[Y==0] <- NA
     
+    fit_data <- list(
+    W_valid = masks$valid,
+    train =  utils$to_incomplete(train),
+    valid = y_valid_vec,
+    Y = utils$to_incomplete(Y)
+    )
     
+    out <- list(
+      fit_data = fit_data,
+      masks = masks,
+      X = as.matrix(users),
+      W = masks$test,
+      O = as.matrix(ratings.inc)
+    )
+    return(out)
     #---------------------------------------------------------
     # prepare training sets
     y = y_test = y_train = ratings.inc

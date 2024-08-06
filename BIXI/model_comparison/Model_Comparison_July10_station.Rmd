@@ -28,19 +28,19 @@ source("./BIXI/data/transform_data_into_mat.R")
 source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
 model_functions = list(
       SImpute_Bixi_Wrapper,
-      Mao_Bixi_Wrapper,
       CASMC_0_Bixi_Wrapper,
       CASMC_2_Bixi_Wrapper,
       CASMC_3a_Bixi_Wrapper,
+      Mao_Bixi_Wrapper,
       Naive_Bixi_Wrapper
    )
 
 model_names <- list(
  "SoftImpute",
- "Mao",
  "CASMC-Ridge",
  "CASMC-Nuclear",
  "CASMC-Lasso",
+ "Mao",
  "Naive LM"
 )
 
@@ -62,9 +62,22 @@ results$cov_summaries <- NULL
 model_fits <- list()
 
 for(i in 2:length(model_functions)){
- print(model_names[[i]])
+ hpar = NULL
+  print(model_names[[i]])
+  if(i == 2){
+    hpar = CASMC_Ridge_hparams
+    hpar$beta$n.lambda = 40
+  }else if(i == 3){
+    hpar = CASMC_Nuclear_hparams
+    hpar$beta$lambda.factor = 1
+    hpar$beta$n.lambda = 60
+  }else if(i == 4){
+    hpar = CASMC_Lasso_hparams
+    hpar$beta$n.lambda = 40  
+  }
+  
  out <- model_functions[[i]](model.dat, train_on_all = TRUE, LogLik_SI = loglik_SI,
-                             return_fit = TRUE)
+                             return_fit = TRUE, hpar = hpar)
  if(i %in% 3:5){
   model_fits[[i-2]] <- out$fit
   out <- out$results

@@ -11,7 +11,7 @@ prepare_output_bixi <-
            beta.estim = NA,
            M.estim = NA,
            LogLik_SI = NA,
-           test_error = error_metric$rmse) {
+           test_error = utils$error_metric$rmse) {
     list(
       time = round(as.numeric(
         difftime(Sys.time(), start_time, units = "secs")
@@ -43,11 +43,11 @@ prepare_output_bixi <-
       results$Cox_Snell_R2 <- NA
     } else{
       residuals <- obs.test - estim.test
-      LogLik <- logLikelihood(residuals)
+      LogLik <- utils$logLikelihood(residuals)
       n <- length(residuals)
       results$likelihood_ratio_index <-
-        Likelihood_ratio_index(LogLik, LogLik_SI)
-      results$Cox_Snell_R2 <- Cox_Snell_R2(LogLik, LogLik_SI, n)
+        utils$Likelihood_ratio_index(LogLik, LogLik_SI)
+      results$Cox_Snell_R2 <- utils$Cox_Snell_R2(LogLik, LogLik_SI, n)
     }
     
     
@@ -86,7 +86,7 @@ Mao_Bixi_Wrapper <-
       seed = 2023,
       numCores = ncores,
       n1n2_optimized = TRUE,
-      test_error = error_metric$rmse,
+      test_error = utils$error_metric$rmse,
       theta_estimator = weight_function,
       sequential = FALSE
     )
@@ -145,7 +145,7 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
     )
   )
   LogLik <-
-    logLikelihood(dat$splits$test@x - fit.$estimates[dat$masks$test == 0])
+    utils$logLikelihood(dat$splits$test@x - fit.$estimates[dat$masks$test == 0])
   return(list(results = results, LogLik = LogLik))
 }
 #--------------------------------------------------------------------------------------
@@ -155,37 +155,25 @@ CASMC_0_Bixi_Wrapper <-
            LogLik_SI = NULL,
            return_fit = FALSE,
            train_on_all = FALSE,
+           hpar = CASMC_Ridge_hparams,
            ...) {
     start_time = Sys.time()
     Y_all <- NULL
     if(train_on_all) Y_all <- dat$splits$Y 
     
-    fiti <- CASMC0_cv(
+    fiti <- CASMC_Ridge_cv(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
       W_valid = dat$masks$valid,
       y = Y_all,
-      error_function = error_metric$rmse,
-      lambda.factor = 1 / 4,
-      lambda.init = NULL,
-      n.lambda = 20,
-      rank.init = 2,
-      rank.limit = 30,
-      rank.step = 2,
-      pct = 0.98,
-      lambda.a = 0,
-      S.a = NULL,
-      lambda.b = 0,
-      S.b = NULL,
-      early.stopping = 1,
+      hpar = hpar,
       thresh = 1e-6,
       maxit = 300,
       trace = FALSE,
       print.best = F,
       quiet = FALSE,
       warm = NULL,
-      lambda.beta.grid = "default",
       track = F,
       max_cores = max_cores,
       seed = NULL
@@ -226,39 +214,20 @@ CASMC_2_Bixi_Wrapper <-
            LogLik_SI = NULL,
            return_fit = FALSE,
            train_on_all = FALSE,
+           hpar = CASMC_Nuclear_hparams,
            ...) {
     start_time = Sys.time()
     Y_all <- NULL
     if(train_on_all) Y_all <- dat$splits$Y
     
-    fiti <- CASMC2_cv2(
+    fiti <- CASMC_Nuclear_cv(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
       W_valid = dat$masks$valid,
       y = Y_all,
-      error_function = error_metric$rmse,
+      hpar = hpar,
       warm = NULL,
-      M_cv_param = list(
-        rank.init = 2,
-        rank.limit = 30,
-        rank.step = 2,
-        pct = 0.98,
-        lambda.factor = 1 / 4,
-        lambda.init = NULL,
-        n.lambda = 20,
-        early.stopping = 1
-      ),
-      beta_cv_param = list(
-        rank.init = 2,
-        rank.limit = qr(dat$X)$rank,
-        rank.step = 2,
-        pct = 0.98,
-        lambda.multi.factor = 20,
-        lambda.init = NULL,
-        n.lambda = 20,
-        early.stopping = 1
-      ),
       quiet = T,
       trace = F,
       track = F,
@@ -269,8 +238,8 @@ CASMC_2_Bixi_Wrapper <-
     
     fit. = fiti$fit
     # get estimates and validate
-    fit.$M = unsvd(fit.)
-    fit.$beta = unsvd(fit.$beta)
+    fit.$M = utils$unsvd(fit.)
+    fit.$beta = utils$unsvd(fit.$beta)
     fit.$Xbeta = dat$X %*% fit.$beta
     fit.$estimates = fit.$M + fit.$Xbeta
     
@@ -301,25 +270,23 @@ CASMC_3a_Bixi_Wrapper <-
            LogLik_SI = NULL,
            return_fit = FALSE,
            train_on_all = FALSE,
+           hpar = CASMC_Lasso_hparams,
            ...) {
     start_time = Sys.time()
-    learning_rate = 1 / sqrt(sum((t(dat$X) %*% dat$X) ^ 2))
     Y_all <- NULL
     if(train_on_all) Y_all <- dat$splits$Y
     
-    fiti <- CASMC3_cv_beta(
+    fiti <- CASMC_Lasso_cv(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
       W_valid = dat$masks$valid,
       y = Y_all,
+      hpar = hpar,
       trace = 0,
       print.best = T,
       warm = NULL,
       quiet = F,
-      learning.rate = learning_rate,
-      early.stopping = 1,
-      lambda.beta.grid = seq(0, 10, length.out = 20),
       max_cores = max_cores
     )
     

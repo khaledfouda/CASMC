@@ -96,7 +96,7 @@ print(sum(1 - test.mask) / length(test.mask))
 obs.mask[1:5, 1:5]
 test.mask[1:5, 1:5]
 
-valid_mask <- matrix.split.train.test(obs.mask, testp = 0.2)
+valid_mask <- utils$MC_train_test_split(obs.mask, testp = 0.2)
 
 
 model.dat$masks <-
@@ -118,16 +118,16 @@ train.df |>
   reshape2::dcast(time ~ location, value.var = "nb_departure.y") |>
   select(-time) |>
   as.matrix() %>%
-  to_incomplete() ->
+  utils$to_incomplete() ->
   test
 
 model.dat$splits <- list(
-  train = to_incomplete(Y * valid_mask),
-  valid = to_incomplete(Y * (1 - valid_mask)),
+  train = utils$to_incomplete(Y * valid_mask),
+  valid = utils$to_incomplete(Y * (1 - valid_mask)),
   #Y[valid_mask==0],
   test = test,
   #Y = Y,
-  Y = to_incomplete(Y)
+  Y = utils$to_incomplete(Y)
   
 )
 print(length(model.dat$splits$train@x) / length(Y))
