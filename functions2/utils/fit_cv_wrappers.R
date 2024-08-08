@@ -18,7 +18,9 @@ prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim
     sparse_in_sparse = tryCatch(sum(beta == 0 & beta.estim == 0) /
                                   (sum(beta == 0) +  1e-17), error = function(x) NA),
     nonsparse_in_nonsparse = tryCatch(sum(beta != 0 & beta.estim != 0) /
-                                        (sum(beta != 0) +  1e-17), error = function(x) NA)
+                                        (sum(beta != 0) +  1e-17), error = function(x) NA),
+    sparse_all = tryCatch(sum(beta.estim == 0) /
+                            length(beta.estim), error = function(x) NA)
   ) -> results
   
   
@@ -115,6 +117,7 @@ CASMC_Ridge_Sim_Wrapper <-
            LogLik_SI = NULL,
            hpar = CASMC_Ridge_hparams,
            trace = F,
+           return_fit = FALSE,
            ...) {
     start_time = Sys.time()
     
@@ -141,12 +144,15 @@ CASMC_Ridge_Sim_Wrapper <-
     # get estimates and validate
     fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
+    fiti$fit = fit.
     
     results = list(model = "CASMC-Ridge")
     results$lambda.beta = fiti$lambda.beta
     results$lambda.M = fit.$lambda
     results <- c(results,
                           prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
+    
+    if(return_fit) return(list(results=results, fit = fiti))
     results
   }
 #-------
@@ -157,6 +163,7 @@ CASMC_Nuclear_Sim_Wrapper <-
            LogLik_SI = NULL,
            hpar = CASMC_Nuclear_hparams,
            trace = F,
+           return_fit = FALSE,
            ...) {
     start_time = Sys.time()
     
@@ -183,6 +190,7 @@ CASMC_Nuclear_Sim_Wrapper <-
     fit.$M = utils$unsvd(fit.)
     fit.$beta = utils$unsvd(fit.$beta)
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
+    fiti$fit <- fit.
     
     results = list(model = "CASMC-Nuclear")
     results$lambda.beta = fiti$hparams$lambda.beta
@@ -190,7 +198,7 @@ CASMC_Nuclear_Sim_Wrapper <-
     
     results <- c(results,
                           prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
-    
+    if(return_fit) return(list(results=results, fit = fiti))
     results
   }
 #----------------------------------------------------
@@ -200,6 +208,7 @@ CASMC_Lasso_Sim_Wrapper <-
            LogLik_SI = NULL,
            hpar = CASMC_Lasso_hparams,
            trace = F,
+           return_fit = FALSE,
            ...) {
     start_time = Sys.time()
     fiti <- CASMC_Lasso_cv(
@@ -220,6 +229,7 @@ CASMC_Lasso_Sim_Wrapper <-
     # get estimates and validate
     fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
     fit.$estimates = fit.$M + dat$X %*% fit.$beta
+    fiti$fit <- fit.
     
     results = list(model = "CASMC-Lasso")
     results$lambda.beta = fiti$hparams$lambda.beta
@@ -228,6 +238,7 @@ CASMC_Lasso_Sim_Wrapper <-
     results <- c(results,
                           prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
     
+    if(return_fit) return(list(results=results, fit = fiti))
     results
   }
 #----------------------------------------------

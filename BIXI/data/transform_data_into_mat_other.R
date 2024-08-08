@@ -84,10 +84,24 @@ obs.mask <- (1 * !is.na(Y)) %>%
   } %>%
   as.matrix()
 print(sum(obs.mask == 1) / length(obs.mask))
-
+#--------------------------------------------------
+cor_matrix <- cor(naive_MC(Y), X)
+tau <- 0.4
+high_corr_indices <- which(apply(abs(cor_matrix), 1, max) > tau)
+m <- nrow(Y)
+missing_rate <- 0.95
+test_mask <- matrix(1, nrow(Y), ncol(Y))
+for (j in high_corr_indices) {
+  missing_indices <- sample(1:m, size = floor(missing_rate * m), replace = FALSE)
+  test_mask[missing_indices, j] <- 0
+}
+test_mask[obs.mask==0] = 1
+sum(test_mask==0) / length(Y)
+#--------------------------------------------------
 # divide into train and test.
 masks <- list(obs = obs.mask)
-masks$test = utils$MC_train_test_split(obs.mask, testp, seed)
+masks$test = test_mask
+#masks$test = utils$MC_train_test_split(obs.mask, testp, seed)
 obs = masks$obs * masks$test
 masks$miss = utils$MC_train_test_split(obs, missp, seed)
 obs = obs * masks$miss
@@ -104,10 +118,10 @@ fit_data$valid <- Y[masks$valid== 0]
 fit_data$Y = utils$to_incomplete(Y * masks$test * masks$miss)
 
 out <- list(
-  O = Y,
+  O = Y * masks$miss,
   W = masks$test,
   X = as.matrix(X),
-  Y = Y * masks$test,
+  Y = Y * masks$test* masks$miss,
   fit_data = fit_data,
   masks = masks
 )

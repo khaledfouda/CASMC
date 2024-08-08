@@ -16,7 +16,7 @@ utils$inv <- function(X, is_square = nrow(X) == ncol(X)) {
 
 utils$prepare.M.warm.start <- function(warm.start, J, n, m, min_eigv) {
   D = warm.start$d
-  JD = sum(D > min_eigv)
+  JD = max(sum(D >= min_eigv),1)
   if (JD >= J) {
     U = warm.start$u[, seq(J), drop = FALSE]
     V = warm.start$v[, seq(J), drop = FALSE]

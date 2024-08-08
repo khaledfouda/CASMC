@@ -96,6 +96,8 @@ CASMC2_fit <-
       Ub = warm.out$U
       Vb = warm.out$V
       Db = warm.out$Dsq
+      # print(paste(r, dim(Ub)[2], dim(warm.start$ub)[2],length(Db),
+      #             length(warm.start$db)))
       Q = utils$UD(Ub, Db)
       R = utils$UD(Vb, Db)
     } else{
