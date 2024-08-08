@@ -88,11 +88,14 @@ print(sum(obs.mask == 1) / length(obs.mask))
 cor_matrix <- cor(naive_MC(Y), X)
 tau <- 0.4
 high_corr_indices <- which(apply(abs(cor_matrix), 1, max) > tau)
+# high_corr_indices <- c(
+#                         sample(1:nrow(Y),
+#                                length(high_corr_indices), replace=FALSE))
 m <- nrow(Y)
-missing_rate <- 0.95
+missing_rate <- .95
 test_mask <- matrix(1, nrow(Y), ncol(Y))
 for (j in high_corr_indices) {
-  missing_indices <- sample(1:m, size = floor(missing_rate * m), replace = FALSE)
+  missing_indices <- sample(1:m, floor(missing_rate * m), replace = FALSE)
   test_mask[missing_indices, j] <- 0
 }
 test_mask[obs.mask==0] = 1
@@ -105,6 +108,8 @@ masks$test = test_mask
 obs = masks$obs * masks$test
 masks$miss = utils$MC_train_test_split(obs, missp, seed)
 obs = obs * masks$miss
+
+#masks$test = masks$test * masks$miss
 masks$valid = utils$MC_train_test_split(obs, validp, seed)
 
 sum(masks$test==0) / length(masks$test)

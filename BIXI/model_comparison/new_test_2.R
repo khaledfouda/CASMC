@@ -38,6 +38,51 @@ rbind(out0$results, out1$results,out2$results, out3$results, out4) %>%
   all.out
 
 all.out %>% arrange(desc(corr.test)) %>%  kable()
+#-----------------------------------------------------
+apply(out1$fit$fit$beta, 1, summary) |> as.data.frame() |>
+  t() |>
+  as.data.frame() |>
+  mutate(prop_non_zero = apply(out1$fit$fit$beta, 1, function(x)
+    sum(x != 0) / length(x))) |>
+  `rownames<-` (colnames(X)) %>% 
+  mutate(Model = out1$results$model) %>% 
+
+    rbind(
+    
+
+apply(out2$fit$fit$beta, 1, summary) |> as.data.frame() |>
+  t() |>
+  as.data.frame() |>
+  mutate(prop_non_zero = apply(out2$fit$fit$beta, 1, function(x)
+    sum(x != 0) / length(x))) |>
+  `rownames<-` (colnames(X)) %>% 
+  mutate(Model = out2$results$model)
+  ) %>% 
+
+  rbind(
+apply(out3$fit$fit$beta, 1, summary) |> as.data.frame() |>
+  t() |>
+  as.data.frame() |>
+  mutate(prop_non_zero = apply(out3$fit$fit$beta, 1, function(x)
+    sum(x != 0) / length(x))) |>
+  `rownames<-` (colnames(X)) %>% 
+  mutate(Model = out3$results$model)
+  ) %>% 
+  mutate_if(is.numeric, round, digits=3) %>% 
+  kable("html", col.names = c("Min", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max", "Prop Non Zero", "Model"),
+        caption = "Covariate Summaries by Model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+  row_spec(0, bold = TRUE) %>%
+  # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CASMC-Ridge", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CASMC-Nuclear", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CASMC-Lasso", 7, 9, hline_after = TRUE) 
+
+
+
+
+
+
 
 #results <- rbind(results, all.out)
 #print(results)
