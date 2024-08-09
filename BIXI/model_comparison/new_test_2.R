@@ -21,7 +21,9 @@ out3 <- CASMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar, return_fit = T)
 
 out4 <- Naive_Sim_Wrapper(dat)
 
-rbind(out0$results, out1$results,out2$results, out3$results, out4) %>% 
+out5 <- Mao_Sim_Wrapper(dat)
+
+rbind(out0$results, out1$results,out2$results, out3$results, out4, out5) %>% 
  as.data.frame() %>% 
  mutate(miss = sum(is.na(dat$Y)|dat$Y==0)/length(dat$Y)) %>% 
  dplyr::select(model, miss, lambda.beta, lambda.M,

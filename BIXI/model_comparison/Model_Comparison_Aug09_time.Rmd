@@ -1,0 +1,435 @@
+---
+title: "August 9th -BIXI Analysis notes - Time Covariates - see Obsidian"
+author: "Khaled Fouda"
+date: ""
+output:
+  html_document:
+     df_print: paged 
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=TRUE, echo=T, message=FALSE, warning=FALSE}
+library(kableExtra)
+library(magrittr)
+library(tidyverse)
+root_dir = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
+knitr::opts_knit$set(root.dir=root_dir)
+knitr::opts_chunk$set(echo = T, cache = FALSE, eval = TRUE, 
+                      fig.width=12, fig.height=8,
+                      cache.path = paste0(root_dir,"/Documentation/cache/"))
+```
+
+
+```{r echo=F, message=FALSE, warning=FALSE, include=F, eval=T}
+source("./code_files/import_lib.R")
+source("./BIXI/data/transform_data_into_mat_other_2.R")
+source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
+```
+
+
+## Fit all models
+
+
+```{r}
+dat <- load_model_bixi_dat3(2023,.2) 
+
+out0 <- SImpute_Sim_Wrapper(dat) 
+hpar <- CASMC_Ridge_hparams
+hpar$beta$lambda.grid <- seq(5,0, length.out=40)
+out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = T, return_fit = T, max_cores = 20)
+
+hpar = CASMC_Nuclear_hparams
+#hpar$beta$n.lambda = 80
+out2 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=T, hpar=hpar, return_fit = T)
+
+
+hpar = CASMC_Lasso_hparams
+hpar$beta$n.lambda = 60
+hpar$beta$lambda.max = 1
+out3 <- CASMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar, return_fit = T)
+
+out4 <- Naive_Sim_Wrapper(dat)
+
+out5 <- Mao_Sim_Wrapper(dat)
+
+rbind(out0$results, out1$results,out2$results, out3$results, out4, out5) %>% 
+ as.data.frame() %>% 
+ mutate(total_miss = (sum(is.na(dat$Y)|dat$Y==0)/length(dat$Y) )%>% round(2),
+        test_prop  = (sum(dat$W==0)/length(dat$Y)) %>% round(2)) %>% 
+ dplyr::select(model, lambda.beta, lambda.M,
+                          error.test, corr.test, error.train,
+                          rank_M, rank_beta, sparse_all, total_miss, test_prop) %>% 
+# mutate(error.test.diff = 
+ #        out0$results$error.test - as.numeric(error.test),
+  #        corr.test.diff = 
+   #         out0$results$corr.test - as.numeric(corr.test)) %>% 
+          
+ mutate_at(vars(-model), function(x) round(as.numeric(x),3) )->
+  all.out
+rownames(all.out) <- NULL
+```
+
+
+
+## load BKTR fit data
+
+```{r}
+
+
+bktr.fit <- readRDS("./BIXI/data/fits/split_1_fit.rds")
+train.df <- readRDS(paste0("./BIXI/data/splits/split_1_train.rds"))
+test.df <-  readRDS(paste0("./BIXI/data/splits/split_1_test.rds"))
+
+bktr.fit$imputed_y_estimates |> 
+  as.data.frame() |> 
+  merge(test.df, by = c("location", "time")) |> 
+  select(location, time, y_est, nb_departure) -> 
+  test.estimates
+
+bktr.fit$imputed_y_estimates |> 
+  as.data.frame() |> 
+  merge(filter(train.df, ! is.na(nb_departure)), by = c("location", "time")) |> 
+  select(location, time, y_est, nb_departure) -> 
+  train.estimates
+
+
+all.out %<>% 
+ rbind(
+  c("BKTR",NA,NA,round(unlist(prepare_output_bixi(Sys.time(), dat$X, test.estimates$y_est,
+                    train.estimates$y_est, test.estimates$nb_departure,
+                    train.estimates$nb_departure))[2:7],3), all.out$total_miss[1],
+    all.out$test_prop[1])
+
+ )
+
+
+
+
+
+```
+
+
+```{r}
+all.out %>% arrange(desc(corr.test)) %>%  kable()
+```
+
+
+```{r}
+#-----------------------------------------------------
+X <- dat$X
+
+apply(out1$fit$fit$beta, 1, summary) |> as.data.frame() |>
+  t() |>
+  as.data.frame() |>
+  mutate(prop_non_zero = apply(out1$fit$fit$beta, 1, function(x)
+    sum(x != 0) / length(x))) |>
+  `rownames<-` (colnames(X)) %>% 
+  mutate(Model = out1$results$model) %>% 
+
+    rbind(
+    
+
+apply(out2$fit$fit$beta, 1, summary) |> as.data.frame() |>
+  t() |>
+  as.data.frame() |>
+  mutate(prop_non_zero = apply(out2$fit$fit$beta, 1, function(x)
+    sum(x != 0) / length(x))) |>
+  `rownames<-` (colnames(X)) %>% 
+  mutate(Model = out2$results$model)
+  ) %>% 
+
+  rbind(
+apply(out3$fit$fit$beta, 1, summary) |> as.data.frame() |>
+  t() |>
+  as.data.frame() |>
+  mutate(prop_non_zero = apply(out3$fit$fit$beta, 1, function(x)
+    sum(x != 0) / length(x))) |>
+  `rownames<-` (colnames(X)) %>% 
+  mutate(Model = out3$results$model)
+  ) %>% 
+   rbind(
+bktr.fit$beta_estimates %>% 
+ as.data.frame() %>% 
+ select(-location, -time, -Intercept) %>% 
+ apply(2, summary) %>% 
+ t() %>% 
+ as.data.frame() %>% 
+ mutate(prop_non_zero = 1, Model = "BKTR")
+ ) %>% 
+  select(-Model) %>% 
+  mutate_if(is.numeric, round, digits=3) %>% 
+  kable("html", col.names = c("Min", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max", "Prop Non Zero"),
+        caption = "Covariate Summaries by Model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
+  row_spec(0, bold = TRUE) %>%
+  # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CASMC-Ridge", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CASMC-Nuclear", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CASMC-Lasso", 7, 9, hline_after = TRUE) %>% 
+  pack_rows("BKTR", 10, 12, hline_after = TRUE)
+
+
+
+```
+
+
+
+## Plot: time vs average beta value  x4 models
+
+
+```{r}
+
+out1$fit$fit$beta %>% t() %>% as.data.frame() %>% 
+ `colnames<-` (colnames(dat$X)) %>% 
+ mutate(model = out1$results$model) %>% 
+ rbind(
+  out2$fit$fit$beta %>% t() %>% as.data.frame() %>% 
+ `colnames<-` (colnames(dat$X)) %>% 
+ mutate(model = out2$results$model)
+ ) %>%
+ rbind(
+  out3$fit$fit$beta %>% t() %>% as.data.frame() %>% 
+ `colnames<-` (colnames(dat$X)) %>% 
+ mutate(model = out3$results$model)
+ ) %>% 
+ rbind(
+  
+bktr.fit$beta_estimates %>% as.data.frame() %>% 
+ arrange(location, time) %>% 
+ group_by(location) %>% 
+ summarise(location = location[1], mean_temp_c = mean(mean_temp_c),
+        total_precip_mm = mean(total_precip_mm), holiday = mean(holiday)) %>% 
+ ungroup() %>% 
+ select(-location) %>% 
+ mutate(model = "BKTR")  
+ ) %>%
+ pivot_longer(
+  cols = c(mean_temp_c, total_precip_mm, holiday), 
+  names_to = "covariate", values_to = "value"
+ ) %>% 
+ group_by(model, covariate) %>% 
+ mutate(station_id =  1:ncol(dat$Y)) %>% 
+ ungroup() ->
+ df_long
+
+ plot_model <- function(model_name) {
+  df_long %>% filter(model == model_name) %>% 
+  ggplot(aes(x = station_id, y = value, color = covariate, group = covariate)) +
+    geom_point() +
+    #geom_ribbon(aes(ymin = value - 0.1, ymax = value + 0.1), alpha = 0.2) + # Adjust ymin and ymax based on your data
+    facet_wrap(~ covariate, scales = "free_y") +
+     labs(x = "Station ID", y = "Normalized Departures") +
+    theme_minimal() +
+    ggtitle(model_name) +
+    theme(plot.title = element_text(hjust = 0.5,face = "bold"),
+          legend.position = "none",
+          strip.text = element_text(face="bold"))
+}
+ 
+p1 <- plot_model("CASMC-Ridge")
+p2 <- plot_model("CASMC-Nuclear")
+p3 <- plot_model("CASMC-Lasso")
+p4 <- plot_model("BKTR")
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+
+
+
+```
+
+
+## Plot: observed Y vs estimated Y. x4/5 models
+
+```{r}
+data.frame(True = dat$O[dat$W==0],
+           Predicted =  out1$fit$fit$estimates[dat$W==0],
+           model = out1$results$model) %>% 
+ rbind(
+  data.frame(True = dat$O[dat$W==0],
+           Predicted =  out2$fit$fit$estimates[dat$W==0],
+           model = out2$results$model)
+ ) %>% 
+ rbind(
+  data.frame(True = dat$O[dat$W==0],
+           Predicted =  out3$fit$fit$estimates[dat$W==0],
+           model = out3$results$model)
+ ) %>% 
+ rbind(
+ transmute(test.estimates,  True = nb_departure,
+           Predicted = y_est,
+           model = "BKTR") 
+ ) %>%  
+ group_by(model) %>% 
+ mutate(id =  1:sum(dat$W==0)) %>% 
+ ungroup() ->
+ df_long
+
+
+plot_true_vs_predicted <- function(model_name) {
+  ggplot(df_long %>% filter(model == model_name), aes(x = True, y = Predicted)) +
+    geom_point(color = "black", size = 1, alpha = 0.6) +
+    geom_abline(intercept = 0, slope = 1, #linetype = "dashed", 
+                color = "blue",linewidth=1.1) + 
+    theme_minimal(base_size = 15) +
+    ggtitle(model_name) +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+          axis.title = element_text(size = 14),
+          axis.text = element_text(size = 12)) +
+    labs(x = "True Values", y = "Predicted Values") +
+    theme(legend.position = "none") +
+   # scale_y_continuous(expand = c(0, 0)) +
+   # scale_x_continuous(expand = c(0, 0)) +
+   xlim(0,1) +
+   ylim(min(df_long$Predicted), max(df_long$Predicted))
+     
+}
+
+p1 <- plot_true_vs_predicted("CASMC-Ridge")
+p2 <- plot_true_vs_predicted("CASMC-Nuclear")
+p3 <- plot_true_vs_predicted("CASMC-Lasso")
+p4 <- plot_true_vs_predicted("BKTR")
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+```
+
+
+```{r}
+data.frame(True = dat$O[dat$W==0],
+           Predicted =  out1$fit$fit$M[dat$W==0],
+           model = out1$results$model) %>% 
+ rbind(
+  data.frame(True = dat$O[dat$W==0],
+           Predicted =  out2$fit$fit$M[dat$W==0],
+           model = out2$results$model)
+ ) %>% 
+ rbind(
+  data.frame(True = dat$O[dat$W==0],
+           Predicted =  out3$fit$fit$M[dat$W==0],
+           model = out3$results$model)
+ ) %>%
+ 
+ group_by(model) %>% 
+ mutate(id =  1:sum(dat$W==0)) %>% 
+ ungroup() ->
+ df_long
+
+
+plot_true_vs_predicted <- function(model_name) {
+  ggplot(df_long %>% filter(model == model_name), aes(x = True, y = Predicted)) +
+    geom_point(color = "black", size = 1, alpha = 0.6) +
+    geom_abline(intercept = 0, slope = 1, #linetype = "dashed", 
+                color = "blue",linewidth=1.1) + 
+    theme_minimal(base_size = 15) +
+    ggtitle(model_name) +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+          axis.title = element_text(size = 14),
+          axis.text = element_text(size = 12)) +
+    labs(x = "True Values", y = "M") +
+    theme(legend.position = "none") +
+   # scale_y_continuous(expand = c(0, 0)) +
+   # scale_x_continuous(expand = c(0, 0)) +
+   xlim(0,1) +
+   ylim(min(df_long$Predicted), max(df_long$Predicted))
+     
+}
+
+p1 <- plot_true_vs_predicted("CASMC-Ridge")
+p2 <- plot_true_vs_predicted("CASMC-Nuclear")
+p3 <- plot_true_vs_predicted("CASMC-Lasso")
+
+#gridExtra::grid.arrange(p1, p2, p3, ncol = 2, nrow = 2)
+```
+
+
+```{r}
+
+
+data.frame(True = dat$O[dat$W==0],
+           Predicted =  (dat$X %*% out1$fit$fit$beta)[dat$W==0],
+           model = out1$results$model) %>% 
+ rbind(
+  data.frame(True = dat$O[dat$W==0],
+           Predicted =  (dat$X %*% out2$fit$fit$beta)[dat$W==0],
+           model = out2$results$model)
+ ) %>% 
+ rbind(
+  data.frame(True = dat$O[dat$W==0],
+           Predicted =  (dat$X %*% out3$fit$fit$beta)[dat$W==0],
+           model = out3$results$model)
+ ) %>% 
+ 
+ group_by(model) %>% 
+ mutate(id =  1:sum(dat$W==0)) %>% 
+ ungroup() ->
+ df_long
+
+
+plot_true_vs_predicted <- function(model_name) {
+  ggplot(df_long %>% filter(model == model_name), aes(x = True, y = Predicted)) +
+    geom_point(color = "black", size = 1, alpha = 0.6) +
+    geom_abline(intercept = 0, slope = 1, #linetype = "dashed", 
+                color = "blue",linewidth=1.1) + 
+    theme_minimal(base_size = 15) +
+    ggtitle(model_name) +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+          axis.title = element_text(size = 14),
+          axis.text = element_text(size = 12)) +
+    labs(x = "True Values", y = "X * Beta") +
+    theme(legend.position = "none") +
+   # scale_y_continuous(expand = c(0, 0)) +
+   # scale_x_continuous(expand = c(0, 0)) +
+   xlim(0,1) +
+   ylim(min(df_long$Predicted), max(df_long$Predicted))
+     
+}
+
+p1.1 <- plot_true_vs_predicted("CASMC-Ridge")
+p2.1 <- plot_true_vs_predicted("CASMC-Nuclear")
+p3.1 <- plot_true_vs_predicted("CASMC-Lasso")
+
+gridExtra::grid.arrange(p1, p1.1, p2, p2.1, p3, p3.1, ncol = 2, nrow = 3)
+
+
+```
+
+
+##  Check Residuals
+
+
+### CASMC-Ridge
+
+```{r}
+Residuals <- dat$A[dat$W==0] - 
+            out1$fit$fit$estimates[dat$W==0]  
+utils$residual_analysis(Residuals) 
+```
+
+### CASMC-Nuclear
+
+```{r}
+Residuals <- dat$A[dat$W==0] - 
+            out2$fit$fit$estimates[dat$W==0]  
+utils$residual_analysis(Residuals) 
+```
+
+
+### CASMC-Lasso
+
+```{r}
+Residuals <- dat$A[dat$W==0] - 
+            out3$fit$fit$estimates[dat$W==0]  
+utils$residual_analysis(Residuals) 
+```
+
+### BKTR
+
+```{r}
+Residuals <- test.estimates$nb_departure - test.estimates$y_est  
+utils$residual_analysis(Residuals) 
+```
+
+
+
+## Something about covariates?
