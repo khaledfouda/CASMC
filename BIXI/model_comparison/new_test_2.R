@@ -1,17 +1,13 @@
 setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 source("./code_files/import_lib.R")
-source("./BIXI/data/transform_data_into_mat_other.R")
+source("./BIXI/data/transform_data_into_mat_other_2.R")
 
-results <- data.frame()
 
-missp = 0.00002
-# all_miss = all_miss[1:2]
-
-dat <- load_model_bixi_dat2(time_cov = TRUE,2023,.2, missp, .2) 
+dat <- load_model_bixi_dat3(time_cov = TRUE,2023,.2) 
 
 out0 <- SImpute_Sim_Wrapper(dat) 
 
-out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = T, return_fit = T)
+out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = T, return_fit = T, max_cores = 20)
 
 hpar = CASMC_Nuclear_hparams
 #hpar$beta$n.lambda = 80
@@ -41,6 +37,8 @@ rbind(out0$results, out1$results,out2$results, out3$results, out4) %>%
 
 all.out %>% arrange(desc(corr.test)) %>%  kable()
 #-----------------------------------------------------
+X <- dat$X
+
 apply(out1$fit$fit$beta, 1, summary) |> as.data.frame() |>
   t() |>
   as.data.frame() |>
