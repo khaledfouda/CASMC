@@ -4,7 +4,7 @@ source("./BIXI/data/transform_data_into_mat_other.R")
 
 results <- data.frame()
 
-missp = 0.4
+missp = 0.00002
 # all_miss = all_miss[1:2]
 
 dat <- load_model_bixi_dat2(time_cov = TRUE,2023,.2, missp, .2) 
@@ -32,8 +32,10 @@ rbind(out0$results, out1$results,out2$results, out3$results, out4) %>%
                           error.test, corr.test, error.train,
                           rank_M, rank_beta, sparse_all) %>% 
  mutate(error.test.diff = 
-         (out0$results$error.test - as.numeric(error.test)) %>% 
-         round(3)) %>% 
+         out0$results$error.test - as.numeric(error.test),
+          corr.test.diff = 
+            out0$results$corr.test - as.numeric(corr.test)) %>% 
+          
  mutate_at(vars(-model), function(x) round(as.numeric(x),3) )->
   all.out
 

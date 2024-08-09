@@ -5,7 +5,7 @@ setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 library(BKTR)
 source("./code_files/import_lib.R")
 source("./BIXI/data-raw/bixi_data.R")
-source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
+#source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
 
 
 bixi.dat <- BixiData$new()
@@ -74,6 +74,49 @@ total_obs <- sum(! is.na(data.df$nb_departure))
 obs_indic <- which(! is.na(data.df$nb_departure))
 test_indic <- obs_indic[sample(1:total_obs, round(total_obs*0.3),replace = FALSE)]
 print(length(test_indic))
+#----------------------------------------------------------------------------------
+train <- test <- data[[1]]
+
+m = length(unique(train$time))
+n = length(unique(train$location))
+
+
+#effective_stations <- readRDS("./BIXI/data/splits/effective_stations.rds")
+effective_stations  <- sample(unique(train$location), round(n*.5), FALSE)
+missing_rate = .98
+test %<>% 
+        mutate(nb_departure = replace(nb_departure,
+                                      !location %in% effective_stations, NA))
+for(station in effective_stations){
+        missing_days = sample(unique(train$time), floor(missing_rate * m), FALSE)
+      train %<>% 
+      mutate(nb_departure = replace(nb_departure,
+                                    location == station & time %in% missing_days, NA))
+      test %<>% 
+              mutate(nb_departure = replace(nb_departure,
+                                            location == station & (!time %in% missing_days), NA))
+      
+}
+sum(is.na(train$nb_departure)) / nrow(train)
+sum(!is.na(test$nb_departure)) / nrow(train)
+#-------- for the rest, make extra (random) 20% missing but without adding them 
+# to the test set.
+
+non_na_indices <- which( (!is.na(train$nb_departure)) & 
+                                 (!train$location %in% effective_stations) )
+num_to_na <- round(0.2 * length(non_na_indices))
+train$nb_departure[sample(non_na_indices, num_to_na, F)] <- NA
+sum(is.na(train$nb_departure)) / nrow(train)
+#------------------------------------------------------------
+
+test %<>% filter(! is.na(nb_departure))
+nrow(test) / nrow(train)
+
+saveRDS(train,file =  paste0("./BIXI/data/splits/split_",1,"_train.rds"))
+saveRDS(test,file =  paste0("./BIXI/data/splits/split_",1,"_test.rds"))
+
+# END - IGNORE THE REST --- go to Desktop.
+#-----------------------------------------------------------------------
 for(i in 1:3){
  
 train.df <- data[[i]]
