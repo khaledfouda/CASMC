@@ -100,6 +100,20 @@ out10$results$model <- "CASMC-Lasso+Temporal+Spatial"
 
 
 
+ymiss = dat$W==0
+test.set = dat$O[ymiss]
+errm <- utils$error_metric$rmse
+out1$results$rmse_using_m <- errm(out1$fit$fit$M[ymiss], test.set)
+out2$results$rmse_using_m <- errm(out2$fit$fit$M[ymiss], test.set)
+out3$results$rmse_using_m <- errm(out3$fit$fit$M[ymiss], test.set)
+out6$results$rmse_using_m <- errm(out6$fit$fit$M[ymiss], test.set)
+out7$results$rmse_using_m <- errm(out7$fit$fit$M[ymiss], test.set)
+out8$results$rmse_using_m <- errm(out8$fit$fit$M[ymiss], test.set)
+out9$results$rmse_using_m <- errm(out9$fit$fit$M[ymiss], test.set)
+out10$results$rmse_using_m <- errm(out10$fit$fit$M[ymiss], test.set)
+out0$results$rmse_using_m <- out4$results$rmse_using_m <- out5$results$rmse_using_m <- NA
+
+
 rbind(out0$results, out1$results,out2$results, out3$results, out4, out5, out6$results,
       out7$results,out8$results,out9$results,out10$results) %>% 
  as.data.frame() %>% 
@@ -107,7 +121,8 @@ rbind(out0$results, out1$results,out2$results, out3$results, out4, out5, out6$re
         test_prop  = (sum(dat$W==0)/length(dat$Y)) %>% round(2)) %>% 
  dplyr::select(model, time, lambda.beta, lambda.M,
                           error.test, corr.test, error.train,
-                          rank_M, rank_beta, sparse_all, total_miss, test_prop) %>% 
+                          rank_M, rank_beta, sparse_all, total_miss, test_prop,
+               rmse_using_m) %>% 
 # mutate(error.test.diff = 
  #        out0$results$error.test - as.numeric(error.test),
   #        corr.test.diff = 
@@ -146,7 +161,7 @@ all.out %<>%
   c("BKTR",5568,NA,NA,round(unlist(prepare_output_bixi(Sys.time(), dat$X, test.estimates$y_est,
                     train.estimates$y_est, test.estimates$nb_departure,
                     train.estimates$nb_departure))[2:7],3), all.out$total_miss[1],
-    all.out$test_prop[1])
+    all.out$test_prop[1], NA)
 
  )
 
