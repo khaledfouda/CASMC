@@ -143,7 +143,7 @@ bktr.fit$imputed_y_estimates |>
 
 all.out %<>% 
  rbind(
-  c("BKTR",NA,NA,NA,round(unlist(prepare_output_bixi(Sys.time(), dat$X, test.estimates$y_est,
+  c("BKTR",5568,NA,NA,round(unlist(prepare_output_bixi(Sys.time(), dat$X, test.estimates$y_est,
                     train.estimates$y_est, test.estimates$nb_departure,
                     train.estimates$nb_departure))[2:7],3), all.out$total_miss[1],
     all.out$test_prop[1])
@@ -158,7 +158,25 @@ all.out %<>%
 
 
 ```{r}
-all.out %>% arrange((error.test)) %>%  kable()
+all.out %>% arrange(error.test, desc(corr.test)) %>%
+  mutate(corr.test = paste0(  round(as.numeric(corr.test)*100,1),"%" )) %>% 
+  select(-test_prop, -total_miss) %>% 
+  kable("html", escape = F,
+          caption = paste("total missing=",all.out$total_miss[1],
+    ", test proportion=", all.out$test_prop[1])) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+      full_width = F,
+      position = "center") %>%
+         column_spec(
+            5:6,
+            bold = T,
+            background = grDevices::adjustcolor("pink", alpha.f = 0.1)
+         ) %>% 
+   row_spec(
+            c(1,2,12,10),
+            bold = T,
+            background = grDevices::adjustcolor("yellow", alpha.f = 0.05)
+         )
 ```
 
 
