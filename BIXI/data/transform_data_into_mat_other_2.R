@@ -3,7 +3,7 @@ library(BKTR)
 # source("./code_files/import_lib.R")
 
 load_model_bixi_dat3 <- function(time_cov=TRUE, seed = 2023,
-                                 validp = 0.2){
+                                 validp = 0.2, note = ""){
 
   if(!is.null(seed)) set.seed(seed)
 
@@ -12,37 +12,43 @@ i = 1 #ifelse(time_cov, 2, 1)
 
 out <- list()
 
-train.df <-
-  readRDS(paste0("./BIXI/data/splits/split_", i, "_train.rds"))
-test.df <-
-  readRDS(paste0("./BIXI/data/splits/split_", i, "_test.rds"))
+file_name = paste0("./BIXI/data/splits/split_",ifelse(time_cov,"T","L"),note,
+                   "_")
+print(paste0("Reading from ",file_name, "..."))
 
-if(time_cov){
+
+train.df <-
+  readRDS(paste0(file_name, "train.rds"))
+test.df <-
+  readRDS(paste0(file_name, "test.rds"))
+
 train.df |>
   as.data.frame() |>
-  mutate(time = as.Date(time)) %>%
-  arrange(location, time) ->  train.df
+  #mutate(time = as.Date(time)) %>%
+  arrange(columns, rows) ->  train.df
 
 test.df |>
   as.data.frame() |>
-  mutate(time = as.Date(time)) %>%
-  arrange(location, time) ->  test.df
+  #mutate(time = as.Date(time)) %>%
+  arrange(columns, rows) ->  test.df
 
-  
-}else{
-  train.df |>
-    as.data.frame() |>
-    mutate(time = as.Date(time)) %>%
-    rename(location = time, time = location) %>%
-    arrange(location, time) ->  train.df
-  
-  test.df |>
-    as.data.frame() |>
-    mutate(time = as.Date(time)) %>%
-    rename(location = time, time = location) %>%
-    arrange(location, time) ->  test.df
-  
-}
+# if(time_cov){
+# 
+#   
+# }else{
+#   train.df |>
+#     as.data.frame() |>
+#     mutate(time = as.Date(time)) %>%
+#     rename(columns = time, time = columns) %>%
+#     arrange(columns, time) ->  train.df
+#   
+#   test.df |>
+#     as.data.frame() |>
+#     mutate(time = as.Date(time)) %>%
+#     rename(columns = time, time = columns) %>%
+#     arrange(columns, time) ->  test.df
+#   
+# }
 dim(train.df)
 dim(test.df)
 
@@ -60,10 +66,10 @@ dim(test.df)
 #'    valid: vector of validation response.
 #----------------------------------------------------------
 train.df %>%
-  arrange(location, time) %>% 
-  group_by(location, time) %>% 
-reshape2::dcast(time ~ location, value.var = "nb_departure") |>
-  select(-time) |>
+  arrange(columns, rows) %>% 
+  group_by(columns, rows) %>% 
+reshape2::dcast(rows ~ columns, value.var = "nb_departure") |>
+  select(-rows) |>
   as.matrix() ->
   Y
 colnames(Y) <- NULL
@@ -71,12 +77,12 @@ colnames(Y) <- NULL
 out$Y <- Y
 
 rbind(train.df, test.df) %>%
-  group_by(location, time) %>% 
+  group_by(columns, rows) %>% 
   filter(!(is.na(nb_departure) & any(!is.na(nb_departure)))) %>% 
   ungroup() %>% 
-  arrange(location, time) %>% 
-  reshape2::dcast(time ~ location, value.var = "nb_departure")  %>% 
-  select(-time)  %>% 
+  arrange(columns, rows) %>% 
+  reshape2::dcast(rows ~ columns, value.var = "nb_departure")  %>% 
+  select(-rows)  %>% 
   as.matrix() ->
   A 
 colnames(A) <- NULL  
@@ -89,14 +95,14 @@ print(sum(is.na(Y)) / length(out$W))
 
 #-- get X
 rbind(train.df, test.df) %>%
-  group_by(location, time) %>% 
+  group_by(columns, rows) %>% 
   filter(!(is.na(nb_departure) & any(!is.na(nb_departure)))) %>% 
   ungroup() %>% 
-  arrange(location, time) %>% 
-  group_by(time) |>
+  arrange(columns, rows) %>% 
+  group_by(rows) |>
   filter(row_number() == 1) |>
   ungroup() |>
-  select(-location, -time, -nb_departure) %>% 
+  select(-columns, -rows, -nb_departure) %>% 
   as.matrix() ->
   out$X
 #-----------------------------

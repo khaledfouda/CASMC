@@ -7,6 +7,8 @@ source("./code_files/import_lib.R")
 source("./BIXI/data-raw/bixi_data.R")
 #source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
 
+#generate_BIXI_data <- function(time_cov = TRUE, seed = 2023, note = ""){
+        
 
 bixi.dat <- BixiData$new()
 
@@ -146,6 +148,7 @@ nrow(test) / nrow(train)
 saveRDS(train,file =  paste0("./BIXI/data/splits/split_",1,"_train.rds"))
 saveRDS(test,file =  paste0("./BIXI/data/splits/split_",1,"_test.rds"))
 
+}
 # END - IGNORE THE REST --- go to Desktop.
 #-----------------------------------------------------------------------
 for(i in 1:3){
