@@ -49,7 +49,7 @@ dat <- load_model_bixi_dat3(time_cov = FALSE, seed = 2023,validp = .2)
 # dat$fit_data$valid <- dat$fit_data$Y[dat$fit_data$W_valid==0]
 #--------------------------------------------
 out0 <- SImpute_Sim_Wrapper(dat) 
-hpar_r <- CASMC_Ridge_hparams
+hpar_r <- CASMC_Ridge_hparams 
 hpar_r$beta$lambda.grid <- seq(10,7, length.out=20)
 out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = F, hpar=hpar_r, return_fit = T, max_cores = 20)
 
@@ -156,31 +156,37 @@ rownames(all.out) <- NULL
 
 ```{r}
 
-# 
-# bktr.fit <- readRDS("./BIXI/data/fits/split_1_fit.rds")
-# test.df <-  readRDS(paste0("./BIXI/data/splits/split_1_test.rds"))
-# 
-# bktr.fit$imputed_y_estimates |> 
-#   as.data.frame() |> 
-#   merge(test.df, by = c("location", "time")) |> 
-#   select(location, time, y_est, nb_departure) -> 
-#   test.estimates
-# 
-# bktr.fit$imputed_y_estimates |> 
-#   as.data.frame() |> 
-#   merge(filter(train.df, ! is.na(nb_departure)), by = c("location", "time")) |> 
-#   select(location, time, y_est, nb_departure) -> 
-#   train.estimates
-# 
-# 
-# all.out %<>% 
-#  rbind(
-#   c("BKTR",5568,NA,NA,round(unlist(prepare_output_bixi(Sys.time(), dat$X, test.estimates$y_est,
-#                     train.estimates$y_est, test.estimates$nb_departure,
-#                     train.estimates$nb_departure))[2:7],3), all.out$total_miss[1],
-#     all.out$test_prop[1], NA)
-# 
-#  )
+
+bktr.fit <- readRDS("./BIXI/data/fits/split_L_fit.rds")
+test.df <-  readRDS(paste0("./BIXI/data/splits/split_L_test.rds"))
+
+test.df %<>%
+  rename(time = columns, location = rows)
+
+train.df %<>%
+  rename(time = columns, location = rows)
+
+bktr.fit$imputed_y_estimates |>
+  as.data.frame() |>
+  merge(test.df, by = c("location", "time")) |>
+  select(location, time, y_est, nb_departure) ->
+  test.estimates
+
+bktr.fit$imputed_y_estimates |>
+  as.data.frame() |>
+  merge(filter(train.df, ! is.na(nb_departure)), by = c("location", "time")) |>
+  select(location, time, y_est, nb_departure) ->
+  train.estimates
+
+
+all.out %<>%
+ rbind(
+  c("BKTR",6426,NA,NA,round(unlist(prepare_output_bixi(Sys.time(), dat$X, test.estimates$y_est,
+                    train.estimates$y_est, test.estimates$nb_departure,
+                    train.estimates$nb_departure))[2:7],3), all.out$total_miss[1],
+    all.out$test_prop[1], NA)
+
+ )
 # 
 
 
@@ -205,7 +211,7 @@ all.out %>% arrange(error.test, desc(corr.test)) %>%
             background = grDevices::adjustcolor("pink", alpha.f = 0.1)
          ) %>% 
    row_spec(
-            c(1,11,9),
+            c(1,2,12,10),
             bold = T,
             background = grDevices::adjustcolor("yellow", alpha.f = 0.05)
          )
@@ -245,26 +251,25 @@ apply(out10$fit$fit$beta, 1, summary) |> as.data.frame() |>
   `rownames<-` (colnames(X)) %>% 
   mutate(Model = out10$results$model)
   ) %>% 
-#    rbind(
-# bktr.fit$beta_estimates %>% 
-#  as.data.frame() %>% 
-#  select(-location, -time, -Intercept) %>% 
-#  apply(2, summary) %>% 
-#  t() %>% 
-#  as.data.frame() %>% 
-#  mutate(prop_non_zero = 1, Model = "BKTR")
-#  ) %>% 
+   rbind(
+bktr.fit$beta_estimates %>%
+ as.data.frame() %>%
+ select(-location, -time, -Intercept) %>%
+ apply(2, summary) %>%
+ t() %>%
+ as.data.frame() %>%
+ mutate(prop_non_zero = 1, Model = "BKTR")
+ ) %>%
   select(-Model) %>% 
   mutate_if(is.numeric, round, digits=3) %>% 
   kable("html", col.names = c("Min", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max", "Prop Non Zero"),
         caption = "Covariate Summaries by Model") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
   row_spec(0, bold = TRUE) %>%
-  # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
   pack_rows("CASMC-Ridge", 1, 8, hline_after = TRUE) %>%
   pack_rows("CASMC-Nuclear", 9, 16, hline_after = TRUE) %>%
-  pack_rows("CASMC-Lasso", 17, 24, hline_after = TRUE) #%>% 
-  # pack_rows("BKTR", 10, 12, hline_after = TRUE)
+  pack_rows("CASMC-Lasso", 17, 24, hline_after = TRUE) %>% 
+  pack_rows("BKTR", 25, 32, hline_after = TRUE)
 
 
 
@@ -289,17 +294,15 @@ out1$fit$fit$beta %>% t() %>% as.data.frame() %>%
  `colnames<-` (colnames(dat$X)) %>% 
  mutate(model = out3$results$model)
  ) %>% 
-#  rbind(
-#   
-# bktr.fit$beta_estimates %>% as.data.frame() %>% 
-#  arrange(location, time) %>% 
-#  group_by(location) %>% 
-#  summarise(location = location[1], mean_temp_c = mean(mean_temp_c),
-#         total_precip_mm = mean(total_precip_mm), holiday = mean(holiday)) %>% 
-#  ungroup() %>% 
-#  select(-location) %>% 
-#  mutate(model = "BKTR")  
-#  ) %>%
+ rbind(
+
+bktr.fit$beta_estimates %>% as.data.frame() %>%
+ arrange(location, time) %>%
+ group_by(time) %>%
+  summarise(across(where(is.numeric), mean)) %>% 
+  select(colnames(dat$X)) %>% 
+ mutate(model = "BKTR")
+ ) %>%
  pivot_longer(
   cols = colnames(dat$X), 
   names_to = "covariate", values_to = "value"
@@ -326,14 +329,15 @@ out1$fit$fit$beta %>% t() %>% as.data.frame() %>%
 p1 <- plot_model("CASMC-Ridge")
 p2 <- plot_model("CASMC-Nuclear")
 p3 <- plot_model("CASMC-Lasso")
-#p4 <- plot_model("BKTR")
+p4 <- plot_model("BKTR")
 
 gridExtra::grid.arrange(p1, p2, ncol = 1, nrow = 2)
 ```
 
 
 ```{r}
-p3
+gridExtra::grid.arrange(p3, p4, ncol = 1, nrow = 2)
+
 ```
 
 
@@ -358,8 +362,12 @@ out1$fit$fit$beta %>% t() %>% as.data.frame() %>%
  `colnames<-` (colnames(dat$X)) %>% 
  mutate(model = out3$results$model)
  ) %>% 
-#  rbind(
-#   
+ rbind(
+bktr.fit$beta_estimates %>% as.data.frame() %>%
+ arrange(location, time) %>%
+ group_by(time) %>%
+  summarise(across(where(is.numeric), mean)) %>% 
+  select(colnames(dat$X)) %>%
 # bktr.fit$beta_estimates %>% as.data.frame() %>% 
 #  arrange(location, time) %>% 
 #  group_by(location) %>% 
@@ -367,8 +375,8 @@ out1$fit$fit$beta %>% t() %>% as.data.frame() %>%
 #         total_precip_mm = mean(total_precip_mm), holiday = mean(holiday)) %>% 
 #  ungroup() %>% 
 #  select(-location) %>% 
-#  mutate(model = "BKTR")  
-#  ) %>%
+ mutate(model = "BKTR")
+ ) %>%
  pivot_longer(
   cols = colnames(dat$X), 
   names_to = "covariate", values_to = "value"
@@ -395,13 +403,14 @@ out1$fit$fit$beta %>% t() %>% as.data.frame() %>%
 p1 <- plot_model("CASMC-Ridge+Temporal")
 p2 <- plot_model("CASMC-Nuclear+Temporal+Spatial")
 p3 <- plot_model("CASMC-Lasso+Temporal+Spatial")
-#p4 <- plot_model("BKTR")
+p4 <- plot_model("BKTR")
 
 gridExtra::grid.arrange(p1, p2, ncol = 1, nrow = 2)
 ```
 
 ```{r}
-p3
+gridExtra::grid.arrange(p3, p4, ncol = 1, nrow = 2)
+
 ```
 
 
@@ -423,11 +432,11 @@ data.frame(True = dat$O[dat$W==0],
            Predicted =  out3$fit$fit$estimates[dat$W==0],
            model = out3$results$model)
  ) %>% 
- # rbind(
- # transmute(test.estimates,  True = nb_departure,
- #           Predicted = y_est,
- #           model = "BKTR") 
- # ) %>%  
+ rbind(
+ transmute(test.estimates,  True = nb_departure,
+           Predicted = y_est,
+           model = "BKTR")
+ ) %>%
  group_by(model) %>% 
  mutate(id =  1:sum(dat$W==0)) %>% 
  ungroup() ->
@@ -456,9 +465,9 @@ plot_true_vs_predicted <- function(model_name) {
 p1 <- plot_true_vs_predicted("CASMC-Ridge+Temporal")
 p2 <- plot_true_vs_predicted("CASMC-Nuclear+Temporal+Spatial")
 p3 <- plot_true_vs_predicted("CASMC-Lasso+Temporal+Spatial")
-#p4 <- plot_true_vs_predicted("BKTR")
+p4 <- plot_true_vs_predicted("BKTR")
 
-gridExtra::grid.arrange(p1, p2, p3,  ncol = 2, nrow = 2)
+gridExtra::grid.arrange(p1, p2, p3, p4,  ncol = 2, nrow = 2)
 ```
 
 
@@ -688,8 +697,8 @@ utils$residual_analysis(Residuals)
 ### BKTR
 
 ```{r}
-# Residuals <- test.estimates$nb_departure - test.estimates$y_est  
-# utils$residual_analysis(Residuals) 
+Residuals <- test.estimates$nb_departure - test.estimates$y_est  
+utils$residual_analysis(Residuals) 
 ```
 
 
