@@ -79,7 +79,6 @@ bixi.dat$spatial_positions_df %>% arrange(location) %>%  head()
 
 library(ggmap)
 
-# register_google("AIzaSyCTX4BNXL0OnVhsv9_w4MPl3mLGEMQUNPU")
 
 
 map.dat <- arrange(bixi.dat$spatial_positions_df,location) %>% 
@@ -96,7 +95,7 @@ map.dat %<>% mutate(effect = effect > quantile(map.dat$effect,.75))
 #         maptype = "terrain"
 # )
 
-register_stadiamaps("c62baf14-c12d-4bac-ac8e-f027e861d229")
+#register_stadiamaps("c62baf14-c12d-4bac-ac8e-f027e861d229")
 montreal_map <- get_stadiamap(
         bbox = c(left = -73.72, bottom = 45.42, right = -73.45, top = 45.62),
         zoom = 12, maptype = "stamen_toner_lite"
