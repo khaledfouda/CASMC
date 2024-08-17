@@ -50,25 +50,92 @@ hpar_n$laplacian$lambda.b = .58
 hpar_n$laplacian$lambda.a = .8222
 out9 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
 out9$results$model <- "CASMC-Nuclear+Temporal+Spatial"
-
+#-----------------------------------------------
+dat <- load_model_bixi_dat3(2023,.2) 
+#------------------------------------------------
+hpar_n$laplacian$S.a <- temp_kern
+hpar_n$laplacian$S.b <- spt_kern
+hpar_n$laplacian$lambda.a = .4556
+hpar_n$laplacian$lambda.b = .8222
+out9 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
+out9$results$model <- "CASMC-Nuclear+Temporal+Spatial"
+#-------------------------
+hpar_l$laplacian$S.a <- temp_kern
+hpar_l$laplacian$S.b <- spt_kern
+hpar_l$laplacian$lambda.a = .4111
+hpar_l$laplacian$lambda.b = .7778
+out10 <- CASMC_Lasso_Sim_Wrapper(dat, trace=F, hpar = hpar_l, return_fit = T)
+out10$results$model <- "CASMC-Lasso+Temporal+Spatial"
 #-------------------------
 dat$X %>% dim()
+dim(out10$fit$fit$beta)
 
-Xbeta <- dat$X %*% out9$fit$fit$beta
+Xbeta <- dat$X %*% out10$fit$fit$beta
 
-plot(1:587, apply(Xbeta, 1, mean))
+summary
+plot(1:nrow(dat$Y), apply(Xbeta, 1, mean))
+
 bixi.dat$spatial_positions_df %>% arrange(location) %>%  head()
 
-library(sf)
 library(ggmap)
+
+# register_google("AIzaSyCTX4BNXL0OnVhsv9_w4MPl3mLGEMQUNPU")
 
 
 map.dat <- arrange(bixi.dat$spatial_positions_df,location) %>% 
-                 mutate(effect = apply(Xbeta, 1, mean))     
-montreal_map <- get_map(location = c(lon = -73.5673, lat = 45.5017), zoom = 12)
-ggmap(map.dat) +
+                mutate(effect = apply(Xbeta, 2, mean)) # %>% 
+        mutate(effect = out10$fit$fit$beta[3,])
+
+
+map.dat %<>% mutate(effect = effect > quantile(map.dat$effect,.75))
+
+# 
+# montreal_map <- get_stamenmap(
+#         bbox = c(left = -73.72, bottom = 45.42, right = -73.45, top = 45.62), 
+#         zoom = 12, 
+#         maptype = "terrain"
+# )
+
+register_stadiamaps("c62baf14-c12d-4bac-ac8e-f027e861d229")
+montreal_map <- get_stadiamap(
+        bbox = c(left = -73.72, bottom = 45.42, right = -73.45, top = 45.62),
+        zoom = 12, maptype = "stamen_toner_lite"
+)
+
+#montreal_map <- get_map(location = c(lon = -73.5673, lat = 45.5017), zoom = 12)
+ggmap(montreal_map) +
+        geom_point(data = map.dat,
+                   aes(x = longitude, y = latitude, color = effect),
+                   size = 1, alpha = 0.8) +
+         # scale_color_gradient(low = "yellow", high = "red",
+         #                      name = "Average Effect") +
+        labs(title = "Locations in Montreal with Average Covariate Effect",
+             x = "Longitude", y = "Latitude") +
+        theme_minimal()
+
+
+# 
+# library(ggplot2)
+# library(osmdata)
+# library(ggspatial)
+# 
+
+# Define the bounding box for Montreal
+bbox <- getbb("Montreal, Canada")
+
+# Fetch the map using OpenStreetMap
+montreal_map <- opq(bbox = bbox) %>%
+        add_osm_feature(key = "highway") %>%
+        osmdata_sf()
+
+# Extract the bounding box coordinates for ggplot
+bbox_coords <- as.numeric(st_bbox(montreal_map$osm_lines))
+
+ggplot() +
+        geom_sf(data = montreal_map$osm_lines, inherit.aes = FALSE, color = "gray") +
         geom_point(data = df, aes(x = longitude, y = latitude, color = average_effect), size = 3, alpha = 0.8) +
         scale_color_gradient(low = "yellow", high = "red", name = "Average Effect") +
+        coord_sf(xlim = c(bbox_coords[1], bbox_coords[3]), ylim = c(bbox_coords[2], bbox_coords[4]), expand = FALSE) +
         labs(title = "Locations in Montreal with Average Covariate Effect",
              x = "Longitude", y = "Latitude") +
         theme_minimal()
