@@ -148,10 +148,13 @@ CAMC3_fit <-
       # part 3: Update B
       # prereq: U, VDsq, y, Dsq, lambda.M, L.b
       # updates U, Dsq, V
-      B = t(U) %*% y + t(VDsq)
+      B = crossprod(y, U) + VDsq # equiv to below
+      # B = t(U) %*% y + t(VDsq)
       if (laplace.b)
         B = B - t(V)  %*% L.b
-      B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
+      D.star <- Dsq / (Dsq + lambda.M)
+      B <- as.matrix(B %*% diag(D.star))
+      #B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
       Bsvd = utils$svd_small_nc(B, FALSE, p = J) 
       V = Bsvd$u
       Dsq = Bsvd$d #pmax(Bsvd$d, min_eigv)
@@ -160,10 +163,13 @@ CAMC3_fit <-
       # part 4: Update A
       # prereq: U, D, VDsq, y, lambda.M, L.a
       # updates U, Dsq, V
-      A = (y %*% V) + t(Dsq * t(U))
+      A = (y %*% V) + sweep(U, 2L, Dsq, `*`)
+      #A = (y %*% V) + t(Dsq * t(U))
       if (laplace.a)
         A = A - L.a %*% U
-      A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
+      D.star <- Dsq / (Dsq + lambda.M)
+      A <- sweep(A, 2L, D.star, `*`)
+      #A = as.matrix(t(t(A) * (1 + lambda.M* Dsq^(-2))^2 ))
       Asvd =  utils$svd_small_nc(A, FALSE, p = J)
       U = Asvd$u
       Dsq = Asvd$d #pmax(Asvd$d, min_eigv)

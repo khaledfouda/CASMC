@@ -20,6 +20,9 @@ packages <-
     "roxygen2" # to create help pages
   )
 
+# uncomment the next line to install the libraries
+#install.packages(packages)
+
 # unload the packages if they're loaded. 
 for (pkg in packages) {
   name = paste0("package:",pkg)
@@ -43,7 +46,7 @@ for (pkg in packages) {
 utils <- new.env()
 
 
-path_to_proj = "/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP/"
+path_to_proj = "~/OneDrive/Research/Summer25/CASMC/"
 # setwed(path_to_proj)
 path_to_code = paste0(path_to_proj, "functions/")
 path_to_data = paste0(path_to_proj, "saved_data/")
