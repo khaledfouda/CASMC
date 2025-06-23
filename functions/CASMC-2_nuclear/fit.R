@@ -4,6 +4,7 @@
 
 
 
+
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
 #'
@@ -21,8 +22,10 @@
 #' @export
 #'
 CASMC2_fit <-
+  CASMC_Nuclear_fit <-
   function(y,
            X,
+           XtX = t(X) %*% X,
            J = 2,
            r = 2,
            lambda.M = 0,
@@ -41,7 +44,6 @@ CASMC2_fit <-
            warm.start = NULL,
            # the following should not be modified
            final.svd = TRUE,
-           init = "naive",
            min_eigv = 1e-4) {
     stopifnot(inherits(y, "dgCMatrix"))
     irow = y@i
@@ -50,7 +52,6 @@ CASMC2_fit <-
     m <- n[2]
     n <- n[1]
     k <- ncol(X)
-    XtX = t(X) %*% X
     
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
@@ -58,11 +59,11 @@ CASMC2_fit <-
     laplace.a = laplace.b = F
     if (!is.null(S.a) && lambda.a > 0) {
       laplace.a = T
-      L.a = computeLaplacian(S.a, normalized = normalized_laplacian) * lambda.a
+      L.a = utils$computeLaplacian(S.a, normalized = normalized_laplacian) * lambda.a
     }
     if (!is.null(S.b) && lambda.b > 0) {
       laplace.b = T
-      L.b = computeLaplacian(S.b, normalized = normalized_laplacian) * lambda.b
+      L.b = utils$computeLaplacian(S.b, normalized = normalized_laplacian) * lambda.b
     }
     #---------------------------------------------------
     # warm start or initialize (naive or random)
@@ -75,105 +76,48 @@ CASMC2_fit <-
         stop("warm.start is missing some or all of the components.")
       warm = TRUE
       # prepare U, Dsq, V
-      D = warm.start$d
-      JD = sum(D > min_eigv)
-      if (JD >= J) {
-        U = warm.start$u[, seq(J), drop = FALSE]
-        V = warm.start$v[, seq(J), drop = FALSE]
-        Dsq = D[seq(J)]
-      } else{
-        # upscale
-        Ja = J - JD
-        Dsq = c(D, rep(D[JD], Ja))
-        U = warm.start$u
-        Ua = matrix(rnorm(n * Ja), n, Ja)
-        Ua = Ua - U %*% (t(U) %*% Ua)
-        Ua = tryCatch(
-          fast.svd(Ua, trim = FALSE)$u,
-          error = function(e)
-            svd(Ua)$u
-        )
-        U = cbind(U, Ua)
-        V = cbind(warm.start$v, matrix(0, m, Ja))
-      }
+      warm.out <-
+        utils$prepare.M.warm.start(warm.start, J, n, m, min_eigv)
+      U = warm.out$U
+      V = warm.out$V
+      Dsq = warm.out$Dsq
       #----------------
       # prepare ub, db, vb
-      Db = warm.start$db
-      rD = max(1,sum(Db > min_eigv))
-      if (rD >= r) {
-        Ub = warm.start$ub[, seq(r), drop = FALSE]
-        Vb = warm.start$vb[, seq(r), drop = FALSE]
-        Db = Db[seq(r)]
-      } else{
-        ra = r - rD
-        Db = c(Db, rep(Db[rD], ra))
-        Ub = warm.start$ub
-        Uba = matrix(rnorm(k * ra), k, ra)
-        Uba = Uba - Ub %*% (t(Ub) %*% Uba)
-        Uba = tryCatch(
-          fast.svd(Uba, trim = FALSE)$u,
-          error = function(e)
-            svd(Uba)$u
-        )
-        Ub = cbind(Ub, Uba)
-        Vb = cbind(warm.start$vb, matrix(0, m, ra))
-      }
-      Q = UD(Ub, Db)
-      R = UD(Vb, Db)
+      warm.out <-
+        utils$prepare.M.warm.start(list(
+          u = warm.start$ub,
+          v = warm.start$vb,
+          d = warm.start$db
+        ),
+        r,
+        k,
+        m,
+        min_eigv)
+      Ub = warm.out$U
+      Vb = warm.out$V
+      Db = warm.out$Dsq
+      # print(paste(r, dim(Ub)[2], dim(warm.start$ub)[2],length(Db),
+      #             length(warm.start$db)))
+      Q = utils$UD(Ub, Db)
+      R = utils$UD(Vb, Db)
     } else{
-      # initialize. Warm start is not provided
-      stopifnot(init %in% c("random", "naive"))
-      if (init == "random") {
-        stop("Not implemented yet.")
-      } else if (init == "naive") {
-        # Y_naive = as.matrix(y)
-        # Y_naive = naive_MC(Y_naive)
-        # svdH = reduced_hat_decomp.H(X)
-        # Xbeta <-  svdH$u %*% (svdH$v  %*% Y_naive)
-        # M <- as.matrix(Y_naive - Xbeta)
-        # M <-  tryCatch(
-        #   propack.svd(M, J),
-        #   error = function(e) {
-        #     message(paste("Naive Init:", e))
-        #     svd_trunc_simple(M, J)
-        #   }
-        # )
-        # U = M$u
-        # V = M$v
-        # Dsq = pmax(M$d, min_eigv)
-        # #----------------------
-        # # initialization for beta = X^-1 Y
-        # # comment for later: shouldn't be X^-1 H Y??
-        # beta = as.matrix(ginv(X) %*% Xbeta)
-        # QRsvd = svd_trunc_simple(beta, r)
-        # Ub <- as.matrix(QRsvd$u, k, r)
-        # Db <- pmax(sqrt(QRsvd$d), min_eigv)
-        # Vb <- as.matrix(QRsvd$v, m, r)
-        # Y_naive <- Xbeta <- M <- NULL
-        #---------------------------------------------------------------
-        Y_naive = naive_MC(as.matrix(y))
-        beta = ginv(XtX) %*% t(X) %*% Y_naive
-        QRsvd = svd_trunc_simple(beta, r)
-        Ub <- as.matrix(QRsvd$u, k, r)
-        Db <- pmax(sqrt(QRsvd$d), min_eigv)
-        Vb <- as.matrix(QRsvd$v, m, r)
-        Q = UD(Ub, Db)
-        R = UD(Vb, Db)
-        M <- as.matrix(Y_naive - (X %*% Q) %*% t(R) )
-        M <-  tryCatch(
-          propack.svd(M, J),
-          error = function(e) {
-            message(paste("Naive Init:", e))
-            svd_trunc_simple(M, J)
-          }
-        )
-        U = M$u
-        V = M$v
-        Dsq = pmax(M$d, min_eigv)
-        Y_naive <- beta <- M <- NULL
-        #----------------------
-        #---------------------------------------------------------------
-      }
+      #---------------------------------------------------------------
+      Y_naive = naive_MC(as.matrix(y))
+      beta = utils$inv(XtX, T) %*% t(X) %*% Y_naive
+      QRsvd = utils$svdopt(beta, r, k, m, T, F)
+      Ub <- as.matrix(QRsvd$u, k, r)
+      Db <- pmax(sqrt(QRsvd$d), min_eigv)
+      Vb <- as.matrix(QRsvd$v, m, r)
+      Q = utils$UD(Ub, Db)
+      R = utils$UD(Vb, Db)
+      M <- as.matrix(Y_naive - (X %*% Q) %*% t(R))
+      M <- utils$svdopt(M, J, n, m, F, F)
+      U = M$u
+      V = M$v
+      Dsq = M$d
+      Y_naive <- beta <- M <- NULL
+      #----------------------
+      #---------------------------------------------------------------
     }
     
     #----------------------------------------
@@ -213,14 +157,13 @@ CASMC2_fit <-
       
       part1 = (QXtXQ + diag(lambda.beta, r, r))
       part2 =  (t(XQ) %*% y + QXtXQ %*% t(R))
-      RD = t( as.matrix(solve(part1) %*% part2) * Db)
-      
-      Rsvd = fast.svd(RD, trim = FALSE)
+      RD = t(as.matrix(utils$inv(part1, T) %*% part2) * Db)
+      Rsvd = utils$svd_small_nc(RD, F, p = r)
       Ub = Ub %*% Rsvd$v
-      Db <- pmax(sqrt(Rsvd$d), min_eigv)
+      Db <- sqrt(Rsvd$d) #pmax(sqrt(Rsvd$d), min_eigv)
       Vb = Rsvd$u
-      Q = UD(Ub , Db)
-      R = UD(Vb , Db)
+      Q = utils$UD(Ub , Db)
+      R = utils$UD(Vb , Db)
       #-------------------------------------------------------------------
       # part extra: re-update y
       xbeta.obs <-
@@ -231,16 +174,19 @@ CASMC2_fit <-
       # part 2: update Q
       # prereq: Q, R, X, lambda.beta, XtX, y, Rsvd
       # updates: Q, R
-      part1 <- as.vector(t(X) %*% y %*% R + XtX %*% UD(Q, Db^2))
-      part2 <- kronecker(diag(Db^2, r, r), XtX) + diag(lambda.beta, k*r,k*r)
-      Q <- matrix(solve(part2) %*% part1, k, r)
+      part1 <-
+        as.vector(t(X) %*% y %*% R + XtX %*% utils$UD(Q, Db ^ 2))
+      part2 <-
+        kronecker(diag(Db ^ 2, r, r), XtX) + diag(lambda.beta, k * r, k * r)
+      Q <- matrix(utils$inv(part2, T) %*% part1, k, r)
       
-      Qsvd = fast.svd(as.matrix(UD(Q, Db)), trim = FALSE)
+      Qsvd = utils$svd_small_nc(as.matrix(utils$UD(Q, Db)), F, p = r)
+      # Qsvd = utils$fast.svd(as.matrix(utils$UD(Q, Db)), trim = FALSE)
       Ub = Qsvd$u
-      Db <- pmax(sqrt(Qsvd$d), min_eigv)
+      Db <- sqrt(Qsvd$d) #pmax(sqrt(Qsvd$d), min_eigv)
       Vb = Vb %*% Qsvd$v
-      Q = UD(Ub,Db)
-      R = UD(Vb,Db)
+      Q = utils$UD(Ub, Db)
+      R = utils$UD(Vb, Db)
       XQ = X %*% Q
       #-------------------------------------------------------------------
       # part extra: re-update y
@@ -258,14 +204,9 @@ CASMC2_fit <-
       if (laplace.b)
         B = B - t(V)  %*% L.b
       B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
-      Bsvd = tryCatch({
-        fast.svd(B, trim = FALSE)
-      }, error = function(e) {
-        message(paste("Loop/B:", e))
-        svd(B)
-      })
+      Bsvd = utils$svd_small_nc(B, FALSE, p = J) 
       V = Bsvd$u
-      Dsq = pmax(Bsvd$d, min_eigv)
+      Dsq = Bsvd$d #pmax(Bsvd$d, min_eigv)
       U = U %*% (Bsvd$v)
       #-------------------------------------------------------------------
       # part extra: re-update y
@@ -281,15 +222,9 @@ CASMC2_fit <-
       if (laplace.a)
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
-      Asvd = tryCatch({
-        #svd(A)
-        fast.svd(A, trim = FALSE)
-      }, error = function(e) {
-        message(paste("Loop/A:", e))
-        svd(A)
-      })
+      Asvd =  utils$svd_small_nc(A, FALSE, p = J)
       U = Asvd$u
-      Dsq = pmax(Asvd$d, min_eigv)
+      Dsq = Asvd$d #pmax(Asvd$d, min_eigv)
       V = V %*% (Asvd$v)
       #-------------------------------------------------------------------
       # part extra: re-update y
@@ -297,8 +232,8 @@ CASMC2_fit <-
       # M_obs = suvC(U, VDsq, irow, pcol)
       # y@x = ypart - M_obs
       # #------------------------------------------------------------------------------
-      ratio =  Frob(U.old, Dsq.old, V.old, U, Dsq, V) +
-               Frob(Ub.old, Db.old, Vb.old, Ub, Db, Vb)
+      ratio =  utils$Frob(U.old, Dsq.old, V.old, U, Dsq, V) +
+        utils$Frob(Ub.old, Db.old, Vb.old, Ub, Db, Vb)
       #------------------------------------------------------------------------------
       if (trace.it) {
         obj = (.5 * sum(y@x ^ 2) +
@@ -331,29 +266,11 @@ CASMC2_fit <-
       if (laplace.a)
         A = A - L.a %*% U
       A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
-      Asvd = tryCatch({
-        fast.svd(A, trim = FALSE)
-      }, error = function(e) {
-        message(paste("Final/A:", e))
-        svd(A)
-      })
+      Asvd =  utils$svd_small_nc(A, FALSE, p = J)
       U = Asvd$u
       V = V %*% Asvd$v
-      # is this good?
-      Dsq = pmax(Asvd$d - lambda.M, min_eigv)
-      #---------------------------------------------
-      # do it again with Q
-      # M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
-      # y@x = yobs - M_obs - xbeta.obs
-      # 
-      # part1 <- as.vector(t(X) %*% y %*% R + XtX %*% UD(Q, Db^2))
-      # part2 <- kronecker(diag(Db^2, r, r), XtX) + diag(lambda.beta, k*r,k*r)
-      # Q <- matrix(solve(part2) %*% part1, k, r)
-      # 
-      # Qsvd = fast.svd(as.matrix(UD(Q, Db)), trim = FALSE)
-      # Ub = Qsvd$u
-      # Db <- sqrt(pmax(Qsvd$d - lambda.beta, min_eigv))
-      # Vb = Vb %*% Qsvd$v
+      Dsq = pmax(Asvd$d - lambda.M, 0)
+      
       #---------------------------------------------
       if (trace.it) {
         M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
@@ -366,8 +283,8 @@ CASMC2_fit <-
     
     #-------------------------------------------------------
     # trim in case we reduce the rank of M to be smaller than J.
-    J = min(max(1,sum(Dsq > min_eigv)), J)
-    r = min(max(1,sum(Db > min_eigv)), r)
+    J = min(max(1, sum(Dsq > min_eigv)), J)
+    r = min(max(1, sum(Db > min_eigv)), r)
     
     out = list(
       u = U[, seq(J), drop = FALSE],

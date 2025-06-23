@@ -78,21 +78,21 @@ metrics = c(
 model_functions = list(
  SImpute_Bixi_Wrapper,
  Mao_Bixi_Wrapper,
- CASMC_0_Bixi_Wrapper,
- #CASMC_1_Bixi_Wrapper,
- CASMC_2_Bixi_Wrapper,
- CASMC_3a_Bixi_Wrapper,
- #CASMC_3b_Bixi_Wrapper,
+ CAMC_0_Bixi_Wrapper,
+ #CAMC_1_Bixi_Wrapper,
+ CAMC_2_Bixi_Wrapper,
+ CAMC_3a_Bixi_Wrapper,
+ #CAMC_3b_Bixi_Wrapper,
  Naive_Bixi_Wrapper
 )
 models = c(
  "SoftImpute",
  "Mao",
- "CASMC-0_Ridge",
- #"CASMC-1_Hard_Rank",
- "CASMC-2_Nuclear",
- "CASMC-3a_Lasso_single_split",
- #"CASMC-3b_Lasso_10-folds",
+ "CAMC-0_Ridge",
+ #"CAMC-1_Hard_Rank",
+ "CAMC-2_Nuclear",
+ "CAMC-3a_Lasso_single_split",
+ #"CAMC-3b_Lasso_10-folds",
  "Naive"
 )
 

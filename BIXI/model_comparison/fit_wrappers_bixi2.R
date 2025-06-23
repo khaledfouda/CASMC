@@ -149,19 +149,19 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
   return(list(results = results, LogLik = LogLik))
 }
 #--------------------------------------------------------------------------------------
-CASMC_0_Bixi_Wrapper <-
+CAMC_0_Bixi_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
            return_fit = FALSE,
            train_on_all = FALSE,
-           hpar = CASMC_Ridge_hparams,
+           hpar = CAMC_Ridge_hparams,
            ...) {
     start_time = Sys.time()
     Y_all <- NULL
     if(train_on_all) Y_all <- dat$splits$Y 
     
-    fiti <- CASMC_Ridge_cv(
+    fiti <- CAMC_Ridge_cv(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
@@ -185,7 +185,7 @@ CASMC_0_Bixi_Wrapper <-
     fit.$Xbeta = dat$X %*% fit.$beta
     fit.$estimates = fit.$M + fit.$Xbeta
     
-    results = list(model = "CASMC-0")
+    results = list(model = "CAMC-0")
     results$lambda.beta = fiti$lambda.beta
     results$lambda.M = fit.$lambda
     results <- c(
@@ -208,18 +208,18 @@ CASMC_0_Bixi_Wrapper <-
 #-------
 
 
-CASMC_2_Bixi_Wrapper <-
+CAMC_2_Bixi_Wrapper <-
   function(dat,
            LogLik_SI = NULL,
            return_fit = FALSE,
            train_on_all = FALSE,
-           hpar = CASMC_Nuclear_hparams,
+           hpar = CAMC_Nuclear_hparams,
            ...) {
     start_time = Sys.time()
     Y_all <- NULL
     if(train_on_all) Y_all <- dat$splits$Y
     
-    fiti <- CASMC_Nuclear_cv(
+    fiti <- CAMC_Nuclear_cv(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
@@ -242,7 +242,7 @@ CASMC_2_Bixi_Wrapper <-
     fit.$Xbeta = dat$X %*% fit.$beta
     fit.$estimates = fit.$M + fit.$Xbeta
     
-    results = list(model = "CASMC-2")
+    results = list(model = "CAMC-2")
     results$lambda.beta = fiti$hparams$lambda.beta
     results$lambda.M = fiti$hparams$lambda.M
     results <- c(
@@ -263,18 +263,18 @@ CASMC_2_Bixi_Wrapper <-
     results
   }
 #----------------------------------------------------
-CASMC_3a_Bixi_Wrapper <-
+CAMC_3a_Bixi_Wrapper <-
   function(dat,
            max_cores = 20,
            LogLik_SI = NULL,
            return_fit = FALSE,
            train_on_all = FALSE,
-           hpar = CASMC_Lasso_hparams,
+           hpar = CAMC_Lasso_hparams,
            ...) {
     start_time = Sys.time()
     Y_all <- NULL
     if(train_on_all) Y_all <- dat$splits$Y
-    fiti <- CASMC_Lasso_cv(
+    fiti <- CAMC_Lasso_cv(
       y_train = dat$splits$train,
       X = dat$X,
       y_valid = dat$splits$valid@x,
@@ -294,7 +294,7 @@ CASMC_3a_Bixi_Wrapper <-
     fit.$Xbeta = dat$X %*% fit.$beta
     fit.$estimates = fit.$M + fit.$Xbeta
     
-    results = list(model = "CASMC-3a")
+    results = list(model = "CAMC-3a")
     results$lambda.beta = fiti$hparams$lambda.beta
     results$lambda.M = fiti$hparams$lambda.M
     results <- c(

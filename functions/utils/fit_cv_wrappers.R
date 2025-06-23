@@ -1,334 +1,254 @@
-compare_Mao <-
-  function(gen.dat,
-           lambda.1_grid,
-           lambda.2_grid,
-           alpha_grid,
-           ncores = 2,
+
+prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim=NA, M=NA, M.estim=NA, 
+                           LogLik_SI=NA, test_error = utils$error_metric$rmse){
+  estim.test <- estimates[mask==0]
+  estim.train <- estimates[mask != 0]
+  obs.train <- obs[mask!=0]
+  obs.test <- obs[mask==0]
+  list(
+    time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs"))),
+    error.test = test_error(estim.test, obs.test),
+    corr.test = cor(estim.test, obs.test),
+    error.train = test_error(estim.train, obs.train),
+    error.M = tryCatch(test_error(M.estim, M), error = function(x) NA),
+    error.beta = tryCatch(test_error(beta.estim, beta), error = function(x) NA),
+    rank_M = tryCatch(qr(M.estim)$rank, error = function(x) NA),
+    rank_beta = tryCatch(qr(beta.estim)$rank, error = function(x) NA),
+    
+    sparse_in_sparse = tryCatch(sum(beta == 0 & beta.estim == 0) /
+                                  (sum(beta == 0) +  1e-17), error = function(x) NA),
+    nonsparse_in_nonsparse = tryCatch(sum(beta != 0 & beta.estim != 0) /
+                                        (sum(beta != 0) +  1e-17), error = function(x) NA),
+    sparse_all = tryCatch(sum(beta.estim == 0) /
+                            length(beta.estim), error = function(x) NA)
+  ) -> results
+  
+  
+  if(is.null(LogLik_SI)){
+    results$likelihood_ratio_index <- NA
+    results$Cox_Snell_R2 <- NA
+  }else{
+    residuals <- obs.test - estim.test
+    LogLik <- utils$logLikelihood(residuals)
+    n <- length(residuals)
+    results$likelihood_ratio_index <- utils$Likelihood_ratio_index(LogLik, LogLik_SI)
+    results$Cox_Snell_R2 <-utils$ Cox_Snell_R2(LogLik, LogLik_SI, n)
+  }
+  return(results)
+}
+
+
+
+
+Mao_Sim_Wrapper <-
+  function(dat,
+           lambda.1_grid = seq(0, 1, length = 20),
+           lambda.2_grid = seq(0.9, 0.1, length = 20),
+           alpha_grid = c(1),
+           ncores = 1,
            # keep it > 1
            n_folds = 5,
-           weight_function = MaoBinomalWeights,
+           weight_function = Mao_weights$uniform,
+           LogLik_SI = NULL,
            ...) {
     start_time = Sys.time()
-    cv.out <- Mao.cv(
-      gen.dat$O,
-      gen.dat$X,
-      gen.dat$Y,
-      gen.dat$W,
+    fiti <- Mao.cv(
+      Y = dat$Y,
+      X = dat$X,
+      W = dat$W,
       n_folds = n_folds,
       lambda.1_grid = lambda.1_grid,
       lambda.2_grid = lambda.2_grid,
       alpha_grid = alpha_grid,
+      seed = 2023,
       numCores = ncores,
       n1n2_optimized = TRUE,
-      #keep it at TRUE
-      theta_estimator = weight_function
+      test_error = utils$error_metric$rmse,
+      theta_estimator = weight_function,
+      sequential = FALSE
     )
-    mao.out <-
-      Mao.fit(
-        gen.dat$Y,
-        gen.dat$X,
-        gen.dat$W,
-        cv.out$best_parameters$lambda.1,
-        cv.out$best_parameters$lambda.2,
-        cv.out$best_parameters$alpha,
-        theta_estimator = weight_function,
-        n1n2_optimized = TRUE
-      )
     
+    fit. <- fiti$fit
     results = list(model = "Mao")
-    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-    results$alpha = cv.out$best_parameters$alpha
-    results$lambda.1 = cv.out$best_parameters$lambda.1
-    results$lambda.2 = cv.out$best_parameters$lambda.2
-    results$error.test = test_error(mao.out$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
-                                                                                   0])
-    results$error.all = test_error(mao.out$estimates, gen.dat$O)
-    results$error.M = test_error(mao.out$M, gen.dat$M)
-    results$error.beta = test_error(mao.out$beta, gen.dat$beta)
-    results$rank = mao.out$rank
+    results$lambda.beta = fiti$best_parameters$lambda.1
+    results$lambda.M = fiti$best_parameters$lambda.2
+    results <- c(results,
+                 prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))    
+    
+    
     results
-  }
+}
 
-compare_softImpute <- function(gen.dat, valid.dat, ...) {
+
+
+
+SImpute_Sim_Wrapper <- function(dat, ...) {
   start_time = Sys.time()
-  sout <- simpute.cv(
-    valid.dat$Y_train,
-    gen.dat$Y,
+  fit. <- simpute.cv(
+    Y_train = as.matrix(dat$fit_data$train),
+    y_valid = dat$fit_data$valid,
+    W_valid = dat$fit_data$W_valid,
+    y = dat$Y,
+    n.lambda = 20,
     trace = FALSE,
-    rank.limit = 30,
     print.best = FALSE,
-    rank.step = 4
+    tol = 5,
+    thresh = 1e-6,
+    rank.init = 2,
+    rank.limit = 30,
+    rank.step = 2,
+    maxit = 600,
+    seed = NULL
   )
   results = list(model = "SoftImpute")
-  results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-  results$alpha = NA
-  results$lambda.1 = NA
-  results$lambda.2 = sout$lambda
-  results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
-                                                                              0])
-  results$error.all = test_error(sout$estimates, gen.dat$O)
-  results$error.M = NA
-  results$error.beta = NA
-  results$rank = sout$rank_M
-  results
+  results$lambda.beta = NA
+  results$lambda.M = fit.$lambda
+  results <- c(results,
+                        prepare_output(start_time, fit.$estimates, dat$O, dat$W, M.estim = fit.$estimates))    
+  
+  LogLik <- utils$logLikelihood(dat$O[dat$W==0] - fit.$estimates[dat$W==0])
+  return(list(results=results, LogLik=LogLik))
 }
 
-compare_CAMC_holdout <-
-  function(gen.dat,
-           valid.dat,
-           lambda.1_grid,
-           rank.step,
-           rank.limit,
-           n.lambda,
+#--------------------------------------------------------------------------------------
+CASMC_Ridge_Sim_Wrapper <-
+  function(dat,
+           max_cores = 20,
+           LogLik_SI = NULL,
+           hpar = CASMC_Ridge_hparams,
+           trace = F,
+           return_fit = FALSE,
            ...) {
     start_time = Sys.time()
     
-    fiti <-
-      CAMC_cv_holdout(
-        valid.dat$Y_train,
-        gen.dat$X,
-        valid.dat$W_valid,
-        valid.dat$Y_valid,
-        trace = FALSE,
-        rank.limit = rank.limit,
-        print.best = FALSE,
-        rank.step  = rank.step,
-        n.lambda = n.lambda,
-        type = "als",
-        quiet = TRUE,
-        tol = 2,
-        lambda.1_grid = lambda.1_grid
-      )
-    sout <- fiti$fit2
-    
-    
-    results = list(model = "CAMC_holdout")
-    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-    results$alpha = NA
-    results$lambda.1 = sout$lambda1
-    results$lambda.2 = sout$lambda2
-    results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
-                                                                                0])
-    results$error.all = test_error(sout$estimates, gen.dat$O)
-    results$error.M = test_error(sout$M, gen.dat$M)
-    results$error.beta = test_error(sout$beta, gen.dat$beta)
-    results$rank = sout$rank_O
-    results
-  }
-
-compare_CAMC_kfold <-
-  function(gen.dat,
-           lambda.1_grid,
-           n_folds,
-           rank.step,
-           rank.limit,
-           n.lambda,
-           ...) {
-    start_time = Sys.time()
-    fiti <- CAMC_cv_kfold(
-      gen.dat$Y,
-      gen.dat$X,
-      gen.dat$W,
-      n_folds = n_folds,
-      trace = FALSE,
-      rank.limit = rank.limit,
-      print.best = FALSE,
-      lambda.1_grid = lambda.1_grid,
-      rank.step = rank.step,
-      n.lambda = n.lambda,
-      type = "als",
-      tol = 2
-    )
-    sout <- fiti$fit2
-    results = list(model = "CAMC_kfold")
-    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-    results$alpha = NA
-    results$lambda.1 = sout$lambda1
-    results$lambda.2 = sout$lambda2
-    results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
-                                                                                0])
-    results$error.all = test_error(sout$estimates, gen.dat$O)
-    results$error.M = test_error(sout$M, gen.dat$M)
-    results$error.beta = test_error(sout$beta, gen.dat$beta)
-    results$rank = sout$rank_O
-    results
-  }
-
-
-
-
-compare_CASMC_holdout <-
-  function(gen.dat,
-           valid.dat,
-           splr.dat,
-           rank.step,
-           rank.limit,
-           n.lambda,
-           max_cores=20,
-           ...) {
-    start_time = Sys.time()
-    
-    y_train = valid.dat$Y_train
-    y_train[y_train == 0] = NA
-    y_train = as(y_train, "Incomplete")
-    
-    y = gen.dat$Y
-    y[y == 0] = NA
-    y = as(y, "Incomplete")
-    
-    best_fit = CASMC_cv_holdout_with_reg(
-      y_train,
-      splr.dat,
-      valid.dat$Y_valid,
-      valid.dat$W_valid,
-      #r_min = 0,
-      y = y,
-      trace = F,
-      max_cores = max_cores,
+    fiti <- CASMC_Ridge_cv(
+      y_train = dat$fit_data$train,
+      X = dat$X,
+      y_valid = dat$fit_data$valid,
+      W_valid = dat$fit_data$W_valid,
+      y = dat$fit_data$Y,
+      hpar = hpar,
+      error_function = utils$error_metric$rmse,
       thresh = 1e-6,
-      n.lambda = n.lambda,
-      rank.limit = rank.limit,
-      maxit = 200,
-      rank.step = rank.step,
-      print.best = FALSE
+      maxit = 300,
+      trace = trace,
+      print.best = trace,
+      quiet = FALSE,
+      warm = NULL,
+      track = trace,
+      max_cores = max_cores,
+      seed = NULL
     )
-    print(best_fit$r)
     
-    fit1 = best_fit$fit
-    #fit2 = best_fit$fit2
-    sout = best_fit
+    fit. = fiti$fit
     # get estimates and validate
-    sout$M = fit1$u %*% (fit1$d * t(fit1$v))
-    sout$beta =  t(fit1$beta)#fit1$Beta$u %*% (fit1$Beta$d * t(fit1$Beta$v))
-    sout$estimates = sout$M + splr.dat$X %*% t(sout$beta)
+    fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
+    fit.$estimates = fit.$M + dat$X %*% fit.$beta
+    fiti$fit = fit.
     
-    results = list(model = "CASMC_holdout")
-    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-    results$alpha = NA
-    results$lambda.1 = sout$lambda.beta
-    results$lambda.2 = sout$lambda
-    results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
-                                                                                0])
-    results$error.all = test_error(sout$estimates, gen.dat$O)
-    results$error.M = test_error(sout$M, gen.dat$M)
-    results$error.beta = test_error(t(sout$beta), gen.dat$beta)
-    results$rank = qr(sout$estimates)$rank
+    results = list(model = "CASMC-Ridge")
+    results$lambda.beta = fiti$lambda.beta
+    results$lambda.M = fit.$lambda
+    results <- c(results,
+                          prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
+    
+    if(return_fit) return(list(results=results, fit = fiti))
     results
   }
+#-------
 
-compare_CASMC_kfold <-
-  function(gen.dat,
-           splr.dat,
-           n_folds,
-           rank.step,
-           rank.limit,
-           n.lambda,
+
+CASMC_Nuclear_Sim_Wrapper <-
+  function(dat,
+           LogLik_SI = NULL,
+           hpar = CASMC_Nuclear_hparams,
+           trace = F,
+           return_fit = FALSE,
            ...) {
     start_time = Sys.time()
     
-    best_fit = CASMC_cv_kfold_v2(
-      gen.dat$Y,
-      splr.dat,
-      gen.dat$W,
-      trace = F,
-      print.best = F,
-      rank.limit = rank.limit,
-      n.lambda = n.lambda,
-      maxit = 200,
-      n_folds = n_folds,
-      rank.step = rank.step
+    fiti <- CASMC_Nuclear_cv(
+      y_train = dat$fit_data$train,
+      X = dat$X,
+      y_valid = dat$fit_data$valid,
+      W_valid = dat$fit_data$W_valid,
+      y = dat$fit_data$Y,
+      hpar = hpar,
+      error_function = utils$error_metric$rmse,
+      warm = NULL,
+      trace = trace,
+      quiet = T,
+      track = trace,
+      print.best = trace,
+      step3 = T,
+      use_warmstart = T,
+      seed = NULL
     )
     
-    
-    fit1 = best_fit$fit
-    sout = best_fit
+    fit. = fiti$fit
     # get estimates and validate
-    sout$M = fit1$u %*% (fit1$d * t(fit1$v))
-    sout$beta =  fit1$beta
-    sout$estimates = sout$M + splr.dat$X %*% t(sout$beta)
+    fit.$M = utils$unsvd(fit.)
+    fit.$beta = utils$unsvd(fit.$beta)
+    fit.$estimates = fit.$M + dat$X %*% fit.$beta
+    fiti$fit <- fit.
     
+    results = list(model = "CASMC-Nuclear")
+    results$lambda.beta = fiti$hparams$lambda.beta
+    results$lambda.M = fiti$hparams$lambda.M
     
-    results = list(model = "CASMC_kfold")
-    results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-    results$alpha = NA
-    results$lambda.1 = NA
-    results$lambda.2 = sout$lambda
-    results$error.test = test_error(sout$estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W ==
-                                                                                0])
-    results$error.all = test_error(sout$estimates, gen.dat$O)
-    results$error.M = test_error(sout$M, gen.dat$M)
-    results$error.beta = test_error(t(sout$beta), gen.dat$beta)
-    results$rank = qr(sout$estimates)$rank
+    results <- c(results,
+                          prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
+    if(return_fit) return(list(results=results, fit = fiti))
     results
   }
-
-compare_naive <- function(gen.dat, ...) {
+#----------------------------------------------------
+CASMC_Lasso_Sim_Wrapper <-
+  function(dat,
+           max_cores = 20,
+           LogLik_SI = NULL,
+           hpar = CASMC_Lasso_hparams,
+           trace = F,
+           return_fit = FALSE,
+           ...) {
+    start_time = Sys.time()
+    fiti <- CASMC_Lasso_cv(
+      y_train = dat$fit_data$train,
+      X = dat$X,
+      y_valid = dat$fit_data$valid,
+      W_valid = dat$fit_data$W_valid,
+      y = dat$fit_data$Y,
+      hpar = hpar,
+      trace = trace,
+      print.best = trace,
+      warm = NULL,
+      quiet = T, 
+      max_cores = max_cores
+    ) 
+    
+    fit. = fiti$fit
+    # get estimates and validate
+    fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
+    fit.$estimates = fit.$M + dat$X %*% fit.$beta
+    fiti$fit <- fit.
+    
+    results = list(model = "CASMC-Lasso")
+    results$lambda.beta = fiti$hparams$lambda.beta
+    results$lambda.M = fiti$hparams$lambda.M
+    
+    results <- c(results,
+                          prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
+    
+    if(return_fit) return(list(results=results, fit = fiti))
+    results
+  }
+#----------------------------------------------
+Naive_Sim_Wrapper <- function(dat, ...) {
   start_time = Sys.time()
-  estimates = naive_MC(gen.dat$Y)
+  fit. <- naive_fit(dat$Y, dat$X)
   results = list(model = "Naive")
-  results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-  results$alpha = NA
-  results$lambda.1 = NA
-  results$lambda.2 = NA
-  results$error.test = test_error(estimates[gen.dat$W == 0], gen.dat$O[gen.dat$W == 0])
-  results$error.all = test_error(estimates, gen.dat$O)
-  results$error.M = NA
-  results$error.beta = NA
-  results$rank = qr(estimates)$rank
-  results
-}
-
-
-compare_cmf <- function(gen.dat, splr.dat, ...) {
-  start_time = Sys.time()
-  
-  library(cmfrec)
-  library(Matrix)
-  library(MatrixExtra)
-  
-  X_test = gen.dat$O
-  X_test[gen.dat$W == 1] = NA
-  X_test = as(X_test, "Incomplete")
-  X_test <- as.coo.matrix(X_test)
-  
-  X_train <- gen.dat$Y
-  X_train[gen.dat$W == 0] = NA
-  X_train <- as(X_train, "Incomplete")
-  X_train <- as.coo.matrix(X_train)
-  
-  model.w.sideinfo <- CMF(
-    X_train,
-    U = splr.dat$X,
-    k = 25,
-    lambda = 0.1,
-    scale_lam = TRUE,
-    niter = 30,
-    use_cg = FALSE,
-    include_all_X = FALSE,
-    w_main = 0.75,
-    w_user = 0.5,
-    w_item = 0.5,
-    w_implicit = 0.5,
-    center_U = FALSE,
-    center_I = FALSE,
-    nthreads = 6,
-    verbose = FALSE
-  )
-  pred_side_info <- predict(model.w.sideinfo, X_test)
-  #print_rmse(X_test, pred_side_info, "model with side info")
-  results = list(model = "CMF")
-  results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
-  detach("package:cmfrec", unload = TRUE)
-  detach("package:MatrixExtra", unload = TRUE)
-  source("./code_files/import_lib.R")
-  
-  results$alpha = NA
-  results$lambda.1 = NA
-  results$lambda.2 = NA
-  results$error.test = test_error(pred_side_info@x, X_test@x)
-  results$error.all = NA #test_error(sout$estimates, gen.dat$O)
-  results$error.M = NA
-  results$error.beta = NA
-  results$rank = NA#sout$rank_M
+  results$lambda.beta = NA
+  results$lambda.M = NA
+  results <- c(results,
+                        prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M))  
   results
 }

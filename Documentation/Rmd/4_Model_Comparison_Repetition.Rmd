@@ -52,10 +52,10 @@ load_data = function(note) {
    "Mao",
    #"CAMC_holdout",
    #"CAMC_kfold",
-   "CASMC_rank_restriction",
-   "CASMC_L2_regularization",
-   "CASMC_one_iteration",
-   #"CASMC_kfold",
+   "CAMC_rank_restriction",
+   "CAMC_L2_regularization",
+   "CAMC_one_iteration",
+   #"CAMC_kfold",
    "Naive"
 )
    file_list <- list.files(
@@ -103,8 +103,8 @@ Models <- c(
    "SoftImpute",
    "CAMC_holdout",
    "CAMC_kfold",
-   "CASMC_holdout",
-   "CASMC_kfold",
+   "CAMC_holdout",
+   "CAMC_kfold",
    "Naive"
 )
 

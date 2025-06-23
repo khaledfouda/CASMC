@@ -50,10 +50,10 @@ load_data = function(note) {
    "Mao",
    #"CAMC_holdout",
    #"CAMC_kfold",
-   "CASMC_rank_restriction",
-   "CASMC_L2_regularization",
-   "CASMC_one_iteration",
-   #"CASMC_kfold",
+   "CAMC_rank_restriction",
+   "CAMC_L2_regularization",
+   "CAMC_one_iteration",
+   #"CAMC_kfold",
    "Naive"
 )
    file_list <- list.files(
@@ -99,11 +99,11 @@ load_data = function(note) {
 Models <- c(
    "Mao",
    "SoftImpute",
-   "CASMC-0",
+   "CAMC-0",
    "CAMSC-1",
-   "CASMC-2",
-   "CASMC-3a",
-   "CASMC-3b",
+   "CAMC-2",
+   "CAMC-3a",
+   "CAMC-3b",
    "Naive"
 )
 
@@ -111,11 +111,11 @@ Models <- c(
 Note <- c(
    "Mao's original model",
    "Soft-Impute (fit function from library and CV from Vignette)",
-   "CASMC with Ridge on Beta",
-   "CASMC with hard rank restriction on Beta",
-   "CASMC with nuclear norm on Beta",
-   "CASMC with Lasso on Beta (1-fold)",
-   "CASMC with Lasso on Beta (10-fold)",
+   "CAMC with Ridge on Beta",
+   "CAMC with hard rank restriction on Beta",
+   "CAMC with nuclear norm on Beta",
+   "CAMC with Lasso on Beta (1-fold)",
+   "CAMC with Lasso on Beta (10-fold)",
    "Missing values filled with row-column average and general linear regression applied"
 )
 
@@ -344,10 +344,10 @@ combined %>%
   
   row_spec(0, bold = TRUE) %>% 
   pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-0_Ridge", 4, 6, hline_after = TRUE) %>%
-  pack_rows("CASMC-1_Hard_Rank", 7, 9, hline_after = TRUE) %>%
-  pack_rows("CASMC-2_Nuclear", 10, 12, hline_after = TRUE) %>%
-  pack_rows("CASMC-3a_Lasso_single_split", 13, 15, hline_after = TRUE)
+  pack_rows("CAMC-0_Ridge", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CAMC-1_Hard_Rank", 7, 9, hline_after = TRUE) %>%
+  pack_rows("CAMC-2_Nuclear", 10, 12, hline_after = TRUE) %>%
+  pack_rows("CAMC-3a_Lasso_single_split", 13, 15, hline_after = TRUE)
 ```
 
 
@@ -396,9 +396,9 @@ combined %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
   row_spec(0, bold = TRUE) %>%
    pack_rows("Mao", 1, 13, hline_after = TRUE) %>%
-  pack_rows("CASMC-0_Ridge", 14, 26, hline_after = TRUE) %>%
- # pack_rows("CASMC-1_Hard_Rank", 27, 39, hline_after = TRUE) %>%
-  pack_rows("CASMC-2_Nuclear", 27, 39, hline_after = TRUE) %>%
-  pack_rows("CASMC-3a_Lasso_single_split", 40, 52, hline_after = TRUE)
+  pack_rows("CAMC-0_Ridge", 14, 26, hline_after = TRUE) %>%
+ # pack_rows("CAMC-1_Hard_Rank", 27, 39, hline_after = TRUE) %>%
+  pack_rows("CAMC-2_Nuclear", 27, 39, hline_after = TRUE) %>%
+  pack_rows("CAMC-3a_Lasso_single_split", 40, 52, hline_after = TRUE)
 
 ```

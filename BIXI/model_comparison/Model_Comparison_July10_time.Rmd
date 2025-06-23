@@ -29,18 +29,18 @@ source("./BIXI/model_comparison/fit_wrappers_bixi2.R")
 model_functions = list(
       SImpute_Bixi_Wrapper,
       Mao_Bixi_Wrapper,
-      CASMC_0_Bixi_Wrapper,
-      CASMC_2_Bixi_Wrapper,
-      CASMC_3a_Bixi_Wrapper,
+      CAMC_0_Bixi_Wrapper,
+      CAMC_2_Bixi_Wrapper,
+      CAMC_3a_Bixi_Wrapper,
       Naive_Bixi_Wrapper
    )
 
 model_names <- list(
  "SoftImpute",
  "Mao",
- "CASMC-Ridge",
- "CASMC-Nuclear",
- "CASMC-Lasso",
+ "CAMC-Ridge",
+ "CAMC-Nuclear",
+ "CAMC-Lasso",
  "Naive LM"
 )
 
@@ -175,9 +175,9 @@ covsum %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
   row_spec(0, bold = TRUE) %>%
   # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Ridge", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Nuclear", 4, 6, hline_after = TRUE) %>%
-  pack_rows("CASMC-Lasso", 7, 9, hline_after = TRUE) %>%  
+  pack_rows("CAMC-Ridge", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CAMC-Nuclear", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CAMC-Lasso", 7, 9, hline_after = TRUE) %>%  
   pack_rows("BKTR", 10, 12, hline_after = TRUE)
 
 ```
@@ -233,9 +233,9 @@ bktr.fit$beta_estimates %>% as.data.frame() %>%
           legend.position = "top")
 }
  
-p1 <- plot_model("CASMC-Ridge")
-p2 <- plot_model("CASMC-Nuclear")
-p3 <- plot_model("CASMC-Lasso")
+p1 <- plot_model("CAMC-Ridge")
+p2 <- plot_model("CAMC-Nuclear")
+p3 <- plot_model("CAMC-Lasso")
 p4 <- plot_model("BKTR")
 
 gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
@@ -293,9 +293,9 @@ plot_true_vs_predicted <- function(model_name) {
      
 }
 
-p1 <- plot_true_vs_predicted("CASMC-Ridge")
-p2 <- plot_true_vs_predicted("CASMC-Nuclear")
-p3 <- plot_true_vs_predicted("CASMC-Lasso")
+p1 <- plot_true_vs_predicted("CAMC-Ridge")
+p2 <- plot_true_vs_predicted("CAMC-Nuclear")
+p3 <- plot_true_vs_predicted("CAMC-Lasso")
 p4 <- plot_true_vs_predicted("BKTR")
 
 gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
@@ -307,7 +307,7 @@ gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
 ##  Check Residuals
 
 
-### CASMC-Ridge
+### CAMC-Ridge
 
 ```{r}
 Residuals <- dat$splits$test[dat$masks$test==0] - 
@@ -315,7 +315,7 @@ Residuals <- dat$splits$test[dat$masks$test==0] -
 residual_analysis(Residuals) 
 ```
 
-### CASMC-Nuclear
+### CAMC-Nuclear
 
 ```{r}
 Residuals <- dat$splits$test[dat$masks$test==0] - 
@@ -324,7 +324,7 @@ residual_analysis(Residuals)
 ```
 
 
-### CASMC-Lasso
+### CAMC-Lasso
 
 ```{r}
 Residuals <- dat$splits$test[dat$masks$test==0] - 

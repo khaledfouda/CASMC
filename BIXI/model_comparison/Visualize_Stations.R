@@ -7,19 +7,19 @@ dat <- load_model_bixi_dat3(time_cov = FALSE, seed = 2023,validp = .2)
 
 
 out0 <- SImpute_Sim_Wrapper(dat) 
-hpar_r <- CASMC_Ridge_hparams 
+hpar_r <- CAMC_Ridge_hparams 
 hpar_r$beta$lambda.grid <- seq(10,7, length.out=20)
-out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = F, hpar=hpar_r, return_fit = T, max_cores = 20)
+out1 <- CAMC_Ridge_Sim_Wrapper(dat, trace = F, hpar=hpar_r, return_fit = T, max_cores = 20)
 
-hpar_n = CASMC_Nuclear_hparams
+hpar_n = CAMC_Nuclear_hparams
 #hpar$beta$n.lambda = 80
-out2 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
+out2 <- CAMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
 
 
-hpar_l = CASMC_Lasso_hparams
+hpar_l = CAMC_Lasso_hparams
 hpar_l$beta$n.lambda = 60
 hpar_l$beta$lambda.max = 1
-out3 <- CASMC_Lasso_Sim_Wrapper(dat, trace=F, hpar = hpar_l, return_fit = T)
+out3 <- CAMC_Lasso_Sim_Wrapper(dat, trace=F, hpar = hpar_l, return_fit = T)
 
 out4 <- Naive_Sim_Wrapper(dat)
 
@@ -48,8 +48,8 @@ hpar_n$laplacian$S.a <- hpar_l$laplacian$S.a <- spt_kern
 
 hpar_n$laplacian$lambda.b = .58
 hpar_n$laplacian$lambda.a = .8222
-out9 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
-out9$results$model <- "CASMC-Nuclear+Temporal+Spatial"
+out9 <- CAMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
+out9$results$model <- "CAMC-Nuclear+Temporal+Spatial"
 #-----------------------------------------------
 dat <- load_model_bixi_dat3(2023,.2) 
 #------------------------------------------------
@@ -57,15 +57,15 @@ hpar_n$laplacian$S.a <- temp_kern
 hpar_n$laplacian$S.b <- spt_kern
 hpar_n$laplacian$lambda.a = .4556
 hpar_n$laplacian$lambda.b = .8222
-out9 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
-out9$results$model <- "CASMC-Nuclear+Temporal+Spatial"
+out9 <- CAMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar_n, return_fit = T)
+out9$results$model <- "CAMC-Nuclear+Temporal+Spatial"
 #-------------------------
 hpar_l$laplacian$S.a <- temp_kern
 hpar_l$laplacian$S.b <- spt_kern
 hpar_l$laplacian$lambda.a = .4111
 hpar_l$laplacian$lambda.b = .7778
-out10 <- CASMC_Lasso_Sim_Wrapper(dat, trace=F, hpar = hpar_l, return_fit = T)
-out10$results$model <- "CASMC-Lasso+Temporal+Spatial"
+out10 <- CAMC_Lasso_Sim_Wrapper(dat, trace=F, hpar = hpar_l, return_fit = T)
+out10$results$model <- "CAMC-Lasso+Temporal+Spatial"
 #-------------------------
 dat$X %>% dim()
 dim(out10$fit$fit$beta)

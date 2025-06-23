@@ -175,7 +175,7 @@ for (case in 0:4) {
     X <- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
   }
   
-  results <- CASMC_var_selection(
+  results <- CAMC_var_selection(
     y_train = model.dat$fit_data$train,
     y_valid = model.dat$fit_data$valid,
     Y = model.dat$Y,
@@ -199,7 +199,7 @@ for (case in 0:4) {
                      fiti,
                      error_metric$rmse,
                      F,
-                     paste0("CASMC(", case, ")"),
+                     paste0("CAMC(", case, ")"),
                      F,
                      3
                    ))
@@ -269,7 +269,7 @@ kable(all_res, format = "simple") |>  print()
 # #----
 # # apply models:
 # model.dat$X[1,]
-# # CASMC
+# # CAMC
 # aresults <- list()
 # i = 1
 #
@@ -311,7 +311,7 @@ kable(all_res, format = "simple") |>  print()
 #   X_r$rank
 #   X <- X_r$X
 #   X[1,]
-#   best_fit = CASMC_cv_rank(
+#   best_fit = CAMC_cv_rank(
 #     y_train = model.dat$fit_data$train,
 #     X = X,#[,1:5, drop=FALSE],
 #
@@ -352,7 +352,7 @@ kable(all_res, format = "simple") |>  print()
 #   #plot(1:ncol(sout$beta), sout$beta[3,])
 #
 #   if(b > 1) old_results = results
-#   results = list(model = paste0("CASMC_rank_all",sparm[[3]]))
+#   results = list(model = paste0("CAMC_rank_all",sparm[[3]]))
 #   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 #   #results$lambda.1 = NA#sout$lambda.beta |> round(3)
 #   #results$lambda.2 = sout$lambda |> round(3)
@@ -381,7 +381,7 @@ kable(all_res, format = "simple") |>  print()
 #     model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 #
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #  y_train = model.dat$splits$train,
 #  X = X,
 #  y_valid = model.dat$splits$valid@x,
@@ -412,7 +412,7 @@ kable(all_res, format = "simple") |>  print()
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b > 1) old_results = results
 #
-# results = list(model = paste0("CASMC_rank_1:3_",sparm[[3]]))
+# results = list(model = paste0("CAMC_rank_1:3_",sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 # #results$lambda.1 = NA#sout$lambda.beta |> round(3)
 # #results$lambda.2 = sout$lambda |> round(3)
@@ -441,7 +441,7 @@ kable(all_res, format = "simple") |>  print()
 #   model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 #
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -471,7 +471,7 @@ kable(all_res, format = "simple") |>  print()
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b > 1) old_results = results
 #
-# results = list(model = paste0("CASMC_rank_2_",sparm[[3]]))
+# results = list(model = paste0("CAMC_rank_2_",sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 # #results$lambda.1 = NA#sout$lambda.beta |> round(3)
 # #results$lambda.2 = sout$lambda |> round(3)
@@ -500,7 +500,7 @@ kable(all_res, format = "simple") |>  print()
 #   model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 #
-# best_fit = CASMC_cv_L2(
+# best_fit = CAMC_cv_L2(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -531,7 +531,7 @@ kable(all_res, format = "simple") |>  print()
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b > 1) old_results = results
 #
-# results = list(model = paste0("CASMC_rank_L2_all_",sparm[[3]]))
+# results = list(model = paste0("CAMC_rank_L2_all_",sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 # #results$lambda.1 = NA#sout$lambda.beta |> round(3)
 # #results$lambda.2 = sout$lambda |> round(3)

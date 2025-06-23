@@ -1,15 +1,18 @@
 # generic function:
-error_metric = list(
+utils$error_metric = list(
    
 #--- error functions:
-unexplained_variance = function(predicted, true) {
-   sum((true - predicted) ^ 2) / sum((true - mean(true)) ^ 2)
-},
-
-adjusted_unexplained_variance = function(predicted, true, p = 1, n = length(true)) {
-   ((sum((true - predicted) ^ 2) / 
-        sum((true - mean(true)) ^ 2)) *
-       (n - 1) / (n - p - 1))
+unexplained_variance = function(predicted, true, adjusted = FALSE, k = NA) {
+   # SSE / SST
+   if(! adjusted){
+      return(sum((true - predicted) ^ 2) / sum((true - mean(true)) ^ 2))
+   }else{
+      n = length(true)
+      stopifnot(is.numeric(k))
+      return(((sum((true - predicted) ^ 2) / 
+           sum((true - mean(true)) ^ 2)) *
+            (n - 1) / (n - k - 1)))
+   }
 },
 
 mape = function(predicted, true) {
@@ -27,12 +30,7 @@ rmse = function(predicted, true) {
    sqrt(mean((true - predicted) ^ 2, na.rm = TRUE))
 },
 
-rmse_mao = function(predicted, true) {
-   # a form of normalized RMSE that was used in Mao's simulation
-   sqrt(sum((predicted - true) ^ 2) / sum(true ^ 2))
-},
-
-spearman = function(predicted, true) {
+spearman_R2 = function(predicted, true) {
    cor(true, predicted, method = "spearman")
 }
 

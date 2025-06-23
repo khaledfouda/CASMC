@@ -50,10 +50,10 @@ load_data = function(note) {
    "Mao",
    #"CAMC_holdout",
    #"CAMC_kfold",
-   "CASMC_rank_restriction",
-   "CASMC_L2_regularization",
-   "CASMC_one_iteration",
-   #"CASMC_kfold",
+   "CAMC_rank_restriction",
+   "CAMC_L2_regularization",
+   "CAMC_one_iteration",
+   #"CAMC_kfold",
    "Naive"
 )
    file_list <- list.files(
@@ -99,11 +99,11 @@ load_data = function(note) {
 Models <- c(
    "Mao",
    "SoftImpute",
-   "CASMC-0",
+   "CAMC-0",
    "CAMSC-1",
-   "CASMC-2",
-   "CASMC-3a",
-   "CASMC-3b",
+   "CAMC-2",
+   "CAMC-3a",
+   "CAMC-3b",
    "Naive"
 )
 
@@ -111,11 +111,11 @@ Models <- c(
 Note <- c(
    "Mao's original model",
    "Soft-Impute (fit function from library and CV from Vignette)",
-   "CASMC with Ridge on Beta",
-   "CASMC with hard rank restriction on Beta",
-   "CASMC with nuclear norm on Beta",
-   "CASMC with Lasso on Beta (1-fold)",
-   "CASMC with Lasso on Beta (10-fold)",
+   "CAMC with Ridge on Beta",
+   "CAMC with hard rank restriction on Beta",
+   "CAMC with nuclear norm on Beta",
+   "CAMC with Lasso on Beta (1-fold)",
+   "CAMC with Lasso on Beta (10-fold)",
    "Missing values filled with row-column average and general linear regression applied"
 )
 

@@ -575,7 +575,7 @@ for (case in 0:4) {
     X &lt;- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
   }
   
-  results &lt;- CASMC_var_selection(
+  results &lt;- CAMC_var_selection(
     y_train = model.dat$fit_data$train,
     y_valid = model.dat$fit_data$valid,
     Y = model.dat$Y,
@@ -599,7 +599,7 @@ for (case in 0:4) {
                      fiti,
                      error_metric$rmse,
                      F,
-                     paste0(&quot;CASMC(&quot;, case, &quot;)&quot;),
+                     paste0(&quot;CAMC(&quot;, case, &quot;)&quot;),
                      F,
                      3
                    ))
@@ -674,7 +674,7 @@ for (case in 0:4) {
 ## |         0|      2|      0|  4|        13.268935|1,2,3,4,5,6,7,8                        |
 ## |         0|      2|      0|  4|        13.611080|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 |
 ##       Metric    model       XBeta           M  test train     Y
-## 1 rmse(rank) CASMC(0) 272.580( 3) 272.315( 3) 8.388 8.246 8.304
+## 1 rmse(rank) CAMC(0) 272.580( 3) 272.315( 3) 8.388 8.246 8.304
 ## [1] &quot;Running on 17 cores.&quot;
 ## &lt;simpleError in h(simpleError(msg, call)): error in evaluating the argument &#39;x&#39; in selecting a method for function &#39;t&#39;: length of 2nd arg does not match dimension of first&gt;
 ## &lt;simpleError in h(simpleError(msg, call)): error in evaluating the argument &#39;x&#39; in selecting a method for function &#39;t&#39;: length of 2nd arg does not match dimension of first&gt;
@@ -767,8 +767,8 @@ for (case in 0:4) {
 ## |         0|      2|      0|  4|        13.178753|1,2,3,4,5,6,7,8,9,10,11                |
 ## |         0|      2|      0|  4|        13.181939|1,2,3,4,5,6,7,8,9                      |
 ##       Metric    model       XBeta           M  test train     Y
-## 1 rmse(rank) CASMC(0) 272.580( 3) 272.315( 3) 8.388 8.246 8.304
-## 2 rmse(rank) CASMC(1) 315.702( 2) 315.503( 4) 5.511 5.501 5.584
+## 1 rmse(rank) CAMC(0) 272.580( 3) 272.315( 3) 8.388 8.246 8.304
+## 2 rmse(rank) CAMC(1) 315.702( 2) 315.503( 4) 5.511 5.501 5.584
 ## Compare row 1  and column  2 with corr  0.982 
 ##   Means:  0.265 vs 0.174 so flagging column 1 
 ## Compare row 4  and column  5 with corr  0.911 
@@ -840,9 +840,9 @@ for (case in 0:4) {
 ## |         3|      2|      0|  3|         9.140854|1,2,3,4                       |
 ## |         1|      2|      0|  3|         9.387961|1,2                           |
 ##       Metric    model       XBeta           M  test train     Y
-## 1 rmse(rank) CASMC(0) 272.580( 3) 272.315( 3) 8.388 8.246 8.304
-## 2 rmse(rank) CASMC(1) 315.702( 2) 315.503( 4) 5.511 5.501 5.584
-## 3 rmse(rank) CASMC(2) 323.702( 4) 323.494( 4) 4.752 4.531 4.629
+## 1 rmse(rank) CAMC(0) 272.580( 3) 272.315( 3) 8.388 8.246 8.304
+## 2 rmse(rank) CAMC(1) 315.702( 2) 315.503( 4) 5.511 5.501 5.584
+## 3 rmse(rank) CAMC(2) 323.702( 4) 323.494( 4) 4.752 4.531 4.629
 ## Compare row 1  and column  2 with corr  0.982 
 ##   Means:  0.265 vs 0.174 so flagging column 1 
 ## Compare row 4  and column  5 with corr  0.911 
@@ -901,10 +901,10 @@ for (case in 0:4) {
 ## |         3|      2|      0|  4|        12.528864|1,2,3,4,5                     |
 ## |         0|      2|      0|  4|        13.171646|1,2,3,4,5,6,7,8,9,10,11,12,13 |
 ##       Metric    model        XBeta            M  test train     Y
-## 1 rmse(rank) CASMC(0)  272.580( 3)  272.315( 3) 8.388 8.246 8.304
-## 2 rmse(rank) CASMC(1)  315.702( 2)  315.503( 4) 5.511 5.501 5.584
-## 3 rmse(rank) CASMC(2)  323.702( 4)  323.494( 4) 4.752 4.531 4.629
-## 4 rmse(rank) CASMC(3) 2391.916(10) 2391.165( 3) 4.723 3.613 3.728
+## 1 rmse(rank) CAMC(0)  272.580( 3)  272.315( 3) 8.388 8.246 8.304
+## 2 rmse(rank) CAMC(1)  315.702( 2)  315.503( 4) 5.511 5.501 5.584
+## 3 rmse(rank) CAMC(2)  323.702( 4)  323.494( 4) 4.752 4.531 4.629
+## 4 rmse(rank) CAMC(3) 2391.916(10) 2391.165( 3) 4.723 3.613 3.728
 ## [1] &quot;Rank of X changed from 16 to 3&quot;
 ## [1] &quot;Running on 4 cores.&quot;
 ## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
@@ -966,11 +966,11 @@ for (case in 0:4) {
 ## |         0|      2|      0|  4|        14.792821|1,2,3,4,5,6                            |
 ## |         0|      2|      0|  4|        14.927266|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15    |
 ##       Metric    model        XBeta            M  test train     Y
-## 1 rmse(rank) CASMC(0)  272.580( 3)  272.315( 3) 8.388 8.246 8.304
-## 2 rmse(rank) CASMC(1)  315.702( 2)  315.503( 4) 5.511 5.501 5.584
-## 3 rmse(rank) CASMC(2)  323.702( 4)  323.494( 4) 4.752 4.531 4.629
-## 4 rmse(rank) CASMC(3) 2391.916(10) 2391.165( 3) 4.723 3.613 3.728
-## 5 rmse(rank) CASMC(4)  342.376( 2)  342.127( 4) 6.392 6.110 6.185</code></pre>
+## 1 rmse(rank) CAMC(0)  272.580( 3)  272.315( 3) 8.388 8.246 8.304
+## 2 rmse(rank) CAMC(1)  315.702( 2)  315.503( 4) 5.511 5.501 5.584
+## 3 rmse(rank) CAMC(2)  323.702( 4)  323.494( 4) 4.752 4.531 4.629
+## 4 rmse(rank) CAMC(3) 2391.916(10) 2391.165( 3) 4.723 3.613 3.728
+## 5 rmse(rank) CAMC(4)  342.376( 2)  342.127( 4) 6.392 6.110 6.185</code></pre>
 <pre class="r"><code>simpute_fit &lt;- simpute.cv(
   Y_train = as.matrix(model.dat$fit_data$train),
   y_valid = model.dat$fit_data$valid,
@@ -1023,11 +1023,11 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 ## Metric       model        XBeta             M                 test        train    
 ## -----------  -----------  ----------------  ----------------  ----------  ---------
 ## rmse(rank)   SoftImpute   [1]NA(NA)         [1]NA(NA)         [1]11.247   [5]7.574 
-## rmse(rank)   CASMC(3)     [1]2391.916(10)   [1]2391.165( 3)   [2]4.723    [1]3.613 
-## rmse(rank)   CASMC(2)     [4]323.702( 4)    [4]323.494( 4)    [3]4.752    [2]4.531 
-## rmse(rank)   CASMC(1)     [3]315.702( 2)    [3]315.503( 4)    [4]5.511    [3]5.501 
-## rmse(rank)   CASMC(4)     [5]342.376( 2)    [5]342.127( 4)    [5]6.392    [4]6.110 
-## rmse(rank)   CASMC(0)     [2]272.580( 3)    [2]272.315( 3)    [1]8.388    [1]8.246</code></pre>
+## rmse(rank)   CAMC(3)     [1]2391.916(10)   [1]2391.165( 3)   [2]4.723    [1]3.613 
+## rmse(rank)   CAMC(2)     [4]323.702( 4)    [4]323.494( 4)    [3]4.752    [2]4.531 
+## rmse(rank)   CAMC(1)     [3]315.702( 2)    [3]315.503( 4)    [4]5.511    [3]5.501 
+## rmse(rank)   CAMC(4)     [5]342.376( 2)    [5]342.127( 4)    [5]6.392    [4]6.110 
+## rmse(rank)   CAMC(0)     [2]272.580( 3)    [2]272.315( 3)    [1]8.388    [1]8.246</code></pre>
 <pre class="r"><code>#
 # fiti$beta
 # apply(fiti$fit$beta, 1, summary) |&gt; print()
@@ -1052,7 +1052,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 # #----
 # # apply models:
 # model.dat$X[1,]
-# # CASMC
+# # CAMC
 # aresults &lt;- list()
 # i = 1
 #
@@ -1094,7 +1094,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   X_r$rank
 #   X &lt;- X_r$X
 #   X[1,]
-#   best_fit = CASMC_cv_rank(
+#   best_fit = CAMC_cv_rank(
 #     y_train = model.dat$fit_data$train,
 #     X = X,#[,1:5, drop=FALSE],
 #
@@ -1135,7 +1135,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   #plot(1:ncol(sout$beta), sout$beta[3,])
 #
 #   if(b &gt; 1) old_results = results
-#   results = list(model = paste0(&quot;CASMC_rank_all&quot;,sparm[[3]]))
+#   results = list(model = paste0(&quot;CAMC_rank_all&quot;,sparm[[3]]))
 #   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 #   #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 #   #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -1164,7 +1164,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #     model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 #
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #  y_train = model.dat$splits$train,
 #  X = X,
 #  y_valid = model.dat$splits$valid@x,
@@ -1195,7 +1195,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b &gt; 1) old_results = results
 #
-# results = list(model = paste0(&quot;CASMC_rank_1:3_&quot;,sparm[[3]]))
+# results = list(model = paste0(&quot;CAMC_rank_1:3_&quot;,sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 # #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 # #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -1224,7 +1224,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 #
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -1254,7 +1254,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b &gt; 1) old_results = results
 #
-# results = list(model = paste0(&quot;CASMC_rank_2_&quot;,sparm[[3]]))
+# results = list(model = paste0(&quot;CAMC_rank_2_&quot;,sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 # #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 # #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -1283,7 +1283,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 #
-# best_fit = CASMC_cv_L2(
+# best_fit = CAMC_cv_L2(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -1314,7 +1314,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b &gt; 1) old_results = results
 #
-# results = list(model = paste0(&quot;CASMC_rank_L2_all_&quot;,sparm[[3]]))
+# results = list(model = paste0(&quot;CAMC_rank_L2_all_&quot;,sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 # #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 # #results$lambda.2 = sout$lambda |&gt; round(3)

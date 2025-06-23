@@ -1,4 +1,9 @@
-CASMC3_cv_beta <-
+
+
+
+
+CASMC3_cv <-
+   CASMC_Lasso_cv <-
    function(y_train,
             # y_train is expected to be Incomplete
             X,
@@ -7,23 +12,10 @@ CASMC3_cv_beta <-
             W_valid,
             y = NULL,
             # y: a final full-fit if provided. Expected to be Incomplete
-            error_function = error_metric$rmse,
-            # tuning parameters for lambda
-            lambda.factor = 1 / 4,
-            lambda.init = NULL,
-            n.lambda = 20,
-            # tuning parameters for J
-            rank.M.init = 2,
-            rank.M.limit = 30,
-            rank.step = 2,
-            pct = 0.98,
-            # laplacian parameters
-            lambda.a = 0,
-            S.a = NULL,
-            lambda.b = 0,
-            S.b = NULL,
+            hpar = CASMC_Lasso_hparams,
+            
             # stopping criteria
-            early.stopping = 1,
+            error_function = utils$error_metric$rmse,
             thresh = 1e-6,
             maxit = 100,
             # trace parameters
@@ -32,28 +24,28 @@ CASMC3_cv_beta <-
             quiet = FALSE,
             # initial values.
             warm = NULL,
-            # L1 parameters
-            lambda.beta.grid = "default1",
-            learning.rate = .001,
-            beta.iter.max = 20,
+            
             track = FALSE,
             max_cores = 8,
             # seed
             seed = NULL) {
-      if (identical(lambda.beta.grid, "default1")){
+      
+      if(identical(hpar$beta$learning.rate, "default"))
+         hpar$beta$learning.rate <-  1 / sqrt(sum((t(X) %*% X)^2))
+      
+      if(is.null(hpar$beta$lambda.max)){
+         
          nf <- naive_fit(y_train, X)
          resids <- y_train - nf$M - X %*% nf$beta
          resids[y_train==0] <- 0
-         term <- max((nf$beta / learning.rate) - t(X) %*% resids) 
-         lambda.beta.grid = seq(term, .Machine$double.eps, length.out=20)
+         hpar$beta$lambda.max <- max((nf$beta / hpar$beta$learning.rate) - t(X) %*% resids) 
+      }
+         lambda.beta.grid = seq(hpar$beta$lambda.max, .Machine$double.eps, length.out=hpar$beta$n.lambda)
+         
          
          # lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *
          #    seq(10, .Machine$double.eps, length.out = 20)
       
-      }else if (identical(lambda.beta.grid, "default2"))
-         lambda.beta.grid = seq(propack.svd(naive_fit(y, X, TRUE), 1)$d / 4,
-                                .Machine$double.eps,
-                                length.out = 20)
       
       
       num_cores = length(lambda.beta.grid)
@@ -71,26 +63,27 @@ CASMC3_cv_beta <-
                y_valid = y_valid,
                W_valid = W_valid,
                y = y,
-               learning.rate = learning.rate,
+               hpar = hpar,
+               #learning.rate = learning.rate,
                lambda.beta = lambda.beta,
-               beta.iter.max = beta.iter.max,
+               #beta.iter.max = beta.iter.max,
                error_function = error_function,
-               lambda.factor = lambda.factor,
-               lambda.init = lambda.init,
-               n.lambda = n.lambda,
+               #lambda.factor = lambda.factor,
+               #lambda.init = lambda.init,
+               #n.lambda = n.lambda,
                trace = ifelse(trace == 2, TRUE, FALSE),
                print.best = print.best,
                thresh = thresh,
                maxit = maxit,
-               rank.init = rank.M.init,
-               rank.limit = rank.M.limit,
-               rank.step = rank.step,
-               pct = pct,
+               #rank.init = rank.M.init,
+               #rank.limit = rank.M.limit,
+               #rank.step = rank.step,
+               #pct = pct,
                warm = NULL,
-               lambda.a = lambda.a,
-               S.a = S.a,
-               lambda.b = lambda.b,
-               S.b = S.b,
+               #lambda.a = lambda.a,
+               #S.a = S.a,
+               #lambda.b = lambda.b,
+               #S.b = S.b,
                quiet = quiet,
                seed = seed
             )
@@ -153,14 +146,14 @@ CASMC3_cv_beta <-
             )
          )
       #-------------------------
-      
+   
       best_fit$hparams = data.frame(
          lambda.beta = best_fit$lambda.beta,
          lambda.M = best_fit$fit$lambda.M,
-         learning.rate = learning.rate,
+         learning.rate = hpar$beta$learning.rate,
          rank.M = best_fit$fit$J
       )
-      
+      best_fit$init_params = hpar
       return(best_fit)
       
       

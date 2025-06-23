@@ -153,14 +153,14 @@ SImpute_Bixi_likl <- function(dat, ...) {
 
 
 #----------------------------------------------------------------------------------
-CASMC_1_Bixi_Wrapper <-
+CAMC_1_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
           ...) {
   start_time = Sys.time()
   
-  fiti <- CASMC1_cv(
+  fiti <- CAMC1_cv(
    y_train = dat$splits$train,
    X = dat$X,
    y_valid = dat$splits$valid,
@@ -197,7 +197,7 @@ CASMC_1_Bixi_Wrapper <-
   fit.$Xbeta = dat$X %*% fit.$beta
   fit.$estimates = fit.$M + fit.$Xbeta
   
-  results = list(model = "CASMC-1")
+  results = list(model = "CAMC-1")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fit.$lambda
   results$lambda.beta = NA
@@ -244,14 +244,14 @@ CASMC_1_Bixi_Wrapper <-
  }
 
 #--------------------------------------------------------------------------------------
-CASMC_0_Bixi_Wrapper <-
+CAMC_0_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
           ...) {
   start_time = Sys.time()
   
-  fiti <- CASMC0_cv(
+  fiti <- CAMC0_cv(
    y_train = dat$splits$train,
    X = dat$X,
    y_valid = dat$splits$valid@x,
@@ -288,7 +288,7 @@ CASMC_0_Bixi_Wrapper <-
   fit.$Xbeta = dat$X %*% fit.$beta
   fit.$estimates = fit.$M + fit.$Xbeta
   
-  results = list(model = "CASMC-0")
+  results = list(model = "CAMC-0")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fit.$lambda
   results$lambda.beta = fiti$lambda.beta
@@ -337,14 +337,14 @@ CASMC_0_Bixi_Wrapper <-
 #-------
 
 
-CASMC_2_Bixi_Wrapper <-
+CAMC_2_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
           ...) {
   start_time = Sys.time()
   
-  fiti <- CASMC2_cv2(
+  fiti <- CAMC2_cv2(
    y_train = dat$splits$train,
    X = dat$X,
    y_valid = dat$splits$valid@x,
@@ -387,7 +387,7 @@ CASMC_2_Bixi_Wrapper <-
   fit.$Xbeta = dat$X %*% fit.$beta
   fit.$estimates = fit.$M + fit.$Xbeta
   
-  results = list(model = "CASMC-2")
+  results = list(model = "CAMC-2")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fiti$hparams$lambda.M
   results$lambda.beta = fiti$hparams$lambda.beta
@@ -432,7 +432,7 @@ CASMC_2_Bixi_Wrapper <-
   results
  }
 #----------------------------------------------------
-CASMC_3a_Bixi_Wrapper <-
+CAMC_3a_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
@@ -441,7 +441,7 @@ CASMC_3a_Bixi_Wrapper <-
   learning_rate = 1 / sqrt(sum((t(dat$X) %*% dat$X) ^ 2))
   
   
-  fiti <- CASMC3_cv_beta(
+  fiti <- CAMC3_cv_beta(
    y_train = dat$splits$train,
    X = dat$X,
    y_valid = dat$splits$valid@x,
@@ -463,7 +463,7 @@ CASMC_3a_Bixi_Wrapper <-
   fit.$Xbeta = dat$X %*% fit.$beta
   fit.$estimates = fit.$M + fit.$Xbeta
   
-  results = list(model = "CASMC-3a")
+  results = list(model = "CAMC-3a")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fiti$hparams$lambda.M
   results$lambda.beta = fiti$hparams$lambda.beta
@@ -508,14 +508,14 @@ CASMC_3a_Bixi_Wrapper <-
   results
  }
 #------
-CASMC_3b_Bixi_Wrapper <-
+CAMC_3b_Bixi_Wrapper <-
  function(dat,
           max_cores = 20,
           maxit = 300,
           ...) {
   start_time = Sys.time()
   learning_rate = 1 / sqrt(sum((t(dat$X) %*% dat$X) ^ 2))
-  fiti <- CASMC3_kfold(
+  fiti <- CAMC3_kfold(
    Y = dat$Y,
    X = dat$X,
    obs_mask = dat$masks$tr_val,
@@ -537,7 +537,7 @@ CASMC_3b_Bixi_Wrapper <-
   fit.$Xbeta = dat$X %*% fit.$beta 
   fit.$estimates = fit.$M + fit.$Xbeta
   
-  results = list(model = "CASMC-3b")
+  results = list(model = "CAMC-3b")
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
   results$lambda.M = fiti$hparams$lambda.M
   results$lambda.beta = fiti$hparams$lambda.beta

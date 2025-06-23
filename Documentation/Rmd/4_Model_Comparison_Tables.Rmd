@@ -52,8 +52,8 @@ Models <- c(
    "SoftImpute",
    "CAMC_holdout",
    "CAMC_kfold",
-   "CASMC_holdout",
-   "CASMC_kfold",
+   "CAMC_holdout",
+   "CAMC_kfold",
    "Naive"
 )
 

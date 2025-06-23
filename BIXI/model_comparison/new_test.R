@@ -13,17 +13,17 @@ dat <- load_model_bixi_dat2(time_cov = TRUE,2023,.2, missp, .2)
 
 out0 <- SImpute_Sim_Wrapper(dat) 
 
-out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = F)
+out1 <- CAMC_Ridge_Sim_Wrapper(dat, trace = F)
 
-hpar = CASMC_Nuclear_hparams
+hpar = CAMC_Nuclear_hparams
 #hpar$beta$n.lambda = 80
-out2 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar)
+out2 <- CAMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar)
 
 
-hpar = CASMC_Lasso_hparams
+hpar = CAMC_Lasso_hparams
 hpar$beta$n.lambda = 40
 hpar$beta$lambda.max = 3
-out3 <- CASMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar)
+out3 <- CAMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar)
 
 out4 <- Naive_Sim_Wrapper(dat)
 

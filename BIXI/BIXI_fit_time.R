@@ -87,7 +87,7 @@ case =1
       #remove_collinear_cols(thresh = 0.7)
   }
   
-  CASMC2_cv_beta(
+  CAMC2_cv_beta(
     y_train = model.dat$splits$train,
     X = X,
     y_valid = model.dat$splits$valid@x,
@@ -106,7 +106,7 @@ case =1
   fiti3$beta = as.matrix(fiti3$ub %*% (fiti3$db^2) %*% t(fiti3$vb))
   fiti3$X = X
   fiti3$beta[,1:5]
-  print_performance(model.dat, fiti3, error_metric$rmse, F, "CASMC2", F, 3)
+  print_performance(model.dat, fiti3, error_metric$rmse, F, "CAMC2", F, 3)
   apply(fiti3$beta, 1, summary) |> as.data.frame() |> round(2) |>
     t() |> as.data.frame() |>  arrange(desc(Median)) |>  kable()
   
@@ -118,7 +118,7 @@ case =1
   sum(model.dat$masks$test==0)
   #---------------------------------------------------------------------
   
-  CASMC3_cv_beta(
+  CAMC3_cv_beta(
     y_train = model.dat$splits$train,
     X = X,
     y_valid = model.dat$splits$valid@x,
@@ -135,7 +135,7 @@ case =1
   fit_bixi2$hparams
   fit_bixi2$fit$X = X
   fit_bixi2$fit$beta[,1:5]
-  print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3)
+  print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CAMC3", F, 3)
   apply(fit_bixi2$fit$beta, 1, summary) |> as.data.frame() |> 
     setNames(colnames(X)) |>  round(2) |>
     t() |> as.data.frame() |>  
@@ -229,7 +229,7 @@ case =1
     
     
   #------------------------------------------------
-#   results <- CASMC_var_selection(
+#   results <- CAMC_var_selection(
 #     y_train = model.dat$splits$train,
 #     y_valid = model.dat$splits$valid,
 #     Y = model.dat$depart,
@@ -253,7 +253,7 @@ case =1
 #                      fiti,
 #                      error_metric$rmse,
 #                      F,
-#                      paste0("CASMC(", case, ")"),
+#                      paste0("CAMC(", case, ")"),
 #                      F,
 #                      3
 #                    ))
@@ -282,8 +282,8 @@ simpute_fit <- simpute.cv(
 
 rbind(
 print_performance(model.dat, simpute_fit, error_metric$rmse, TRUE, "SoftImpute", F, 3),
-print_performance(model.dat, fiti3, error_metric$rmse, F, "CASMC2", F, 3),
-print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3)
+print_performance(model.dat, fiti3, error_metric$rmse, F, "CAMC2", F, 3),
+print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CAMC3", F, 3)
 )
 
 # 
@@ -362,7 +362,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 #   #X_r$rank
 #   #X <- model.dat$X[,c(1,2, 3,4,6,7,8)]
 #   
-#   results <- CASMC_var_selection(
+#   results <- CAMC_var_selection(
 #     y_train = model.dat$splits$train,
 #     y_valid = model.dat$splits$valid,
 #     Y = model.dat$depart,
@@ -377,7 +377,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 #   
 #   #-----------------------------------------------------------------------------
 #   start_time = Sys.time()
-#   best_fit = CASMC_cv_rank(
+#   best_fit = CAMC_cv_rank(
 #     y_train = model.dat$splits$train,
 #     X = X,#[,1:5, drop=FALSE],
 #     
@@ -419,7 +419,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 #   #plot(1:ncol(sout$beta), sout$beta[3,])
 #   
 #   if(b > 1) old_results = results
-#   results = list(model = paste0("CASMC_rank_all",sparm[[3]]))
+#   results = list(model = paste0("CAMC_rank_all",sparm[[3]]))
 #   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 #   #results$lambda.1 = NA#sout$lambda.beta |> round(3)
 #   #results$lambda.2 = sout$lambda |> round(3)
@@ -448,7 +448,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 #     model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 # 
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #  y_train = model.dat$splits$train,
 #  X = X,
 #  y_valid = model.dat$splits$valid@x,
@@ -479,7 +479,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b > 1) old_results = results
 # 
-# results = list(model = paste0("CASMC_rank_1:3_",sparm[[3]]))
+# results = list(model = paste0("CAMC_rank_1:3_",sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 # #results$lambda.1 = NA#sout$lambda.beta |> round(3)
 # #results$lambda.2 = sout$lambda |> round(3)
@@ -508,7 +508,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 #   model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 # 
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -538,7 +538,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b > 1) old_results = results
 # 
-# results = list(model = paste0("CASMC_rank_2_",sparm[[3]]))
+# results = list(model = paste0("CAMC_rank_2_",sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 # #results$lambda.1 = NA#sout$lambda.beta |> round(3)
 # #results$lambda.2 = sout$lambda |> round(3)
@@ -567,7 +567,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 #   model.dat <- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 # 
-# best_fit = CASMC_cv_L2(
+# best_fit = CAMC_cv_L2(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -598,7 +598,7 @@ print_performance(model.dat, fit_bixi2$fit, error_metric$rmse, F, "CASMC3", F, 3
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b > 1) old_results = results
 # 
-# results = list(model = paste0("CASMC_rank_L2_all_",sparm[[3]]))
+# results = list(model = paste0("CAMC_rank_L2_all_",sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")))
 # results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
 #                                 model.dat$splits$test@x) |> round(5)

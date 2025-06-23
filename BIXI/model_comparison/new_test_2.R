@@ -7,17 +7,17 @@ dat <- load_model_bixi_dat3(time_cov = TRUE,2023,.2)
 
 out0 <- SImpute_Sim_Wrapper(dat) 
 
-out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = T, return_fit = T, max_cores = 20)
+out1 <- CAMC_Ridge_Sim_Wrapper(dat, trace = T, return_fit = T, max_cores = 20)
 
-hpar = CASMC_Nuclear_hparams
+hpar = CAMC_Nuclear_hparams
 #hpar$beta$n.lambda = 80
-out2 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=T, hpar=hpar, return_fit = T)
+out2 <- CAMC_Nuclear_Sim_Wrapper(dat, trace=T, hpar=hpar, return_fit = T)
 
 
-hpar = CASMC_Lasso_hparams
+hpar = CAMC_Lasso_hparams
 hpar$beta$n.lambda = 40
 hpar$beta$lambda.max = 3
-out3 <- CASMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar, return_fit = T)
+out3 <- CAMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar, return_fit = T)
 
 out4 <- Naive_Sim_Wrapper(dat)
 
@@ -76,9 +76,9 @@ apply(out3$fit$fit$beta, 1, summary) |> as.data.frame() |>
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
   row_spec(0, bold = TRUE) %>%
   # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Ridge", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Nuclear", 4, 6, hline_after = TRUE) %>%
-  pack_rows("CASMC-Lasso", 7, 9, hline_after = TRUE) 
+  pack_rows("CAMC-Ridge", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CAMC-Nuclear", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CAMC-Lasso", 7, 9, hline_after = TRUE) 
 
 ###############################################################
 
@@ -92,14 +92,14 @@ temporal_kernel$kernel_gen() %>%  as.matrix() -> temp_kern
 temp_kern %>% dim()
 
 
-hpar = CASMC_Nuclear_hparams
+hpar = CAMC_Nuclear_hparams
 #hpar$beta$n.lambda = 80
 hpar$laplacian$S.a = temp_kern
 
 for(lambda in seq(.1,.5, length=10)){
   
 hpar$laplacian$lambda.a = lambda
-CASMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar, return_fit = F)[5:6]  %>% 
+CAMC_Nuclear_Sim_Wrapper(dat, trace=F, hpar=hpar, return_fit = F)[5:6]  %>% 
   unlist %>%  round(3) %>% print()
 }
 
@@ -148,17 +148,17 @@ dat <- load_model_bixi_dat3(time_cov = TRUE,2023,.2)
 
 out0 <- SImpute_Sim_Wrapper(dat) 
 
-out1 <- CASMC_Ridge_Sim_Wrapper(dat, trace = T, return_fit = T, max_cores = 20)
+out1 <- CAMC_Ridge_Sim_Wrapper(dat, trace = T, return_fit = T, max_cores = 20)
 
-hpar = CASMC_Nuclear_hparams
+hpar = CAMC_Nuclear_hparams
 #hpar$beta$n.lambda = 80
-out2 <- CASMC_Nuclear_Sim_Wrapper(dat, trace=T, hpar=hpar, return_fit = T)
+out2 <- CAMC_Nuclear_Sim_Wrapper(dat, trace=T, hpar=hpar, return_fit = T)
 
 
-hpar = CASMC_Lasso_hparams
+hpar = CAMC_Lasso_hparams
 hpar$beta$n.lambda = 40
 hpar$beta$lambda.max = 3
-out3 <- CASMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar, return_fit = T)
+out3 <- CAMC_Lasso_Sim_Wrapper(dat, trace=T, hpar = hpar, return_fit = T)
 
 out4 <- Naive_Sim_Wrapper(dat)
 
@@ -217,9 +217,9 @@ apply(out3$fit$fit$beta, 1, summary) |> as.data.frame() |>
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, position = "center") %>%
   row_spec(0, bold = TRUE) %>%
   # pack_rows("Mao", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Ridge", 1, 3, hline_after = TRUE) %>%
-  pack_rows("CASMC-Nuclear", 4, 6, hline_after = TRUE) %>%
-  pack_rows("CASMC-Lasso", 7, 9, hline_after = TRUE) 
+  pack_rows("CAMC-Ridge", 1, 3, hline_after = TRUE) %>%
+  pack_rows("CAMC-Nuclear", 4, 6, hline_after = TRUE) %>%
+  pack_rows("CAMC-Lasso", 7, 9, hline_after = TRUE) 
 
 ###############################################################
 
@@ -239,19 +239,19 @@ spatial_kernel$kernel_gen() %>%  as.matrix() -> spt_kern
 spt_kern[1:10,1:10]
 #---------------------------------------
 
-hpar = CASMC_Lasso_hparams
-hpar <- CASMC_Ridge_hparams
+hpar = CAMC_Lasso_hparams
+hpar <- CAMC_Ridge_hparams
 hpar$beta$lambda.grid <- seq(3,1, length.out=10)
 hpar$beta$lambda.max = 1
 #hpar$beta$n.lambda = 80
-hpar = CASMC_Nuclear_hparams
+hpar = CAMC_Nuclear_hparams
 hpar$laplacian$S.a = temp_kern
 hpar$laplacian$S.b = spt_kern
 hpar$laplacian$lambda.a = .233
 
 for(lambda in seq(.4,.6, length=10)){
   hpar$laplacian$lambda.b = lambda
-CASMC_Ridge_Sim_Wrapper(dat, trace=F, hpar=hpar, return_fit = F)[5:6]  %>% 
+CAMC_Ridge_Sim_Wrapper(dat, trace=F, hpar=hpar, return_fit = F)[5:6]  %>% 
   unlist %>% c(lambda=lambda) %>%   round(4) %>% print()
 }
 

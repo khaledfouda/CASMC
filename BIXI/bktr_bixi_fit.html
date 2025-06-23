@@ -408,7 +408,7 @@ model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F)$model</code></p
 model.dat$X[1,]</code></pre>
 <pre><code>##        humidity      max_temp_f     mean_temp_c total_precip_mm         holiday 
 ##            87.9             5.3             4.1             1.7             0.0</code></pre>
-<pre class="r"><code># CASMC
+<pre class="r"><code># CAMC
 aresults &lt;- list()
 i = 1
 
@@ -429,7 +429,7 @@ for(sparm in list(list(NULL,NULL,&quot;&quot;),
   for(b in 1:5){
   model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
   start_time = Sys.time()
-  best_fit = CASMC_cv_rank(
+  best_fit = CAMC_cv_rank(
     y_train = model.dat$splits$train,
     X = X,#[,1:5, drop=FALSE],
     
@@ -463,7 +463,7 @@ for(sparm in list(list(NULL,NULL,&quot;&quot;),
   #plot(1:ncol(sout$beta), sout$beta[3,])
   
   if(b &gt; 1) old_results = results
-  results = list(model = paste0(&quot;CASMC_rank_all&quot;,sparm[[3]]))
+  results = list(model = paste0(&quot;CAMC_rank_all&quot;,sparm[[3]]))
   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
   #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
   #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -492,7 +492,7 @@ X &lt;- X[,1:3]
     model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
-best_fit = CASMC_cv_rank(
+best_fit = CAMC_cv_rank(
  y_train = model.dat$splits$train,
  X = X,
  y_valid = model.dat$splits$valid@x,
@@ -523,7 +523,7 @@ apply(sout$beta, 1, summary) |&gt; print()
 sout$estimates = sout$M + X %*% (sout$beta)
 if(b &gt; 1) old_results = results
 
-results = list(model = paste0(&quot;CASMC_rank_1:3_&quot;,sparm[[3]]))
+results = list(model = paste0(&quot;CAMC_rank_1:3_&quot;,sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -552,7 +552,7 @@ for(b in 1:5){
   model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
-best_fit = CASMC_cv_rank(
+best_fit = CAMC_cv_rank(
   y_train = model.dat$splits$train,
   X = X,
   y_valid = model.dat$splits$valid@x,
@@ -582,7 +582,7 @@ sout$beta =  fit1$beta
 sout$estimates = sout$M + X %*% (sout$beta)
 if(b &gt; 1) old_results = results
 
-results = list(model = paste0(&quot;CASMC_rank_2_&quot;,sparm[[3]]))
+results = list(model = paste0(&quot;CAMC_rank_2_&quot;,sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -611,7 +611,7 @@ for(b in 1:5){
   model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 start_time = Sys.time()
 
-best_fit = CASMC_cv_L2(
+best_fit = CAMC_cv_L2(
   y_train = model.dat$splits$train,
   X = X,
   y_valid = model.dat$splits$valid@x,
@@ -642,7 +642,7 @@ apply(sout$beta, 1, summary) |&gt; print()
 sout$estimates = sout$M + X %*% (sout$beta)
 if(b &gt; 1) old_results = results
 
-results = list(model = paste0(&quot;CASMC_rank_L2_all_&quot;,sparm[[3]]))
+results = list(model = paste0(&quot;CAMC_rank_L2_all_&quot;,sparm[[3]]))
 results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -1704,7 +1704,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">CASMC_rank_all</td>
+<td align="left">CAMC_rank_all</td>
 <td align="left">4.6</td>
 <td align="left">8.64099</td>
 <td align="left">7.58195</td>
@@ -1712,7 +1712,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <td align="left">6</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_1:3_</td>
+<td align="left">CAMC_rank_1:3_</td>
 <td align="left">4.4</td>
 <td align="left">8.58593</td>
 <td align="left">7.56228</td>
@@ -1720,7 +1720,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <td align="left">6</td>
 </tr>
 <tr class="odd">
-<td align="left">CASMC_rank_2_</td>
+<td align="left">CAMC_rank_2_</td>
 <td align="left">4</td>
 <td align="left">8.47672</td>
 <td align="left">7.51128</td>
@@ -1728,7 +1728,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <td align="left">5</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_L2_all_</td>
+<td align="left">CAMC_rank_L2_all_</td>
 <td align="left">18.2</td>
 <td align="left">8.89795</td>
 <td align="left">7.80002</td>
@@ -1736,7 +1736,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <td align="left">7</td>
 </tr>
 <tr class="odd">
-<td align="left">CASMC_rank_all_with_time_laplacian</td>
+<td align="left">CAMC_rank_all_with_time_laplacian</td>
 <td align="left">5</td>
 <td align="left">8.64097</td>
 <td align="left">7.58196</td>
@@ -1744,7 +1744,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <td align="left">6</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_1:3__with_time_laplacian</td>
+<td align="left">CAMC_rank_1:3__with_time_laplacian</td>
 <td align="left">4.8</td>
 <td align="left">8.58591</td>
 <td align="left">7.56229</td>
@@ -1752,7 +1752,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <td align="left">6</td>
 </tr>
 <tr class="odd">
-<td align="left">CASMC_rank_2__with_time_laplacian</td>
+<td align="left">CAMC_rank_2__with_time_laplacian</td>
 <td align="left">3</td>
 <td align="left">8.47667</td>
 <td align="left">7.51128</td>
@@ -1760,7 +1760,7 @@ do.call(rbind, lapply(aresults, function(x) data.frame(t(unlist(x))))) |&gt; kab
 <td align="left">5</td>
 </tr>
 <tr class="even">
-<td align="left">CASMC_rank_L2_all__with_time_laplacian</td>
+<td align="left">CAMC_rank_L2_all__with_time_laplacian</td>
 <td align="left">20</td>
 <td align="left">8.89785</td>
 <td align="left">7.80001</td>

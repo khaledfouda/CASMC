@@ -96,7 +96,7 @@ Mao.cv <-
             seed = NULL,
             numCores = 1,
             n1n2_optimized = FALSE,
-            test_error = error_metric$rmse,
+            test_error = utils$error_metric$rmse,
             theta_estimator = Mao_weights$binomial,
             sequential = FALSE) {
       #' -------------------------------------------------------------------
@@ -117,7 +117,7 @@ Mao.cv <-
                          lambda.1 = NA,
                          lambda.2 = NA)
       
-      folds <- k_fold_cells(nrow(Y), ncol(Y), n_folds, W)
+      folds <- utils$MC_Kfold_split(nrow(Y), ncol(Y), n_folds, W, seed)
       
       fold_data = lapply(1:n_folds, function(i) {
          #train_indices = which(indices != i, arr.ind = TRUE)
@@ -128,7 +128,8 @@ Mao.cv <-
          # Note that we don't have their original values so if they're passed to the validation step,
          # their original will be equal to 0. We hope we have enough W_fold = 0 while W = 1.
          #---------------------------------------------------
-         Y_train = Y * W_fold
+         Y_train = Y
+         Y_train[W_fold == 0] <- 0
          Y_valid = Y[W_fold == 0 & W == 1]
          prepare_fold_data(Y_train,
                            Y_valid,

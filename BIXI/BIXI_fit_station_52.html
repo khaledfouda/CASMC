@@ -474,7 +474,7 @@ for (case in 0:4) {
     X &lt;- reduced_hat_decomp(model.dat$X, .01, 0.98)$X
   }
   
-  results &lt;- CASMC_var_selection(
+  results &lt;- CAMC_var_selection(
     y_train = model.dat$splits$train,
     y_valid = model.dat$splits$valid,
     Y = model.dat$depart,
@@ -498,7 +498,7 @@ for (case in 0:4) {
                      fiti,
                      error_metric$rmse,
                      F,
-                     paste0(&quot;CASMC(&quot;, case, &quot;)&quot;),
+                     paste0(&quot;CAMC(&quot;, case, &quot;)&quot;),
                      F,
                      3
                    ))
@@ -559,7 +559,7 @@ for (case in 0:4) {
 ## |         0|      1| 535.3216|  2|         37.14725|1,2,3,4,5,6,7,8,9,10                   |
 ## |         0|      1| 534.9058|  2|         37.15165|1,2,3,4,5,6,7,8,9,10,11                |
 ##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 1 rmse(rank) CAMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
 ## [1] &quot;Running on 17 cores.&quot;
 ## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
 ## [1] &quot;Best fit: r =  0  - Validation Error:  36.5625201542423&quot;
@@ -621,8 +621,8 @@ for (case in 0:4) {
 ## |         0|      1| 533.3543|  2|         37.17121|1,2,3,4,5,6,7,8,9,10,11,12,13,14       |
 ## |         0|      1| 533.3508|  2|         37.17130|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15    |
 ##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
-## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## 1 rmse(rank) CAMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CAMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
 ## Compare row 1  and column  2 with corr  0.982 
 ##   Means:  0.265 vs 0.174 so flagging column 1 
 ## Compare row 4  and column  5 with corr  0.911 
@@ -676,9 +676,9 @@ for (case in 0:4) {
 ## |         0|      1| 534.4469|  2|         37.15926|1,2,3,4,5,6,7,8,9,10,11,12    |
 ## |         0|      1| 534.4433|  2|         37.15926|1,2,3,4,5,6,7,8,9,10,11,12,13 |
 ##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
-## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
-## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
+## 1 rmse(rank) CAMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CAMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## 3 rmse(rank) CAMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
 ## Compare row 1  and column  2 with corr  0.982 
 ##   Means:  0.265 vs 0.174 so flagging column 1 
 ## Compare row 4  and column  5 with corr  0.911 
@@ -730,10 +730,10 @@ for (case in 0:4) {
 ## |         2|      1| 536.7665|  2|         37.12072|1,2,3,4,5,6,7,8               |
 ## |         0|      1| 535.9676|  2|         37.13985|1,2,3,4,5,6,7,8,9             |
 ##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
-## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
-## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
-## 4 rmse(rank) CASMC(3) NA( 1) NaN( 1) 12.901 28.031 NaN
+## 1 rmse(rank) CAMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CAMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## 3 rmse(rank) CAMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
+## 4 rmse(rank) CAMC(3) NA( 1) NaN( 1) 12.901 28.031 NaN
 ## [1] &quot;Rank of X changed from 16 to 3&quot;
 ## [1] &quot;Running on 4 cores.&quot;
 ## &lt;std::runtime_error in eval(expr, envir, enclos): TridiagEigen: eigen decomposition failed&gt;
@@ -792,11 +792,11 @@ for (case in 0:4) {
 ## |         0|      1|  550.1859|  2|         36.96536|1,2                                    |
 ## |         0|      1|  549.5029|  2|         36.97580|1,2,3                                  |
 ##       Metric    model  XBeta       M   test  train   Y
-## 1 rmse(rank) CASMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
-## 2 rmse(rank) CASMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
-## 3 rmse(rank) CASMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
-## 4 rmse(rank) CASMC(3) NA( 1) NaN( 1) 12.901 28.031 NaN
-## 5 rmse(rank) CASMC(4) NA( 0) NaN( 1) 19.191 24.495 NaN</code></pre>
+## 1 rmse(rank) CAMC(0) NA( 2) NaN( 1) 13.323 27.677 NaN
+## 2 rmse(rank) CAMC(1) NA( 0) NaN( 1) 13.161 27.759 NaN
+## 3 rmse(rank) CAMC(2) NA( 0) NaN( 1) 12.820 28.043 NaN
+## 4 rmse(rank) CAMC(3) NA( 1) NaN( 1) 12.901 28.031 NaN
+## 5 rmse(rank) CAMC(4) NA( 0) NaN( 1) 19.191 24.495 NaN</code></pre>
 <pre class="r"><code>simpute_fit &lt;- simpute.cv(
   Y_train = as.matrix(model.dat$splits$train),
   y_valid = model.dat$splits$valid,
@@ -868,11 +868,11 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 ## 
 ## Metric       model        test        train     
 ## -----------  -----------  ----------  ----------
-## rmse(rank)   CASMC(2)     [1]12.820   [1]28.043 
-## rmse(rank)   CASMC(3)     [2]12.901   [5]28.031 
-## rmse(rank)   CASMC(1)     [3]13.161   [4]27.759 
-## rmse(rank)   CASMC(0)     [4]13.323   [3]27.677 
-## rmse(rank)   CASMC(4)     [5]19.191   [1]24.495 
+## rmse(rank)   CAMC(2)     [1]12.820   [1]28.043 
+## rmse(rank)   CAMC(3)     [2]12.901   [5]28.031 
+## rmse(rank)   CAMC(1)     [3]13.161   [4]27.759 
+## rmse(rank)   CAMC(0)     [4]13.323   [3]27.677 
+## rmse(rank)   CAMC(4)     [5]19.191   [1]24.495 
 ## rmse(rank)   SoftImpute   [1]35.197   [2]26.002</code></pre>
 <pre class="r"><code># 
 # 
@@ -927,7 +927,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   #X_r$rank
 #   #X &lt;- model.dat$X[,c(1,2, 3,4,6,7,8)]
 #   
-#   results &lt;- CASMC_var_selection(
+#   results &lt;- CAMC_var_selection(
 #     y_train = model.dat$splits$train,
 #     y_valid = model.dat$splits$valid,
 #     Y = model.dat$depart,
@@ -942,7 +942,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   
 #   #-----------------------------------------------------------------------------
 #   start_time = Sys.time()
-#   best_fit = CASMC_cv_rank(
+#   best_fit = CAMC_cv_rank(
 #     y_train = model.dat$splits$train,
 #     X = X,#[,1:5, drop=FALSE],
 #     
@@ -984,7 +984,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   #plot(1:ncol(sout$beta), sout$beta[3,])
 #   
 #   if(b &gt; 1) old_results = results
-#   results = list(model = paste0(&quot;CASMC_rank_all&quot;,sparm[[3]]))
+#   results = list(model = paste0(&quot;CAMC_rank_all&quot;,sparm[[3]]))
 #   results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 #   #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 #   #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -1013,7 +1013,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #     model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 # 
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #  y_train = model.dat$splits$train,
 #  X = X,
 #  y_valid = model.dat$splits$valid@x,
@@ -1044,7 +1044,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b &gt; 1) old_results = results
 # 
-# results = list(model = paste0(&quot;CASMC_rank_1:3_&quot;,sparm[[3]]))
+# results = list(model = paste0(&quot;CAMC_rank_1:3_&quot;,sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 # #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 # #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -1073,7 +1073,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 # 
-# best_fit = CASMC_cv_rank(
+# best_fit = CAMC_cv_rank(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -1103,7 +1103,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b &gt; 1) old_results = results
 # 
-# results = list(model = paste0(&quot;CASMC_rank_2_&quot;,sparm[[3]]))
+# results = list(model = paste0(&quot;CAMC_rank_2_&quot;,sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 # #results$lambda.1 = NA#sout$lambda.beta |&gt; round(3)
 # #results$lambda.2 = sout$lambda |&gt; round(3)
@@ -1132,7 +1132,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 #   model.dat &lt;- load_bixi_dat(transpose = T, scale_response = F, seed=b)$model
 # start_time = Sys.time()
 # 
-# best_fit = CASMC_cv_L2(
+# best_fit = CAMC_cv_L2(
 #   y_train = model.dat$splits$train,
 #   X = X,
 #   y_valid = model.dat$splits$valid@x,
@@ -1163,7 +1163,7 @@ kable(all_res, format = &quot;simple&quot;) |&gt;  print()</code></pre>
 # sout$estimates = sout$M + X %*% (sout$beta)
 # if(b &gt; 1) old_results = results
 # 
-# results = list(model = paste0(&quot;CASMC_rank_L2_all_&quot;,sparm[[3]]))
+# results = list(model = paste0(&quot;CAMC_rank_L2_all_&quot;,sparm[[3]]))
 # results$time = round(as.numeric(difftime(Sys.time(), start_time, units = &quot;secs&quot;)))
 # results$error.test = test_error(sout$estimates[model.dat$masks$test == 0],
 #                                 model.dat$splits$test@x) |&gt; round(5)

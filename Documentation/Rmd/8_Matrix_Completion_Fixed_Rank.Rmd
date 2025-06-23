@@ -256,7 +256,7 @@ y[y==0] = NA
 ys <- as(y, "Incomplete")
 X_r = reduced_hat_decomp(gen.dat$X, 1e-2)
 beta_partial = MASS::ginv(t(X_r$X) %*% X_r$X) %*% t(X_r$X)
-fit1 = CASMC_fit(y=ys, svdH=X_r$svdH,  trace=F, J=7,
+fit1 = CAMC_fit(y=ys, svdH=X_r$svdH,  trace=F, J=7,
                                             thresh=1e-5, lambda=11.1, init = "naive",
                                             final.svd = T,maxit = 100, warm.start = NULL)
 xbeta.sparse <- ys
