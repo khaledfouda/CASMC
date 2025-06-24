@@ -1,9 +1,7 @@
 
 
 
-soft_thresh <- function(B, lambda){
-   sign(B) * pmax(abs(B) - lambda, 0)
-}
+
 
 #' Covariate-Adjusted-Sparse-Matrix-completion
 #' Fit function
@@ -25,6 +23,7 @@ CAMC3_fit <-
   CAMC_Lasso_fit <-
   function(y,
            X,
+           XtX = t(X) %*% X,
            J = 2,
            lambda.M = 0,
            lambda.beta = 0,
@@ -52,8 +51,6 @@ CAMC3_fit <-
     m <- n[2]
     n <- n[1]
     lambda.M <- lambda.M * m * n # rescalling to save time 
-    lambda.beta <- lambda.beta * m * n
-    yobs <- y@x # y will hold the model residuals
     k <- ncol(X)
     if (trace.it)
       nz = nnzero(y, na.counted = TRUE)
@@ -88,17 +85,22 @@ CAMC3_fit <-
       
     } else{
       # initialize. Warm start is not provided
-      beta <- as.matrix(crossprod(X, y))
-      y@x = yobs - suvC(X, t(beta), irow, pcol)
-      U <- utils$svdopt(naive_MC(as.matrix(y)), J, n, m, F, F)
-      Dsq = U$d
-      V = U$v
-      U = U$u
+      Xterms = utils$GetXterms(X)
+      Y_naive = naive_MC(as.matrix(y))
+      beta = Xterms$X1 %*% Y_naive
+      Xbeta <- X %*% beta   #svdH$u %*% (svdH$v  %*% Y_naive)
+      M <- Y_naive - Xbeta
+      M <- utils$svdopt(as.matrix(M), J, n, m, F, F)
+      U = M$u
+      V = M$v
+      Dsq = M$d
+      Y_naive <- Xbeta <- M <- NULL
       #---------------------------------------------------------------
       
     }
     
     #----------------------------------------
+    yobs <- y@x # y will hold the model residuals
     ratio <- 1
     iter <- 0
     #----------------------------------------
@@ -119,20 +121,40 @@ CAMC3_fit <-
       }
       #----------------------------------------------
       # part 1: update beta
-      beta <- soft_thresh(as.matrix(crossprod(X, y) + beta), lambda.beta)
+      beta.old <- matrix(0, k, m)
+      
+      beta.thresh =   lambda.beta * learning.rate
+      beta.iter = 0
+      partial.update = learning.rate * as.matrix(t(X) %*% y + XtX %*% beta)
+      while (sqrt(sum((beta - beta.old) ^ 2)) > 1e-3 &
+             beta.iter < beta.iter.max) {
+        beta.old <- beta
+        update = beta + partial.update - learning.rate * XtX %*% beta
+        beta <- matrix(0, k, m)
+        beta[update > beta.thresh] = update[update > beta.thresh] - beta.thresh
+        beta[update < -beta.thresh] = update[update < -beta.thresh] + beta.thresh
+        beta.iter <- beta.iter + 1
+        #print(sqrt(sum((beta - beta.old) ^ 2)))
+      }
+      
       #-------------------------------------------------------------------
       # part extra: re-update y
       xbeta.obs <-
         suvC(X, (t(beta)), irow, pcol)
       y@x = yobs - M_obs - xbeta.obs
       #--------------------------------------------------------------------
+      # print("hi2")
+      ##--------------------------------------------
       # part 3: Update B
       # prereq: U, VDsq, y, Dsq, lambda.M, L.b
       # updates U, Dsq, V
-      B = crossprod(y, U) + VDsq 
-      if (laplace.b) B = B - t(V)  %*% L.b
+      B = crossprod(y, U) + VDsq # equiv to below
+      # B = t(U) %*% y + t(VDsq)
+      if (laplace.b)
+        B = B - t(V)  %*% L.b
       D.star <- Dsq / (Dsq + lambda.M)
       B <- as.matrix(B %*% diag(D.star))
+      #B = as.matrix(t((B) * (Dsq / (Dsq + lambda.M))))
       Bsvd = utils$svd_small_nc(B, FALSE, p = J) 
       V = Bsvd$u
       Dsq = Bsvd$d #pmax(Bsvd$d, min_eigv)
@@ -141,10 +163,13 @@ CAMC3_fit <-
       # part 4: Update A
       # prereq: U, D, VDsq, y, lambda.M, L.a
       # updates U, Dsq, V
-      A = (y %*% V) + t(Dsq * t(U))
-      if (laplace.a) A = A - L.a %*% U
+      A = (y %*% V) + sweep(U, 2L, Dsq, `*`)
+      #A = (y %*% V) + t(Dsq * t(U))
+      if (laplace.a)
+        A = A - L.a %*% U
       D.star <- Dsq / (Dsq + lambda.M)
-      A <- as.matrix(A %*% diag(D.star))
+      A <- sweep(A, 2L, D.star, `*`)
+      #A = as.matrix(t(t(A) * (1 + lambda.M* Dsq^(-2))^2 ))
       Asvd =  utils$svd_small_nc(A, FALSE, p = J)
       U = Asvd$u
       Dsq = Asvd$d #pmax(Asvd$d, min_eigv)
@@ -161,8 +186,8 @@ CAMC3_fit <-
             format(round(obj, 5)),
             "ratio",
             ratio,
-            #"qiter",
-            #beta.iter,
+            "qiter",
+            beta.iter,
             "\n")
       }
       #-----------------------------------------------------------------------------------

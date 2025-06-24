@@ -10,10 +10,10 @@
 #'                            applied if y is provided.
 #' @return A list of u,d,v of M, Beta, and a vector of the observed Xbeta
 #' @examples
-#'  CAMC_fit(y,X,J=5)
+#'  CASMC_fit(y,X,J=5)
 #' @export
 #'
-CAMC3_cv_M <-
+CASMC3_cv_M <-
   function(y_train,
            # y_train is expected to be Incomplete
            X,
@@ -24,7 +24,24 @@ CAMC3_cv_M <-
            # y: a final full-fit if provided. Expected to be Incomplete
            lambda.beta = .Machine$double.eps,
            hpar = hpar,
+           #learning.rate = 0.001,
+           #beta.iter.max = 200,
+           # provide this if you need L2 regularization.
            error_function = utils$error_metric$rmse,
+           # tuning parameters for lambda
+           #lambda.factor = 1 / 4,
+           #lambda.init = NULL,
+           #n.lambda = 20,
+           # tuning parameters for J
+           #rank.init = 2,
+           #rank.limit = 30,
+           #rank.step = 2,
+           #pct = 0.98,
+           # laplacian parameters
+           #lambda.a = 0,
+           #S.a = NULL,
+           #lambda.b = 0,
+           #S.b = NULL,
            # stopping criteria
            thresh = 1e-6,
            maxit = 100,
@@ -60,12 +77,14 @@ CAMC3_cv_M <-
     rank.max <- hpar$M$rank.init
     best_fit <- list(error = Inf)
     counter <- 0
+    XtX = t(X) %*% X
     #---------------------------------------------------------------------
     for (i in seq(along = lamseq)) {
       fiti <-
-        CAMC3_fit(
+        CASMC3_fit(
           y = y_train,
           X = X,
+          XtX = XtX,
           J = rank.max,
           lambda.M = lamseq[i],
           learning.rate = hpar$beta$learning.rate,
@@ -87,11 +106,11 @@ CAMC3_cv_M <-
       MValid = suvC(fiti$u, t(fiti$d * t(fiti$v)), virow, vpcol)
       #--------------------------------------------
       err = error_function(MValid + XbetaValid, y_valid)
-      rank <- sum(round(fiti$d, 4) > 0)
+      #rank <- sum(round(fiti$d, 4) > 0)
       # newly added, to be removed later
-      #var_explained = fiti$d ^ 2 / sum(fiti$d ^ 2)
-      #cum_var = cumsum(var_explained)
-      #rank  <- which(cum_var >= hpar$M$pct)[1]
+      var_explained = fiti$d ^ 2 / sum(fiti$d ^ 2)
+      cum_var = cumsum(var_explained)
+      rank  <- which(cum_var >= hpar$M$pct)[1]
       
       warm <- fiti # warm start for next
       #---------------------------------------------------------------------
@@ -138,9 +157,10 @@ CAMC3_cv_M <-
     if (!is.null(y)) {
       stopifnot(inherits(y, "dgCMatrix"))
       best_fit$fit <-
-        CAMC3_fit(
+        CASMC3_fit(
           y = y,
           X = X,
+          XtX = XtX,
           J = best_fit$rank.max,
           lambda.M = best_fit$lambda.M,
           learning.rate = hpar$beta$learning.rate,

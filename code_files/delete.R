@@ -15,54 +15,88 @@ y[y==0] <- NA
 y %<>% as("Incomplete")
 U <- rnorm(m*J) %>% matrix(m,J)
 V <- rnorm(n*J) %>% matrix(n,J)
-
+Dstar = (Dsq / (Dsq + lambda.M))
 VDsq = t(Dsq * t(V))
 
-all(
-  t(crossprod(y, U) + VDsq) ==
-    B
+
+source("./code_files/import_lib.R")
+
+dat <- generate_simulated_data(600, 700, 10, 12, .8, F,
+                               prepare_for_fitting = T)
+     
+start_time <- Sys.time()
+set.seed(2020); fits <- simpute.cv(
+  as.matrix(dat$fit_data$train),
+  dat$fit_data$valid,
+  dat$fit_data$W_valid,
+  dat$Y,
+  trace = T
+)
+# rank 9; rank_m = 7; lambda=0;
+
+utils$error_metric$rmse(fits$estimates[dat$fit_data$W_valid==0], 
+                        dat$fit_data$valid ) # better than new.xbeta
+
+
+
+Xs <- qr(dat$X)
+R <- qr.R(Xs)
+Xs <- qr.Q(Xs)
+
+fit3 <- CAMC3_fit(
+  dat$fit_data$train,
+  Xs,#dat$X,
+  J = 9,
+  lambda.M = .0000001,
+  lambda.beta = .1,
+  trace.it=T
 )
 
-res1  <- microbenchmark(
-  old_D = {Dsq / (Dsq + lambda.M)},
-  new_D = {1/(1 + lambda.M * (1/Dsq) )},
-  times = 1000L, units = "ms"
+
+XbetaValid = Xs %*% (fit3$beta)
+MValid = fit3$u %*% (fit3$d * t(fit3$v))
+pred = (XbetaValid+MValid)[dat$fit_data$W_valid==0]
+utils$error_metric$rmse(pred, dat$fit_data$valid)
+#--------------------------------------------
+# cv
+
+
+hpar <- CASMC_Lasso_hparams
+hpar$M$rank.init = 2
+hpar$M$lambda.init = .000001
+fitcv <- CAMC3_cv_M(
+  dat$fit_data$train,
+  Xs,
+  dat$fit_data$valid,
+  dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  lambda.beta = 0.1,
+  trace = T,
+  hpar = hpar
 )
-print(res1)
-plot(res1)
 
+getdef
+#-------------------------------------------
 
-Dstar = (Dsq / (Dsq + lambda.M))
-
-B = t(U) %*% y + t(VDsq)
-B = as.matrix(t((B) * Dstar))
-
-
-B2 = (crossprod(y, U) + VDsq)
-B2 = as.matrix(B2 %*% diag(Dstar))
-B2 = sweep(B2, 2L, (Dsq / (Dsq + lambda.M)), `*`)
-
-B2[] <- B2
-
-all(B==(B2))
-
-B
-
-res2  <- microbenchmark(
-  old_D = {
-    #B = t(U) %*% y + t(VDsq)
-    B22 = (B2 %*% diag(Dstar))
-    B22 = as.matrix(B22)
-    #B11 = as.matrix(t((B) * Dstar))
+X <- Xs
+y <- dat$fit_data$train
+irow <- y@i
+pcol <- y@p
+microbenchmark(
+  
+  meth1 = {
+    beta <- as.matrix(crossprod(X, y))
+    M <- y
+    M@x = M@x - suvC(X, t(beta), irow, pcol)
+    M <- naive_MC(as.matrix(M))
   },
-  new_D = {
-    #B2 = (crossprod(y, U) + VDsq)
-    B22 = as.matrix(B2 %*% diag(Dstar))
-    # B22 = sweep(B2, 2L, Dstar, `*`)
+  meth2 = {
+    Xterms = utils$GetXterms(X)
+    Y_naive = naive_MC(as.matrix(y))
+    beta = Xterms$X1 %*% Y_naive
+    Xbeta <- X %*% beta   #svdH$u %*% (svdH$v  %*% Y_naive)
+    M <- Y_naive - Xbeta
   },
-  times = 1000L#, units = "sec"
+  times = 100L
+  
 )
-print(res2)
-plot(res2)
-fast.svd(B22)
-t(B2)
