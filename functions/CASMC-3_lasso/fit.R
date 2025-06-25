@@ -1,222 +1,178 @@
-
-
-
-soft_thresh <- function(B, lambda){
-   sign(B) * pmax(abs(B) - lambda, 0)
+#' Soft‐thresholding operator
+#'
+#' Apply the element‐wise soft‐thresholding \(S_\lambda(x)=\mathrm{sign}(x)\max(|x|-\lambda,0)\)
+#'
+#' @param B Numeric matrix
+#' @param lambda Non‐negative scalar threshold
+#' @return Numeric matrix of same dimensions as `B`
+#' @export
+soft_threshold <- function(B, lambda) {
+  sign(B) * pmax(abs(B) - lambda, 0)
 }
 
-#' Covariate-Adjusted-Sparse-Matrix-completion
-#' Fit function
+#' Covariate‐Adjusted‐Sparse‐Matrix‐Completion Fit
 #'
-#' @param y A sparse matrix of class Incomplete.
-#' @param X covariate matrix
-#' @param svdH (optional) A list consisting of the SVD of the hat matrix. see reduced_hat_decomp function.
-#' @param Xterms (optional) A list of terms computed using GetXterms function.
-#' @param J (hyperparameter). The maximum rank of the low-rank matrix M = AB. Default is 2
-#' @param lambda (hyperparameter) The L2 regularization parameter for A and B
-#' @param r (hyperparameter, optional) The rank of covariate effects (beta). The rank will be the same
-#'                                      as the covariate matrix if r not provided
-#' @return A list of u,d,v of M, Beta, and a vector of the observed Xbeta
-#' @examples
-#'  CAMC_fit(y,X,J=5)
+#' Fit low‐rank plus covariate model
+#'
+#' @inheritParams soft_threshold
+#' @param y dgCMatrix of class “Incomplete”
+#' @param X Covariate matrix
+#' @param J Maximum rank of low‐rank component (default = 2)
+#' @param lambda_M Nuclear‐norm penalty for low‐rank component (default = 0)
+#' @param lambda_beta Lasso penalty for β (default = 0)
+#' @param S_a,lambda_a Optional similarity matrix + weight for rows (A)
+#' @param S_b,lambda_b Optional similarity matrix + weight for cols (B)
+#' @param normalized_laplacian Logical, whether to normalize Laplacian (default = TRUE)
+#' @param maxit Maximum number of iterations (default = 300)
+#' @param thresh Convergence threshold on Frobenius‐change (default = 1e-5)
+#' @param trace Logical, if TRUE prints progress (default = FALSE)
+#' @param warm_start Optional warm‐start list with components `u`,`d`,`v`,`beta`
+#' @param final_svd Logical, whether to do final SVD refinement (default = TRUE)
+#' @param min_eigv Minimum eigenvalue floor (default = 0)
+#' @return A list with  
+#'   - `u,d,v`: factors of low‐rank component  
+#'   - `beta`: covariate coefficients  
+#'   - hyperparameters and `n_iter`  
 #' @export
-#'
-CAMC3_fit <-
-  CAMC_Lasso_fit <-
-  function(y,
-           X,
-           J = 2,
-           lambda.M = 0,
-           lambda.beta = 0,
-           # similarity matrix for A
-           S.a = NULL,
-           lambda.a = 0,
-           # similarity matrix for B
-           S.b = NULL,
-           lambda.b = 0,
-           normalized_laplacian = TRUE,
-           # convergence parameters
-           maxit = 300,
-           thresh = 1e-05,
-           trace.it = FALSE,
-           warm.start = NULL,
-           # the following should not be modified
-           final.svd = TRUE,
-           beta.iter.max = 10,
-           learning.rate = 0.001,
-           min_eigv = 0) {
-    stopifnot(inherits(y, "dgCMatrix"))
-    irow = y@i
-    pcol = y@p
-    n <- dim(y)
-    m <- n[2]
-    n <- n[1]
-    #lambda.M <- lambda.M * m * n # rescalling to save time 
-    #lambda.beta <- lambda.beta * m * n
-    yobs <- y@x # y will hold the model residuals
-    k <- ncol(X)
-    if (trace.it)
-      nz = nnzero(y, na.counted = TRUE)
-    #-------------------------------
-    # the following part is for Laplacian regularization, only if similarity matrices are provided
-    laplace.a = laplace.b = F
-    if (!is.null(S.a) && lambda.a > 0) {
-      laplace.a = T
-      L.a = utils$computeLaplacian(S.a, normalized = normalized_laplacian) * lambda.a
-    }
-    if (!is.null(S.b) && lambda.b > 0) {
-      laplace.b = T
-      L.b = utils$computeLaplacian(S.b, normalized = normalized_laplacian) * lambda.b
-    }
-    #---------------------------------------------------
-    # warm start or initialize (naive or random)
-    #' for warmup we extract  U, V, Dsq, and beta (named: u,d,v,beta)
-    #' For initialization: Apply Naive MC followed by unregularized linear regression.
-    warm = FALSE
-    clean.warm.start(warm.start)
-    if (!is.null(warm.start)) {
-      #must have u,d and v components
-      if (!all(match(c("u", "d", "v", "beta"), names(warm.start), 0) >
-               0))
-        stop("warm.start is missing some or all of the components.")
-      warm = TRUE
-      beta = warm.start$beta
-      warm.out <- utils$prepare.M.warm.start(warm.start, J, n, m, min_eigv)
-      U = warm.out$U
-      V = warm.out$V
-      Dsq = warm.out$Dsq
-      
-    } else{
-      # initialize. Warm start is not provided
-      beta <- as.matrix(crossprod(X, y))
-      y@x = yobs - suvC(X, t(beta), irow, pcol)
-      U <- utils$svdopt(naive_MC(as.matrix(y)), J, n, m, F, F)
-      Dsq = U$d
-      V = U$v
-      U = U$u
-      #---------------------------------------------------------------
-      
-    }
-    
-    #----------------------------------------
-    ratio <- 1
-    iter <- 0
-    #----------------------------------------
-    while ((ratio > thresh) & (iter < maxit)) {
-      iter <- iter + 1
-      U.old = U
-      V.old = V
-      Dsq.old = Dsq
-      #----------------------------------------------
-      # part 0: Update y (training residulas)
-      # prereq: U, Dsq, V, Q, R, yobs
-      # updates: y; VDsq; XQ
-      VDsq = t(Dsq * t(V))
-      M_obs = suvC(U, VDsq, irow, pcol)
-      if (iter == 1) {
-        xbeta.obs <- suvC(X, (t(beta)), irow, pcol)
-        y@x = yobs - M_obs - xbeta.obs
-      }
-      #----------------------------------------------
-      # part 1: update beta
-      beta <- soft_thresh(as.matrix(crossprod(X, y) + beta), lambda.beta)
-      #-------------------------------------------------------------------
-      # part extra: re-update y
-      xbeta.obs <-
-        suvC(X, (t(beta)), irow, pcol)
-      y@x = yobs - M_obs - xbeta.obs
-      #--------------------------------------------------------------------
-      # part 3: Update B
-      # prereq: U, VDsq, y, Dsq, lambda.M, L.b
-      # updates U, Dsq, V
-      B = crossprod(y, U) + VDsq 
-      if (laplace.b) B = B - t(V)  %*% L.b
-      D.star <- Dsq / (Dsq + lambda.M)
-      B <- as.matrix(B %*% diag(D.star))
-      Bsvd = utils$svd_small_nc(B, FALSE, p = J) 
-      V = Bsvd$u
-      Dsq = Bsvd$d #pmax(Bsvd$d, min_eigv)
-      U = U %*% (Bsvd$v)
-      #-------------------------------------------------------------
-      # part 4: Update A
-      # prereq: U, D, VDsq, y, lambda.M, L.a
-      # updates U, Dsq, V
-      A = (y %*% V) + t(Dsq * t(U))
-      if (laplace.a) A = A - L.a %*% U
-      D.star <- Dsq / (Dsq + lambda.M)
-      A <- as.matrix(A %*% diag(D.star))
-      Asvd =  utils$svd_small_nc(A, FALSE, p = J)
-      U = Asvd$u
-      Dsq = Asvd$d #pmax(Asvd$d, min_eigv)
-      V = V %*% (Asvd$v)
-      #------------------------------------------------------------------------------
-      ratio =  utils$Frob(U.old, Dsq.old, V.old, U, Dsq, V)
-      #------------------------------------------------------------------------------
-      if (trace.it) {
-        obj = (.5 * sum(y@x ^ 2) +
-                 lambda.M * sum(Dsq)) / nz
-        cat(iter,
-            ":",
-            "obj",
-            format(round(obj, 5)),
-            "ratio",
-            ratio,
-            #"qiter",
-            #beta.iter,
-            "\n")
-      }
-      #-----------------------------------------------------------------------------------
-      
-    }
-    if (iter == maxit &
-        trace.it)
-      warning(
-        paste(
-          "Convergence not achieved by",
-          maxit,
-          "iterations. Consider increasing the number of iterations."
-        )
-      )
-    # one final fit for one of the parameters (A) has proved to improve the performance significantly.
-    if (final.svd) {
-      #---- update A
-      A = (y %*% V) + t(Dsq * t(U))
-      if (laplace.a)
-        A = A - L.a %*% U
-      A = as.matrix(t(t(A) * (Dsq / (Dsq + lambda.M))))
-      Asvd =  utils$svd_small_nc(A, FALSE, p = J)
-      U = Asvd$u
-      V = V %*% Asvd$v
-      Dsq = pmax(Asvd$d - lambda.M, 0)
-      #---------------------------------------------
-      if (trace.it) {
-        M_obs = suvC(t(Dsq * t(U)), V, irow, pcol)
-        y@x = yobs - M_obs - xbeta.obs
-        obj = (.5 * sum(y@x ^ 2) + lambda.M * sum(Dsq)) / nz
-        cat("final SVD:", "obj", format(round(obj, 5)), "\n")
-        cat("Number of Iterations for covergence is ", iter, "\n")
-      }
-    }
-    
-    #-------------------------------------------------------
-    # trim in case we reduce the rank of M to be smaller than J.
-    J = min(max(1,sum(Dsq > min_eigv)), J)
-    
-    out = list(
-      u = U[, seq(J), drop = FALSE],
-      d = Dsq[seq(J)],
-      v = V[, seq(J), drop = FALSE],
-      beta = beta,
-      #---------------------
-      # hyperparameters
-      lambda.M = lambda.M,
-      lambda.beta = lambda.beta,
-      J = J,
-      lambda.a = lambda.a,
-      lambda.b = lambda.b,
-      #--------------------------
-      # convergence
-      n_iter = iter
-    )
-    out
+CAMC3_fit <- CAMC_Lasso_fit <- function(
+    y,
+    X,
+    J                 = 2,
+    lambda_M          = 1,
+    lambda_beta       = 0,
+    S_a               = NULL,
+    lambda_a          = 0,
+    S_b               = NULL,
+    lambda_b          = 0,
+    normalized_laplacian = TRUE,
+    maxit             = 300,
+    thresh            = 1e-5,
+    trace             = FALSE,
+    warm_start        = NULL,
+    final_svd         = TRUE,
+    min_eigv          = 0
+) {
+  ## 1. Input checks & setup
+  stopifnot(inherits(y, "dgCMatrix"))
+  i_row  <- y@i
+  p_col  <- y@p
+  y_obs  <- y@x
+  dims   <- dim(y)
+  n_rows <- dims[1]
+  n_cols <- dims[2]
+  if (trace) nz <- nnzero(y, na.counted = TRUE)
+  
+  ## 2. Laplacian reg. if requested
+  laplace_a <- FALSE
+  laplace_b <- FALSE
+  if (!is.null(S_a) && lambda_a > 0) {
+    laplace_a <- TRUE
+    L_a <- utils$computeLaplacian(S_a,
+                                  normalized = normalized_laplacian) * lambda_a
   }
+  if (!is.null(S_b) && lambda_b > 0) {
+    laplace_b <- TRUE
+    L_b <- utils$computeLaplacian(S_b,
+                                  normalized = normalized_laplacian) * lambda_b
+  }
+  
+  ## 3. Warm‐start or initialize
+  clean.warm.start(warm_start)
+  if (!is.null(warm_start)) {
+    if (!all(match(c("u","d","v","beta"),
+                   names(warm_start), 0) > 0)) {
+      stop("warm_start missing components: u, d, v, beta")
+    }
+    beta <- warm_start$beta
+    ws   <- utils$prepare.M.warm.start(
+      warm_start, J, n_rows, n_cols, min_eigv)
+    U    <- ws$U;    V    <- ws$V;    Dsq  <- ws$Dsq
+  } else {
+    beta <- as.matrix(crossprod(X, y))
+    y@x  <- y_obs - suvC(X, t(beta), i_row, p_col)
+    init <- utils$svdopt(naive_MC(as.matrix(y)),
+                         J, n_rows, n_cols, FALSE, FALSE)
+    U    <- init$u;  Dsq  <- init$d;  V    <- init$v
+  }
+  
+  ## 4. Main loop
+  ratio <- Inf
+  iter  <- 0
+  while (ratio > thresh && iter < maxit) {
+    iter <- iter + 1
+    U_old  <- U;  V_old  <- V;  D_old <- Dsq
+    
+    # 4.1 Update residuals
+    VDsq    <- t(Dsq * t(V))
+    M_obs   <- suvC(U, VDsq, i_row, p_col)
+    if (iter == 1) {
+      xb_obs <- suvC(X, t(beta), i_row, p_col)
+      y@x   <- y_obs - M_obs - xb_obs
+    }
+    
+    # 4.2 Update beta via soft‐threshold
+    beta   <- soft_threshold(
+      as.matrix(crossprod(X, y) + beta),
+      lambda_beta
+    )
+    xb_obs <- suvC(X, t(beta), i_row, p_col)
+    y@x   <- y_obs - M_obs - xb_obs
+    
+    # 4.3 Update B → (V, Dsq, U)
+    B_mat  <- crossprod(y, U) + VDsq
+    if (laplace_b) B_mat <- B_mat - t(V) %*% L_b
+    D_star <- Dsq / (Dsq + lambda_M)
+    B_s    <- as.matrix(B_mat %*% diag(D_star))
+    Bs     <- utils$svd_small_nc(B_s, FALSE, p = J)
+    V      <- Bs$u;  Dsq <- Bs$d; U <- U %*% Bs$v
+    
+    # 4.4 Update A → (U, Dsq, V)
+    A_mat  <- y %*% V + t(Dsq * t(U))
+    if (laplace_a) A_mat <- A_mat - L_a %*% U
+    D_star <- Dsq / (Dsq + lambda_M)
+    A_s    <- as.matrix(A_mat %*% diag(D_star))
+    As     <- utils$svd_small_nc(A_s, FALSE, p = J)
+    U      <- As$u;  Dsq <- As$d; V <- V %*% As$v
+    
+    # 4.5 Convergence check
+    ratio <- utils$Frob(U_old, D_old, V_old, U, Dsq, V)
+    if (trace) {
+      obj <- (0.5 * sum(y@x^2) + lambda_M * sum(Dsq)) / nz
+      cat(iter, " obj=", round(obj,5), " ratio=", ratio, "\n")
+    }
+  }
+  if (iter == maxit && trace)
+    warning("Did not converge in ", maxit, " iterations.")
+  
+  ## 5. Final SVD refinement
+  if (final_svd) {
+    A_mat <- y %*% V + t(Dsq * t(U))
+    if (laplace_a) A_mat <- A_mat - L_a %*% U
+    A_fin <- t(t(A_mat) * (Dsq / (Dsq + lambda_M)))
+    fin   <- utils$svd_small_nc(as.matrix(A_fin), FALSE, p = J)
+    U     <- fin$u; V <- V %*% fin$v
+    Dsq   <- pmax(fin$d - lambda_M, 0)
+    if (trace) {
+      M_obs <- suvC(t(Dsq * t(U)), V, i_row, p_col)
+      y@x  <- y_obs - M_obs - xb_obs
+      obj  <- (0.5 * sum(y@x^2) + lambda_M * sum(Dsq)) / nz
+      cat("final SVD obj=", round(obj,5), "\n",
+          "iterations=", iter, "\n")
+    }
+  }
+  
+  ## 6. Trim effective rank and return
+  J_eff <- min(max(1, sum(Dsq > min_eigv)), J)
+  list(
+    u           = U[, seq_len(J_eff), drop = FALSE],
+    d           = Dsq[seq_len(J_eff)],
+    v           = V[, seq_len(J_eff), drop = FALSE],
+    beta        = beta,
+    lambda_M    = lambda_M,
+    lambda_beta = lambda_beta,
+    J           = J_eff,
+    lambda_a    = lambda_a,
+    lambda_b    = lambda_b,
+    n_iter      = iter
+  )
+}

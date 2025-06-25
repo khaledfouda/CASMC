@@ -21,11 +21,11 @@
 #' @return A list with elements:
 #'   - `error`: best validation error  
 #'   - `rank_M`: rank of M at best lambda  
-#'   - `lambda.M`: best nuclear‐penalty lambda  
+#'   - `lambda_M`: best nuclear‐penalty lambda  
 #'   - `rank_max`: rank.max used in best fit  
 #'   - `fit`: the corresponding `CAMC3_fit` object  
 #'   - `iter`: index in the lambda‐sequence  
-#'   - plus the final `lambda.beta`, `lambda.a`, `lambda.b`, `learning.rate`  
+#'   - plus the final `lambda_beta`, `lambda_a`, `lambda_b`, `learning.rate`  
 #' @export
 CAMC3_cv_M <- function(
     y_train,
@@ -49,14 +49,14 @@ CAMC3_cv_M <- function(
   
   ##------------------------------------------------------------------------------
   ## 2. Build lambda‐sequence for nuclear penalty
-  if (is.null(hpar$M$lambda.init)) {
-    hpar$M$lambda.init <- utils$lambdaM.max(
+  if (is.null(hpar$M$lambda_init)) {
+    hpar$M$lambda_init <- utils$lambdaM.max(
       y_train,
       utils$reduced_hat_decomp.H(X)
-    ) * hpar$M$lambda.factor
+    ) * hpar$M$lambda_factor
   }
   lambda_seq <- seq(
-    from      = hpar$M$lambda.init,
+    from      = hpar$M$lambda_init,
     to        = .Machine$double.eps,
     length.out= hpar$M$n.lambda
   )
@@ -82,16 +82,14 @@ CAMC3_cv_M <- function(
       y             = y_train,
       X             = X,
       J             = rank_max,
-      lambda.M      = lambda_seq[i],
-      learning.rate = hpar$beta$learning.rate,
-      beta.iter.max = hpar$beta$prox.iter.max,
-      lambda.beta   = lambda_beta,
-      lambda.a      = hpar$laplacian$lambda.a,
-      S.a           = hpar$laplacian$S.a,
-      lambda.b      = hpar$laplacian$lambda.b,
-      S.b           = hpar$laplacian$S.b,
-      warm.start    = warm,
-      trace.it      = FALSE,
+      lambda_M      = lambda_seq[i],
+      lambda_beta   = lambda_beta,
+      lambda_a      = hpar$laplacian$lambda_a,
+      S_a           = hpar$laplacian$S.a,
+      lambda_b      = hpar$laplacian$lambda_b,
+      S_b           = hpar$laplacian$S.b,
+      warm_start    = warm,
+      trace         = FALSE,
       thresh        = thresh,
       maxit         = maxit
     )
@@ -127,7 +125,7 @@ CAMC3_cv_M <- function(
       best_fit <- list(
         error     = error_val,
         rank_M    = current_rank,
-        lambda.M  = lambda_seq[i],
+        lambda_M  = lambda_seq[i],
         rank_max  = rank_max,
         fit       = fit_i,
         iter      = i
@@ -164,16 +162,14 @@ CAMC3_cv_M <- function(
       y             = y,
       X             = X,
       J             = best_fit$rank_max,
-      lambda.M      = best_fit$lambda.M,
-      learning.rate = hpar$beta$learning.rate,
-      beta.iter.max = hpar$beta$prox.iter.max,
-      lambda.beta   = lambda_beta,
-      lambda.a      = hpar$laplacian$lambda.a,
-      S.a           = hpar$laplacian$S.a,
-      lambda.b      = hpar$laplacian$lambda.b,
-      S.b           = hpar$laplacian$S.b,
-      warm.start    = best_fit$fit,
-      trace.it      = FALSE,
+      lambda_M      = best_fit$lambda_M,
+      lambda_beta   = lambda_beta,
+      lambda_a      = hpar$laplacian$lambda_a,
+      S_a           = hpar$laplacian$S.a,
+      lambda_b      = hpar$laplacian$lambda_b,
+      S_b           = hpar$laplacian$S.b,
+      warm_start    = best_fit$fit,
+      trace         = FALSE,
       thresh        = thresh,
       maxit         = maxit
     )
@@ -181,9 +177,9 @@ CAMC3_cv_M <- function(
   
   ##------------------------------------------------------------------------------
   ## 6. Record final hyperparameters & return
-  best_fit$lambda.beta   <- lambda_beta
-  best_fit$lambda.a      <- hpar$laplacian$lambda.a
-  best_fit$lambda.b      <- hpar$laplacian$lambda.b
+  best_fit$lambda_beta   <- lambda_beta
+  best_fit$lambda_a      <- hpar$laplacian$lambda_a
+  best_fit$lambda_b      <- hpar$laplacian$lambda_b
   best_fit$learning.rate <- hpar$beta$learning.rate
   
   best_fit

@@ -1,118 +1,154 @@
-CAMC_Lasso_hparams <-
-  list(
-    M = list(
-      # tuning parameters for lambda
-      lambda.factor = 1 / 4,
-      lambda.init = NULL,
-      n.lambda = 20,
-      # tuning parameters for J
-      rank.init = 2,
-      rank.limit = 30,
-      rank.step = 2,
-      pct = 0.98,
-      early.stopping = 1
-    ),
-    beta = list(
-      # L1 parameters
-      learning.rate = "default",
-      lambda.max = NULL,
-      prox.iter.max = 20,
-      n.lambda = 20
-    ),
-    laplacian = list(
-      # laplacian parameters
-      lambda.a = 0,
-      S.a = NULL,
-      lambda.b = 0,
-      S.b = NULL
-    )
+#' Default hyperparameters for CAMC Lasso cross‐validation
+#'
+#' A nested list of tuning parameters used by \code{CAMC_Lasso_cv} and \code{CAMC3_cv_M}.
+#'
+#' @format A list with components:
+#' \describe{
+#'   \item{M}{Parameters for the low‐rank penalty and rank control}
+#'   \item{beta}{Parameters for the L1 (lasso) penalty and β updates}
+#'   \item{laplacian}{Parameters for optional Laplacian regularization}
+#' }
+#' @export
+CAMC_Lasso_hparams <- list(
+  M = list(
+    lambda_init    = NULL, # = lambda_{M,min}
+    lambda_factor  = 1 / 4, # ignored if lambda_init is provided
+    n.lambda       = 20, # seq(lamba.init, 0, length=n.lambda)
+    rank.init      = 2, 
+    rank.limit     = 30,
+    rank.step      = 2,
+    early.stopping = 1
+  ),
+  beta = list(
+    lambda_max     = NULL, # if NULL then it's computed. use NULL.
+    n.lambda       = 20
+  ),
+  laplacian = list(
+    lambda_a       = 0,
+    S.a            = NULL,
+    lambda_b       = 0,
+    S.b            = NULL
   )
-#--------------------------------------------------
-# the following function searches for lambda_max for the lasso norm on beta
+)
 
-find_lasso_max_param <- function(dat, hpar=CAMC_Lasso_hparams, verbose=0){
-  # 1. Get an upperbound to lambda.beta using the formula:
+#' Find supremum λ for the Lasso penalty on β
+#'
+#' Computes the smallest \eqn{λ_β} such that all β coefficients are zero,
+#' by first obtaining an upper bound and then performing a line search.
+#'
+#' @param data A list containing \code{fit_data} with elements:
+#'   \code{train}, \code{Xq}, \code{valid}, \code{W_valid}, and \code{Y}.
+#' @param hparams Hyperparameter list, typically \code{CAMC_Lasso_hparams}.
+#' @param verbose Integer; if > 0, prints diagnostic messages (default = 0).
+#' @return Numeric scalar: the supremum value of \eqn{λ_β}.
+#' @export
+find_lasso_max_param <- function(
+    y_train,
+    X,
+    y_valid = NULL,
+    W_valid = NULL,
+    y       = NULL,
+    hparams = CAMC_Lasso_hparams,
+    maxit = 100,
+    verbose = 0
+) {
+  ## 1. Initial fit at λ_β = 0
+  if(is.null(y_valid) | is.null(W_valid)){
+    fit0 <- list()
+    fit0$fit <- CAMC3_fit(
+      y            = y_train,
+      X            = X,
+      J            = 10,
+      lambda_M     = 1,
+      lambda_beta  = 0,
+      maxit        = maxit, 
+      trace        = FALSE
+    )
+  }else{
+    fit0 <- CAMC3_cv_M(
+      y_train        = y_train,
+      X              = X,
+      y_valid        = y_valid,
+      W_valid        = W_valid,
+      y              = y,
+      lambda_beta    = 0,
+      trace          = 0,
+      maxit          = maxit, 
+      hpar           = hparams
+    )
+  }
   
+  ## 2. Compute λ_max = max( XᵀE + β )
+  residuals   <- y_train -
+    fit0$fit$u %*% (fit0$fit$d * t(fit0$fit$v)) -
+    X %*% fit0$fit$beta
+  xt_resid    <- crossprod(X, residuals)
+  lambda_max  <- max(xt_resid + fit0$fit$beta)
   
-  fit0 <- CAMC3_cv_M(
-    dat$fit_data$train,
-    dat$fit_data$Xq,
-    dat$fit_data$valid,
-    dat$fit_data$W_valid,
-    y = dat$fit_data$Y,
-    lambda_beta = 0,
-    trace = 0,
-    hpar = hpar
-  )
-  
-  E <- dat$fit_data$train - fit0$fit$u %*% (fit0$fit$d * t(fit0$fit$v)) -
-    dat$fit_data$Xq %*% fit0$fit$beta
-  XtE <- crossprod(dat$fit_data$Xq, E)
-  lambda_max =  max(XtE + fit0$fit$beta)
-  #------
-  # 2. The value above is an upperbound but not the sup. We will look for the sup using
-  # line search from 1 -> lambda_max.
-  
-  # 2.1: Check if the sup is in the first or the second half of the data.
-  
-  mid_pt <- lambda_max /2
+  ## 3. Line‐search for supremum λ_β
+  mid_pt      <- lambda_max / 2
   
   fit1 <- CAMC3_fit(
-    dat$fit_data$train,
-    dat$fit_data$Xq,
-    J = fit0$fit$J,
-    lambda.M = fit0$fit$lambda.M,
-    lambda.beta = mid_pt,
-    trace.it=F
+    y            = y_train,
+    X            = X,
+    J            = fit0$fit$J,
+    lambda_M     = fit0$fit$lambda_M,
+    lambda_beta  = mid_pt,
+    maxit        = maxit,
+    trace        = FALSE
   )
-  beta_ratio = sum(fit1$beta ==0) / length(fit1$beta)
+  zero_ratio <- sum(fit1$beta == 0) / length(fit1$beta)
   
-  if(beta_ratio < 1){
-    # 2.2a search in the second half
-    old_lambda = lambda_max
-    for(lamb in seq(lambda_max, mid_pt, length.out=20)){
+  if (zero_ratio < 1) {
+    # search in [mid_pt, lambda_max]
+    old_lambda <- lambda_max
+    for (lam in seq(lambda_max, mid_pt, length.out = 20)) {
       fit2 <- CAMC3_fit(
-        dat$fit_data$train,
-        dat$fit_data$Xq,
-        J = fit0$fit$J,
-        lambda.M = fit0$fit$lambda.M,
-        lambda.beta = lamb,
-        trace.it=F
+        y            = y_train,
+        X            = X,
+        J            = fit0$fit$J,
+        lambda_M     = fit0$fit$lambda_M,
+        lambda_beta  = lam,
+        maxit        = maxit,
+        trace        = FALSE
       )
-      beta_ratio = sum(fit2$beta ==0) / length(fit2$beta)
-      if (beta_ratio < 1){
-        lambda_sup = old_lambda
+      zero_ratio <- sum(fit2$beta == 0) / length(fit2$beta)
+      if (zero_ratio < 1) {
+        lambda_sup <- old_lambda
         break
       }
-      old_lambda = lamb
+      old_lambda <- lam
     }
-    
-  }else{
-    # 2.2b search in the first half
-    old_lambda = mid_pt
-    for(lamb in seq(mid_pt, 0, length.out=20)){
+  } else {
+    # search in [0, mid_pt]
+    old_lambda <- mid_pt
+    for (lam in seq(mid_pt, 0, length.out = 20)) {
       fit2 <- CAMC3_fit(
-        dat$fit_data$train,
-        dat$fit_data$Xq,
-        J = fit0$fit$J,
-        lambda.M = fit0$fit$lambda.M,
-        lambda.beta = lamb,
-        trace.it=F
+        y            = y_train,
+        X            = X,
+        J            = fit0$fit$J,
+        lambda_M     = fit0$fit$lambda_M,
+        lambda_beta  = lam,
+        maxit        = maxit,
+        trace        = FALSE
       )
-      beta_ratio = sum(fit2$beta ==0) / length(fit2$beta)
-      if (beta_ratio < 1){
-        lambda_sup = old_lambda
+      zero_ratio <- sum(fit2$beta == 0) / length(fit2$beta)
+      if (zero_ratio < 1) {
+        lambda_sup <- old_lambda
         break
       }
-      old_lambda = lamb
+      old_lambda <- lam
     }
   }
-  if(verbose > 0)
-    message(sprintf(
-      "The maximum value is %.3f and the sup value is %.3f which is %.1f%% lower.",
-      lambda_max, lambda_sup,
-      (lambda_sup / lambda_max)*100
-    ))
   
-  return(lambda_sup)
+  if (verbose > 0) {
+    message(sprintf(
+      "λ_max = %.3f; λ_sup = %.3f (%.1f%% of λ_max)",
+      lambda_max,
+      lambda_sup,
+      100 * lambda_sup / lambda_max
+    ))
+  }
+  
+  lambda_sup
 }

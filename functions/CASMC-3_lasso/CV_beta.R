@@ -11,7 +11,7 @@
 #' @param error_function Function to compute validation error (default = RMSE).
 #' @param thresh Convergence tolerance (default = 1e-6).
 #' @param maxit Maximum iterations per fit (default = 100).
-#' @param trace Integer: 0 = silent, 1 = per‐fit summary, 2 = verbose (passed to inner fits).
+#' @param verbose Integer: 0 = silent, 1 = per‐fit summary, 2 = verbose (passed to inner fits).
 #' @param max_cores Maximum parallel workers (default = 8).
 #' @param seed Optional RNG seed.
 #'
@@ -27,7 +27,7 @@ CAMC_Lasso_cv <- function(
     error_function  = utils$error_metric$rmse,
     thresh          = 1e-6,
     maxit           = 100,
-    trace           = 0,
+    verbose         = 0,
     max_cores       = 8,
     seed            = NULL
 ) {
@@ -37,24 +37,21 @@ CAMC_Lasso_cv <- function(
   stopifnot(inherits(y_train, "dgCMatrix"))
   
   ##-------------------------------------------------------------------------------
-  ## 2. Default β‐learning‐rate if requested
-  if (identical(hpar$beta$learning.rate, "default")) {
-    hpar$beta$learning.rate <- 1 /
-      sqrt(sum((crossprod(X))^2))
-  }
-  ##-------------------------------------------------------------------------------
-  ## 3. Build λ_β grid
-  if (is.null(hpar$beta$lambda.max)) {
-    nf     <- naive_fit(y_train, X)
-    resid  <- y_train - nf$M - X %*% nf$beta
-    resid[y_train == 0] <- 0
-    hpar$beta$lambda.max <- max(
-      (nf$beta / hpar$beta$learning.rate) -
-        t(X) %*% resid
+  ## 2. Get an upperbound to lambda
+  if (is.null(hpar$beta$lambda_max) | !(is.numeric(hpar$beta$lambda_max)))
+    hpar$beta$lambda_max <- find_lasso_max_param(
+      y_train = y_train,
+      X       = X,
+      y_valid = y_valid,
+      W_valid = W_valid,
+      y       = y,
+      maxit   = 100,
+      verbose = verbose,
     )
-  }
+    
+  ## 3. Build λ_β grid
   lambda_beta_grid <- seq(
-    from       = hpar$beta$lambda.max,
+    from       = hpar$beta$lambda_max,
     to         = .Machine$double.eps,
     length.out = hpar$beta$n.lambda
   )
@@ -65,11 +62,12 @@ CAMC_Lasso_cv <- function(
   if (num_cores > max_cores) {
     num_cores <- min(max_cores, ceiling(num_cores / 2))
   }
-  message("Running on ", num_cores, " cores.")
+  if(verbose > 0)
+    message("Running on ", num_cores, " cores.")
   
   ##-------------------------------------------------------------------------------
   ## 5. CV loop: fit CAMC3_cv_M for each λ_β in parallel
-  inner_trace <- (trace >= 2)
+  inner_trace <- (verbose >= 2)
   results     <- parallel::mclapply(
     lambda_beta_grid,
     function(lambda_beta) {
@@ -100,7 +98,7 @@ CAMC_Lasso_cv <- function(
     mc.cores   = num_cores,
     mc.cleanup = TRUE
   )
-  
+
   ##-------------------------------------------------------------------------------
   ## 6. Report any fit errors
   for (res in results) {
@@ -120,7 +118,7 @@ CAMC_Lasso_cv <- function(
   
   ##-------------------------------------------------------------------------------
   ## 8. Optional printing
-  if (trace >= 1) {
+  if (verbose >= 1) {
     for (res in results) {
       message(sprintf(
         "<< λ_β=%.4g | err=%.5f | iters=%d | rank_M=%d | λ_M=%.4g >>",
@@ -128,7 +126,7 @@ CAMC_Lasso_cv <- function(
         res$error,
         res$fit$n_iter,
         res$fit$J,
-        res$fit$lambda.M
+        res$fit$lambda_M
       ))
     }
     message(sprintf(
@@ -137,17 +135,17 @@ CAMC_Lasso_cv <- function(
       best_fit$error,
       best_fit$fit$n_iter,
       best_fit$fit$J,
-      best_fit$fit$lambda.M
+      best_fit$fit$lambda_M
     ))
   }
   
   ##-------------------------------------------------------------------------------
   ## 9. Attach metadata & return
   best_fit$hparams   <- data.frame(
-    lambda_beta   = best_fit$lambda_beta,
-    lambda_M      = best_fit$fit$lambda.M,
-    learning_rate = hpar$beta$learning.rate,
-    rank_M        = best_fit$fit$J
+    #lambda_beta   = best_fit$lambda_beta,
+    #lambda_M      = best_fit$fit$lambda_M,
+    #learning_rate = hpar$beta$learning.rate,
+    #rank_M        = best_fit$fit$J
   )
   best_fit$init_hpar <- hpar
   

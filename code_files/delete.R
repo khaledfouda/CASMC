@@ -39,21 +39,17 @@ utils$error_metric$rmse(fits$estimates[dat$fit_data$W_valid==0],
 
 
 
-Xs <- qr(dat$X)
-R <- qr.R(Xs)
-Xs <- qr.Q(Xs)
-
 fit3 <- CAMC3_fit(
   dat$fit_data$train,
-  Xs,#dat$X,
+  dat$fit_data$Xq,
   J = 9,
-  lambda.M = .0000001,
-  lambda.beta = .1,
-  trace.it=T
+  lambda_M = .0000001,
+  lambda_beta = .1,
+  trace=T
 )
 
 
-XbetaValid = Xs %*% (fit3$beta)
+XbetaValid = dat$fit_data$Xq %*% (fit3$beta)
 MValid = fit3$u %*% (fit3$d * t(fit3$v))
 pred = (XbetaValid+MValid)[dat$fit_data$W_valid==0]
 utils$error_metric$rmse(pred, dat$fit_data$valid)
@@ -62,31 +58,49 @@ utils$error_metric$rmse(pred, dat$fit_data$valid)
 
 
 hpar <- CASMC_Lasso_hparams
-hpar$M$rank.init = 2
-#hpar$M$lambda.init = .000001
 
-for (lamb in seq(0, 29, length=20)){
-  
 fitcv <- CAMC3_cv_M(
   dat$fit_data$train,
-  Xs,
+  dat$fit_data$Xq,
   dat$fit_data$valid,
   dat$fit_data$W_valid,
   y = dat$fit_data$Y,
   lambda_beta = 0,
-  trace = 0,
+  trace = 5,
   hpar = hpar
 ); 
 
-print(paste(lamb, ": ",sum(fitcv$fit$beta ==0) / length(fitcv$fit$beta)))
-}
+print(paste(0, ": ",sum(fitcv$fit$beta ==0) / length(fitcv$fit$beta)))
+
 
 E <- dat$fit_data$train - fitcv$fit$u %*% (fitcv$fit$d * t(fitcv$fit$v)) -
-  Xs %*% fitcv$fit$beta
-XtE <- crossprod(Xs, E)
+  dat$fit_data$Xq %*% fitcv$fit$beta
+XtE <- crossprod(dat$fit_data$Xq, E)
 lambda_max =  
   max(XtE + fitcv$fit$beta)
 lambda_max
+#---------------------------------
+find_lasso_max_param(
+  y_train = dat$fit_data$train,
+  X = dat$fit_data$Xq,
+  y_valid = NULL,#dat$fit_data$valid,
+  W_valid = NULL,#dat$fit_data$W_valid,
+  y = NULL,#dat$fit_data$Y,
+  maxit = 100,
+  verbose=5)
+#---------------------------------------
+hpar <- CAMC_Lasso_hparams
+hpar$beta$n.lambda = 5
+fit5 <- CAMC_Lasso_cv(
+  y_train = dat$fit_data$train,
+  X = dat$fit_data$Xq,
+  y_valid = dat$fit_data$valid,
+  W_valid = dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  hpar = hpar,
+  verbose = 1,
+  max_cores = 6
+)
 
 #-----------------------------------
 
@@ -94,11 +108,11 @@ old_lambda = 29
 for (lamb in seq(29, 1, length=20)){
   fit3 <- CAMC3_fit(
     dat$fit_data$train,
-    Xs,#dat$X,
+    dat$fit_data$Xq,#dat$X,
     J = 10,
-    lambda.M = 1,
-    lambda.beta = lamb,
-    trace.it=F
+    lambda_M = 1,
+    lambda_beta = lamb,
+    trace=T
   )
   beta_ratio = sum(fit3$beta ==0) / length(fit3$beta)
   #print(paste(lamb, ": ",beta_ratio))
@@ -116,7 +130,7 @@ for (lamb in seq(29, 1, length=20)){
 
 fitcv2 <- CAMC_Lasso_cv(
   dat$fit_data$train,
-  Xs,
+  dat$fit_data$Xq,
   dat$fit_data$valid,
   dat$fit_data$W_valid,
   y = dat$fit_data$Y,
@@ -130,7 +144,7 @@ fitcv2 <- CAMC_Lasso_cv(
 getdef
 #-------------------------------------------
 
-X <- Xs
+X <- dat$fit_data$Xq
 y <- dat$fit_data$train
 irow <- y@i
 pcol <- y@p
