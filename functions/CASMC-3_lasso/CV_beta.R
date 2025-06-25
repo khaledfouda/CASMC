@@ -1,160 +1,155 @@
-
-
-
-
-CASMC3_cv <-
-   CASMC_Lasso_cv <-
-   function(y_train,
-            # y_train is expected to be Incomplete
-            X,
-            y_valid,
-            # y_valid is a vector
-            W_valid,
-            y = NULL,
-            # y: a final full-fit if provided. Expected to be Incomplete
-            hpar = CASMC_Lasso_hparams,
-            
-            # stopping criteria
-            error_function = utils$error_metric$rmse,
-            thresh = 1e-6,
-            maxit = 100,
-            # trace parameters
-            trace = 0,
-            print.best = TRUE,
-            quiet = FALSE,
-            # initial values.
-            warm = NULL,
-            
-            track = FALSE,
-            max_cores = 8,
-            # seed
-            seed = NULL) {
-      
-      if(identical(hpar$beta$learning.rate, "default"))
-         hpar$beta$learning.rate <-  1 / sqrt(sum((t(X) %*% X)^2))
-      
-      if(is.null(hpar$beta$lambda.max)){
-         
-         nf <- naive_fit(y_train, X)
-         resids <- y_train - nf$M - X %*% nf$beta
-         resids[y_train==0] <- 0
-         hpar$beta$lambda.max <- max((nf$beta / hpar$beta$learning.rate) - t(X) %*% resids) 
-      }
-         lambda.beta.grid = seq(hpar$beta$lambda.max, .Machine$double.eps, length.out=hpar$beta$n.lambda)
-         
-         
-         # lambda.beta.grid = sqrt((ncol(y_train) * ncol(X)) / (nrow(y_train))) *
-         #    seq(10, .Machine$double.eps, length.out = 20)
-      
-      
-      
-      num_cores = length(lambda.beta.grid)
-      if (length(lambda.beta.grid) > max_cores)
-         num_cores <-
-         min(max_cores, ceiling(length(lambda.beta.grid) / 2))
-      print(paste("Running on", num_cores, "cores."))
-      
-      best_fit <- list(error = Inf)
-      results <- mclapply(lambda.beta.grid, function(lambda.beta) {
-         fiti = tryCatch({
-            CASMC3_cv_M(
-               y_train = y_train,
-               X = X,
-               y_valid = y_valid,
-               W_valid = W_valid,
-               y = y,
-               hpar = hpar,
-               #learning.rate = learning.rate,
-               lambda.beta = lambda.beta,
-               #beta.iter.max = beta.iter.max,
-               error_function = error_function,
-               #lambda.factor = lambda.factor,
-               #lambda.init = lambda.init,
-               #n.lambda = n.lambda,
-               trace = ifelse(trace == 2, TRUE, FALSE),
-               print.best = print.best,
-               thresh = thresh,
-               maxit = maxit,
-               #rank.init = rank.M.init,
-               #rank.limit = rank.M.limit,
-               #rank.step = rank.step,
-               #pct = pct,
-               warm = NULL,
-               #lambda.a = lambda.a,
-               #S.a = S.a,
-               #lambda.b = lambda.b,
-               #S.b = S.b,
-               quiet = quiet,
-               seed = seed
-            )
-         }, error = function(e)
-            list(
-               error_message = e,
-               error = 999999,
-               lambda.beta = lambda.beta
-            ))
-         fiti
-      }, mc.cores = num_cores, mc.cleanup = TRUE)
-      
-      # showing errors, if any,
-      sapply(results, function(x) {
-         if (!is.null(x$error_message))
-            print(
-               paste(
-                  "Error encountered at lambda.beta = ",
-                  round(x$lambda.beta, 3),
-                  "with the following error message: ",
-                  x$error_message
-               )
-            )
-      })
-      
-      # extract best fit
-      best_fit <-
-         results[[which.min(sapply(results, function(x)
-            x$error))]]
-      
-      # print all fit output:
-      if (trace > 0) {
-         sapply(results, function(x)
-            print(
-               sprintf(
-                  paste0(
-                     "<< lambda.beta = %.3f, error = %.5f, niter/fit = %.0f, M = [%.0f,%.3f] >> "
-                  ),
-                  x$lambda.beta,
-                  x$error,
-                  x$fit$n_iter,
-                  x$fit$J,
-                  x$fit$lambda.M
-               )
-            ))
-      }
-      
-      # print best if
-      if (print.best)
-         print(
-            sprintf(
-               paste0(
-                  "<< Best fit >> lambda.beta = %.3f, error = %.5f, niter/fit = %.0f, M = [%.0f,%.3f] > "
-               ),
-               best_fit$lambda.beta,
-               best_fit$error,
-               best_fit$fit$n_iter,
-               best_fit$fit$J,
-               best_fit$fit$lambda.M
-            )
-         )
-      #-------------------------
-   
-      best_fit$hparams = data.frame(
-         lambda.beta = best_fit$lambda.beta,
-         lambda.M = best_fit$fit$lambda.M,
-         learning.rate = hpar$beta$learning.rate,
-         rank.M = best_fit$fit$J
+#' Covariate‐Adjusted‐Sparse‐Matrix‐Completion Lasso Cross‐Validation
+#'
+#' Holdout‐set CV over a grid of \eqn{λ_β}, calling \code{CAMC3_cv_M} under the hood.
+#'
+#' @param y_train dgCMatrix (Incomplete) of training responses.
+#' @param X Covariate matrix.
+#' @param y_valid Numeric vector of held‐out responses.
+#' @param W_valid Indicator matrix (0 = validation, 1 = training).
+#' @param y Optional full dgCMatrix (train + valid) for final refit.
+#' @param hpar List of hyperparameters (see \code{CAMC_Lasso_hparams}).
+#' @param error_function Function to compute validation error (default = RMSE).
+#' @param thresh Convergence tolerance (default = 1e-6).
+#' @param maxit Maximum iterations per fit (default = 100).
+#' @param trace Integer: 0 = silent, 1 = per‐fit summary, 2 = verbose (passed to inner fits).
+#' @param max_cores Maximum parallel workers (default = 8).
+#' @param seed Optional RNG seed.
+#'
+#' @return A list containing the best fit object, its error, hyperparameters, and init params.
+#' @export
+CAMC_Lasso_cv <- function(
+    y_train,
+    X,
+    y_valid,
+    W_valid,
+    y               = NULL,
+    hpar            = CAMC_Lasso_hparams,
+    error_function  = utils$error_metric$rmse,
+    thresh          = 1e-6,
+    maxit           = 100,
+    trace           = 0,
+    max_cores       = 8,
+    seed            = NULL
+) {
+  ##-------------------------------------------------------------------------------
+  ## 1. Reproducibility & basic checks
+  if (!is.null(seed)) set.seed(seed)
+  stopifnot(inherits(y_train, "dgCMatrix"))
+  
+  ##-------------------------------------------------------------------------------
+  ## 2. Default β‐learning‐rate if requested
+  if (identical(hpar$beta$learning.rate, "default")) {
+    hpar$beta$learning.rate <- 1 /
+      sqrt(sum((crossprod(X))^2))
+  }
+  ##-------------------------------------------------------------------------------
+  ## 3. Build λ_β grid
+  if (is.null(hpar$beta$lambda.max)) {
+    nf     <- naive_fit(y_train, X)
+    resid  <- y_train - nf$M - X %*% nf$beta
+    resid[y_train == 0] <- 0
+    hpar$beta$lambda.max <- max(
+      (nf$beta / hpar$beta$learning.rate) -
+        t(X) %*% resid
+    )
+  }
+  lambda_beta_grid <- seq(
+    from       = hpar$beta$lambda.max,
+    to         = .Machine$double.eps,
+    length.out = hpar$beta$n.lambda
+  )
+  
+  ##-------------------------------------------------------------------------------
+  ## 4. Parallel setup
+  num_cores <- length(lambda_beta_grid)
+  if (num_cores > max_cores) {
+    num_cores <- min(max_cores, ceiling(num_cores / 2))
+  }
+  message("Running on ", num_cores, " cores.")
+  
+  ##-------------------------------------------------------------------------------
+  ## 5. CV loop: fit CAMC3_cv_M for each λ_β in parallel
+  inner_trace <- (trace >= 2)
+  results     <- parallel::mclapply(
+    lambda_beta_grid,
+    function(lambda_beta) {
+      tryCatch(
+        CAMC3_cv_M(
+          y_train        = y_train,
+          X              = X,
+          y_valid        = y_valid,
+          W_valid        = W_valid,
+          y              = y,
+          hpar           = hpar,
+          lambda_beta    = lambda_beta,
+          error_function = error_function,
+          thresh         = thresh,
+          maxit          = maxit,
+          trace          = inner_trace,
+          seed           = seed
+        ),
+        error = function(e) {
+          list(
+            error_message = e,
+            error         = Inf,
+            lambda_beta   = lambda_beta
+          )
+        }
       )
-      best_fit$init_params = hpar
-      return(best_fit)
-      
-      
-   }
+    },
+    mc.cores   = num_cores,
+    mc.cleanup = TRUE
+  )
+  
+  ##-------------------------------------------------------------------------------
+  ## 6. Report any fit errors
+  for (res in results) {
+    if (!is.null(res$error_message)) {
+      message(
+        "Error at λ_β=", round(res$lambda_beta, 3), 
+        ": ", res$error_message
+      )
+    }
+  }
+  
+  ##-------------------------------------------------------------------------------
+  ## 7. Select the best fit
+  errors    <- vapply(results, `[[`, numeric(1), "error")
+  best_idx  <- which.min(errors)
+  best_fit  <- results[[best_idx]]
+  
+  ##-------------------------------------------------------------------------------
+  ## 8. Optional printing
+  if (trace >= 1) {
+    for (res in results) {
+      message(sprintf(
+        "<< λ_β=%.4g | err=%.5f | iters=%d | rank_M=%d | λ_M=%.4g >>",
+        res$lambda_beta,
+        res$error,
+        res$fit$n_iter,
+        res$fit$J,
+        res$fit$lambda.M
+      ))
+    }
+    message(sprintf(
+      "<< Best fit >> λ_β=%.4g | err=%.5f | iters=%d | rank_M=%d | λ_M=%.4g >>",
+      best_fit$lambda_beta,
+      best_fit$error,
+      best_fit$fit$n_iter,
+      best_fit$fit$J,
+      best_fit$fit$lambda.M
+    ))
+  }
+  
+  ##-------------------------------------------------------------------------------
+  ## 9. Attach metadata & return
+  best_fit$hparams   <- data.frame(
+    lambda_beta   = best_fit$lambda_beta,
+    lambda_M      = best_fit$fit$lambda.M,
+    learning_rate = hpar$beta$learning.rate,
+    rank_M        = best_fit$fit$J
+  )
+  best_fit$init_hpar <- hpar
+  
+  best_fit
+}

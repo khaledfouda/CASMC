@@ -63,17 +63,69 @@ utils$error_metric$rmse(pred, dat$fit_data$valid)
 
 hpar <- CASMC_Lasso_hparams
 hpar$M$rank.init = 2
-hpar$M$lambda.init = .000001
+#hpar$M$lambda.init = .000001
+
+for (lamb in seq(0, 29, length=20)){
+  
 fitcv <- CAMC3_cv_M(
   dat$fit_data$train,
   Xs,
   dat$fit_data$valid,
   dat$fit_data$W_valid,
   y = dat$fit_data$Y,
-  lambda.beta = 0.1,
-  trace = T,
+  lambda_beta = 0,
+  trace = 0,
+  hpar = hpar
+); 
+
+print(paste(lamb, ": ",sum(fitcv$fit$beta ==0) / length(fitcv$fit$beta)))
+}
+
+E <- dat$fit_data$train - fitcv$fit$u %*% (fitcv$fit$d * t(fitcv$fit$v)) -
+  Xs %*% fitcv$fit$beta
+XtE <- crossprod(Xs, E)
+lambda_max =  
+  max(XtE + fitcv$fit$beta)
+lambda_max
+
+#-----------------------------------
+
+old_lambda = 29
+for (lamb in seq(29, 1, length=20)){
+  fit3 <- CAMC3_fit(
+    dat$fit_data$train,
+    Xs,#dat$X,
+    J = 10,
+    lambda.M = 1,
+    lambda.beta = lamb,
+    trace.it=F
+  )
+  beta_ratio = sum(fit3$beta ==0) / length(fit3$beta)
+  #print(paste(lamb, ": ",beta_ratio))
+  
+  if(beta_ratio < 1){
+    print("Reached smalled beta")
+    lambda_beta_max = old_lambda
+    break
+  }
+  old_lambda = lamb 
+}
+
+#---------------------------------
+
+
+fitcv2 <- CAMC_Lasso_cv(
+  dat$fit_data$train,
+  Xs,
+  dat$fit_data$valid,
+  dat$fit_data$W_valid,
+  y = dat$fit_data$Y,
+  #lambda_beta = 0.1,
+  trace = 5,
+  max_cores = 1,
   hpar = hpar
 )
+
 
 getdef
 #-------------------------------------------

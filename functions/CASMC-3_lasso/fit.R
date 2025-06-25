@@ -51,8 +51,8 @@ CAMC3_fit <-
     n <- dim(y)
     m <- n[2]
     n <- n[1]
-    lambda.M <- lambda.M * m * n # rescalling to save time 
-    lambda.beta <- lambda.beta * m * n
+    #lambda.M <- lambda.M * m * n # rescalling to save time 
+    #lambda.beta <- lambda.beta * m * n
     yobs <- y@x # y will hold the model residuals
     k <- ncol(X)
     if (trace.it)
