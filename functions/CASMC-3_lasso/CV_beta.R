@@ -2,11 +2,11 @@
 #'
 #' Holdout‐set CV over a grid of \eqn{λ_β}, calling \code{CAMC3_cv_M} under the hood.
 #'
-#' @param y_train dgCMatrix (Incomplete) of training responses.
+#' @param y_train CsparseMatrix (Incomplete) of training responses.
 #' @param X Covariate matrix.
 #' @param y_valid Numeric vector of held‐out responses.
 #' @param W_valid Indicator matrix (0 = validation, 1 = training).
-#' @param y Optional full dgCMatrix (train + valid) for final refit.
+#' @param y Optional full CsparseMatrix (train + valid) for final refit.
 #' @param hpar List of hyperparameters (see \code{CAMC_Lasso_hparams}).
 #' @param error_function Function to compute validation error (default = RMSE).
 #' @param thresh Convergence tolerance (default = 1e-6).
@@ -34,7 +34,7 @@ CAMC_Lasso_cv <- function(
   ##-------------------------------------------------------------------------------
   ## 1. Reproducibility & basic checks
   if (!is.null(seed)) set.seed(seed)
-  stopifnot(inherits(y_train, "dgCMatrix"))
+  stopifnot(inherits(y_train, "CsparseMatrix"))
   
   ##-------------------------------------------------------------------------------
   ## 2. Get an upperbound to lambda
@@ -61,6 +61,7 @@ CAMC_Lasso_cv <- function(
   num_cores <- length(lambda_beta_grid)
   if (num_cores > max_cores) {
     num_cores <- min(max_cores, ceiling(num_cores / 2))
+    num_cores <- min(detectCores(logical = FALSE), num_cores)
   }
   if(verbose > 0)
     message("Running on ", num_cores, " cores.")
@@ -68,7 +69,10 @@ CAMC_Lasso_cv <- function(
   ##-------------------------------------------------------------------------------
   ## 5. CV loop: fit CAMC3_cv_M for each λ_β in parallel
   inner_trace <- (verbose >= 2)
-  results     <- parallel::mclapply(
+  RhpcBLASctl::blas_set_num_threads(1)
+  RhpcBLASctl::omp_set_num_threads(1)
+  plan(multisession, workers = num_cores)
+  results <- future_lapply(
     lambda_beta_grid,
     function(lambda_beta) {
       tryCatch(
@@ -94,10 +98,39 @@ CAMC_Lasso_cv <- function(
           )
         }
       )
-    },
-    mc.cores   = num_cores,
-    mc.cleanup = TRUE
+    }, future.seed=TRUE, future.globals = TRUE, future.packages = packages
   )
+  # 
+  # results     <- parallel::mclapply(
+  #   lambda_beta_grid,
+  #   function(lambda_beta) {
+  #     tryCatch(
+  #       CAMC3_cv_M(
+  #         y_train        = y_train,
+  #         X              = X,
+  #         y_valid        = y_valid,
+  #         W_valid        = W_valid,
+  #         y              = y,
+  #         hpar           = hpar,
+  #         lambda_beta    = lambda_beta,
+  #         error_function = error_function,
+  #         thresh         = thresh,
+  #         maxit          = maxit,
+  #         trace          = inner_trace,
+  #         seed           = seed
+  #       ),
+  #       error = function(e) {
+  #         list(
+  #           error_message = e,
+  #           error         = Inf,
+  #           lambda_beta   = lambda_beta
+  #         )
+  #       }
+  #     )
+  #   },
+  #   mc.cores   = num_cores,
+  #   mc.cleanup = TRUE
+  # )
 
   ##-------------------------------------------------------------------------------
   ## 6. Report any fit errors
@@ -121,8 +154,9 @@ CAMC_Lasso_cv <- function(
   if (verbose >= 1) {
     for (res in results) {
       message(sprintf(
-        "<< λ_β=%.4g | err=%.5f | iters=%d | rank_M=%d | λ_M=%.4g >>",
+        "<< λ_β=%.4g | sparsity=%.2f | err=%.5f | iters=%d | rank_M=%d | λ_M=%.4g >>",
         res$lambda_beta,
+        sum(res$fit$beta == 0) / length(res$fit$beta),
         res$error,
         res$fit$n_iter,
         res$fit$J,
@@ -130,8 +164,9 @@ CAMC_Lasso_cv <- function(
       ))
     }
     message(sprintf(
-      "<< Best fit >> λ_β=%.4g | err=%.5f | iters=%d | rank_M=%d | λ_M=%.4g >>",
+      "<< Best fit >> λ_β=%.4g | sparsity=%.2f | err=%.5f | iters=%d | rank_M=%d | λ_M=%.4g >>",
       best_fit$lambda_beta,
+      sum(best_fit$fit$beta == 0) / length(best_fit$fit$beta),
       best_fit$error,
       best_fit$fit$n_iter,
       best_fit$fit$J,
@@ -141,12 +176,6 @@ CAMC_Lasso_cv <- function(
   
   ##-------------------------------------------------------------------------------
   ## 9. Attach metadata & return
-  best_fit$hparams   <- data.frame(
-    #lambda_beta   = best_fit$lambda_beta,
-    #lambda_M      = best_fit$fit$lambda_M,
-    #learning_rate = hpar$beta$learning.rate,
-    #rank_M        = best_fit$fit$J
-  )
   best_fit$init_hpar <- hpar
   
   best_fit

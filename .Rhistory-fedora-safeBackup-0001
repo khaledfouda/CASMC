@@ -1,0 +1,7 @@
+devtools::install_github("max-alletsee/rstudio-themes")
+install.packages("devtools")
+devtools::install_github("max-alletsee/rstudio-themes")
+library(rstudiothemes) # ... then load the library
+# example 1: bulk-install all light themes
+install_rstudio_themes(theme = "all_light")
+install_rstudio_themes(theme = "all")

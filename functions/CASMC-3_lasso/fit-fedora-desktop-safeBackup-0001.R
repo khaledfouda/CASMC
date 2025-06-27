@@ -15,7 +15,7 @@ soft_threshold <- function(B, lambda) {
 #' Fit low‐rank plus covariate model
 #'
 #' @inheritParams soft_threshold
-#' @param y dgCMatrix of class “Incomplete”
+#' @param y CsparseMatrix of class “Incomplete”
 #' @param X Covariate matrix
 #' @param J Maximum rank of low‐rank component (default = 2)
 #' @param lambda_M Nuclear‐norm penalty for low‐rank component (default = 0)
@@ -53,7 +53,7 @@ CAMC3_fit <- CAMC_Lasso_fit <- function(
     min_eigv          = 0
 ) {
   ## 1. Input checks & setup
-  stopifnot(inherits(y, "dgCMatrix"))
+  stopifnot(inherits(y, "CsparseMatrix"))
   i_row  <- y@i
   p_col  <- y@p
   y_obs  <- y@x

@@ -3,9 +3,10 @@ packages <-
     "tidyverse",
     "kableExtra",
     "tidyverse",
-    "doParallel",
-    "foreach",
-    "hexbin",
+    "doParallel", # paralllel
+    "foreach", # parallel
+    "future.apply", # parallel
+    "hexbin", # map visuals
     "patchwork",
     "ggplot2",
     "softImpute",

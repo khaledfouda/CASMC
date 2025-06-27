@@ -4,11 +4,11 @@
 #'
 #' Holdout cross‐validation for CAMC3, fitting on `y_train` and evaluating on `y_valid`.
 #'
-#' @param y_train A dgCMatrix (Incomplete) training response.
+#' @param y_train A CsparseMatrix (Incomplete) training response.
 #' @param X Covariate matrix.
 #' @param y_valid Numeric vector of held‐out responses.
 #' @param W_valid Indicator matrix (0 = validation, 1 = train); used to extract validation indices.
-#' @param y Optional full dgCMatrix (train + validation).  If provided, a final fit on the full data is done.
+#' @param y Optional full CsparseMatrix (train + validation).  If provided, a final fit on the full data is done.
 #' @param lambda_beta L2‐penalty for β (default = machine epsilon).
 #' @param hpar List of hyperparameters (must contain `$M`, `$beta`, and `$laplacian` sub‐lists).
 #' @param error_function Function to measure validation error (default = `utils$error_metric$rmse`).
@@ -45,7 +45,7 @@ CAMC3_cv_M <- function(
   ##------------------------------------------------------------------------------
   ## 1. Reproducibility & Input checks
   if (!is.null(seed)) set.seed(seed)
-  stopifnot(inherits(y_train, "dgCMatrix"))
+  stopifnot(inherits(y_train, "CsparseMatrix"))
   
   ##------------------------------------------------------------------------------
   ## 2. Build lambda‐sequence for nuclear penalty
@@ -157,7 +157,7 @@ CAMC3_cv_M <- function(
   ##------------------------------------------------------------------------------
   ## 5. (Optional) Final fit on full data if `y` is provided
   if (!is.null(y)) {
-    stopifnot(inherits(y, "dgCMatrix"))
+    stopifnot(inherits(y, "CsparseMatrix"))
     best_fit$fit <- CAMC3_fit(
       y             = y,
       X             = X,
