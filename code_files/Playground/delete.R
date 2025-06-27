@@ -94,7 +94,7 @@ dat <- generate_simulated_data(600, 700, 10, 12, .8, F,
                                informative_cov_prop = .3,
                                prepare_for_fitting = T)
 hpar <- CAMC_Lasso_hparams
-hpar$beta$n.lambda = 5
+hpar$beta$n.lambda = 80
 hpar$beta$lambda_max = 4
 fit5 <- CAMC_Lasso_cv(
   y_train = dat$fit_data$train,
@@ -104,7 +104,7 @@ fit5 <- CAMC_Lasso_cv(
   y = dat$fit_data$Y,
   hpar = hpar,
   verbose = 1,
-  max_cores = 2
+  max_cores = 6
 )
 
 

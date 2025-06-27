@@ -100,38 +100,6 @@ CAMC_Lasso_cv <- function(
       )
     }, future.seed=TRUE, future.globals = TRUE, future.packages = packages
   )
-  # 
-  # results     <- parallel::mclapply(
-  #   lambda_beta_grid,
-  #   function(lambda_beta) {
-  #     tryCatch(
-  #       CAMC3_cv_M(
-  #         y_train        = y_train,
-  #         X              = X,
-  #         y_valid        = y_valid,
-  #         W_valid        = W_valid,
-  #         y              = y,
-  #         hpar           = hpar,
-  #         lambda_beta    = lambda_beta,
-  #         error_function = error_function,
-  #         thresh         = thresh,
-  #         maxit          = maxit,
-  #         trace          = inner_trace,
-  #         seed           = seed
-  #       ),
-  #       error = function(e) {
-  #         list(
-  #           error_message = e,
-  #           error         = Inf,
-  #           lambda_beta   = lambda_beta
-  #         )
-  #       }
-  #     )
-  #   },
-  #   mc.cores   = num_cores,
-  #   mc.cleanup = TRUE
-  # )
-
   ##-------------------------------------------------------------------------------
   ## 6. Report any fit errors
   for (res in results) {
