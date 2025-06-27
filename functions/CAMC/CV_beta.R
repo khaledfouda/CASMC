@@ -58,11 +58,11 @@ CAMC_Lasso_cv <- function(
   
   ##-------------------------------------------------------------------------------
   ## 4. Parallel setup
-  num_cores <- length(lambda_beta_grid)
-  if (num_cores > max_cores) {
+  num_cores <- min(detectCores(logical = FALSE) - 1,
+                   length(lambda_beta_grid))
+  if (num_cores > max_cores) 
     num_cores <- min(max_cores, ceiling(num_cores / 2))
-    num_cores <- min(detectCores(logical = FALSE), num_cores)
-  }
+  
   if(verbose > 0)
     message("Running on ", num_cores, " cores.")
   

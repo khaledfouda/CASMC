@@ -1,254 +1,264 @@
-
-prepare_output <- function(start_time, estimates, obs, mask, beta=NA, beta.estim=NA, M=NA, M.estim=NA, 
-                           LogLik_SI=NA, test_error = utils$error_metric$rmse){
-  estim.test <- estimates[mask==0]
+#------------------------------------------------------------------------------#
+# Prepare a standardized output list for model fits
+#------------------------------------------------------------------------------#
+prepare_output <- function(
+    start_time,
+    estimates,
+    obs,
+    mask,
+    beta        = NA,
+    beta.estim  = NA,
+    M           = NA,
+    M.estim     = NA,
+    LogLik_SI   = NA,
+    test_error  = utils$error_metric$rmse
+) {
+  # Split train vs test
+  estim.test  <- estimates[mask == 0]
   estim.train <- estimates[mask != 0]
-  obs.train <- obs[mask!=0]
-  obs.test <- obs[mask==0]
-  list(
-    time = round(as.numeric(difftime(Sys.time(), start_time, units = "secs"))),
+  obs.test    <- obs[mask == 0]
+  obs.train   <- obs[mask != 0]
+  
+  # Core metrics
+  results <- list(
+    time       = round(as.numeric(difftime(
+      Sys.time(), start_time, units = "secs"
+    ))),
     error.test = test_error(estim.test, obs.test),
-    corr.test = cor(estim.test, obs.test),
+    corr.test  = cor(estim.test, obs.test),
     error.train = test_error(estim.train, obs.train),
-    error.M = tryCatch(test_error(M.estim, M), error = function(x) NA),
-    error.beta = tryCatch(test_error(beta.estim, beta), error = function(x) NA),
-    rank_M = tryCatch(qr(M.estim)$rank, error = function(x) NA),
-    rank_beta = tryCatch(qr(beta.estim)$rank, error = function(x) NA),
-    
-    sparse_in_sparse = tryCatch(sum(beta == 0 & beta.estim == 0) /
-                                  (sum(beta == 0) +  1e-17), error = function(x) NA),
-    nonsparse_in_nonsparse = tryCatch(sum(beta != 0 & beta.estim != 0) /
-                                        (sum(beta != 0) +  1e-17), error = function(x) NA),
-    sparse_all = tryCatch(sum(beta.estim == 0) /
-                            length(beta.estim), error = function(x) NA)
-  ) -> results
-  
-  
-  if(is.null(LogLik_SI)){
-    results$likelihood_ratio_index <- NA
-    results$Cox_Snell_R2 <- NA
-  }else{
-    residuals <- obs.test - estim.test
-    LogLik <- utils$logLikelihood(residuals)
-    n <- length(residuals)
-    results$likelihood_ratio_index <- utils$Likelihood_ratio_index(LogLik, LogLik_SI)
-    results$Cox_Snell_R2 <-utils$ Cox_Snell_R2(LogLik, LogLik_SI, n)
-  }
-  return(results)
-}
-
-
-
-
-Mao_Sim_Wrapper <-
-  function(dat,
-           lambda.1_grid = seq(0, 1, length = 20),
-           lambda.2_grid = seq(0.9, 0.1, length = 20),
-           alpha_grid = c(1),
-           ncores = 1,
-           # keep it > 1
-           n_folds = 5,
-           weight_function = Mao_weights$uniform,
-           LogLik_SI = NULL,
-           ...) {
-    start_time = Sys.time()
-    fiti <- Mao.cv(
-      Y = dat$Y,
-      X = dat$X,
-      W = dat$W,
-      n_folds = n_folds,
-      lambda.1_grid = lambda.1_grid,
-      lambda.2_grid = lambda.2_grid,
-      alpha_grid = alpha_grid,
-      seed = 2023,
-      numCores = ncores,
-      n1n2_optimized = TRUE,
-      test_error = utils$error_metric$rmse,
-      theta_estimator = weight_function,
-      sequential = FALSE
+    error.M    = tryCatch(
+      test_error(M.estim, M),
+      error = function(e) NA
+    ),
+    error.beta = tryCatch(
+      test_error(beta.estim, beta),
+      error = function(e) NA
+    ),
+    rank_M     = tryCatch(
+      qr(M.estim)$rank,
+      error = function(e) NA
+    ),
+    rank_beta  = tryCatch(
+      qr(beta.estim)$rank,
+      error = function(e) NA
+    ),
+    sparse_in_sparse = tryCatch(
+      sum(beta == 0 & beta.estim == 0) /
+        (sum(beta == 0) + 1e-17),
+      error = function(e) NA
+    ),
+    nonsparse_in_nonsparse = tryCatch(
+      sum(beta != 0 & beta.estim != 0) /
+        (sum(beta != 0) + 1e-17),
+      error = function(e) NA
+    ),
+    sparse_all = tryCatch(
+      sum(beta.estim == 0) / length(beta.estim),
+      error = function(e) NA
     )
-    
-    fit. <- fiti$fit
-    results = list(model = "Mao")
-    results$lambda.beta = fiti$best_parameters$lambda.1
-    results$lambda.M = fiti$best_parameters$lambda.2
-    results <- c(results,
-                 prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))    
-    
-    
-    results
-}
-
-
-
-
-SImpute_Sim_Wrapper <- function(dat, ...) {
-  start_time = Sys.time()
-  fit. <- simpute.cv(
-    Y_train = as.matrix(dat$fit_data$train),
-    y_valid = dat$fit_data$valid,
-    W_valid = dat$fit_data$W_valid,
-    y = dat$Y,
-    n.lambda = 20,
-    trace = FALSE,
-    print.best = FALSE,
-    tol = 5,
-    thresh = 1e-6,
-    rank.init = 2,
-    rank.limit = 30,
-    rank.step = 2,
-    maxit = 600,
-    seed = NULL
   )
-  results = list(model = "SoftImpute")
-  results$lambda.beta = NA
-  results$lambda.M = fit.$lambda
-  results <- c(results,
-                        prepare_output(start_time, fit.$estimates, dat$O, dat$W, M.estim = fit.$estimates))    
+  # 
+  # # Add pseudo-R² only if SI log-lik was provided
+  # if (is.null(LogLik_SI)) {
+  #   results$likelihood_ratio_index <- NA
+  #   results$Cox_Snell_R2          <- NA
+  # } else {
+  #   residuals <- obs.test - estim.test
+  #   LogLik    <- utils$logLikelihood(residuals)
+  #   n         <- length(residuals)
+  #   
+  #   results$likelihood_ratio_index <- utils$Likelihood_ratio_index(
+  #     LogLik, LogLik_SI
+  #   )
+  #   results$Cox_Snell_R2 <- utils$Cox_Snell_R2(
+  #     LogLik, LogLik_SI, n
+  #   )
+  # }
   
-  LogLik <- utils$logLikelihood(dat$O[dat$W==0] - fit.$estimates[dat$W==0])
-  return(list(results=results, LogLik=LogLik))
+  results
 }
 
-#--------------------------------------------------------------------------------------
-CASMC_Ridge_Sim_Wrapper <-
-  function(dat,
-           max_cores = 20,
-           LogLik_SI = NULL,
-           hpar = CASMC_Ridge_hparams,
-           trace = F,
-           return_fit = FALSE,
-           ...) {
-    start_time = Sys.time()
-    
-    fiti <- CASMC_Ridge_cv(
-      y_train = dat$fit_data$train,
-      X = dat$X,
-      y_valid = dat$fit_data$valid,
-      W_valid = dat$fit_data$W_valid,
-      y = dat$fit_data$Y,
-      hpar = hpar,
-      error_function = utils$error_metric$rmse,
-      thresh = 1e-6,
-      maxit = 300,
-      trace = trace,
-      print.best = trace,
-      quiet = FALSE,
-      warm = NULL,
-      track = trace,
-      max_cores = max_cores,
-      seed = NULL
+#------------------------------------------------------------------------------#
+# Wrapper for the “Mao” method with cross-validation
+#------------------------------------------------------------------------------#
+Mao_Sim_Wrapper <- function(
+    dat,
+    lambda_1_grid    = seq(0,   1,   length = 20),
+    lambda_2_grid    = seq(0.9, 0.1, length = 20),
+    alpha_grid       = 1,
+    ncores           = 1,
+    n_folds          = 5,
+    weight_function  = Mao_weights$uniform,
+    LogLik_SI        = NULL,
+    ...
+) {
+  start_time <- Sys.time()
+  
+  cv_out <- Mao.cv(
+    Y               = dat$Y,
+    X               = dat$fit_data$Xq,
+    W               = dat$W,
+    n_folds         = n_folds,
+    lambda_1_grid   = lambda_1_grid,
+    lambda_2_grid   = lambda_2_grid,
+    alpha_grid      = alpha_grid,
+    seed            = 2023,
+    numCores        = ncores,
+    n1n2_optimized  = TRUE,
+    test_error      = utils$error_metric$rmse,
+    theta_estimator = weight_function,
+    sequential      = FALSE
+  )
+  
+  fit <- cv_out$fit
+  results <- list(model = "Mao")
+  results$lambda_beta <- cv_out$best_parameters$lambda_1
+  results$lambda_M    <- cv_out$best_parameters$lambda_2
+  
+  results <- c(
+    results,
+    prepare_output(
+      start_time = start_time,
+      estimates  = fit$estimates,
+      obs        = dat$O,
+      mask       = dat$W,
+      beta       = dat$beta,
+      beta.estim = fit$beta,
+      M          = dat$M,
+      M.estim    = fit$M,
+      LogLik_SI  = LogLik_SI
     )
-    
-    fit. = fiti$fit
-    # get estimates and validate
-    fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
-    fit.$estimates = fit.$M + dat$X %*% fit.$beta
-    fiti$fit = fit.
-    
-    results = list(model = "CASMC-Ridge")
-    results$lambda.beta = fiti$lambda.beta
-    results$lambda.M = fit.$lambda
-    results <- c(results,
-                          prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
-    
-    if(return_fit) return(list(results=results, fit = fiti))
-    results
-  }
-#-------
+  )
+  
+  results
+}
 
-
-CASMC_Nuclear_Sim_Wrapper <-
-  function(dat,
-           LogLik_SI = NULL,
-           hpar = CASMC_Nuclear_hparams,
-           trace = F,
-           return_fit = FALSE,
-           ...) {
-    start_time = Sys.time()
-    
-    fiti <- CASMC_Nuclear_cv(
-      y_train = dat$fit_data$train,
-      X = dat$X,
-      y_valid = dat$fit_data$valid,
-      W_valid = dat$fit_data$W_valid,
-      y = dat$fit_data$Y,
-      hpar = hpar,
-      error_function = utils$error_metric$rmse,
-      warm = NULL,
-      trace = trace,
-      quiet = T,
-      track = trace,
-      print.best = trace,
-      step3 = T,
-      use_warmstart = T,
-      seed = NULL
+#------------------------------------------------------------------------------#
+# Wrapper for SoftImpute via simpute.cv
+#------------------------------------------------------------------------------#
+SImpute_Sim_Wrapper <- function(dat, ...) {
+  start_time <- Sys.time()
+  
+  fit <- simpute.cv(
+    Y_train   = as.matrix(dat$fit_data$train),
+    y_valid   = dat$fit_data$valid,
+    W_valid   = dat$fit_data$W_valid,
+    y         = dat$Y,
+    n.lambda  = 20,
+    trace     = FALSE,
+    print.best= FALSE,
+    tol       = 5,
+    thresh    = 1e-6,
+    rank.init = 2,
+    rank.limit= 30,
+    rank.step = 2,
+    maxit     = 600,
+    seed      = NULL
+  )
+  
+  results <- list(model = "SoftImpute")
+  results$lambda_beta <- NA
+  results$lambda_M    <- fit$lambda
+  
+  results <- c(
+    results,
+    prepare_output(
+      start_time = start_time,
+      estimates  = fit$estimates,
+      obs        = dat$O,
+      mask       = dat$W,
+      M.estim    = fit$estimates
     )
-    
-    fit. = fiti$fit
-    # get estimates and validate
-    fit.$M = utils$unsvd(fit.)
-    fit.$beta = utils$unsvd(fit.$beta)
-    fit.$estimates = fit.$M + dat$X %*% fit.$beta
-    fiti$fit <- fit.
-    
-    results = list(model = "CASMC-Nuclear")
-    results$lambda.beta = fiti$hparams$lambda.beta
-    results$lambda.M = fiti$hparams$lambda.M
-    
-    results <- c(results,
-                          prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
-    if(return_fit) return(list(results=results, fit = fiti))
-    results
+  )
+  
+  # Return both results and log-lik for further comparison
+  LogLik <- utils$logLikelihood(
+    dat$O[dat$W == 0] - fit$estimates[dat$W == 0]
+  )
+  
+  list(results = results, LogLik = LogLik)
+}
+
+#------------------------------------------------------------------------------#
+# Wrapper for CASMC with Lasso penalty
+#------------------------------------------------------------------------------#
+CAMC_Sim_Wrapper <- function(
+    dat,
+    max_cores   = 20,
+    LogLik_SI   = NULL,
+    hpar        = CAMC_Lasso_hparams,
+    verbose       = 1,
+    return_fit  = FALSE,
+    ...
+) {
+  start_time <- Sys.time()
+  
+  cv_out <- CAMC_Lasso_cv(
+    y_train    = dat$fit_data$train,
+    X          = dat$fit_data$Xq,
+    y_valid    = dat$fit_data$valid,
+    W_valid    = dat$fit_data$W_valid,
+    y          = dat$fit_data$Y,
+    hpar       = hpar,
+    verbose    = verbose,
+    max_cores  = max_cores
+  )
+  
+  fit <- cv_out$fit
+  fit$M         <- fit$u %*% (fit$d * t(fit$v))
+  fit$estimates <- fit$M + dat$fit_data$Xq %*% fit$beta
+  
+  results <- list(model = "CASMC-Lasso")
+  results$lambda_beta <- cv_out$hparams$lambda_beta
+  results$lambda_M    <- cv_out$hparams$lambda_M
+  
+  results <- c(
+    results,
+    prepare_output(
+      start_time = start_time,
+      estimates  = fit$estimates,
+      obs        = dat$O,
+      mask       = dat$W,
+      beta       = dat$beta,
+      beta.estim = fit$beta,
+      M          = dat$M,
+      M.estim    = fit$M,
+      LogLik_SI  = LogLik_SI
+    )
+  )
+  
+  if (return_fit) {
+    return(list(results = results, fit = cv_out))
   }
-#----------------------------------------------------
-CASMC_Lasso_Sim_Wrapper <-
-  function(dat,
-           max_cores = 20,
-           LogLik_SI = NULL,
-           hpar = CASMC_Lasso_hparams,
-           trace = F,
-           return_fit = FALSE,
-           ...) {
-    start_time = Sys.time()
-    fiti <- CASMC_Lasso_cv(
-      y_train = dat$fit_data$train,
-      X = dat$X,
-      y_valid = dat$fit_data$valid,
-      W_valid = dat$fit_data$W_valid,
-      y = dat$fit_data$Y,
-      hpar = hpar,
-      trace = trace,
-      print.best = trace,
-      warm = NULL,
-      quiet = T, 
-      max_cores = max_cores
-    ) 
-    
-    fit. = fiti$fit
-    # get estimates and validate
-    fit.$M = fit.$u %*% (fit.$d * t(fit.$v))
-    fit.$estimates = fit.$M + dat$X %*% fit.$beta
-    fiti$fit <- fit.
-    
-    results = list(model = "CASMC-Lasso")
-    results$lambda.beta = fiti$hparams$lambda.beta
-    results$lambda.M = fiti$hparams$lambda.M
-    
-    results <- c(results,
-                          prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M, LogLik_SI))  
-    
-    if(return_fit) return(list(results=results, fit = fiti))
-    results
-  }
-#----------------------------------------------
+  
+  results
+}
+
+#------------------------------------------------------------------------------#
+# Naive baseline wrapper
+#------------------------------------------------------------------------------#
 Naive_Sim_Wrapper <- function(dat, ...) {
-  start_time = Sys.time()
-  fit. <- naive_fit(dat$Y, dat$X)
-  results = list(model = "Naive")
-  results$lambda.beta = NA
-  results$lambda.M = NA
-  results <- c(results,
-                        prepare_output(start_time, fit.$estimates, dat$O, dat$W, dat$beta, fit.$beta, dat$M, fit.$M))  
+  start_time <- Sys.time()
+  fit        <- naive_fit(dat$Y, dat$fit_data$Xq)
+  
+  results <- list(model = "Naive")
+  results$lambda_beta <- NA
+  results$lambda_M    <- NA
+  
+  results <- c(
+    results,
+    prepare_output(
+      start_time = start_time,
+      estimates  = fit$estimates,
+      obs        = dat$O,
+      mask       = dat$W,
+      beta       = dat$beta,
+      beta.estim = fit$beta,
+      M          = dat$M,
+      M.estim    = fit$M
+    )
+  )
+  
   results
 }

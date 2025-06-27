@@ -22,7 +22,17 @@ VDsq = t(Dsq * t(V))
 source("./code_files/import_lib.R")
 
 dat <- generate_simulated_data(600, 700, 10, 12, .8, F,
+                               informative_cov_prop = .3,
                                prepare_for_fitting = T)
+
+
+
+
+
+
+
+
+
      
 start_time <- Sys.time()
 set.seed(2020); fits <- simpute.cv(

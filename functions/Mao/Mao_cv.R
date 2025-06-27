@@ -57,11 +57,11 @@ prepare_fold_data <-
       )
    }
 
-Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha) {
-   beta_hat = ginv(data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
-   T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda.2, 0) * t(data$svdd$v))
+Mao.fit_optimized <- function(data, lambda_1, lambda_2, alpha) {
+   beta_hat = ginv(data$X.X + data$n1n2Im * lambda_1) %*% data$X.W.theta.Y
+   T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda_2, 0) * t(data$svdd$v))
    # B hat as in (11)
-   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda.2)
+   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda_2)
    # Estimate the matrix as given in the model at the top
    A_hat = data$X %*% beta_hat + B_hat
    
@@ -69,18 +69,18 @@ Mao.fit_optimized <- function(data, lambda.1, lambda.2, alpha) {
 }
 
 
-Mao.fit_optimized_part1 <- function(data, lambda.1) {
+Mao.fit_optimized_part1 <- function(data, lambda_1) {
    # returns Xbeta only. Not used.
-   beta_hat = ginv(data$X.X + data$n1n2Im * lambda.1) %*% data$X.W.theta.Y
+   beta_hat = ginv(data$X.X + data$n1n2Im * lambda_1) %*% data$X.W.theta.Y
    Xbeta = data$X %*% beta_hat
    return(Xbeta[data$W_fold == 0 & data$W == 1])
 }
 
-Mao.fit_optimized_part2 <- function(data, lambda.2, alpha) {
+Mao.fit_optimized_part2 <- function(data, lambda_2, alpha) {
    # returns Bhat only. Not used.
-   T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda.2, 0) * t(data$svdd$v))
+   T_c_D = data$svdd$u %*% (pmax(data$svdd$d - alpha * data$n1n2 * lambda_2, 0) * t(data$svdd$v))
    # B hat as in (11)
-   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda.2)
+   B_hat = T_c_D / (1 + 2 * (1 - alpha) * data$n1n2 * lambda_2)
    return(B_hat[data$W_fold == 0 & data$W == 1])
 }
 
@@ -90,8 +90,8 @@ Mao.cv <-
             X,
             W,
             n_folds = 5,
-            lambda.1_grid = seq(0, 1, length = 20),
-            lambda.2_grid = seq(0.9, 0.1, length = 20),
+            lambda_1_grid = seq(0, 1, length = 20),
+            lambda_2_grid = seq(0.9, 0.1, length = 20),
             alpha_grid = seq(0.992, 1, length = 20),
             seed = NULL,
             numCores = 1,
@@ -114,8 +114,8 @@ Mao.cv <-
       #indices = sample(cut(seq(1, nrow(A)), breaks=n_folds, labels=FALSE))
       best_score = Inf
       best_params = list(alpha = NA,
-                         lambda.1 = NA,
-                         lambda.2 = NA)
+                         lambda_1 = NA,
+                         lambda_2 = NA)
       
       folds <- utils$MC_Kfold_split(nrow(Y), ncol(Y), n_folds, W, seed)
       
@@ -144,17 +144,17 @@ Mao.cv <-
       if (numCores == 1 & sequential == FALSE) {
          results <-
             foreach(alpha = alpha_grid, .combine = rbind) %:%
-            foreach(lambda.2 = lambda.2_grid, .combine = rbind) %do% {
-               lambda.1 = 0
+            foreach(lambda_2 = lambda_2_grid, .combine = rbind) %do% {
+               lambda_1 = 0
                score = 0
                for (i in 1:n_folds) {
                   data = fold_data[[i]]
-                  A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+                  A_hat_test = Mao.fit_optimized(data, lambda_1, lambda_2, alpha)
                   # Compute the test error using the provided formula
                   score = score + test_error(A_hat_test, data$Y_valid)
                }
                score = score / n_folds
-               c(alpha, lambda.2, score)
+               c(alpha, lambda_2, score)
             }
          
          # Process results to find the best parameters
@@ -164,7 +164,7 @@ Mao.cv <-
          min_results <-
             results[results[, 3] == min_score, , drop = FALSE] # Keep it as a dataframe
          
-         # Find the one with the highest lambda.2 in case of multiple results with the same score
+         # Find the one with the highest lambda_2 in case of multiple results with the same score
          if (nrow(min_results) > 1) {
             best_result <- min_results[which.max(min_results[, 2]),]
          } else {
@@ -173,22 +173,22 @@ Mao.cv <-
          }
          best_params <-
             list(alpha = best_result[1],
-                 lambda.1 = 0,
-                 lambda.2 = best_result[2])
+                 lambda_1 = 0,
+                 lambda_2 = best_result[2])
          best_score <- best_result[3]
          
          
       } else if (numCores == 1 & sequential) {
          # fixing optimal values of lambda 1 and alpha and optimizing for alpha separately
-         lambda.1 = 0
+         lambda_1 = 0
          alpha = 1
          best_score = Inf
-         for (lambda.2 in lambda.2_grid) {
+         for (lambda_2 in lambda_2_grid) {
             score = 0
             for (i in 1:n_folds) {
                data = fold_data[[i]]
                # compute the estimates with a modified fit function
-               A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+               A_hat_test = Mao.fit_optimized(data, lambda_1, lambda_2, alpha)
                # -- EDIT: Using Mao's formula in page 205 to compute the test error
                score = score + test_error(A_hat_test, data$Y_valid)
             }
@@ -196,20 +196,20 @@ Mao.cv <-
             
             if (score < best_score) {
                best_score = score
-               best_params$lambda.2 = lambda.2
-               #print(paste(score, "lambda.2", lambda.2))
+               best_params$lambda_2 = lambda_2
+               #print(paste(score, "lambda_2", lambda_2))
             }
          }
          # fixing optimal values of lambda 2 and lambda 1 and optimizing for alpha separately
-         lambda.2 = best_params$lambda.2
-         lambda.1 = 0
+         lambda_2 = best_params$lambda_2
+         lambda_1 = 0
          best_score = Inf
          for (alpha in alpha_grid) {
             score = 0
             for (i in 1:n_folds) {
                data = fold_data[[i]]
                # compute the estimates with a modified fit function
-               A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+               A_hat_test = Mao.fit_optimized(data, lambda_1, lambda_2, alpha)
                # -- EDIT: Using Mao's formula in page 205 to compute the test error
                score = score + test_error(A_hat_test, data$Y_valid)
             }
@@ -232,26 +232,26 @@ Mao.cv <-
          clusterExport(cl, varlist = c("Mao.fit_optimized", "test_error", "ginv"))
          results <-
             foreach(alpha = alpha_grid, .combine = rbind) %:%
-            foreach(lambda.2 = lambda.2_grid, .combine = rbind) %dopar% {
-               lambda.1 = 0
+            foreach(lambda_2 = lambda_2_grid, .combine = rbind) %dopar% {
+               lambda_1 = 0
                score = 0
                for (i in 1:n_folds) {
                   data = fold_data[[i]]
-                  A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+                  A_hat_test = Mao.fit_optimized(data, lambda_1, lambda_2, alpha)
                   # scores[i] = mean((data$A.test - A_hat_test)^2)
                   # -- EDIT: Using Mao's formula in page 205 to compute the test error
                   score = score + test_error(A_hat_test, data$Y_valid)
                }
                score = score / n_folds
-               c(alpha, lambda.2, score)
+               c(alpha, lambda_2, score)
             }
          # Process results to find the best parameters
-         # Edited on Dec 1st to pick the minimum score with highest lambda.2 value.
+         # Edited on Dec 1st to pick the minimum score with highest lambda_2 value.
          min_score <- min(results[, 3])
          # Subset to only include results with the minimum score
          min_results <-
             results[results[, 3] == min_score, , drop = FALSE] # drop to keep it as df
-         # In case of multiple results with the same score, find the one with the highest lambda.2
+         # In case of multiple results with the same score, find the one with the highest lambda_2
          if (nrow(min_results) > 1) {
             best_result <- min_results[which.max(min_results[, 2]),]
          } else {
@@ -262,23 +262,23 @@ Mao.cv <-
          # Extract the best parameters
          best_params <-
             list(alpha = best_result[1],
-                 lambda.1 = 0,
-                 lambda.2 = best_result[2])
+                 lambda_1 = 0,
+                 lambda_2 = best_result[2])
          best_score <- best_result[3]
          # close the cluster
          stopCluster(cl)
       }
       #--------------------------------------------
       # fixing optimal values of lambda 2 and alpha and optimizing for lambda 1 separately
-      lambda.2 = best_params$lambda.2
+      lambda_2 = best_params$lambda_2
       alpha = best_params$alpha
       best_score = Inf
-      for (lambda.1 in lambda.1_grid) {
+      for (lambda_1 in lambda_1_grid) {
          score = 0
          for (i in 1:n_folds) {
             data = fold_data[[i]]
             # compute the estimates with a modified fit function
-            A_hat_test = Mao.fit_optimized(data, lambda.1, lambda.2, alpha)
+            A_hat_test = Mao.fit_optimized(data, lambda_1, lambda_2, alpha)
             # -- EDIT: Using Mao's formula in page 205 to compute the test error
             score = score + test_error(A_hat_test, data$Y_valid)
          }
@@ -286,7 +286,7 @@ Mao.cv <-
          
          if (score < best_score) {
             best_score = score
-            best_params$lambda.1 = lambda.1
+            best_params$lambda_1 = lambda_1
          }
       }
       #---------------------------------------------------
@@ -294,8 +294,8 @@ Mao.cv <-
       best_fit <- Mao_fit(Y = Y,
                            X = X,
                            W = W,
-                           lambda.1 = best_params$lambda.1,
-                           lambda.2 = best_params$lambda.2,
+                           lambda_1 = best_params$lambda_1,
+                           lambda_2 = best_params$lambda_2,
                            alpha = best_params$alpha,
                            n1n2_optimized = n1n2_optimized,
                            return_rank = TRUE,

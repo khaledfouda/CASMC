@@ -47,8 +47,8 @@ for (pkg in packages) {
 utils <- new.env()
 
 
-path_to_proj = "~/OneDrive/Research/Summer25/CASMC/"
-# setwed(path_to_proj)
+path_to_proj = "~/Research/CASMC/"
+setwd(path_to_proj)
 path_to_code = paste0(path_to_proj, "functions")
 path_to_data = paste0(path_to_proj, "saved_data/")
 
@@ -66,6 +66,8 @@ file_list <- file_list[!grepl("/old.*/", file_list)]
 
 . = lapply(file_list, source)
 
+
+name <- pkg <- file_list <- NULL
 
 
 
