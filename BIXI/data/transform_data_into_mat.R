@@ -1,4 +1,4 @@
-setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
+#setwd("/mnt/campus/math/research/kfouda/main/HEC/Youssef/HEC_MAO_COOP")
 library(BKTR)
 # source("./code_files/import_lib.R")
 

@@ -41,6 +41,11 @@ SImpute_Sim_Wrapper(dat, hpar)$time
 CAMC_Sim_Wrapper(dat, hpar=hpar, max_cores = 10, verbose=0)$time
 Naive_Sim_Wrapper(dat)$time
 #-----------------------------------
+# working with bixi data
+source("./BIXI/data/transform_data_into_mat.R")
+
+dat <- load_model_bixi_dat(time_cov = FALSE)
+
 
 #---------------------------------
 
