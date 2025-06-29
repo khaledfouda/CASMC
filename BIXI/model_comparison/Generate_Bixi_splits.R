@@ -153,7 +153,7 @@ generate_bixi_data <- function(time_cov = TRUE, seed = 0, note = "") {
   # Save splits --------------------------------------------
   file_prefix <- paste0(
     "./BIXI/data/splits/split_",
-    if (time_cov) "T" else "L",
+    if (time_cov) "T" else "S",
     note,
     "_"
   )

@@ -80,6 +80,7 @@ Mao_Bixi_Wrapper <- function(
     ncores          = 1,
     n_folds         = 5,
     weight_function = Mao_weights$uniform,
+    sequential      = FALSE,
     ...
 ) {
   start_time <- Sys.time()
@@ -97,11 +98,17 @@ Mao_Bixi_Wrapper <- function(
     n1n2_optimized  = TRUE,
     test_error      = utils$error_metric$rmse,
     theta_estimator = weight_function,
-    sequential      = FALSE
+    sequential      = sequential
   )
   
   fit <- cv_out$fit
-  results <- list(model = "Mao")
+  grid_size = ifelse(sequential == TRUE,
+                     length(alpha_grid) + length(lambda_2_grid),
+                     length(alpha_grid) * length(lambda_2_grid))
+  grid_size = grid_size + length(lambda_1_grid)
+  grid_size = grid_size * n_folds
+  results <- list(model = "Mao", 
+                  grid_size = grid_size)
   results$lambda_beta <- cv_out$best_parameters$lambda_1
   results$lambda_M    <- cv_out$best_parameters$lambda_2
   
@@ -125,7 +132,9 @@ Mao_Bixi_Wrapper <- function(
 #------------------------------------------------------------------------------#
 # Wrapper for SoftImpute (simpute.cv) adapted to BIXI data
 #------------------------------------------------------------------------------#
-SImpute_Bixi_Wrapper <- function(dat, ...) {
+SImpute_Bixi_Wrapper <- function(dat,
+                                 hpar = CAMC_Lasso_hparams,
+                                 ...) {
   start_time <- Sys.time()
   
   fit <- simpute.cv(
@@ -133,19 +142,21 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
     y_valid   = dat$splits$valid@x,
     W_valid   = dat$masks$valid,
     y         = dat$Y,
-    n.lambda  = 20,
+    n.lambda  = hpar$M$n.lambda,
     trace     = FALSE,
     print.best= FALSE,
     tol       = 5,
     thresh    = 1e-6,
-    rank.init = 2,
-    rank.limit= 30,
-    rank.step = 2,
+    rank.init = hpar$M$rank.init,
+    rank.limit= hpar$M$rank.limit,
+    rank.step = hpar$M$rank.step,
     maxit     = 600,
     seed      = NULL
   )
   
-  results <- list(model = "SoftImpute")
+  grid_size <- paste0("M(", hpar$M$n.lambda, ")")
+  results <- list(model = "SoftImpute",
+                  grid_size = grid_size)
   results$lambda_beta <- NA
   results$lambda_M    <- fit$lambda
   
@@ -162,147 +173,25 @@ SImpute_Bixi_Wrapper <- function(dat, ...) {
     )
   )
   
-  LogLik <- utils$logLikelihood(
-    dat$splits$test@x - fit$estimates[dat$masks$test == 0]
-  )
-  list(results = results, LogLik = LogLik)
+  # LogLik <- utils$logLikelihood(
+  #   dat$splits$test@x - fit$estimates[dat$masks$test == 0]
+  # )
+  # list(results = results, LogLik = LogLik)
+  return(results)
 }
 
-#------------------------------------------------------------------------------#
-# Wrapper for CAMC with Ridge penalty adapted to BIXI data
-#------------------------------------------------------------------------------#
-CAMC_0_Bixi_Wrapper <- function(
-    dat,
-    max_cores    = 20,
-    LogLik_SI    = NULL,
-    return_fit   = FALSE,
-    train_on_all = FALSE,
-    hpar         = CAMC_Ridge_hparams,
-    ...
-) {
-  start_time <- Sys.time()
-  Y_all      <- if (train_on_all) dat$splits$Y else NULL
-  
-  cv_out <- CAMC_Ridge_cv(
-    y_train    = dat$splits$train,
-    X          = dat$X,
-    y_valid    = dat$splits$valid@x,
-    W_valid    = dat$masks$valid,
-    y          = Y_all,
-    hpar       = hpar,
-    thresh     = 1e-6,
-    maxit      = 300,
-    trace      = TRUE,
-    track      = TRUE,
-    print.best = FALSE,
-    quiet      = FALSE,
-    warm       = NULL,
-    max_cores  = max_cores,
-    seed       = NULL
-  )
-  
-  fit <- cv_out$fit
-  fit$M         <- fit$u %*% (fit$d * t(fit$v))
-  fit$Xbeta     <- dat$X %*% fit$beta
-  fit$estimates <- fit$M + fit$Xbeta
-  
-  results <- list(model = "CAMC-0")
-  results$lambda_beta <- cv_out$lambda_beta
-  results$lambda_M    <- fit$lambda
-  
-  results <- c(
-    results,
-    prepare_output_bixi(
-      start_time  = start_time,
-      X           = dat$X,
-      estim.test  = fit$estimates[dat$masks$test == 0],
-      estim.train = fit$estimates[dat$masks$tr_val != 0],
-      obs.test    = dat$splits$test@x,
-      obs.train   = dat$splits$Y@x,
-      beta.estim  = fit$beta,
-      M.estim     = fit$M,
-      LogLik_SI   = LogLik_SI
-    )
-  )
-  
-  if (return_fit) {
-    return(list(fit = fit, results = results))
-  }
-  
-  results
-}
 
-#------------------------------------------------------------------------------#
-# Wrapper for CAMC with Nuclear-norm penalty adapted to BIXI data
-#------------------------------------------------------------------------------#
-CAMC_2_Bixi_Wrapper <- function(
-    dat,
-    LogLik_SI    = NULL,
-    return_fit   = FALSE,
-    train_on_all = FALSE,
-    hpar         = CAMC_Nuclear_hparams,
-    ...
-) {
-  start_time <- Sys.time()
-  Y_all      <- if (train_on_all) dat$splits$Y else NULL
-  
-  cv_out <- CAMC_Nuclear_cv(
-    y_train       = dat$splits$train,
-    X             = dat$X,
-    y_valid       = dat$splits$valid@x,
-    W_valid       = dat$masks$valid,
-    y             = Y_all,
-    hpar          = hpar,
-    warm          = NULL,
-    quiet         = TRUE,
-    trace         = FALSE,
-    track         = FALSE,
-    step3         = TRUE,
-    use_warmstart = TRUE,
-    seed          = NULL
-  )
-  
-  fit <- cv_out$fit
-  fit$M         <- utils$unsvd(fit)
-  fit$beta      <- utils$unsvd(fit$beta)
-  fit$Xbeta     <- dat$X %*% fit$beta
-  fit$estimates <- fit$M + fit$Xbeta
-  
-  results <- list(model = "CAMC-2")
-  results$lambda_beta <- cv_out$hparams$lambda_beta
-  results$lambda_M    <- cv_out$hparams$lambda_M
-  
-  results <- c(
-    results,
-    prepare_output_bixi(
-      start_time  = start_time,
-      X           = dat$X,
-      estim.test  = fit$estimates[dat$masks$test == 0],
-      estim.train = fit$estimates[dat$masks$tr_val != 0],
-      obs.test    = dat$splits$test@x,
-      obs.train   = dat$splits$Y@x,
-      beta.estim  = fit$beta,
-      M.estim     = fit$M,
-      LogLik_SI   = LogLik_SI
-    )
-  )
-  
-  if (return_fit) {
-    return(list(fit = fit, results = results))
-  }
-  
-  results
-}
 
 #------------------------------------------------------------------------------#
 # Wrapper for CAMC with Lasso penalty adapted to BIXI data
 #------------------------------------------------------------------------------#
-CAMC_3a_Bixi_Wrapper <- function(
+CAMC_Bixi_Wrapper <- function(
     dat,
     max_cores    = 20,
-    LogLik_SI    = NULL,
+    #LogLik_SI    = NULL,
     return_fit   = FALSE,
     train_on_all = FALSE,
+    verbose      = 1,
     hpar         = CAMC_Lasso_hparams,
     ...
 ) {
@@ -311,26 +200,28 @@ CAMC_3a_Bixi_Wrapper <- function(
   
   cv_out <- CAMC_Lasso_cv(
     y_train    = dat$splits$train,
-    X          = dat$X,
+    X          = dat$splits$Xq,
     y_valid    = dat$splits$valid@x,
     W_valid    = dat$masks$valid,
     y          = Y_all,
     hpar       = hpar,
-    trace      = 3,
-    print.best = TRUE,
-    warm       = NULL,
-    quiet      = FALSE,
+    verbose      = verbose,
     max_cores  = max_cores
   )
   
   fit <- cv_out$fit
+  fit$Rbeta     <- fit$beta
+  fit$beta      <- MASS::ginv(dat$splits$Xr) %*% fit$Rbeta
+  fit$beta      <- round(fit$beta, 10) # set small values to 0
   fit$M         <- fit$u %*% (fit$d * t(fit$v))
-  fit$Xbeta     <- dat$X %*% fit$beta
+  fit$Xbeta     <- dat$splits$Xq %*% fit$Rbeta #dat$X %*% fit$beta
   fit$estimates <- fit$M + fit$Xbeta
   
-  results <- list(model = "CAMC-3a")
-  results$lambda_beta <- cv_out$hparams$lambda_beta
-  results$lambda_M    <- cv_out$hparams$lambda_M
+  grid_size <- paste0("M(", hpar$M$n.lambda, ")*", hpar$beta$n.lambda)
+  results <- list(model = "CAMC",
+                  grid_size = grid_size)
+  results$lambda_beta <- cv_out$lambda_beta
+  results$lambda_M    <- cv_out$lambda_M
   
   results <- c(
     results,
@@ -343,7 +234,7 @@ CAMC_3a_Bixi_Wrapper <- function(
       obs.train   = dat$splits$Y@x,
       beta.estim  = fit$beta,
       M.estim     = fit$M,
-      LogLik_SI   = LogLik_SI
+      #LogLik_SI   = LogLik_SI
     )
   )
   
@@ -361,7 +252,7 @@ Naive_Bixi_Wrapper <- function(dat, ...) {
   start_time <- Sys.time()
   fit        <- naive_fit(dat$Y, dat$X)
   
-  results <- list(model = "Naive")
+  results <- list(model = "Naive", grid_size = 0)
   results$lambda_beta <- NA
   results$lambda_M    <- NA
   
