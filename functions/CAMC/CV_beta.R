@@ -17,7 +17,7 @@
 #'
 #' @return A list containing the best fit object, its error, hyperparameters, and init params.
 #' @export
-CAMC_Lasso_cv <- function(
+CAMC_Lasso_cv <- CAMC_cv <- function(
     y_train,
     X,
     y_valid,

@@ -10,7 +10,7 @@ prepare_output <- function(
     beta.estim  = NA,
     M           = NA,
     M.estim     = NA,
-    LogLik_SI   = NA,
+    #LogLik_SI   = NA,
     test_error  = utils$error_metric$rmse
 ) {
   # Split train vs test
@@ -90,7 +90,8 @@ Mao_Sim_Wrapper <- function(
     ncores           = 1,
     n_folds          = 5,
     weight_function  = Mao_weights$uniform,
-    LogLik_SI        = NULL,
+    sequential       = FALSE,
+    #LogLik_SI        = NULL,
     ...
 ) {
   start_time <- Sys.time()
@@ -108,11 +109,17 @@ Mao_Sim_Wrapper <- function(
     n1n2_optimized  = TRUE,
     test_error      = utils$error_metric$rmse,
     theta_estimator = weight_function,
-    sequential      = FALSE
+    sequential      = sequential
   )
+  grid_size = ifelse(sequential == TRUE,
+                     length(alpha_grid) + length(lambda_2_grid),
+                     length(alpha_grid) * length(lambda_2_grid))
+  grid_size = grid_size + length(lambda_1_grid)
+  grid_size = grid_size * n_folds
   
   fit <- cv_out$fit
-  results <- list(model = "Mao")
+  results <- list(model = "Mao", 
+                  grid_size = grid_size)
   results$lambda_beta <- cv_out$best_parameters$lambda_1
   results$lambda_M    <- cv_out$best_parameters$lambda_2
   
@@ -126,8 +133,8 @@ Mao_Sim_Wrapper <- function(
       beta       = dat$beta,
       beta.estim = fit$beta,
       M          = dat$M,
-      M.estim    = fit$M,
-      LogLik_SI  = LogLik_SI
+      M.estim    = fit$M
+      #LogLik_SI  = LogLik_SI
     )
   )
   
@@ -137,7 +144,9 @@ Mao_Sim_Wrapper <- function(
 #------------------------------------------------------------------------------#
 # Wrapper for SoftImpute via simpute.cv
 #------------------------------------------------------------------------------#
-SImpute_Sim_Wrapper <- function(dat, ...) {
+SImpute_Sim_Wrapper <- function(dat, 
+                                hpar = CAMC_Lasso_hparams,
+                                ...) {
   start_time <- Sys.time()
   
   fit <- simpute.cv(
@@ -145,19 +154,20 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
     y_valid   = dat$fit_data$valid,
     W_valid   = dat$fit_data$W_valid,
     y         = dat$Y,
-    n.lambda  = 20,
+    n.lambda  = hpar$M$n.lambda,
     trace     = FALSE,
     print.best= FALSE,
     tol       = 5,
     thresh    = 1e-6,
-    rank.init = 2,
-    rank.limit= 30,
-    rank.step = 2,
+    rank.init = hpar$M$rank.init,
+    rank.limit= hpar$M$rank.limit,
+    rank.step = hpar$M$rank.step,
     maxit     = 600,
     seed      = NULL
   )
-  
-  results <- list(model = "SoftImpute")
+  grid_size <- paste0("M(", hpar$M$n.lambda, ")")
+  results <- list(model = "SoftImpute",
+                  grid_size = grid_size)
   results$lambda_beta <- NA
   results$lambda_M    <- fit$lambda
   
@@ -173,11 +183,12 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
   )
   
   # Return both results and log-lik for further comparison
-  LogLik <- utils$logLikelihood(
-    dat$O[dat$W == 0] - fit$estimates[dat$W == 0]
-  )
+  #LogLik <- utils$logLikelihood(
+  #  dat$O[dat$W == 0] - fit$estimates[dat$W == 0]
+  #)
   
-  list(results = results, LogLik = LogLik)
+  return(results)
+  #list(results = results, LogLik = LogLik)
 }
 
 #------------------------------------------------------------------------------#
@@ -186,7 +197,7 @@ SImpute_Sim_Wrapper <- function(dat, ...) {
 CAMC_Sim_Wrapper <- function(
     dat,
     max_cores   = 20,
-    LogLik_SI   = NULL,
+    #LogLik_SI   = NULL,
     hpar        = CAMC_Lasso_hparams,
     verbose       = 1,
     return_fit  = FALSE,
@@ -209,7 +220,9 @@ CAMC_Sim_Wrapper <- function(
   fit$M         <- fit$u %*% (fit$d * t(fit$v))
   fit$estimates <- fit$M + dat$fit_data$Xq %*% fit$beta
   
-  results <- list(model = "CASMC-Lasso")
+  grid_size <- paste0("M(", hpar$M$n.lambda, ")*", hpar$beta$n.lambda)
+  results <- list(model = "CAMC",
+                  grid_size = grid_size)
   results$lambda_beta <- cv_out$hparams$lambda_beta
   results$lambda_M    <- cv_out$hparams$lambda_M
   
@@ -223,8 +236,8 @@ CAMC_Sim_Wrapper <- function(
       beta       = dat$beta,
       beta.estim = fit$beta,
       M          = dat$M,
-      M.estim    = fit$M,
-      LogLik_SI  = LogLik_SI
+      M.estim    = fit$M
+      #LogLik_SI  = LogLik_SI
     )
   )
   
@@ -242,7 +255,7 @@ Naive_Sim_Wrapper <- function(dat, ...) {
   start_time <- Sys.time()
   fit        <- naive_fit(dat$Y, dat$fit_data$Xq)
   
-  results <- list(model = "Naive")
+  results <- list(model = "Naive", grid_size = 0)
   results$lambda_beta <- NA
   results$lambda_M    <- NA
   
